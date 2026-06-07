@@ -1,5 +1,6 @@
-# Basic CI — typecheck and build only (Task 2.15)
-# No secrets. No Supabase local smoke (requires Docker + dev:api).
+# Basic CI — typecheck and build only (Task 2.15, Task 5.8)
+# No secrets. No Supabase/Docker smoke in CI (local-only — see docs/36, scripts/README.md).
+# Local verification before Sprint 6: npm run smoke:all:local (requires supabase + dev:api + dev:web).
 
 name: CI
 

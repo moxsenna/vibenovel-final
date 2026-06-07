@@ -2,6 +2,59 @@
 
 Operational scripts for local verification and future CI helpers. **Not** runtime application code.
 
+**Debt register:** [`docs/36-non-blocking-technical-debt-and-deferred-items.md`](../docs/36-non-blocking-technical-debt-and-deferred-items.md)
+
+---
+
+## Smoke command index (Task 5.8)
+
+Run all commands from **repo root**. Windows/PowerShell primary.
+
+| npm script | Script | Mode | Prerequisites |
+|---|---|---|---|
+| `smoke:api` | `sprint2-smoke-api.ps1` | API Sprint 2 regression (17 steps) | Docker, `supabase start`, `dev:api`, `apps/api/.dev.vars` |
+| `smoke:api:base` | same as `smoke:api` | Alias — unchanged semantics for CI/docs | Same |
+| `smoke:api:sprint5` | `sprint5-smoke-api.ps1` | Write Room + leak guards (49 steps) | Same as API base |
+| `smoke:web` | `sprint3-smoke-web.ps1` | Web mock (intake/concepts/foundation) | `dev:web`, Playwright chromium |
+| `smoke:web:outline` | `sprint4-smoke-web.ps1` | Web mock `/outline`; add `-- -IncludeApiMode` for API | `dev:web`; API mode + `VITE_USE_MOCKS=false` |
+| `smoke:web:write` | `sprint5-smoke-web.ps1` | Web mock `/write`; add `-- -IncludeApiMode` for API | Same |
+| `smoke:all:local` | `smoke-all-local.ps1` | API base + sprint5 + web mock (no API-mode web) | All API + web prerequisites |
+| `smoke:all:local:full` | `smoke-all-local.ps1 -IncludeApiMode` | Above + web API-mode E2E | + restart `dev:web` after `VITE_USE_MOCKS=false` |
+
+**Optional (not in package.json):** `scripts/sprint4-smoke-api.ps1` — Sprint 4 outline API (20 steps).
+
+### Prerequisites summary
+
+| Requirement | API smokes | Web mock | Web API-mode |
+|---|---|---|---|
+| Docker Desktop | ✅ | — | ✅ |
+| `supabase start` + `db reset` | ✅ | — | ✅ |
+| `npm run dev:api` → :8787 | ✅ | — | ✅ |
+| `apps/api/.dev.vars` (gitignored) | ✅ | — | ✅ |
+| `npm run dev:web` → :5173 | — | ✅ | ✅ |
+| `npx playwright install chromium` | — | ✅ (first run) | ✅ |
+| `VITE_USE_MOCKS=true` in `apps/web/.env.local` | — | ✅ default | — |
+| `VITE_USE_MOCKS=false` + Supabase env in `.env.local` | — | — | ✅ |
+| Restart `dev:web` after env change | — | — | ✅ |
+
+**Never commit** `apps/web/.env.local`, `apps/api/.dev.vars`, or any file containing keys/tokens.
+
+### Vite port troubleshooting
+
+- Default dev server: **http://localhost:5173**
+- If 5173 is busy, Vite may use **5174** — smoke scripts default to 5173.
+- Fix: stop other dev servers, or pass `-WebBaseUrl "http://localhost:5174"` to web smoke scripts:
+
+  ```powershell
+  npm run smoke:web:write -- -WebBaseUrl "http://localhost:5174"
+  ```
+
+### CI note
+
+GitHub Actions runs **typecheck + build only** (`.github/workflows/ci.yml`). Docker/Supabase/Playwright smokes remain **local-only** until a dedicated CI job exists.
+
+---
+
 ## Sprint 2 smoke test (Task 2.15)
 
 ### `sprint2-smoke-api.ps1`
@@ -42,7 +95,9 @@ Windows-first PowerShell script that exercises the Sprint 2 API surface against 
 ### Run from repo root
 
 ```bash
-npm run smoke:api
+npm run smoke:api          # Sprint 2 regression (same as smoke:api:base)
+npm run smoke:api:base     # explicit alias
+npm run smoke:api:sprint5  # Write Room safety (Sprint 5)
 ```
 
 Or directly:
@@ -288,6 +343,12 @@ API smoke for **context packet**, **writing session**, **beats**, **prose draft*
 
 ### Run from repo root
 
+```bash
+npm run smoke:api:sprint5
+```
+
+Or directly:
+
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts/sprint5-smoke-api.ps1
 ```
@@ -382,11 +443,28 @@ npm run test:e2e:sprint5 -w @vibenovel/web
 - [`docs/34-sprint-5-safe-write-room-context-packet-implementation-plan.md`](../docs/34-sprint-5-safe-write-room-context-packet-implementation-plan.md)
 - [`scripts/sprint5-smoke-api.ps1`](sprint5-smoke-api.ps1)
 
+## Local smoke suite (Task 5.8)
+
+### `smoke-all-local.ps1`
+
+Runs API base + Sprint 5 API + web mock smokes in sequence. Optional `-IncludeApiMode` for full web API-mode E2E.
+
+```bash
+# Mock web only (recommended pre-Sprint 6)
+npm run smoke:all:local
+
+# Includes web -IncludeApiMode (outline + write + sprint3 foundation flow)
+npm run smoke:all:local:full
+```
+
+Expect **~2–5 minutes** depending on API bootstrap. Requires `dev:api` and `dev:web` running before start.
+
 ## Future scripts (not yet implemented)
 
 ```txt
 scripts/check-stitch-parity.ts
 scripts/typegen-from-schema.ts
+smoke:api:sprint4 npm alias (optional)
 ```
 
 Add new scripts only with a documented sprint task and update this README.

@@ -70,23 +70,47 @@ npm run build:api      # build:shared otomatis dijalankan dulu
 # Preview frontend
 npm run preview:web
 
-# API smoke test (Windows/PowerShell — local Supabase + dev:api required)
+# API smoke — Sprint 2 regression (17 steps; unchanged semantics)
 npm run smoke:api
+npm run smoke:api:base          # alias
+
+# API smoke — Sprint 5 Write Room safety (49 steps)
+npm run smoke:api:sprint5
 
 # Web E2E smoke (Playwright — dev:web required; mock mode default)
 npm run smoke:web
-
-# Outline page E2E (Task 4.8 — mock default; add -- -IncludeApiMode for API flow)
 npm run smoke:web:outline
-
-# Write page E2E (Task 5.6 — mock default; add -- -IncludeApiMode for API flow)
 npm run smoke:web:write
 
-# Sprint 5 Write Room API safety smoke (local Supabase + dev:api)
-powershell -ExecutionPolicy Bypass -File scripts/sprint5-smoke-api.ps1
+# Full local suite (API base + sprint5 + web mock — no API-mode web)
+npm run smoke:all:local
+
+# Full local + web API-mode E2E (requires VITE_USE_MOCKS=false + restart dev:web)
+npm run smoke:all:local:full
 ```
 
-See [`scripts/README.md`](scripts/README.md) for prerequisites (env: `VITE_USE_MOCKS`, `VITE_API_URL`, `VITE_SUPABASE_*`).
+See [`scripts/README.md`](scripts/README.md) for prerequisites. **Debt register:** [`docs/36-non-blocking-technical-debt-and-deferred-items.md`](docs/36-non-blocking-technical-debt-and-deferred-items.md).
+
+### Local verification before Sprint 6
+
+Recommended order (local machine with Docker + Supabase + `dev:api` + `dev:web`):
+
+```bash
+npm run typecheck
+npm run build:shared
+npm run build:web
+npm run build:api
+supabase db reset
+npm run smoke:api
+npm run smoke:api:sprint5
+npm run smoke:web
+npm run smoke:web:outline
+npm run smoke:web:write
+```
+
+Optional full browser API-mode: `npm run smoke:all:local:full` (or per-page `-- -IncludeApiMode`).
+
+**Do not commit** `apps/web/.env.local` or `apps/api/.dev.vars`.
 
 ### Database lokal (Supabase CLI)
 
@@ -225,6 +249,7 @@ Belum ada (sengaja — defer Sprint 5+):
 | 5.5 WritePage web integration | ✅ | `useWriteRoomData` + mock fallback |
 | 5.6 Safety tests & leak guards | ✅ | `sprint5-smoke-api.ps1`, `smoke:web:write` |
 | 5.7 Verification report | ✅ | `docs/35` + full smoke verification |
+| 5.8 Stabilization & debt register | ✅ | `docs/36`, smoke aliases, `smoke:all:local` |
 
 Belum ada (sengaja — defer Sprint 6+):
 
@@ -252,10 +277,11 @@ Belum ada (sengaja — defer Sprint 6+):
 8. `docs/31-sprint-3-verification-report.md` — status penutupan Sprint 3
 9. `docs/33-sprint-4-verification-report.md` — status penutupan Sprint 4
 10. `docs/35-sprint-5-verification-report.md` — status penutupan Sprint 5
-11. `docs/34-sprint-5-safe-write-room-context-packet-implementation-plan.md` — rencana Sprint 5
-12. `docs/32-sprint-4-outline-planning-engine-implementation-plan.md` — rencana Sprint 4
-13. `docs/30-sprint-3-story-foundation-flow-implementation-plan.md` — rencana Sprint 3
-14. `docs/27-sprint-2-data-model-implementation-plan.md` — rencana Sprint 2
+11. `docs/36-non-blocking-technical-debt-and-deferred-items.md` — debt register (Task 5.8)
+12. `docs/34-sprint-5-safe-write-room-context-packet-implementation-plan.md` — rencana Sprint 5
+13. `docs/32-sprint-4-outline-planning-engine-implementation-plan.md` — rencana Sprint 4
+14. `docs/30-sprint-3-story-foundation-flow-implementation-plan.md` — rencana Sprint 3
+15. `docs/27-sprint-2-data-model-implementation-plan.md` — rencana Sprint 2
 
 ### Untuk AI coding agent
 
@@ -269,10 +295,11 @@ Belum ada (sengaja — defer Sprint 6+):
 8. `docs/31-sprint-3-verification-report.md`
 9. `docs/33-sprint-4-verification-report.md`
 10. `docs/35-sprint-5-verification-report.md`
-11. `docs/34-sprint-5-safe-write-room-context-packet-implementation-plan.md`
-12. `docs/30-sprint-3-story-foundation-flow-implementation-plan.md`
-13. `docs/27-sprint-2-data-model-implementation-plan.md`
-14. Dokumen domain sesuai task.
+11. `docs/36-non-blocking-technical-debt-and-deferred-items.md`
+12. `docs/34-sprint-5-safe-write-room-context-packet-implementation-plan.md`
+13. `docs/30-sprint-3-story-foundation-flow-implementation-plan.md`
+14. `docs/27-sprint-2-data-model-implementation-plan.md`
+15. Dokumen domain sesuai task.
 
 ---
 

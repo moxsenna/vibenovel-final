@@ -19,9 +19,13 @@
     "typecheck:api": "npm run typecheck -w @vibenovel/api",
     "preview:web": "npm run preview -w @vibenovel/web",
     "smoke:api": "powershell -ExecutionPolicy Bypass -File scripts/sprint2-smoke-api.ps1",
+    "smoke:api:base": "powershell -ExecutionPolicy Bypass -File scripts/sprint2-smoke-api.ps1",
+    "smoke:api:sprint5": "powershell -ExecutionPolicy Bypass -File scripts/sprint5-smoke-api.ps1",
     "smoke:web": "powershell -ExecutionPolicy Bypass -File scripts/sprint3-smoke-web.ps1",
     "smoke:web:outline": "powershell -ExecutionPolicy Bypass -File scripts/sprint4-smoke-web.ps1",
-    "smoke:web:write": "powershell -ExecutionPolicy Bypass -File scripts/sprint5-smoke-web.ps1"
+    "smoke:web:write": "powershell -ExecutionPolicy Bypass -File scripts/sprint5-smoke-web.ps1",
+    "smoke:all:local": "powershell -ExecutionPolicy Bypass -File scripts/smoke-all-local.ps1",
+    "smoke:all:local:full": "powershell -ExecutionPolicy Bypass -File scripts/smoke-all-local.ps1 -IncludeApiMode"
   },
   "engines": {
     "node": ">=18"
