@@ -11,26 +11,26 @@ VibeNovel adalah **AI Serial Fiction Production OS** — bukan chatbot novel bia
 ```txt
 vibenovel-unified-blueprint/
 ├── apps/
-│   ├── web/          ✅ Frontend React — Sprint 1 UI + API integration (Task 2.13, 3.6, 4.6)
-│   └── api/          ✅ Backend API — Hono/Cloudflare Worker (Task 2.5–4.5)
+│   ├── web/          ✅ Frontend React — Sprint 1 UI + API integration (Task 2.13, 3.6, 4.6, 5.5)
+│   └── api/          ✅ Backend API — Hono/Cloudflare Worker (Task 2.5–5.4)
 ├── packages/
 │   ├── core/         ⏳ Placeholder — story/AI engine (Sprint 4–6+)
 │   └── shared/       ✅ Shared domain types & API contracts (Task 2.1, 4.1)
 ├── supabase/         ✅ Migration + seed — runtime verified (Task 2.3/2.4, 4.1)
-├── scripts/          ✅ Smoke tests — API (2.15, 4.7) + web E2E (3.8)
+├── scripts/          ✅ Smoke tests — API (2.15, 5.6) + web E2E (3.8, 4.8, 5.6)
 ├── docs/             📘 Unified product & technical blueprint
 ├── .agents/rules/    🤖 Agent behavior rules
 └── stitch-reference/ 🎨 Stitch UI source of truth
 ```
 
-| Folder | Status Sprint 2 | Keterangan |
+| Folder | Status | Keterangan |
 |---|---|---|
-| `apps/web` | **Sprint 4 complete** | UI parity Stitch; foundation flow + outline cerita API integration |
-| `apps/api` | **Sprint 4 complete** | Sprint 2–3 APIs + outline planning engine (generate, CRUD, approve/lock) |
-| `packages/shared` | **Implemented (Task 2.1, 4.1)** | Domain types, enums, outline planning contracts |
+| `apps/web` | **Sprint 5 complete** | UI parity Stitch; foundation + outline + Write Room API integration |
+| `apps/api` | **Sprint 5 complete** | Sprint 2–5 APIs + outline planning + write room + Context Packet |
+| `packages/shared` | **Implemented (Task 2.1, 4.1, 5.1)** | Domain types, enums, write room + context packet contracts |
 | `packages/core` | Placeholder | Engine AI/story — nanti |
-| `supabase` | **Migration + seed (Task 4.1)** | 18 tabel (+ outline planning), RLS, demo seed — `supabase db reset` verified |
-| `scripts` | **Smoke scripts (2.15, 3.8, 4.7–4.8)** | `smoke:api`, `smoke:web`, `smoke:web:outline` — see `scripts/README.md` |
+| `supabase` | **Migration + seed (Task 5.1)** | 23 tabel (+ write room), RLS, demo seed — `supabase db reset` verified |
+| `scripts` | **Smoke scripts (2.15, 3.8, 4.7–4.8, 5.6)** | `smoke:api`, `smoke:web`, `smoke:web:outline`, `smoke:web:write` — see `scripts/README.md` |
 | `docs` | Dokumentasi | Sumber arsitektur & sprint plan |
 | `stitch-reference` | Referensi desain | HTML + screen.png per halaman |
 
@@ -203,13 +203,38 @@ Belum ada (sengaja — defer Sprint 4+):
 
 Belum ada (sengaja — defer Sprint 5+):
 
-- Write Room persistence / prose generation
-- Writer Context Packet
 - OpenRouter / AI generation
-- Outline web E2E (`npm run smoke:web:outline`) — Task 4.8 ✅
 - Web E2E in GitHub Actions CI
 
-**Task berikutnya (disarankan):** Sprint 5 — Safe Write Room & Context Packet.
+---
+
+## Sprint 5 — selesai ✅
+
+**Safe Write Room & Context Packet — session, beats, prose draft, preview-only context.**
+
+**Rencana:** [`docs/34-sprint-5-safe-write-room-context-packet-implementation-plan.md`](docs/34-sprint-5-safe-write-room-context-packet-implementation-plan.md)  
+**Laporan penutupan:** [`docs/35-sprint-5-verification-report.md`](docs/35-sprint-5-verification-report.md)
+
+| Task | Status | Deliverable |
+|---|---|---|
+| 5.0 Flow plan | ✅ | `docs/34` |
+| 5.1 Data model migration | ✅ | `00004_sprint5_write_room.sql` + shared types + seed beats |
+| 5.2 Context Packet Builder API | ✅ | Preview-only POST/GET; safety assertion |
+| 5.3 Writing session & beat API | ✅ | Session, beats/generate, PATCH |
+| 5.4 Prose draft persistence API | ✅ | Versioned save, make-current |
+| 5.5 WritePage web integration | ✅ | `useWriteRoomData` + mock fallback |
+| 5.6 Safety tests & leak guards | ✅ | `sprint5-smoke-api.ps1`, `smoke:web:write` |
+| 5.7 Verification report | ✅ | `docs/35` + full smoke verification |
+
+Belum ada (sengaja — defer Sprint 6+):
+
+- Chapter summary / Chapter Delta / canon promotion
+- SummaryPage API integration (masih mock)
+- OpenRouter / AI prose generation
+- Credit deduction
+- Web E2E in GitHub Actions CI
+
+**Task berikutnya (disarankan):** Sprint 6 — Chapter Summary, Chapter Delta & Canon Proposal Flow.
 
 ---
 
@@ -226,9 +251,11 @@ Belum ada (sengaja — defer Sprint 5+):
 7. `docs/29-sprint-2-verification-report.md` — status penutupan Sprint 2
 8. `docs/31-sprint-3-verification-report.md` — status penutupan Sprint 3
 9. `docs/33-sprint-4-verification-report.md` — status penutupan Sprint 4
-10. `docs/32-sprint-4-outline-planning-engine-implementation-plan.md` — rencana Sprint 4
-11. `docs/30-sprint-3-story-foundation-flow-implementation-plan.md` — rencana Sprint 3
-10. `docs/27-sprint-2-data-model-implementation-plan.md` — rencana Sprint 2
+10. `docs/35-sprint-5-verification-report.md` — status penutupan Sprint 5
+11. `docs/34-sprint-5-safe-write-room-context-packet-implementation-plan.md` — rencana Sprint 5
+12. `docs/32-sprint-4-outline-planning-engine-implementation-plan.md` — rencana Sprint 4
+13. `docs/30-sprint-3-story-foundation-flow-implementation-plan.md` — rencana Sprint 3
+14. `docs/27-sprint-2-data-model-implementation-plan.md` — rencana Sprint 2
 
 ### Untuk AI coding agent
 
@@ -240,9 +267,12 @@ Belum ada (sengaja — defer Sprint 5+):
 6. `docs/22-sprint-1-verification-report.md`
 7. `docs/29-sprint-2-verification-report.md`
 8. `docs/31-sprint-3-verification-report.md`
-9. `docs/30-sprint-3-story-foundation-flow-implementation-plan.md`
-10. `docs/27-sprint-2-data-model-implementation-plan.md`
-11. Dokumen domain sesuai task.
+9. `docs/33-sprint-4-verification-report.md`
+10. `docs/35-sprint-5-verification-report.md`
+11. `docs/34-sprint-5-safe-write-room-context-packet-implementation-plan.md`
+12. `docs/30-sprint-3-story-foundation-flow-implementation-plan.md`
+13. `docs/27-sprint-2-data-model-implementation-plan.md`
+14. Dokumen domain sesuai task.
 
 ---
 

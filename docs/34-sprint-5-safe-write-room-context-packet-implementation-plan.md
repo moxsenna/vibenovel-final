@@ -1,7 +1,7 @@
 # 34 — Sprint 5 Safe Write Room & Context Packet Implementation Plan
 
-**Status:** Planning document (Task 5.0)  
-**Date:** 8 Juni 2026  
+**Status:** Implemented — closed per [`docs/35-sprint-5-verification-report.md`](35-sprint-5-verification-report.md) (Task 5.7)  
+**Date:** 8 Juni 2026
 **Repo:** `vibenovel-unified-blueprint`  
 **Prerequisite docs:** `docs/17`, `docs/25`, `docs/32`, `docs/33`, `docs/06`, `docs/07`, `docs/31`
 
