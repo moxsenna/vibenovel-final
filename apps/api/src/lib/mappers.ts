@@ -2,7 +2,10 @@ import type {
   AiProposal,
   Character,
   CreditBalance,
+  DetectedSignal,
   Fact,
+  IntakeMessage,
+  IntakeSession,
   JsonObject,
   Project,
   ProjectSettings,
@@ -357,6 +360,93 @@ export function mapCreditBalanceRow(row: CreditBalanceRow): CreditBalance {
     monthlyUsed: row.monthly_used,
     resetAt: row.reset_at,
     source: row.source as CreditBalance["source"],
+    updatedAt: row.updated_at,
+  };
+}
+
+function parseJsonObject(value: unknown): JsonObject {
+  if (value !== null && typeof value === "object" && !Array.isArray(value)) {
+    return value as JsonObject;
+  }
+  return {};
+}
+
+export interface IntakeSessionRow {
+  id: string;
+  project_id: string;
+  status: string;
+  phase: string;
+  progress_percent: number;
+  summary: string | null;
+  metadata: JsonObject | unknown;
+  created_at: string;
+  updated_at: string;
+}
+
+export function mapIntakeSessionRow(row: IntakeSessionRow): IntakeSession {
+  return {
+    id: row.id,
+    projectId: row.project_id,
+    status: row.status as IntakeSession["status"],
+    phase: row.phase as IntakeSession["phase"],
+    progressPercent: row.progress_percent,
+    summary: row.summary,
+    metadata: parseJsonObject(row.metadata),
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
+export interface IntakeMessageRow {
+  id: string;
+  project_id: string;
+  session_id: string;
+  role: string;
+  content: string;
+  metadata: JsonObject | unknown;
+  created_at: string;
+}
+
+export function mapIntakeMessageRow(row: IntakeMessageRow): IntakeMessage {
+  return {
+    id: row.id,
+    projectId: row.project_id,
+    sessionId: row.session_id,
+    role: row.role as IntakeMessage["role"],
+    content: row.content,
+    metadata: parseJsonObject(row.metadata),
+    createdAt: row.created_at,
+  };
+}
+
+export interface DetectedSignalRow {
+  id: string;
+  project_id: string;
+  session_id: string | null;
+  type: string;
+  label: string;
+  value: string;
+  confidence: number | null;
+  status: string;
+  source_message_id: string | null;
+  metadata: JsonObject | unknown;
+  created_at: string;
+  updated_at: string;
+}
+
+export function mapDetectedSignalRow(row: DetectedSignalRow): DetectedSignal {
+  return {
+    id: row.id,
+    projectId: row.project_id,
+    sessionId: row.session_id,
+    type: row.type as DetectedSignal["type"],
+    label: row.label,
+    value: row.value,
+    confidence: row.confidence,
+    status: row.status as DetectedSignal["status"],
+    sourceMessageId: row.source_message_id,
+    metadata: parseJsonObject(row.metadata),
+    createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
 }

@@ -3,7 +3,7 @@ pid: 68296
 cwd: "D:\Coding\vibenovel-unified-blueprint"
 command: "Set-Location D:\\Coding\\vibenovel-unified-blueprint; npm run dev:api"
 started_at: 2026-06-07T19:49:21.825Z
-running_for_ms: 2370006  
+running_for_ms: 2555001  
 ---
 
 > vibenovel@0.1.0 dev:api
@@ -233,3 +233,62 @@ X [ERROR] projects select by id failed
 [wrangler:inf] POST /api/projects/7f3034e3-e08b-4334-be75-2a71da0f79df/proposals 201 Created (151ms)
 [wrangler:inf] POST /api/projects/7f3034e3-e08b-4334-be75-2a71da0f79df/proposals/17a34bdd-e7f6-4f18-9e35-20a1b5785787/accept 200 OK (127ms)
 [wrangler:inf] GET /api/credits/balance 200 OK (89ms)
+⎔ Reloading local server...
+⎔ Reloading local server...
+⎔ Reloading local server...
+⎔ Reloading local server...
+[wrangler:inf] GET /health 200 OK (16ms)
+[wrangler:inf] GET /api/projects 200 OK (278ms)
+[wrangler:inf] POST /api/projects 201 Created (297ms)
+[wrangler:inf] GET /api/projects/f0df2b79-cb96-454d-962e-0b8c1f75e49e/settings 200 OK (269ms)
+[wrangler:inf] PUT /api/projects/f0df2b79-cb96-454d-962e-0b8c1f75e49e/settings 200 OK (227ms)
+[wrangler:inf] GET /api/projects/f0df2b79-cb96-454d-962e-0b8c1f75e49e/foundation 200 OK (236ms)
+[wrangler:inf] PUT /api/projects/f0df2b79-cb96-454d-962e-0b8c1f75e49e/foundation 200 OK (181ms)
+[wrangler:inf] POST /api/projects/f0df2b79-cb96-454d-962e-0b8c1f75e49e/characters 201 Created (145ms)
+[wrangler:inf] POST /api/projects/f0df2b79-cb96-454d-962e-0b8c1f75e49e/facts 201 Created (130ms)
+[wrangler:inf] POST /api/projects/f0df2b79-cb96-454d-962e-0b8c1f75e49e/facts 400 Bad Request (94ms)
+[wrangler:inf] POST /api/projects/f0df2b79-cb96-454d-962e-0b8c1f75e49e/speech-rules 201 Created (168ms)
+[wrangler:inf] POST /api/projects/f0df2b79-cb96-454d-962e-0b8c1f75e49e/speech-rules 400 Bad Request (100ms)
+[wrangler:inf] POST /api/projects/f0df2b79-cb96-454d-962e-0b8c1f75e49e/proposals 201 Created (168ms)
+[wrangler:inf] POST /api/projects/f0df2b79-cb96-454d-962e-0b8c1f75e49e/proposals/af6b3cf1-5c33-45b8-a105-74f3f2d954c3/accept 200 OK (222ms)
+[wrangler:inf] GET /api/credits/balance 200 OK (94ms)
+[wrangler:inf] GET /api/projects/test/intake 500 Internal Server Error (133ms)
+X [ERROR] projects select by id failed
+
+
+[wrangler:inf] GET /api/projects/test/intake 401 Unauthorized (4ms)
+[wrangler:inf] POST /api/projects 201 Created (177ms)
+X [ERROR] projects select by id failed
+
+
+[wrangler:inf] POST /api/projects/70652/intake 500 Internal Server Error (80ms)
+X [ERROR] projects select by id failed
+
+
+[wrangler:inf] GET /api/projects/70652/intake 500 Internal Server Error (83ms)
+X [ERROR] projects select by id failed
+
+
+[wrangler:inf] POST /api/projects/70652/intake/messages 500 Internal Server Error (100ms)
+[wrangler:inf] GET /api/projects/70652/intake/messages 500 Internal Server Error (78ms)
+X [ERROR] projects select by id failed
+
+
+X [ERROR] projects select by id failed
+
+
+[wrangler:inf] POST /api/projects/70652/intake/extract-signals 500 Internal Server Error (90ms)
+X [ERROR] projects select by id failed
+
+
+[wrangler:inf] GET /api/projects/70652/intake/signals 500 Internal Server Error (81ms)
+[wrangler:inf] GET /api/projects/a0000000-0000-4000-8000-000000000101/intake 404 Not Found (88ms)
+[wrangler:inf] GET /api/projects/a0000000-0000-4000-8000-000000000101/intake 401 Unauthorized (4ms)
+[wrangler:inf] POST /api/projects 201 Created (205ms)
+[wrangler:inf] POST /api/projects/9408c17e-dcb0-48bb-9b66-662dfd3b245c/intake 201 Created (228ms)
+[wrangler:inf] GET /api/projects/9408c17e-dcb0-48bb-9b66-662dfd3b245c/intake 200 OK (132ms)
+[wrangler:inf] POST /api/projects/9408c17e-dcb0-48bb-9b66-662dfd3b245c/intake/messages 201 Created (235ms)
+[wrangler:inf] GET /api/projects/9408c17e-dcb0-48bb-9b66-662dfd3b245c/intake/messages 200 OK (86ms)
+[wrangler:inf] POST /api/projects/9408c17e-dcb0-48bb-9b66-662dfd3b245c/intake/extract-signals 200 OK (175ms)
+[wrangler:inf] GET /api/projects/9408c17e-dcb0-48bb-9b66-662dfd3b245c/intake/signals 200 OK (104ms)
+[wrangler:inf] GET /api/projects/a0000000-0000-4000-8000-000000000101/intake 404 Not Found (66ms)

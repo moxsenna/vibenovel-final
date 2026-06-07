@@ -1,6 +1,6 @@
-# apps/api — VibeNovel API (Sprint 2)
+# apps/api — VibeNovel API (Sprint 2–3)
 
-Hono API on **Cloudflare Workers** — Supabase JWT auth, projects, canon APIs, AI proposal queue, credit balance read (Task 2.6–2.12).
+Hono API on **Cloudflare Workers** — Supabase JWT auth, projects, canon APIs, AI proposal queue, credit balance read (Task 2.6–2.12), intake persistence (Task 3.2).
 
 ## Stack
 
@@ -33,6 +33,7 @@ apps/api/
       speech-rules.ts  # CRUD /api/projects/:id/speech-rules
       ai-proposals.ts  # AI proposal queue lifecycle
       credits.ts       # GET /api/credits/balance — read-only
+      intake.ts        # GET/POST intake, messages, signals (Task 3.2)
       index.ts
     services/
       profile.ts       # getOrCreateProfileForAuthUser
@@ -44,6 +45,7 @@ apps/api/
       fact.ts          # facts manual CRUD + canon guardrails
       speech-rule.ts   # speech rules CRUD + character ref validation
       ai-proposal.ts   # proposal queue CRUD + accept/reject/merge
+      intake.ts        # intake sessions, messages, detected signals (stub extractor)
       audit.ts         # append-only audit_logs (service role)
     lib/
       supabase.ts      # anon + service role clients
@@ -113,6 +115,25 @@ apps/api/
 | POST | `/api/projects/:id/proposals/:proposalId/reject` | Bearer JWT | Reject proposal |
 | POST | `/api/projects/:id/proposals/:proposalId/merge` | Bearer JWT | Merge proposal |
 | GET | `/api/credits/balance` | Bearer JWT | Read-only credit balance for authenticated user |
+| GET | `/api/projects/:id/intake` | Bearer JWT | Intake bundle: session + recent messages + signals (auto-create session if missing) |
+| POST | `/api/projects/:id/intake` | Bearer JWT | Create or reset active intake session |
+| GET | `/api/projects/:id/intake/messages` | Bearer JWT | List messages (`?limit=50` default) |
+| POST | `/api/projects/:id/intake/messages` | Bearer JWT | Append user message + deterministic agent stub reply |
+| GET | `/api/projects/:id/intake/signals` | Bearer JWT | List detected signals (`?status=` optional) |
+| POST | `/api/projects/:id/intake/extract-signals` | Bearer JWT | Rule-based signal extraction from user messages (not AI) |
+| PATCH | `/api/projects/:id/intake/signals/:signalId` | Bearer JWT | Update signal status (`detected` / `confirmed` / `dismissed`) |
+
+### Intake routes (Task 3.2)
+
+All intake endpoints require Bearer JWT. Ownership via `getOwnedProjectRow` — cross-user access → `404`.
+
+**Not canon:** `detected_signals`, `intake_messages`, and `story_concepts` never write to `facts`, `characters`, or `ai_proposals` in Task 3.2.
+
+**Agent reply:** `POST .../intake/messages` creates a **deterministic stub** agent message server-side. No OpenRouter, no model router, no frontend LLM.
+
+**Signal extraction:** `POST .../extract-signals` uses keyword heuristics on user message text. Upserts/dedupes by `type` + `value`. Does not create foundation or concepts.
+
+**Audit:** No `audit_logs` writes for intake in Task 3.2 (`audit_action` enum extension deferred).
 
 ### Auth approach (Task 2.6)
 
