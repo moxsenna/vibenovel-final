@@ -35,7 +35,7 @@ apps/api/
       credits.ts       # GET /api/credits/balance — read-only
       intake.ts        # GET/POST intake, messages, signals (Task 3.2)
       concepts.ts      # GET/POST/PATCH concepts, generate, select (Task 3.3)
-      outline.ts       # GET outline bundle, POST generate, chapters, loops, reveals (Task 4.2–4.4)
+      outline.ts       # GET outline bundle, generate, chapters, loops, reveals, approve/lock (Task 4.2–4.5)
       index.ts
     services/
       profile.ts       # getOrCreateProfileForAuthUser
@@ -55,6 +55,7 @@ apps/api/
       outline.ts       # outline bundle read + stub generate (Task 4.2)
       chapter-outline.ts    # chapter outline list/detail/PATCH (Task 4.3)
       outline-tracking.ts   # open loop + planned reveal CRUD (Task 4.4)
+      outline-lock.ts       # outline approve + lock workflow (Task 4.5)
       outline-snapshot.ts   # canon snapshot for planner (read-only)
       outline-generator.ts  # deterministic 10-chapter stub (Task 4.2)
       audit.ts         # append-only audit_logs (service role)
@@ -155,6 +156,8 @@ apps/api/
 | POST | `/api/projects/:id/outline/reveals` | Bearer JWT | Create planned reveal — response redacted (Task 4.4) |
 | PATCH | `/api/projects/:id/outline/reveals/:revealId` | Bearer JWT | Update planned reveal — response redacted (Task 4.4) |
 | DELETE | `/api/projects/:id/outline/reveals/:revealId` | Bearer JWT | Soft cancel (`status=cancelled`) (Task 4.4) |
+| POST | `/api/projects/:id/outline/approve` | Bearer JWT | Mark outline ready for final lock check (Task 4.5) |
+| POST | `/api/projects/:id/outline/lock` | Bearer JWT | Lock outline plan + `workflow_phase=outline_locked` (Task 4.5) |
 
 ### Intake routes (Task 3.2)
 
@@ -362,6 +365,73 @@ Soft delete only — sets `status=cancelled`.
 **Canon guardrails:** Tracking CRUD does not mutate canon tables, create proposals, or expose raw `planningTruth` in default responses.
 
 **Audit:** No `audit_logs` for tracking edits in Task 4.4.
+
+### Outline approve & lock workflow (Task 4.5)
+
+All endpoints require Bearer JWT. Ownership via `getOwnedProjectRow` — cross-user → `404`.
+
+**Not canon / not prose:** Approve and lock only update `outline_plans`, `chapter_outlines.status`, and `projects.workflow_phase`. No writes to `facts`, `characters`, `speech_rules`, `story_foundations`, `open_loops`, `planned_reveals`, or prose. `planningTruth` remains redacted in all GET responses.
+
+**`POST /api/projects/:id/outline/approve`**
+
+Preconditions (409 if fail):
+
+- Outline plan exists
+- Plan status is not `locked`
+- At least one `chapter_outlines` row
+- Every chapter has non-empty `title`, `summary`, and `endingHook` or `hook`
+
+Action:
+
+- Sets `outline_plans.status = reviewing`
+- Sets passing chapters to `status = approved` (skips already `locked` chapters)
+- Does **not** lock the plan
+
+Returns `200`:
+
+```json
+{
+  "ok": true,
+  "data": {
+    "outlinePlan": { "status": "reviewing", "..." : "..." },
+    "chapters": [],
+    "checks": [{ "key": "...", "label": "...", "status": "pass", "reason": "..." }],
+    "canLock": true
+  }
+}
+```
+
+`canLock` uses the same readiness calculator as lock (foundation locked, full chapter count, mini victory cadence, open loops ≥2, reveals ≥2, etc.).
+
+**`POST /api/projects/:id/outline/lock`**
+
+Preconditions (409 with `checks`, `missing`, `failedChecks` if fail):
+
+| Check key | Requirement |
+|---|---|
+| `foundationLocked` | `story_foundations.is_locked = true` |
+| `outlineExists` | Outline plan present |
+| `notAlreadyLocked` | Plan status ≠ `locked` |
+| `chapterCount` | Chapter count ≥ `target_chapter_count` (default 10) |
+| `allChaptersHaveBasics` | title, summary, purpose, chapterFunction, hook per chapter |
+| `hooksEveryChapter` | endingHook, hook, or retention marker per chapter |
+| `summariesEveryChapter` | Non-empty summary per chapter |
+| `miniVictoryCadence` | ≥3 chapters with `miniVictory` or `mini_victory` marker |
+| `openLoopsEnough` | ≥2 active open loops (not `dropped`) |
+| `plannedRevealsEnough` | ≥2 active planned reveals (not `cancelled`) |
+| `noPlanningTruthExposed` | API policy — always pass |
+
+On success:
+
+- `outline_plans.status = locked`, `locked_at = now()`
+- All `chapter_outlines.status = locked`
+- `projects.workflow_phase = outline_locked`
+
+Returns `200` with `{ outlinePlan, chapters, checks, locked: true }`.
+
+**Idempotency:** Already locked → `409` (`Outline is already locked`) for both approve and lock. GET outline/chapters/loops/reveals still work when locked. PATCH chapter and POST/PATCH/DELETE loops/reveals return `409` (Tasks 4.3–4.4).
+
+**Audit:** No outline-specific `audit_logs` in Task 4.5 (`audit_action` extension deferred).
 
 ### Auth approach (Task 2.6)
 

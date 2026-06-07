@@ -7,6 +7,10 @@ import {
   updateChapterOutlineForOwner,
 } from "../services/chapter-outline.js";
 import {
+  approveOutlineForOwner,
+  lockOutlineForOwner,
+} from "../services/outline-lock.js";
+import {
   generateOutlineForOwner,
   getOutlineBundleForOwner,
 } from "../services/outline.js";
@@ -69,6 +73,20 @@ export function registerOutlineRoutes(app: Hono<AppEnv>): void {
     const result = await generateOutlineForOwner(c.env, ownerId, projectId, body);
     const status = result.created ? 201 : 200;
     return jsonSuccess(c, result, status);
+  });
+
+  app.post("/api/projects/:id/outline/approve", authMiddleware, async (c) => {
+    const ownerId = c.get("userId");
+    const projectId = c.req.param("id");
+    const result = await approveOutlineForOwner(c.env, ownerId, projectId);
+    return jsonSuccess(c, result);
+  });
+
+  app.post("/api/projects/:id/outline/lock", authMiddleware, async (c) => {
+    const ownerId = c.get("userId");
+    const projectId = c.req.param("id");
+    const result = await lockOutlineForOwner(c.env, ownerId, projectId);
+    return jsonSuccess(c, result);
   });
 
   app.get("/api/projects/:id/outline/open-loops", authMiddleware, async (c) => {
