@@ -11,7 +11,7 @@
     "dev:web": "npm run dev -w @vibenovel/web",
     "dev:api": "npm run dev -w @vibenovel/api",
     "build:web": "npm run build -w @vibenovel/web",
-    "build:api": "npm run build -w @vibenovel/api",
+    "build:api": "npm run build:shared && npm run build -w @vibenovel/api",
     "build:shared": "npm run build -w @vibenovel/shared",
     "typecheck": "npm run typecheck -w @vibenovel/shared && npm run typecheck -w @vibenovel/web && npm run typecheck -w @vibenovel/api",
     "typecheck:shared": "npm run typecheck -w @vibenovel/shared",

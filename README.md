@@ -1,6 +1,6 @@
 # VibeNovel Core v2 — Unified Blueprint Pack
 
-Monorepo VibeNovel: dokumentasi produk + frontend Sprint 1 + placeholder untuk backend, engine, dan database.
+Monorepo VibeNovel: dokumentasi produk + frontend Sprint 1 + backend scaffold Sprint 2 + database lokal.
 
 VibeNovel adalah **AI Serial Fiction Production OS** — bukan chatbot novel biasa. Blueprint MVP dan Full Version disatukan; pemisahan delivery hanya di roadmap/sprint plan.
 
@@ -11,25 +11,25 @@ VibeNovel adalah **AI Serial Fiction Production OS** — bukan chatbot novel bia
 ```txt
 vibenovel-unified-blueprint/
 ├── apps/
-│   ├── web/          ✅ Frontend React — Sprint 1 selesai (mock data)
-│   └── api/          ⏳ Placeholder — backend API (Sprint 2+)
+│   ├── web/          ✅ Frontend React — Sprint 1 UI complete (mock data)
+│   └── api/          ✅ Backend scaffold — Hono/Cloudflare Worker (Task 2.5)
 ├── packages/
 │   ├── core/         ⏳ Placeholder — story/AI engine (Sprint 4–6+)
-│   └── shared/       ⏳ Placeholder — shared types/schema (Sprint 2+)
-├── supabase/         ⏳ Placeholder — DB migrations (Sprint 2+)
+│   └── shared/       ✅ Shared domain types & API contracts (Task 2.1)
+├── supabase/         ✅ Migration + seed — runtime verified (Task 2.3/2.4)
 ├── scripts/          ⏳ Placeholder — helper scripts (nanti)
 ├── docs/             📘 Unified product & technical blueprint
 ├── .agents/rules/    🤖 Agent behavior rules
 └── stitch-reference/ 🎨 Stitch UI source of truth
 ```
 
-| Folder | Status Sprint 1 | Keterangan |
+| Folder | Status Sprint 2 | Keterangan |
 |---|---|---|
-| `apps/web` | **Selesai (Sprint 1)** | UI parity Stitch final, typed dummy data |
-| `apps/api` | Placeholder | README saja — jangan bangun API |
+| `apps/web` | **Sprint 1 complete** | UI parity Stitch final, typed dummy data — belum terhubung API |
+| `apps/api` | **Scaffold (Task 2.5)** | Hono Worker: `/health`, CORS, auth guard shell — belum CRUD/auth penuh |
+| `packages/shared` | **Implemented (Task 2.1)** | Domain types, enums, API contracts |
 | `packages/core` | Placeholder | Engine AI/story — nanti |
-| `packages/shared` | Placeholder | Shared types — nanti |
-| `supabase` | Placeholder | Migrations — nanti |
+| `supabase` | **Migration + seed (Task 2.3/2.4)** | 10 tabel, RLS, demo seed lokal — `supabase db reset` verified |
 | `scripts` | Placeholder | Dev/CI scripts — nanti |
 | `docs` | Dokumentasi | Sumber arsitektur & sprint plan |
 | `stitch-reference` | Referensi desain | HTML + screen.png per halaman |
@@ -43,40 +43,48 @@ Prasyarat: **Node.js 18+** dan **npm**.
 ```bash
 # Dari root repo
 npm install
+npm run dev:web    # frontend → http://localhost:5173
+npm run dev:api    # API lokal → http://127.0.0.1:8787
+```
+
+### Perintah root
+
+```bash
+# Development
 npm run dev:web
-```
+npm run dev:api
 
-Buka **http://localhost:5173**
-
-Perintah root:
-
-```bash
-npm run dev:web       # dev server frontend
-npm run typecheck     # TypeScript check (web)
-npm run typecheck:web # sama dengan typecheck
-npm run build:web     # build produksi apps/web → dist/
-npm run preview:web   # preview build produksi
-```
-
-## Menjalankan langsung dari apps/web
-
-Masih didukung untuk development lokal:
-
-```bash
-cd apps/web
-npm run dev
+# Typecheck (urutan: shared → web → api)
 npm run typecheck
-npm run build
-npm run preview
+npm run typecheck:shared
+npm run typecheck:web
+npm run typecheck:api
+
+# Build
+npm run build:shared
+npm run build:web
+npm run build:api      # build:shared otomatis dijalankan dulu
+
+# Preview frontend
+npm run preview:web
 ```
 
-Dengan npm workspaces, `npm install` dari **root** sudah cukup — dependensi di-hoist ke root `node_modules`.
+### Database lokal (Supabase CLI)
+
+Prasyarat: Docker Desktop + [Supabase CLI](https://supabase.com/docs/guides/cli).
+
+```bash
+supabase start
+supabase db reset      # migrasi + seed demo
+```
+
+Detail: [`supabase/README.md`](supabase/README.md)
 
 ---
 
 ## Sprint 1 — selesai ✅
 
-**Stitch Frontend Parity** — 12 halaman utama final dengan typed dummy data. Belum ada backend production.
+**Stitch Frontend Parity** — 12 halaman utama final dengan typed dummy data.
 
 **Laporan penutupan:** [`docs/22-sprint-1-verification-report.md`](docs/22-sprint-1-verification-report.md)
 
@@ -89,15 +97,36 @@ Sudah ada:
 - typed mocks di `apps/web/src/mocks/`
 - route QA & polish (Task 1.15)
 
-Belum ada (sengaja — bukan Sprint 1):
+---
 
-- backend API, Supabase, auth, AI generation nyata
-- credit ledger, validator production, publish API
-- persistence proyek ke database
+## Sprint 2 — progress (data model & API shell)
 
-**Catatan:** Aplikasi masih memakai mock data. Menjalankan `npm run dev:web` menampilkan UI final, bukan produk backend-connected.
+**Rencana:** [`docs/27-sprint-2-data-model-implementation-plan.md`](docs/27-sprint-2-data-model-implementation-plan.md)
 
-**Langkah berikutnya:** Sprint 1.5 — Legacy VibeNovel Audit (bukan Sprint 2).
+| Task | Status | Deliverable |
+|---|---|---|
+| 2.1 Shared package | ✅ | `@vibenovel/shared` — domain types, enums |
+| 2.2 Supabase setup | ✅ | `config.toml`, RLS policy draft |
+| 2.3 Core migration | ✅ | `00001_sprint2_core.sql` — 10 tabel + RLS |
+| 2.4 Seed demo | ✅ | `seed.sql` — "Istri yang Mereka Buang" |
+| 2.5 API scaffold | ✅ | `apps/api` — health, CORS, auth guard shell |
+| 2.5b README hygiene | ✅ | Dokumentasi & build scripts diselaraskan |
+| **2.6 Auth shell** | ⏳ **Berikutnya** | Register/login, profiles sync, `/api/me` penuh |
+
+Belum ada (sengaja — bukan Sprint 2 Task 2.5):
+
+- auth UI, project CRUD API, settings/foundation persistence
+- frontend terhubung ke API
+- OpenRouter / AI generation, credit deduction production
+- Cloudflare deploy remote
+
+**Catatan:** `apps/web` masih memakai mock data. API scaffold berjalan terpisah; integrasi masuk task berikutnya.
+
+---
+
+## Langkah berikutnya
+
+**Task 2.6 — Auth Shell + Profiles:** JWT validation via Supabase, register/login/logout routes, `profiles` sync on first sign-in, `GET /api/me` dengan profile + credit balance.
 
 ---
 
@@ -111,6 +140,7 @@ Belum ada (sengaja — bukan Sprint 1):
 4. `docs/17-roadmap-sprint-plan-mvp-to-full.md`
 5. `docs/21-stitch-frontend-parity-plan.md`
 6. `docs/22-sprint-1-verification-report.md` — status penutupan Sprint 1
+7. `docs/27-sprint-2-data-model-implementation-plan.md` — Sprint 2 aktif
 
 ### Untuk AI coding agent
 
@@ -119,8 +149,9 @@ Belum ada (sengaja — bukan Sprint 1):
 3. `.agents/rules/02-sprint-discipline.md`
 4. `docs/17-roadmap-sprint-plan-mvp-to-full.md`
 5. `docs/19-implementation-checklist.md`
-6. `docs/22-sprint-1-verification-report.md` — baca sebelum Sprint 2+
-7. Dokumen domain sesuai task.
+6. `docs/22-sprint-1-verification-report.md`
+7. `docs/27-sprint-2-data-model-implementation-plan.md`
+8. Dokumen domain sesuai task.
 
 ---
 
@@ -138,6 +169,13 @@ Chapter Delta wajib setelah chapter selesai.
 
 ---
 
-## Stack frontend (`apps/web`)
+## Stack
 
-Vite · React 18 · TypeScript · React Router · Tailwind CSS v3 · Material Symbols (Google Fonts)
+| Layer | Teknologi |
+|---|---|
+| Frontend (`apps/web`) | Vite · React 18 · TypeScript · React Router · Tailwind CSS v3 |
+| API (`apps/api`) | Hono · Cloudflare Workers · Wrangler · TypeScript |
+| Shared (`packages/shared`) | TypeScript — domain types & API contracts |
+| Database (`supabase`) | Postgres · Supabase CLI · RLS |
+
+Material Symbols (Google Fonts) untuk ikon UI.
