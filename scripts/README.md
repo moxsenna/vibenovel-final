@@ -278,6 +278,110 @@ npm run test:e2e:sprint4 -w @vibenovel/web
 - [`docs/33-sprint-4-verification-report.md`](../docs/33-sprint-4-verification-report.md)
 - [`scripts/sprint4-smoke-api.ps1`](sprint4-smoke-api.ps1)
 
+## Sprint 5 Write Room API smoke (Task 5.6)
+
+### `sprint5-smoke-api.ps1`
+
+API smoke for **context packet**, **writing session**, **beats**, **prose draft**, and **safety leak guards**.
+
+**Platform:** Windows / PowerShell 5.1+. Same prerequisites as Sprint 2/4 API smoke.
+
+### Run from repo root
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/sprint5-smoke-api.ps1
+```
+
+### What is tested
+
+| Area | Coverage |
+|---|---|
+| Context packet | Preview-only response; no `packet_json`/`planningTruth`/provider keys; ch1 no ch2 title/summary |
+| DB `packet_json` | Owner SELECT via PostgREST; forbidden reveal labels only (no planning truth text) |
+| Prose | Rejects `planningTruth` and packet dumps; allows normal fictional secrets; no packet JSON in response |
+| Canon guard | Prose + `ready_for_summary` do not mutate facts/characters/speech_rules/outline |
+| Ready marker | `ready_for_summary` status set; not `summarized`; no chapter summary created |
+
+### Output
+
+- `[PASS]` / `[FAIL]` per step
+- **Exit code 0** = all steps PASS
+
+Does **not** print JWT or service role keys.
+
+## Sprint 5 write web E2E smoke (Task 5.6)
+
+### `sprint5-smoke-web.ps1`
+
+Playwright browser smoke for **`/projects/:id/write`**: mock mode (default) and optional API mode (`-IncludeApiMode`).
+
+**Platform:** Windows / PowerShell 5.1+. Tests in `apps/web/e2e/sprint5-write-flow.spec.ts`.
+
+### Prerequisites — mock mode (default)
+
+Same as Sprint 4 mock mode:
+
+1. `npm install` from repo root
+2. `cd apps/web && npx playwright install chromium` (first run)
+3. `apps/web/.env.local` with `VITE_USE_MOCKS=true` (default)
+4. `npm run dev:web` → http://localhost:5173
+
+### Prerequisites — API mode (`-IncludeApiMode`)
+
+All mock prerequisites, plus:
+
+1. `supabase start && supabase db reset`
+2. `apps/api/.dev.vars` configured (never commit)
+3. `npm run dev:api` → http://127.0.0.1:8787
+4. `apps/web/.env.local`:
+   - `VITE_USE_MOCKS=false`
+   - `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `VITE_API_URL`
+5. **Restart** `dev:web` after env changes
+
+Script bootstraps foundation locked + outline generate/approve/lock via API before Playwright write flow.
+
+### Run from repo root
+
+```bash
+# Mock mode — write page renders mock, no planningTruth/packet_json in DOM
+npm run smoke:web:write
+
+# Mock + API-mode write flow (session, context preview, prose, ready_for_summary)
+npm run smoke:web:write -- -IncludeApiMode
+```
+
+Playwright only (web server must be running):
+
+```bash
+npm run test:e2e:sprint5 -w @vibenovel/web
+```
+
+### What is tested
+
+| Mode | Coverage |
+|---|---|
+| **Mock** | `/projects/demo-project-001/write` — not blank; mock markers; no leak patterns in DOM |
+| **API** (`-IncludeApiMode`) | DevAuth login → write session → beats → safe context preview → prose save ×2 → ready_for_summary CTA; DOM redaction |
+
+### Output
+
+- `[PASS]` / `[FAIL]` / `[NOT RUN]` per step
+- **Exit code 0** = no FAIL steps
+
+**Do not claim API-mode PASS** without `-IncludeApiMode` and `VITE_USE_MOCKS=false` web server.
+
+### Known limitations
+
+- Not in GitHub Actions CI (browser + Supabase + dual `VITE_USE_MOCKS` env)
+- API mode bootstraps via API (not full browser upstream flow)
+- `ready_for_summary` navigates to summary mock — does not verify Sprint 6 canon
+- Mock and API modes need different `VITE_USE_MOCKS` — restart `dev:web` when switching
+
+### Related docs
+
+- [`docs/34-sprint-5-safe-write-room-context-packet-implementation-plan.md`](../docs/34-sprint-5-safe-write-room-context-packet-implementation-plan.md)
+- [`scripts/sprint5-smoke-api.ps1`](sprint5-smoke-api.ps1)
+
 ## Future scripts (not yet implemented)
 
 ```txt

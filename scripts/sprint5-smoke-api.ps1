@@ -1,6 +1,17 @@
 <#
 .SYNOPSIS
-  Sprint 5 context packet API smoke test for local VibeNovel development.
+  Sprint 5 Write Room API smoke test — context packet, session, prose, safety leak guards (Task 5.6).
+
+.DESCRIPTION
+  Run from repo root:
+    powershell -ExecutionPolicy Bypass -File scripts/sprint5-smoke-api.ps1
+
+  Prerequisites:
+    - supabase start && supabase db reset
+    - npm run dev:api
+    - Supabase anon key via env or supabase status -o env
+
+  Security: does not print JWT tokens or service role keys.
 #>
 [CmdletBinding()]
 param(
@@ -11,7 +22,10 @@ param(
   [string]$TestPassword = "VibeNovel-Local-Smoke-Test!",
   [string]$SeedProjectId = "a0000000-0000-4000-8000-000000000101",
   [string]$Chapter1OutlineId = "a0000000-0000-4000-8000-000000000911",
-  [string]$Chapter2Title = "Pesan di Ponsel Arman"
+  [string]$Chapter2Title = "Pesan di Ponsel Arman",
+  [string]$Chapter2SummarySnippet = "Nadira tidak sengaja melihat pesan yang terhapus cepat",
+  [string]$ForbiddenRevealLabel = "Identitas dan hubungan Siska",
+  [string]$PlanningTruthSnippet = "Siska adalah mantan kekasih Arman yang masih memiliki ikatan rahasia"
 )
 
 Set-StrictMode -Version Latest
@@ -69,6 +83,40 @@ function Invoke-ApiExpectFailure {
   } catch {
     Add-StepResult $Name "PASS" ($_.Exception.Message.Substring(0, [Math]::Min(80, $_.Exception.Message.Length)))
   }
+}
+
+function Test-JsonNoLeakMarkers {
+  param([string]$JsonText)
+  $patterns = @(
+    'packetJson', 'packet_json', '"planningTruth"\s*:', 'planning_truth',
+    'full_prompt', 'openrouter', '"provider"\s*:', '"model"\s*:', '"token"\s*:'
+  )
+  foreach ($p in $patterns) {
+    if ($JsonText -match $p) { return $false }
+  }
+  return $true
+}
+
+function Get-SpeechRulesCount {
+  param([hashtable]$AuthHeaders, [string]$ProjectId)
+  $res = Invoke-Api -Path "/api/projects/$ProjectId/speech-rules" -Headers $AuthHeaders
+  if ($res.data -is [array]) { return $res.data.Count }
+  if ($null -ne $res.data.rules) { return $res.data.rules.Count }
+  return 0
+}
+
+function Get-PacketJsonFromDb {
+  param([string]$LogId, [hashtable]$AuthHeaders, [string]$AnonKey)
+  $headers = @{
+    apikey        = $AnonKey
+    Authorization = $AuthHeaders.Authorization
+  }
+  $uri = "$SupabaseUrl/rest/v1/context_packet_logs?id=eq.$LogId&select=packet_json"
+  $rows = Invoke-RestMethod -Uri $uri -Method GET -Headers $headers -ErrorAction Stop
+  if (-not $rows -or $rows.Count -lt 1) {
+    throw "context_packet_logs row not found for id=$LogId"
+  }
+  return ($rows[0].packet_json | ConvertTo-Json -Depth 30 -Compress)
 }
 
 function Bootstrap-FoundationLocked {
@@ -131,6 +179,9 @@ $ch1 = ($chapters.data.chapters | Where-Object { $_.chapterNumber -eq 1 } | Sele
 $foundationPre = Invoke-Api -Path "/api/projects/$projectId/foundation" -Headers $auth
 $factsBefore = $foundationPre.data.facts.Count
 $charsBefore = $foundationPre.data.characters.Count
+$speechBefore = Get-SpeechRulesCount -AuthHeaders $auth -ProjectId $projectId
+$outlineBefore = Invoke-Api -Path "/api/projects/$projectId/outline/chapters" -Headers $auth
+$chaptersCountBefore = $outlineBefore.data.chapters.Count
 
 $build = Invoke-Api -Method POST -Path "/api/projects/$projectId/write/context-packet" -Headers $auth `
   -Body (@{ chapterOutlineId = $ch1 } | ConvertTo-Json)
@@ -138,15 +189,31 @@ $packetLogId = $build.data.packetLogId
 Add-StepResult "POST context-packet ch1" $(if ($packetLogId) { "PASS" } else { "FAIL" }) "logId=$packetLogId"
 
 $serialized = ($build | ConvertTo-Json -Depth 20)
-Add-StepResult "response excludes packetJson" $(if ($serialized -notmatch 'packetJson' -and $serialized -notmatch 'packet_json') { "PASS" } else { "FAIL" }) ""
-Add-StepResult "response no planningTruth" $(if ($serialized -notmatch '"planningTruth"\s*:' -and $serialized -notmatch 'planning_truth') { "PASS" } else { "FAIL" }) ""
+Add-StepResult "response preview-only leak guard" $(if (Test-JsonNoLeakMarkers $serialized) { "PASS" } else { "FAIL" }) ""
 Add-StepResult "ch1 response no ch2 title" $(if ($serialized -notmatch [regex]::Escape($Chapter2Title)) { "PASS" } else { "FAIL" }) ""
+Add-StepResult "ch1 response no ch2 summary" $(if ($serialized -notmatch [regex]::Escape($Chapter2SummarySnippet)) { "PASS" } else { "FAIL" }) ""
+Add-StepResult "response has preview fields" $(if ($build.data.preview -and $build.data.safety.packetHash) { "PASS" } else { "FAIL" }) ""
 
 $preview = Invoke-Api -Path "/api/projects/$projectId/write/context-packet/$packetLogId/preview" -Headers $auth
 Add-StepResult "GET preview by logId" $(if ($preview.data.preview.packetLogId) { "PASS" } else { "FAIL" }) ""
 
 $pvJson = ($preview | ConvertTo-Json -Depth 20)
-Add-StepResult "GET preview redacted" $(if ($pvJson -notmatch 'packetJson' -and $pvJson -notmatch 'planning_truth') { "PASS" } else { "FAIL" }) ""
+Add-StepResult "GET preview redacted" $(if (Test-JsonNoLeakMarkers $pvJson) { "PASS" } else { "FAIL" }) ""
+
+try {
+  $dbPacketJson = Get-PacketJsonFromDb -LogId $packetLogId -AuthHeaders $auth -AnonKey $anonKey
+  Add-StepResult "DB packet_json leak guard" $(if (Test-JsonNoLeakMarkers $dbPacketJson) { "PASS" } else { "FAIL" }) ""
+  Add-StepResult "DB packet_json no ch2 title" $(if ($dbPacketJson -notmatch [regex]::Escape($Chapter2Title)) { "PASS" } else { "FAIL" }) ""
+  Add-StepResult "DB packet_json no ch2 summary" $(if ($dbPacketJson -notmatch [regex]::Escape($Chapter2SummarySnippet)) { "PASS" } else { "FAIL" }) ""
+  Add-StepResult "DB packet_json no planning truth" $(if ($dbPacketJson -notmatch [regex]::Escape($PlanningTruthSnippet)) { "PASS" } else { "FAIL" }) ""
+  Add-StepResult "DB forbidden reveal label only" $(if (
+      $dbPacketJson -match [regex]::Escape($ForbiddenRevealLabel) -and
+      $dbPacketJson -match 'forbiddenReveals' -and
+      $dbPacketJson -notmatch [regex]::Escape($PlanningTruthSnippet)
+    ) { "PASS" } else { "FAIL" }) ""
+} catch {
+  Add-StepResult "DB packet_json safety" "FAIL" $_.Exception.Message
+}
 
 $signupB = Invoke-RestMethod -Uri "$SupabaseUrl/auth/v1/signup" -Method POST `
   -Headers @{ apikey = $anonKey; Authorization = "Bearer $anonKey" } -ContentType "application/json" `
@@ -211,21 +278,29 @@ $sessionResume = Invoke-Api -Method POST -Path "/api/projects/$projectId/write/s
 $sessionId = $sessionResume.data.session.id
 Add-StepResult "resume session for prose" $(if ($sessionResume.data.session.status -eq "active") { "PASS" } else { "FAIL" }) ""
 
+$fictionalSecret = "Rahasia keluarga itu hanya diketahui Bu Siti. Nadira belum pernah mendengar cerita lengkapnya dari Arman."
+$fictionalProse = Invoke-Api -Method POST -Path "/api/projects/$projectId/write/beats/$beatId/prose" -Headers $auth `
+  -Body (@{ proseText = $fictionalSecret } | ConvertTo-Json)
+Add-StepResult "POST prose fictional secret allowed" $(if ($fictionalProse.data.version.id) { "PASS" } else { "FAIL" }) ""
+
 $prose1 = Invoke-Api -Method POST -Path "/api/projects/$projectId/write/beats/$beatId/prose" -Headers $auth `
   -Body '{"proseText":"Nadira memangkas sayuran di dapur dengan irama yang sudah hafal di luar kepala."}'
 $version1Id = $prose1.data.version.id
-Add-StepResult "POST prose version 1" $(if ($prose1.data.version.versionNumber -eq 1 -and $prose1.data.version.isCurrent) { "PASS" } else { "FAIL" }) "v=$version1Id"
+Add-StepResult "POST prose version 2" $(if ($prose1.data.version.versionNumber -eq 2 -and $prose1.data.version.isCurrent) { "PASS" } else { "FAIL" }) "v=$version1Id"
+
+$prose1Json = ($prose1 | ConvertTo-Json -Depth 10)
+Add-StepResult "prose response no packet_json" $(if (Test-JsonNoLeakMarkers $prose1Json) { "PASS" } else { "FAIL" }) ""
 
 $prose2Body = @{ proseText = "Pintu depan dibuka. Suara tawa memenuhi ruang tamu." }
 if ($packetLogId) { $prose2Body.contextPacketLogId = $packetLogId }
 $prose2 = Invoke-Api -Method POST -Path "/api/projects/$projectId/write/beats/$beatId/prose" -Headers $auth `
   -Body ($prose2Body | ConvertTo-Json)
 $version2Id = $prose2.data.version.id
-Add-StepResult "POST prose version 2" $(if ($prose2.data.version.versionNumber -eq 2 -and $prose2.data.version.isCurrent) { "PASS" } else { "FAIL" }) ""
+Add-StepResult "POST prose version 3" $(if ($prose2.data.version.versionNumber -eq 3 -and $prose2.data.version.isCurrent) { "PASS" } else { "FAIL" }) ""
 
 $listProse = Invoke-Api -Path "/api/projects/$projectId/write/beats/$beatId/prose" -Headers $auth
 $v1Current = ($listProse.data.versions | Where-Object { $_.id -eq $version1Id } | Select-Object -First 1).isCurrent
-Add-StepResult "GET prose versions" $(if ($listProse.data.versions.Count -eq 2 -and $v1Current -eq $false) { "PASS" } else { "FAIL" }) ""
+Add-StepResult "GET prose versions" $(if ($listProse.data.versions.Count -eq 3 -and $v1Current -eq $false) { "PASS" } else { "FAIL" }) ""
 
 $proseDetail = Invoke-Api -Path "/api/projects/$projectId/write/prose/$version2Id" -Headers $auth
 Add-StepResult "GET prose version detail" $(if ($proseDetail.data.version.id -eq $version2Id) { "PASS" } else { "FAIL" }) ""
@@ -244,11 +319,35 @@ $dumpProse = '{"currentChapter":{"title":"x"},"revealGate":{"allowedBreadcrumbs"
 Invoke-ApiExpectFailure -Name "POST prose packet dump rejected" -Method POST -Headers $auth `
   -Path "/api/projects/$projectId/write/beats/$beatId/prose" -Body (@{ proseText = $dumpProse } | ConvertTo-Json)
 
+$foundationMid = Invoke-Api -Path "/api/projects/$projectId/foundation" -Headers $auth
+$speechMid = Get-SpeechRulesCount -AuthHeaders $auth -ProjectId $projectId
+$outlineMid = Invoke-Api -Path "/api/projects/$projectId/outline/chapters" -Headers $auth
+Add-StepResult "prose save no canon mutation" $(if (
+    $foundationMid.data.facts.Count -eq $factsBefore -and
+    $foundationMid.data.characters.Count -eq $charsBefore -and
+    $speechMid -eq $speechBefore -and
+    $outlineMid.data.chapters.Count -eq $chaptersCountBefore
+  ) { "PASS" } else { "FAIL" }) ""
+
 $ready = Invoke-Api -Method POST -Path "/api/projects/$projectId/write/sessions/$sessionId/ready-for-summary" -Headers $auth -Body '{}'
 Add-StepResult "POST ready-for-summary" $(if ($ready.data.session.status -eq "ready_for_summary") { "PASS" } else { "FAIL" }) ""
 
+$sessionAfterReady = Invoke-Api -Path "/api/projects/$projectId/write/sessions/$sessionId" -Headers $auth
+Add-StepResult "ready_for_summary not summarized" $(if (
+    $sessionAfterReady.data.writingState.status -eq "ready_for_summary" -and
+    $sessionAfterReady.data.writingState.status -ne "summarized"
+  ) { "PASS" } else { "FAIL" }) "status=$($sessionAfterReady.data.writingState.status)"
+
 $foundationFinal = Invoke-Api -Path "/api/projects/$projectId/foundation" -Headers $auth
-Add-StepResult "canon unchanged after write flow" $(if ($foundationFinal.data.facts.Count -eq $factsBefore -and $foundationFinal.data.characters.Count -eq $charsBefore) { "PASS" } else { "FAIL" }) ""
+$speechFinal = Get-SpeechRulesCount -AuthHeaders $auth -ProjectId $projectId
+$outlineFinal = Invoke-Api -Path "/api/projects/$projectId/outline/chapters" -Headers $auth
+Add-StepResult "canon unchanged after write flow" $(if (
+    $foundationFinal.data.facts.Count -eq $factsBefore -and
+    $foundationFinal.data.characters.Count -eq $charsBefore -and
+    $speechFinal -eq $speechBefore -and
+    $outlineFinal.data.chapters.Count -eq $chaptersCountBefore
+  ) { "PASS" } else { "FAIL" }) ""
+Add-StepResult "ready_for_summary no fact mutation" $(if ($foundationFinal.data.facts.Count -eq $factsBefore) { "PASS" } else { "FAIL" }) ""
 
 Invoke-ApiExpectFailure -Name "cross-user session 404" -Method GET -Headers $authB `
   -Path "/api/projects/$projectId/write/sessions/$sessionId"

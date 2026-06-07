@@ -1,0 +1,642 @@
+
+VibeNovel Sprint 5 Write Room API Smoke Test
+[PASS] signup/login                                   email=s5smoke-74805019@example.com
+[PASS] POST context-packet no token                   The remote server returned an error: (401) Unauthorized.
+Invoke-RestMethod : {"ok":false,"error":{"code":"INTERNAL_ERROR","message":"Failed to create project"}}
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint5-smoke-api.ps1:61 char:10
++   return Invoke-RestMethod -Uri $uri -Method $Method -Headers $Header ...
++          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : InvalidOperation: (System.Net.HttpWebRequest:HttpWebRequest) [Invoke-RestMethod], WebExc 
+   eption
+    + FullyQualifiedErrorId : WebCmdletWebResponseException,Microsoft.PowerShell.Commands.InvokeRestMethodCommand
+[PASS] POST /api/projects                             projectId=The property 'data' cannot be found on this object. Verify that the property exists.
+
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint5-smoke-api.ps1:112 char:1
++ $projectId = $created.data.id
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [], PropertyNotFoundException
+    + FullyQualifiedErrorId : PropertyNotFoundStrict
+ 
+Invoke-RestMethod : {"ok":false,"error":{"code":"NOT_FOUND","message":"Route not found: 
+/api/projects//intake/messages"}}
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint5-smoke-api.ps1:61 char:10
++   return Invoke-RestMethod -Uri $uri -Method $Method -Headers $Header ...
++          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : InvalidOperation: (System.Net.HttpWebRequest:HttpWebRequest) [Invoke-RestMethod], WebExc 
+   eption
+    + FullyQualifiedErrorId : WebCmdletWebResponseException,Microsoft.PowerShell.Commands.InvokeRestMethodCommand
+Invoke-RestMethod : {"ok":false,"error":{"code":"NOT_FOUND","message":"Route not found: 
+/api/projects//intake/extract-signals"}}
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint5-smoke-api.ps1:61 char:10
++   return Invoke-RestMethod -Uri $uri -Method $Method -Headers $Header ...
++          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : InvalidOperation: (System.Net.HttpWebRequest:HttpWebRequest) [Invoke-RestMethod], WebExc 
+   eption
+    + FullyQualifiedErrorId : WebCmdletWebResponseException,Microsoft.PowerShell.Commands.InvokeRestMethodCommand
+Invoke-RestMethod : {"ok":false,"error":{"code":"NOT_FOUND","message":"Route not found: 
+/api/projects//concepts/generate"}}
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint5-smoke-api.ps1:61 char:10
++   return Invoke-RestMethod -Uri $uri -Method $Method -Headers $Header ...
++          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : InvalidOperation: (System.Net.HttpWebRequest:HttpWebRequest) [Invoke-RestMethod], WebExc 
+   eption
+    + FullyQualifiedErrorId : WebCmdletWebResponseException,Microsoft.PowerShell.Commands.InvokeRestMethodCommand
+The property 'data' cannot be found on this object. Verify that the property exists.
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint5-smoke-api.ps1:80 char:3
++   $conceptId = $concepts.data.concepts[0].id
++   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [], PropertyNotFoundException
+    + FullyQualifiedErrorId : PropertyNotFoundStrict
+ 
+Invoke-RestMethod : {"ok":false,"error":{"code":"NOT_FOUND","message":"Route not found: 
+/api/projects//concepts//select"}}
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint5-smoke-api.ps1:61 char:10
++   return Invoke-RestMethod -Uri $uri -Method $Method -Headers $Header ...
++          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : InvalidOperation: (System.Net.HttpWebRequest:HttpWebRequest) [Invoke-RestMethod], WebExc 
+   eption
+    + FullyQualifiedErrorId : WebCmdletWebResponseException,Microsoft.PowerShell.Commands.InvokeRestMethodCommand
+Invoke-RestMethod : {"ok":false,"error":{"code":"NOT_FOUND","message":"Route not found: 
+/api/projects//foundation/proposals/generate"}}
+[PASS] bootstrap foundation locked                    
+[FAIL] POST context-packet ch1                        logId=
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint5-smoke-api.ps1:61 char:10
++   return Invoke-RestMethod -Uri $uri -Method $Method -Headers $Header ...
++          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : InvalidOperation: (System.Net.HttpWebRequest:HttpWebRequest) [Invoke-RestMethod], WebExc 
+   eption
+    + FullyQualifiedErrorId : WebCmdletWebResponseException,Microsoft.PowerShell.Commands.InvokeRestMethodCommand
+The property 'data' cannot be found on this object. Verify that the property exists.
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint5-smoke-api.ps1:83 char:18
++   foreach ($p in $proposals.data.proposals) {
++                  ~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [], PropertyNotFoundException
+    + FullyQualifiedErrorId : PropertyNotFoundStrict
+ 
+Invoke-RestMethod : {"ok":false,"error":{"code":"NOT_FOUND","message":"Route not found: 
+/api/projects//foundation/lock"}}
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint5-smoke-api.ps1:61 char:10
++   return Invoke-RestMethod -Uri $uri -Method $Method -Headers $Header ...
++          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : InvalidOperation: (System.Net.HttpWebRequest:HttpWebRequest) [Invoke-RestMethod], WebExc 
+   eption
+    + FullyQualifiedErrorId : WebCmdletWebResponseException,Microsoft.PowerShell.Commands.InvokeRestMethodCommand
+Invoke-RestMethod : {"ok":false,"error":{"code":"NOT_FOUND","message":"Route not found: 
+/api/projects//outline/generate"}}
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint5-smoke-api.ps1:61 char:10
++   return Invoke-RestMethod -Uri $uri -Method $Method -Headers $Header ...
++          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : InvalidOperation: (System.Net.HttpWebRequest:HttpWebRequest) [Invoke-RestMethod], WebExc 
+   eption
+    + FullyQualifiedErrorId : WebCmdletWebResponseException,Microsoft.PowerShell.Commands.InvokeRestMethodCommand
+Invoke-RestMethod : {"ok":false,"error":{"code":"NOT_FOUND","message":"Route not found: 
+/api/projects//outline/chapters"}}
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint5-smoke-api.ps1:59 char:12
++     return Invoke-RestMethod -Uri $uri -Method $Method -Headers $Head ...
++            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : InvalidOperation: (System.Net.HttpWebRequest:HttpWebRequest) [Invoke-RestMethod], WebExc 
+   eption
+    + FullyQualifiedErrorId : WebCmdletWebResponseException,Microsoft.PowerShell.Commands.InvokeRestMethodCommand
+Invoke-RestMethod : Cannot send a content-body with this verb-type.
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint5-smoke-api.ps1:61 char:10
++   return Invoke-RestMethod -Uri $uri -Method $Method -Headers $Header ...
++          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [Invoke-RestMethod], ProtocolViolationException
+    + FullyQualifiedErrorId : System.Net.ProtocolViolationException,Microsoft.PowerShell.Commands.InvokeRestMethodComm 
+   and
+ 
+The property 'data' cannot be found on this object. Verify that the property exists.
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint5-smoke-api.ps1:120 char:1
++ $ch1PreLock = ($chaptersPreLock.data.chapters | Where-Object { $_.cha ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [], PropertyNotFoundException
+    + FullyQualifiedErrorId : PropertyNotFoundStrict
+ 
+The variable '$ch1PreLock' cannot be retrieved because it has not been set.
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint5-smoke-api.ps1:123 char:32
++   -Body (@{ chapterOutlineId = $ch1PreLock } | ConvertTo-Json)
++                                ~~~~~~~~~~~
+    + CategoryInfo          : InvalidOperation: (ch1PreLock:String) [], RuntimeException
+    + FullyQualifiedErrorId : VariableIsUndefined
+ 
+Invoke-RestMethod : {"ok":false,"error":{"code":"NOT_FOUND","message":"Route not found: 
+/api/projects//outline/approve"}}
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint5-smoke-api.ps1:61 char:10
++   return Invoke-RestMethod -Uri $uri -Method $Method -Headers $Header ...
++          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : InvalidOperation: (System.Net.HttpWebRequest:HttpWebRequest) [Invoke-RestMethod], WebExc 
+   eption
+    + FullyQualifiedErrorId : WebCmdletWebResponseException,Microsoft.PowerShell.Commands.InvokeRestMethodCommand
+Invoke-RestMethod : {"ok":false,"error":{"code":"NOT_FOUND","message":"Route not found: /api/projects//outline/lock"}}
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint5-smoke-api.ps1:61 char:10
++   return Invoke-RestMethod -Uri $uri -Method $Method -Headers $Header ...
++          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : InvalidOperation: (System.Net.HttpWebRequest:HttpWebRequest) [Invoke-RestMethod], WebExc 
+   eption
+    + FullyQualifiedErrorId : WebCmdletWebResponseException,Microsoft.PowerShell.Commands.InvokeRestMethodCommand
+The property 'data' cannot be found on this object. Verify that the property exists.
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint5-smoke-api.ps1:126 char:42
++ ... e lock flow" $(if ($lock.data.outlinePlan.status -eq "locked") { "PAS ...
++                        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [], PropertyNotFoundException
+    + FullyQualifiedErrorId : PropertyNotFoundStrict
+ 
+The property 'data' cannot be found on this object. Verify that the property exists.
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint5-smoke-api.ps1:126 char:42
++ ... e lock flow" $(if ($lock.data.outlinePlan.status -eq "locked") { "PAS ...
++                        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [], PropertyNotFoundException
+    + FullyQualifiedErrorId : PropertyNotFoundStrict
+ 
+Invoke-RestMethod : {"ok":false,"error":{"code":"NOT_FOUND","message":"Route not found: 
+/api/projects//outline/chapters"}}
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint5-smoke-api.ps1:59 char:12
++     return Invoke-RestMethod -Uri $uri -Method $Method -Headers $Head ...
++            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : InvalidOperation: (System.Net.HttpWebRequest:HttpWebRequest) [Invoke-RestMethod], WebExc 
+   eption
+    + FullyQualifiedErrorId : WebCmdletWebResponseException,Microsoft.PowerShell.Commands.InvokeRestMethodCommand
+Invoke-RestMethod : Cannot send a content-body with this verb-type.
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint5-smoke-api.ps1:61 char:10
++   return Invoke-RestMethod -Uri $uri -Method $Method -Headers $Header ...
++          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [Invoke-RestMethod], ProtocolViolationException
+    + FullyQualifiedErrorId : System.Net.ProtocolViolationException,Microsoft.PowerShell.Commands.InvokeRestMethodComm 
+   and
+ 
+The property 'data' cannot be found on this object. Verify that the property exists.
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint5-smoke-api.ps1:129 char:1
++ $ch1 = ($chapters.data.chapters | Where-Object { $_.chapterNumber -eq ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [], PropertyNotFoundException
+    + FullyQualifiedErrorId : PropertyNotFoundStrict
+ 
+Invoke-RestMethod : {"ok":false,"error":{"code":"NOT_FOUND","message":"Route not found: /api/projects//foundation"}}
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint5-smoke-api.ps1:59 char:12
++     return Invoke-RestMethod -Uri $uri -Method $Method -Headers $Head ...
++            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : In[FAIL] GET preview redacted                           
+validOperation: (System.Net.HttpWebRequest:HttpWebRequest) [Invoke-RestMethod], WebExc 
+   eption
+    + FullyQualifiedErrorId : WebCmdletWebResponseException,Microsoft.PowerShell.Commands.InvokeRestMethodCommand
+Invoke-RestMethod : Cannot send a content-body with this verb-type.
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint5-smoke-api.ps1:61 char:10
++   return Invoke-RestMethod -Uri $uri -Method $Method -Headers $Header ...
++          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [Invoke-RestMethod], ProtocolViolationException
+    + FullyQualifiedErrorId : System.Net.ProtocolViolationException,Microsoft.PowerShell.Commands.InvokeRestMethodComm 
+   and
+ 
+The property 'data' cannot be found on this object. Verify that the property exists.
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint5-smoke-api.ps1:132 char:1
++ $factsBefore = $foundationPre.data.facts.Count
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [], PropertyNotFoundException
+    + FullyQualifiedErrorId : PropertyNotFoundStrict
+ 
+The property 'data' cannot be found on this object. Verify that the property exists.
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint5-smoke-api.ps1:133 char:1
++ $charsBefore = $foundationPre.data.characters.Count
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [], PropertyNotFoundException
+    + FullyQualifiedErrorId : PropertyNotFoundStrict
+ 
+The variable '$ch1' cannot be retrieved because it has not been set.
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint5-smoke-api.ps1:136 char:32
++   -Body (@{ chapterOutlineId = $ch1 } | ConvertTo-Json)
++                                ~~~~
+    + CategoryInfo          : InvalidOperation: (ch1:String) [], RuntimeException
+    + FullyQualifiedErrorId : VariableIsUndefined
+ 
+The variable '$build' cannot be retrieved because it has not been set.
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint5-smoke-api.ps1:137 char:16
++ $packetLogId = $build.data.packetLogId
++                ~~~~~~
+    + CategoryInfo          : InvalidOperation: (build:String) [], RuntimeException
+    + FullyQualifiedErrorId : VariableIsUndefined
+ 
+The variable '$build' cannot be retrieved because it has not been set.
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint5-smoke-api.ps1:140 char:16
++ $serialized = ($build | ConvertTo-Json -Depth 20)
++                ~~~~~~
+    + CategoryInfo          : InvalidOperation: (build:String) [], RuntimeException
+    + FullyQualifiedErrorId : VariableIsUndefined
+ 
+The variable '$serialized' cannot be retrieved because it has not been set.
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint5-smoke-api.ps1:141 char:53
++ ... d-StepResult "response excludes packetJson" $(if ($serialized -notmat ...
++                                                       ~~~~~~~~~~~
+    + CategoryInfo          : InvalidOperation: (serialized:String) [], RuntimeException
+    + FullyQualifiedErrorId : VariableIsUndefined
+ 
+Add-StepResult : Cannot validate argument on parameter 'Result'. The argument "" does not belong to the set 
+"PASS,FAIL,SKIP,NOT RUN" specified by the ValidateSet attribute. Supply an argument that is in the set and then try 
+the command again.
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint5-smoke-api.ps1:141 char:47
++ ... packetJson" $(if ($serialized -notmatch 'packetJson' -and $serialized ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : InvalidData: (:) [Add-StepResult], ParameterBindingValidationException
+    + FullyQualifiedErrorId : ParameterArgumentValidationError,Add-StepResult
+ 
+The variable '$serialized' cannot be retrieved because it has not been set.
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint5-smoke-api.ps1:142 char:50
++ Add-StepResult "response no planningTruth" $(if ($serialized -notmatc ...
++                                                  ~~~~~~~~~~~
+    + CategoryInfo          : InvalidOperation: (serialized:String) [], RuntimeException
+    + FullyQualifiedErrorId : VariableIsUndefined
+ 
+Add-StepResult : Cannot validate argument on parameter 'Result'. The argument "" does not belong to the set 
+"PASS,FAIL,SKIP,NOT RUN" specified by the ValidateSet attribute. Supply an argument that is in the set and then try 
+the command again.
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint5-smoke-api.ps1:142 char:44
++ ... nningTruth" $(if ($serialized -notmatch '"planningTruth"\s*:' -and $s ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : InvalidData: (:) [Add-StepResult], ParameterBindingValidationException
+    + FullyQualifiedErrorId : ParameterArgumentValidationError,Add-StepResult
+ 
+The variable '$serialized' cannot be retrieved because it has not been set.
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint5-smoke-api.ps1:143 char:50
++ Add-StepResult "ch1 response no ch2 title" $(if ($serialized -notmatc ...
++                                                  ~~~~~~~~~~~
+    + CategoryInfo          : InvalidOperation: (serialized:String) [], RuntimeException
+    + FullyQualifiedErrorId : VariableIsUndefined
+ 
+Add-StepResult : Cannot validate argument on parameter 'Result'. The argument "" does not belong to the set 
+"PASS,FAIL,SKIP,NOT RUN" specified by the ValidateSet attribute. Supply an argument that is in the set and then try 
+the command again.
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint5-smoke-api.ps1:143 char:44
++ ...  ch2 title" $(if ($serialized -notmatch [regex]::Escape($Chapter2Titl ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : InvalidData: (:) [Add-StepResult], ParameterBindingValidationException
+    + FullyQualifiedErrorId : ParameterArgumentValidationError,Add-StepResult
+ 
+Invoke-RestMethod : {"ok":false,"error":{"code":"NOT_FOUND","message":"Route not found: 
+/api/projects//write/context-packet//preview"}}
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint5-smoke-api.ps1:59 char:12
++     return Invoke-RestMethod -Uri $uri -Method $Method -Headers $Head ...
++            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : InvalidOperation: (System.Net.HttpWebRequest:HttpWebRequest) [Invoke-RestMethod], WebExc 
+   eption
+    + FullyQualifiedErrorId : WebCmdletWebResponseException,Microsoft.PowerShell.Commands.InvokeRestMethodCommand
+Invoke-RestMethod : Cannot send a content-body with this verb-type.
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint5-smoke-api.ps1:61 char:10
++   return Invoke-RestMethod -Uri $uri -Method $Method -Headers $Header ...
++          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [Invoke-RestMethod], ProtocolViolationException
+    + FullyQualifiedErrorId : System.Net.ProtocolViolationException,Microsoft.PowerShell.Commands.InvokeRestMethodComm 
+   and
+ 
+The property 'data' cannot be found on this object. Verify that the property exists.
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint5-smoke-api.ps1:146 char:45
++ ... GET preview by logId" $(if ($preview.data.preview.packetLogId) { "PAS ...
++                                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [], PropertyNotFoundException
+    + FullyQualifiedErrorId : PropertyNotFoundStrict
+ 
+Add-StepResult : Cannot validate argument on parameter 'Result'. The argument "" does not belong to the set 
+"PASS,FAIL,SKIP,NOT RUN" specified by the ValidateSet attribute. Supply an argument that is in the set and then try 
+the command again.
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint5-smoke-api.ps1:146 char:39
++ ... w by logId" $(if ($preview.data.preview.packetLogId) { "PASS" } else  ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : InvalidData: (:) [Add-StepResult], ParameterBindingValidationException
+    + FullyQualifiedErrorId : ParameterArgumentValidationError,Add-StepResult
+ 
+[PASS] cross-user project 404                         The remote server returned an error: (404) Not Found.
+Invoke-RestMethod : {"ok":false,"error":{"code":"NOT_FOUND","message":"Route not found: /api/projects//foundation"}}
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint5-smoke-api.ps1:59 char:12
++     return Invoke-RestMethod -Uri $uri -Method $Method -Headers $Head ...
++            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : InvalidOperation: (System.Net.HttpWebRequest:HttpWebRequest) [Invoke-RestMethod], WebExc 
+   eption
+    + FullyQualifiedErrorId : WebCmdletWebResponseException,Microsoft.PowerShell.Commands.InvokeRestMethodCommand
+Invoke-RestMethod : Cannot send a content-body with this verb-type.
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint5-smoke-api.ps1:61 char:10
++   return Invoke-RestMethod -Uri $uri -Method $Method -Headers $Header ...
++          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [Invoke-RestMethod], ProtocolViolationException
+    + FullyQualifiedErrorId : System.Net.ProtocolViolationException,Microsoft.PowerShell.Commands.InvokeRestMethodComm 
+   and
+ 
+The property 'data' cannot be found on this object. Verify that the property exists.
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint5-smoke-api.ps1:160 char:47
++ ... nged" $(if ($foundationPost.data.facts.Count -eq $factsBefore -and $f ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [], PropertyNotFoundException
+    + FullyQualifiedErrorId : PropertyNotFoundStrict
+ 
+Add-StepResult : Cannot validate argument on parameter 'Result'. The argument "" does not belong to the set 
+"PASS,FAIL,SKIP,NOT RUN" specified by the ValidateSet attribute. Supply an argument that is in the set and then try 
+the command again.
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint5-smoke-api.ps1:160 char:41
++ ...  unchanged" $(if ($foundationPost.data.facts.Count -eq $factsBefore - ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : InvalidData: (:) [Add-StepResult], ParameterBindingValidationException
+    + FullyQualifiedErrorId : ParameterArgumentValidationError,Add-StepResult
+ 
+The variable '$ch1' cannot be retrieved because it has not been set.
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint5-smoke-api.ps1:165 char:32
++   -Body (@{ chapterOutlineId = $ch1 } | ConvertTo-Json)
++                                ~~~~
+    + CategoryInfo          : InvalidOperation: (ch1:String) [], RuntimeException
+    + FullyQualifiedErrorId : VariableIsUndefined
+ 
+The variable '$ch1' cannot be retrieved because it has not been set.
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint5-smoke-api.ps1:168 char:32
++   -Body (@{ chapterOutlineId = $ch1 } | ConvertTo-Json)
++                                ~~~~
+    + CategoryInfo          : InvalidOperation: (ch1:String) [], RuntimeException
+    + FullyQualifiedErrorId : VariableIsUndefined
+ 
+The variable '$session1' cannot be retrieved because it has not been set.
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint5-smoke-api.ps1:169 char:14
++ $sessionId = $session1.data.session.id
++              ~~~~~~~~~
+    + CategoryInfo          : InvalidOperation: (session1:String) [], RuntimeException
+    + FullyQualifiedErrorId : VariableIsUndefined
+ 
+The variable '$session1' cannot be retrieved because it has not been set.
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint5-smoke-api.ps1:170 char:45
++ Add-StepResult "POST writing session" $(if ($session1.data.session.st ...
++                                             ~~~~~~~~~
+    + CategoryInfo          : InvalidOperation: (session1:String) [], RuntimeException
+    + FullyQualifiedErrorId : VariableIsUndefined
+ 
+Add-StepResult : Cannot validate argument on parameter 'Result'. The argument "" does not belong to the set 
+"PASS,FAIL,SKIP,NOT RUN" specified by the ValidateSet attribute. Supply an argument that is in the set and then try 
+the command again.
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint5-smoke-api.ps1:170 char:39
++ ... ng session" $(if ($session1.data.session.status -eq "active") { "PASS ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : InvalidData: (:) [Add-StepResult], ParameterBindingValidationException
+    + FullyQualifiedErrorId : ParameterArgumentValidationError,Add-StepResult
+ 
+The variable '$ch1' cannot be retrieved because it has not been set.
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint5-smoke-api.ps1:173 char:32
++   -Body (@{ chapterOutlineId = $ch1 } | ConvertTo-Json)
++                                ~~~~
+    + CategoryInfo          : InvalidOperation: (ch1:String) [], RuntimeException
+    + FullyQualifiedErrorId : VariableIsUndefined
+ 
+The variable '$session2' cannot be retrieved because it has not been set.
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint5-smoke-api.ps1:174 char:48
++ Add-StepResult "POST session idempotent" $(if ($session2.data.session ...
++                                                ~~~~~~~~~
+    + CategoryInfo          : InvalidOperation: (session2:String) [], RuntimeException
+    + FullyQualifiedErrorId : VariableIsUndefined
+ 
+Add-StepResult : Cannot validate argument on parameter 'Result'. The argument "" does not belong to the set 
+"PASS,FAIL,SKIP,NOT RUN" specified by the ValidateSet attribute. Supply an argument that is in the set and then try 
+the command again.
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint5-smoke-api.ps1:174 char:42
++ ... idempotent" $(if ($session2.data.session.id -eq $sessionId) { "PASS"  ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : InvalidData: (:) [Add-StepResult], ParameterBindingValidationException
+    + FullyQualifiedErrorId : ParameterArgumentValidationError,Add-StepResult
+ 
+Invoke-RestMethod : {"ok":false,"error":{"code":"NOT_FOUND","message":"Route not found: 
+/api/projects//write/sessions/"}}
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint5-smoke-api.ps1:59 char:12
++     return Invoke-RestMethod -Uri $uri -Method $Method -Headers $Head ...
++            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : InvalidOperation: (System.Net.HttpWebRequest:HttpWebRequest) [Invoke-RestMethod], WebExc 
+   eption
+    + FullyQualifiedErrorId : WebCmdletWebResponseException,Microsoft.PowerShell.Commands.InvokeRestMethodCommand
+Invoke-RestMethod : Cannot send a content-body with this verb-type.
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint5-smoke-api.ps1:61 char:10
++   return Invoke-RestMethod -Uri $uri -Method $Method -Headers $Header ...
++          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [Invoke-RestMethod], ProtocolViolationException
+    + FullyQualifiedErrorId : System.Net.ProtocolViolationException,Microsoft.PowerShell.Commands.InvokeRestMethodComm 
+   and
+ 
+The property 'data' cannot be found on this object. Verify that the property exists.
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint5-smoke-api.ps1:177 char:44
++ ... ing session" $(if ($sessionGet.data.session.id -eq $sessionId) { "PAS ...
++                        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [], PropertyNotFoundException
+    + FullyQualifiedErrorId : PropertyNotFoundStrict
+ 
+The property 'data' cannot be found on this object. Verify that the property exists.
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint5-smoke-api.ps1:177 char:130
++ ... "PASS" } else { "FAIL" }) "beatsCount=$($sessionGet.data.beatsCount)"
++                                             ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [], PropertyNotFoundException
+    + FullyQualifiedErrorId : PropertyNotFoundStrict
+ 
+Add-StepResult : Cannot validate argument on parameter 'Result'. The argument "" does not belong to the set 
+"PASS,FAIL,SKIP,NOT RUN" specified by the ValidateSet attribute. Supply an argument that is in the set and then try 
+the com[PASS] PATCH beat rejects proseText                   The remote server returned an error: (404) Not Found.mand again.
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint5-smoke-api.ps1:177 char:38
++ ... ng session" $(if ($sessionGet.data.session.id -eq $sessionId) { "PASS ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : InvalidData: (:) [Add-StepResult], ParameterBindingValidationException
+    + FullyQualifiedErrorId : ParameterArgumentValidationError,Add-StepResult
+ 
+Invoke-RestMethod : {"ok":false,"error":{"code":"NOT_FOUND","message":"Route not found: 
+/api/projects//write/sessions//beats"}}
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint5-smoke-api.ps1:59 char:12
++     return Invoke-RestMethod -Uri $uri -Method $Method -Headers $Head ...
++            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : InvalidOperation: (System.Net.HttpWebRequest:HttpWebRequest) [Invoke-RestMethod], WebExc 
+   eption
+    + FullyQualifiedErrorId : WebCmdletWebResponseException,Microsoft.PowerShell.Commands.InvokeRestMethodCommand
+Invoke-RestMethod : Cannot send a content-body with this verb-type.
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint5-smoke-api.ps1:61 char:10
++   return Invoke-RestMethod -Uri $uri -Method $Method -Headers $Header ...
++          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [Invoke-RestMethod], ProtocolViolationException
+    + FullyQualifiedErrorId : System.Net.ProtocolViolationException,Microsoft.PowerShell.Commands.InvokeRestMethodComm 
+   and
+ 
+The property 'data' cannot be found on this object. Verify that the property exists.
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint5-smoke-api.ps1:180 char:50
++ ... ts before generate" $(if ($beatsBefore.data.beats -is [array]) { "PAS ...
++                               ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [], PropertyNotFoundException
+    + FullyQualifiedErrorId : PropertyNotFoundStrict
+ 
+The property 'data' cannot be found on this object. Verify that the property exists.
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint5-smoke-api.ps1:180 char:124
++ ...  { "PASS" } else { "FAIL" }) "count=$($beatsBefore.data.beats.Count)"
++                                           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [], PropertyNotFoundException
+    + FullyQualifiedErrorId : PropertyNotFoundStrict
+ 
+Add-StepResult : Cannot validate argument on parameter 'Result'. The argument "" does not belong to the set 
+"PASS,FAIL,SKIP,NOT RUN" specified by the ValidateSet attribute. Supply an argument that is in the set and then try 
+the command again.
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint5-smoke-api.ps1:180 char:44
++ ... e generate" $(if ($beatsBefore.data.beats -is [array]) { "PASS" } els ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : InvalidData: (:) [Add-StepResult], ParameterBindingValidationException
+    + FullyQualifiedErrorId : ParameterArgumentValidationError,Add-StepResult
+ 
+Invoke-RestMethod : {"ok":false,"error":{"code":"NOT_FOUND","message":"Route not found: 
+/api/projects//write/sessions//beats/generate"}}
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint5-smoke-api.ps1:61 char:10
++   return Invoke-RestMethod -Uri $uri -Method $Method -Headers $Header ...
++          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : InvalidOperation: (System.Net.HttpWebRequest:HttpWebRequest) [Invoke-RestMethod], WebExc 
+   eption
+    + FullyQualifiedErrorId : WebCmdletWebResponseException,Microsoft.PowerShell.Commands.InvokeRestMethodCommand
+The property 'data' cannot be found on this object. Verify that the property exists.
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint5-smoke-api.ps1:183 char:44
++ ...  "POST beats/generate" $(if ($genBeats.data.beats.Count -eq 5) { "PAS ...
++                                  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [], PropertyNotFoundException
+    + FullyQualifiedErrorId : PropertyNotFoundStrict
+ 
+The property 'data' cannot be found on this object. Verify that the property exists.
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint5-smoke-api.ps1:183 char:115
++ ...  5) { "PASS" } else { "FAIL" }) "count=$($genBeats.data.beats.Count)"
++                                              ~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [], PropertyNotFoundException
+    + FullyQualifiedErrorId : PropertyNotFoundStrict
+ 
+Add-StepResult : Cannot validate argument on parameter 'Result'. The argument "" does not belong to the set 
+"PASS,FAIL,SKIP,NOT RUN" specified by the ValidateSet attribute. Supply an argument that is in the set and then try 
+the command again.
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint5-smoke-api.ps1:183 char:38
++ ... s/generate" $(if ($genBeats.data.beats.Count -eq 5) { "PASS" } else { ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : InvalidData: (:) [Add-StepResult], ParameterBindingValidationException
+    + FullyQualifiedErrorId : ParameterArgumentValidationError,Add-StepResult
+ 
+Invoke-RestMethod : {"ok":false,"error":{"code":"NOT_FOUND","message":"Route not found: 
+/api/projects//write/sessions//beats/generate"}}
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint5-smoke-api.ps1:61 char:10
++   return Invoke-RestMethod -Uri $uri -Method $Method -Headers $Header ...
++          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : InvalidOperation: (System.Net.HttpWebRequest:HttpWebRequest) [Invoke-RestMethod], WebExc 
+   eption
+    + FullyQualifiedErrorId : WebCmdletWebResponseException,Microsoft.PowerShell.Commands.InvokeRestMethodCommand
+The property 'data' cannot be found on this object. Verify that the property exists.
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint5-smoke-api.ps1:186 char:55
++ ... /generate idempotent" $(if ($genAgain.data.created -eq $false) { "PAS ...
++                                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [], PropertyNotFoundException
+    + FullyQualifiedErrorId : PropertyNotFoundStrict
+ 
+Add-StepResult : Cannot validate argument on parameter 'Result'. The argument "" does not belong to the set 
+"PASS,FAIL,SKIP,NOT RUN" specified by the ValidateSet attribute. Supply an argument that is in the set and then try 
+the command again.
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint5-smoke-api.ps1:186 char:49
++ ... idempotent" $(if ($genAgain.data.created -eq $false) { "PASS" } else  ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : InvalidData: (:) [Add-StepResult], ParameterBindingValidationException
+    + FullyQualifiedErrorId : ParameterArgumentValidationError,Add-StepResult
+ 
+The property 'data' cannot be found on this object. Verify that the property exists.
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint5-smoke-api.ps1:188 char:1
++ $beatId = $genAgain.data.beats[0].id
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [], PropertyNotFoundException
+    + FullyQualifiedErrorId : PropertyNotFoundStrict
+ 
+Invoke-RestMethod : {"ok":false,"error":{"code":"NOT_FOUND","message":"Route not found: /api/projects//write/beats/"}}
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint5-smoke-api.ps1:61 char:10
++   return Invoke-RestMethod -Uri $uri -Method $Method -Headers $Header ...
++          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : InvalidOperation: (System.Net.HttpWebRequest:HttpWebRequest) [Invoke-RestMethod], WebExc 
+   eption
+    + FullyQualifiedErrorId : WebCmdletWebResponseException,Microsoft.PowerShell.Commands.InvokeRestMethodCommand
+The property 'data' cannot be found on this object. Verify that the property e
+xists.
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint5-smoke-api.ps1:191 char:52
++ ... atus/direction" $(if ($patchBeat.data.beat.status -eq "draft") { "PAS ...
++                           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [], PropertyNotFoundException
+    + FullyQualifiedErrorId : PropertyNotFoundStrict
+ 
+Add-StepResult : Cannot validate argument on parameter 'Result'. The argument "" does not belong to the set 
+"PASS,FAIL,SKIP,NOT RUN" specified by the ValidateSet attribute. Supply an argument that is in the set and then try 
+the command again.
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint5-smoke-api.ps1:191 char:46
++ ... /direction" $(if ($patchBeat.data.beat.status -eq "draft") { "PASS" } ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : InvalidData: (:) [Add-StepResult], ParameterBindingValidationException
+    + FullyQualifiedErrorId : ParameterArgumentValidationError,Add-StepResult
+ 
+Invoke-RestMethod : {"ok":false,"error":{"code":"NOT_FOUND","message":"Route not found: 
+/api/projects//write/sessions/"}}
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint5-smoke-api.ps1:61 char:10
++   return Invoke-RestMethod -Uri $uri -Method $Method -Headers $Header ...
++          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : InvalidOperation: (System.Net.HttpWebRequest:HttpWebRequest) [Invoke-RestMethod], WebExc 
+   eption
+    + FullyQualifiedErrorId : WebCmdletWebResponseException,Microsoft.PowerShell.Commands.InvokeRestMethodCommand
+The property 'data' cannot be found on this object. Verify that the property exists.
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint5-smoke-api.ps1:198 char:51
++ ... atId" $(if ($patchSession.data.session.activeBeatId -eq $beatId) { "P ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [], PropertyNotFoundException
+    + FullyQualifiedErrorId : PropertyNotFoundStrict
+ 
+Add-StepResult : Cannot validate argument on parameter 'Result'. The argument "" does not belong to the set 
+"PASS,FAIL,SKIP,NOT RUN" specified by the ValidateSet attribute. Supply an argument that is in the set and then try 
+the command again.
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint5-smoke-api.ps1:198 char:45
++ ... tiveBeatId" $(if ($patchSession.data.session.activeBeatId -eq $beatId ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : InvalidData: (:) [Add-StepResult], ParameterBindingValidationException
+    + FullyQualifiedErrorId : ParameterArgumentValidationError,Add-StepResult
+ 
+Invoke-RestMethod : {"ok":false,"error":{"code":"NOT_FOUND","message":"Route not found: 
+/api/projects//write/sessions//ready-for-summary"}}
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint5-smoke-api.ps1:61 char:10
++   return Invoke-RestMethod -Uri $uri -Method $Method -Headers $Header ...
++          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : InvalidOperation: (System.Net.HttpWebRequest:HttpWebRequest) [Invoke-RestMethod], WebExc 
+   eption
+    + FullyQualifiedErrorId : WebCmdletWebResponseException,Microsoft.PowerShell.Commands.InvokeRestMethodCommand
+The property 'data' cannot be found on this object. Verify that the property exists.
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint5-smoke-api.ps1:201 char:47
++ ... mary" $(if ($ready.data.session.status -eq "ready_for_summary") { "PA ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [], PropertyNotFoundException
+    + FullyQualifiedErrorId : PropertyNotFoundStrict
+ 
+Add-StepResult : Cannot validate argument on parameter 'Result'. The argument "" does not belong to the set 
+"PASS,FAIL,SKIP,NOT RUN" specified by the ValidateSet attribute. Supply an argument that is in the set and then try 
+the command again.
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint5-smoke-api.ps1:201 char:41
++ ... or-summary" $(if ($ready.data.session.status -eq "ready_for_summary") ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : InvalidData: (:) [Add-StepResult], ParameterBindingValidationException
+    + FullyQualifiedErrorId : ParameterArgumentValidationError,Add-StepResult
+ 
+Invoke-RestMethod : {"ok":false,"error":{"code":"NOT_FOUND","message":"Route not found: /api/projects//foundation"}}
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint5-smoke-api.ps1:59 char:12
++     return Invoke-RestMethod -Uri $uri -Method $Method -Headers $Head ...
++            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : InvalidOperation: (System.Net.HttpWebRequest:HttpWebRequest) [Invoke-RestMethod], WebExc 
+   eption
+    + FullyQualifiedErrorId : WebCmdletWebResponseException,Microsoft.PowerShell.Commands.InvokeRestMethodCommand
+Invoke-RestMethod : Cannot send a content-body with this verb-type.
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint5-smoke-api.ps1:61 char:10
++   return Invoke-RestMethod -Uri $uri -Method $Method -Headers $Header ...
++          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [Invoke-RestMethod], ProtocolViolationException
+    + FullyQualifiedErrorId : System.Net.ProtocolViolationException,Microsoft.PowerShell.Commands.InvokeRestMethodComm 
+   and
+ 
+The property 'data' cannot be found on this object. Verify that the property exists.
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint5-smoke-api.ps1:204 char:59
++ ... flow" $(if ($foundationFinal.data.facts.Count -eq $factsBefore -and $ ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [], PropertyNotFoundException
+    + FullyQualifiedErrorId : PropertyNotFoundStrict
+ 
+Add-StepResult : Cannot validate argument on parameter 'Result'. The argument "" does not belong to the set 
+"PASS,FAIL,SKIP,NOT RUN" specified by the ValidateSet attribute. Supply an argument that is in the set and then try 
+the command again.
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint5-smoke-api.ps1:204 char:53
++ ... ssion flow" $(if ($foundationFinal.data.facts.Count -eq $factsBefore  ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : InvalidData: (:) [Add-StepResult], ParameterBindingValidationException
+    + FullyQualifiedErrorId : ParameterArgumentValidationError,Add-StepResult
+ 
+[PASS] cross-user session 404                         The remote server returned an error: (404) Not Found.
+
+Summary: 7 PASS, 2 FAIL

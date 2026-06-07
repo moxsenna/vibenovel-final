@@ -602,6 +602,20 @@ Sets selected version `is_current=true`, clears other current versions for same 
 
 **Deferred Task 5.4:** WritePage integration, OpenRouter, AI generation, full validator, chapter summary/canon update.
 
+### Safety smoke tests (Task 5.6)
+
+Local verification script: `scripts/sprint5-smoke-api.ps1` (run with `supabase start`, `supabase db reset`, `npm run dev:api`).
+
+| Check | Expectation |
+|---|---|
+| Context packet POST/GET preview | Preview + safety metadata only — no `packetJson`, `planning_truth`, `full_prompt`, provider/model/token keys |
+| `context_packet_logs.packet_json` (DB) | Same leak guard; ch1 packet excludes ch2+ title/summary; forbidden reveals as labels only |
+| Prose POST | Rejects `planningTruth` and packet dumps; allows normal fictional secret prose |
+| Prose GET responses | No raw context packet JSON |
+| `ready_for_summary` | Sets `ready_for_summary` status only — not `summarized`; no fact/outline mutation |
+
+Web E2E leak guard: `npm run smoke:web:write` (mock default); `npm run smoke:web:write -- -IncludeApiMode` for API-mode DOM checks.
+
 ### Auth approach (Task 2.6)
 
 - **No custom password auth on API.** Identity comes from Supabase Auth.

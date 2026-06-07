@@ -78,6 +78,12 @@ npm run smoke:web
 
 # Outline page E2E (Task 4.8 — mock default; add -- -IncludeApiMode for API flow)
 npm run smoke:web:outline
+
+# Write page E2E (Task 5.6 — mock default; add -- -IncludeApiMode for API flow)
+npm run smoke:web:write
+
+# Sprint 5 Write Room API safety smoke (local Supabase + dev:api)
+powershell -ExecutionPolicy Bypass -File scripts/sprint5-smoke-api.ps1
 ```
 
 See [`scripts/README.md`](scripts/README.md) for prerequisites (env: `VITE_USE_MOCKS`, `VITE_API_URL`, `VITE_SUPABASE_*`).
