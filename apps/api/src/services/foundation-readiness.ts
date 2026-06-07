@@ -184,24 +184,31 @@ async function persistReadinessToFoundation(
   });
 }
 
-export async function getFoundationReadinessForOwner(
-  bindings: AppBindings,
-  ownerId: string,
-  projectId: string,
-): Promise<FoundationReadinessResult> {
-  const projectRow = await getOwnedProjectRow(bindings, ownerId, projectId);
-  const [foundation, concept, proposals, characters, facts, speechRules, relationshipHeavy] =
-    await Promise.all([
-      loadFoundationRow(bindings, projectId),
-      loadSelectedConcept(bindings, projectRow),
-      loadFoundationFlowProposals(bindings, projectId),
-      listCharactersForOwner(bindings, ownerId, projectId, false),
-      listFactsForOwner(bindings, ownerId, projectId, false),
-      listSpeechRulesForOwner(bindings, ownerId, projectId, false),
-      loadRelationshipHeavy(bindings, projectId),
-    ]);
+interface ReadinessComputeOptions {
+  /** Proposal statuses counted toward readiness (display: proposed only; lock: proposed + accepted). */
+  activeStatuses: Set<string>;
+  /** When true, accepted-but-not-yet-canon items count as pass (lock gate). */
+  acceptedCountsAsReady: boolean;
+  persist: boolean;
+}
 
-  const activeProposals = proposals.filter((p) => p.status === "proposed");
+function isPromotableFactProposal(row: AiProposalRow): boolean {
+  if (row.proposal_type !== "fact") return false;
+  const payload = parsePayload(row.payload);
+  return payload.category !== "secret" && typeof payload.highRiskCategory !== "string";
+}
+
+function computeFoundationReadiness(
+  foundation: FoundationRow | null,
+  concept: StoryConceptRow | null,
+  proposals: AiProposalRow[],
+  characters: Awaited<ReturnType<typeof listCharactersForOwner>>,
+  facts: Awaited<ReturnType<typeof listFactsForOwner>>,
+  speechRules: Awaited<ReturnType<typeof listSpeechRulesForOwner>>,
+  relationshipHeavy: boolean,
+  options: ReadinessComputeOptions,
+): FoundationReadinessResult {
+  const activeProposals = proposals.filter((p) => options.activeStatuses.has(p.status));
   const checks: ReadinessCheckItem[] = [];
   let score = 0;
   const CORE_WEIGHT = 10;
@@ -267,29 +274,39 @@ export async function getFoundationReadinessForOwner(
     return parsePayload(p.payload).role === "protagonist";
   });
   const protagonistOk = protagonistCanon || protagonistProposed;
+  const protagonistPass =
+    protagonistCanon || (options.acceptedCountsAsReady && protagonistProposed);
   checks.push({
     key: "protagonist",
     label: "Tokoh utama",
-    status: protagonistOk ? (protagonistCanon ? "pass" : "partial") : "missing",
+    status: protagonistOk
+      ? protagonistPass
+        ? "pass"
+        : "partial"
+      : "missing",
     reason: protagonistOk
       ? protagonistCanon
         ? "Protagonist sudah di canon characters."
-        : "Protagonist di-propose — belum di-accept."
+        : options.acceptedCountsAsReady
+          ? "Protagonist siap dari accepted proposal."
+          : "Protagonist di-propose — belum di-accept."
       : "Belum ada protagonist di characters atau proposal.",
   });
-  if (protagonistOk) score += protagonistCanon ? CORE_WEIGHT : CORE_WEIGHT - 3;
+  if (protagonistOk) score += protagonistPass ? CORE_WEIGHT : CORE_WEIGHT - 3;
 
-  const factCount = facts.length + countProposalsByType(activeProposals, "fact");
+  const promotableFactProposals = activeProposals.filter(isPromotableFactProposal);
+  const factCount = facts.length + promotableFactProposals.length;
   const factsOk = factCount >= 2;
+  const factsPass = facts.length >= 2 || (options.acceptedCountsAsReady && factsOk);
   checks.push({
     key: "facts",
     label: "Minimal 2 fakta",
-    status: factsOk ? (facts.length >= 2 ? "pass" : "partial") : "missing",
+    status: factsOk ? (factsPass ? "pass" : "partial") : "missing",
     reason: factsOk
-      ? `${facts.length} confirmed + ${countProposalsByType(activeProposals, "fact")} proposed.`
-      : "Butuh minimal 2 fakta (confirmed atau proposed).",
+      ? `${facts.length} confirmed + ${promotableFactProposals.length} proposal siap promosi.`
+      : "Butuh minimal 2 fakta (confirmed atau proposal siap promosi).",
   });
-  if (factsOk) score += facts.length >= 2 ? CORE_WEIGHT : CORE_WEIGHT - 3;
+  if (factsOk) score += factsPass ? CORE_WEIGHT : CORE_WEIGHT - 3;
 
   const targetOk =
     hasText(foundation?.target_reader) ||
@@ -382,8 +399,6 @@ export async function getFoundationReadinessForOwner(
     .filter((c) => c.status === "missing")
     .map((c) => c.label);
 
-  await persistReadinessToFoundation(bindings, projectId, score, readinessLevel);
-
   return {
     readinessScore: score,
     readinessLevel,
@@ -391,4 +406,80 @@ export async function getFoundationReadinessForOwner(
     checks,
     missing,
   };
+}
+
+export async function getFoundationReadinessForOwner(
+  bindings: AppBindings,
+  ownerId: string,
+  projectId: string,
+): Promise<FoundationReadinessResult> {
+  const projectRow = await getOwnedProjectRow(bindings, ownerId, projectId);
+  const [foundation, concept, proposals, characters, facts, speechRules, relationshipHeavy] =
+    await Promise.all([
+      loadFoundationRow(bindings, projectId),
+      loadSelectedConcept(bindings, projectRow),
+      loadFoundationFlowProposals(bindings, projectId),
+      listCharactersForOwner(bindings, ownerId, projectId, false),
+      listFactsForOwner(bindings, ownerId, projectId, false),
+      listSpeechRulesForOwner(bindings, ownerId, projectId, false),
+      loadRelationshipHeavy(bindings, projectId),
+    ]);
+
+  const result = computeFoundationReadiness(
+    foundation,
+    concept,
+    proposals,
+    characters,
+    facts,
+    speechRules,
+    relationshipHeavy,
+    {
+      activeStatuses: new Set(["proposed"]),
+      acceptedCountsAsReady: false,
+      persist: true,
+    },
+  );
+
+  await persistReadinessToFoundation(
+    bindings,
+    projectId,
+    result.readinessScore,
+    result.readinessLevel,
+  );
+
+  return result;
+}
+
+/** Lock gate readiness — counts accepted proposals as promotion-ready. */
+export async function getFoundationLockReadinessForOwner(
+  bindings: AppBindings,
+  ownerId: string,
+  projectId: string,
+): Promise<FoundationReadinessResult> {
+  const projectRow = await getOwnedProjectRow(bindings, ownerId, projectId);
+  const [foundation, concept, proposals, characters, facts, speechRules, relationshipHeavy] =
+    await Promise.all([
+      loadFoundationRow(bindings, projectId),
+      loadSelectedConcept(bindings, projectRow),
+      loadFoundationFlowProposals(bindings, projectId),
+      listCharactersForOwner(bindings, ownerId, projectId, false),
+      listFactsForOwner(bindings, ownerId, projectId, false),
+      listSpeechRulesForOwner(bindings, ownerId, projectId, false),
+      loadRelationshipHeavy(bindings, projectId),
+    ]);
+
+  return computeFoundationReadiness(
+    foundation,
+    concept,
+    proposals,
+    characters,
+    facts,
+    speechRules,
+    relationshipHeavy,
+    {
+      activeStatuses: new Set(["proposed", "accepted"]),
+      acceptedCountsAsReady: true,
+      persist: false,
+    },
+  );
 }

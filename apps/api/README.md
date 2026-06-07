@@ -50,6 +50,7 @@ apps/api/
       concept.ts       # story_concepts list/generate/select (stub generator)
       foundation-proposal.ts  # stub foundation proposal batch (Task 3.4)
       foundation-readiness.ts # server-side readiness calculator (Task 3.4)
+      foundation-lock.ts      # lock workflow + safe canon promotion (Task 3.5)
       audit.ts         # append-only audit_logs (service role)
     lib/
       supabase.ts      # anon + service role clients
@@ -133,7 +134,8 @@ apps/api/
 | POST | `/api/projects/:id/concepts/:conceptId/select` | Bearer JWT | Select concept → updates `projects.selected_concept_id`, `workflow_phase=foundation` |
 | POST | `/api/projects/:id/foundation/proposals/generate` | Bearer JWT | Stub foundation proposal batch from selected concept (`regenerate` optional) |
 | GET | `/api/projects/:id/foundation/proposals` | Bearer JWT | Foundation-flow proposals (`?includeResolved=true`) |
-| GET | `/api/projects/:id/foundation/readiness` | Bearer JWT | Server-side readiness score, checks, `canLock` (lock deferred 3.5) |
+| GET | `/api/projects/:id/foundation/readiness` | Bearer JWT | Server-side readiness score, checks, `canLock` |
+| POST | `/api/projects/:id/foundation/lock` | Bearer JWT | Lock foundation + promote accepted safe proposals (Task 3.5) |
 
 ### Intake routes (Task 3.2)
 
@@ -167,9 +169,50 @@ Requires **selected concept** before `POST .../foundation/proposals/generate`. C
 
 **Dedupe:** `regenerate=false` returns existing proposed stub batch; `regenerate=true` rejects old proposed foundation-flow proposals with note `regenerated`.
 
-**Readiness:** `GET .../foundation/readiness` computes score server-side, updates `story_foundations.readiness_percent` / `readiness_status` only (no canon copy from proposals). `canLock` requires score ≥75 + core checks — actual lock is Task 3.5.
+**Readiness:** `GET .../foundation/readiness` computes score server-side, updates `story_foundations.readiness_percent` / `readiness_status` only (no canon copy from proposals). `canLock` requires score ≥75 + core checks.
 
 **Audit:** Batch generator does not write per-proposal audit (manual `POST /proposals` still audits via existing service).
+
+### Foundation lock (Task 3.5)
+
+`POST /api/projects/:id/foundation/lock` — requires Bearer JWT. Ownership via `getOwnedProjectRow` → cross-user `404`.
+
+**No AI generation.** Lock does not call OpenRouter, model router, or auto-accept `proposed` proposals.
+
+**Idempotency:** If foundation already locked → `409 CONFLICT` (`Foundation is already locked`). Does not re-run promotion.
+
+**Lock preconditions** (all required):
+
+- Selected concept with `status=selected`
+- `readinessScore >= 75` and `canLock=true` from readiness service
+- Core canon satisfied via existing foundation rows **or** accepted proposals ready for promotion:
+  - premise, main conflict, reader promise, protagonist, ≥2 facts, target reader, genre + tone
+- Foundation not already locked
+
+On failure → `409 CONFLICT` with `details`: `readinessScore`, `missing`, `failedChecks`.
+
+**Promotion at lock** (accepted proposals only):
+
+| Type | Action |
+|---|---|
+| `foundation` | Fill empty `story_foundations` core fields (allowed payload keys only) |
+| `character` | Create/update `characters` with `source=accepted_proposal` |
+| `fact` | Create `facts` with `source=accepted_proposal` |
+| `relationship_speech_rule` | Create speech rule with `source=accepted_proposal` |
+| `style` | Merge `tone` / `style_tags` into foundation if empty |
+
+**Forbidden promotion:**
+
+- `secret`, `reveal`, `chapter_delta` proposal types
+- `proposed` / `rejected` / `merged` proposals
+- Facts with `category=secret` or high-risk secret payloads
+- Raw provider/model output fields in payload
+
+Lock does **not** write `ai_proposal_accepted` audit (accept is separate). Writes `foundation_locked` plus `character_created` / `fact_created` / `speech_rule_created` for promoted entities.
+
+**On success:** Sets `story_foundations.is_locked=true`, `status=locked`, `locked_at`, updates readiness; sets `projects.workflow_phase=foundation_locked`. Returns `{ foundation, readiness, promoted: { characters, facts, speechRules } }`.
+
+**Limitation:** No DB transaction wrapper — all accepted proposals validated before writes; partial failure may leave promoted canon without lock if lock update fails (rare).
 
 ### Auth approach (Task 2.6)
 
