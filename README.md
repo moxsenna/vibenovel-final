@@ -69,7 +69,12 @@ npm run build:api      # build:shared otomatis dijalankan dulu
 
 # Preview frontend
 npm run preview:web
+
+# API smoke test (Windows/PowerShell — local Supabase + dev:api required)
+npm run smoke:api
 ```
+
+See [`scripts/README.md`](scripts/README.md) for prerequisites.
 
 ### Database lokal (Supabase CLI)
 
@@ -124,6 +129,7 @@ Sudah ada:
 | 2.12 Credit balance read | ✅ | `GET /api/credits/balance` |
 | 2.13 Web integration | ✅ | Dashboard/settings/foundation + mock fallback |
 | 2.14 Verification report | ✅ | `docs/29` + smoke tests |
+| 2.15 Smoke test & CI hygiene | ✅ | `npm run smoke:api`, `.github/workflows/ci.yml` |
 
 Belum ada (sengaja — defer Sprint 3+):
 

@@ -308,7 +308,15 @@ credit_balances, audit_logs
 | `GET /api/credits/balance` | **PASS** (`null` for new user) |
 | cross-user seed project → 404 | **PASS** |
 
-Script reproducible: `scripts/sprint2-smoke-api.ps1` (lokal, opsional).
+**Reproducible smoke (Task 2.15):**
+
+```bash
+npm run smoke:api    # Windows/PowerShell — see scripts/README.md
+```
+
+Script: `scripts/sprint2-smoke-api.ps1` — parameterized, PASS/FAIL per step, exit code 1 on failure. Anon key from `SUPABASE_ANON_KEY` or `supabase status -o env` (not hardcoded in repo).
+
+**CI (Task 2.15):** `.github/workflows/ci.yml` — `npm ci`, typecheck, build shared/web/api on push/PR to `main`. No secrets; API smoke **not** in CI yet (local Docker + `dev:api` required).
 
 ### Web runtime smoke
 
@@ -366,9 +374,10 @@ Per [`docs/17-roadmap-sprint-plan-mvp-to-full.md`](17-roadmap-sprint-plan-mvp-to
 - Proposal accept → canon promotion (transaction) — lanjutan Task 2.11b
 - Intake/concept pages mulai baca/tulis API
 
-### Optional hardening (Sprint 2.15)
+### Optional hardening (post Task 2.15)
 
-- CI job: `typecheck` + `build:*` + `supabase db reset` + `scripts/sprint2-smoke-api.ps1`
+- CI: add Supabase + API smoke when Docker service matrix is configured
+- Bash port of `sprint2-smoke-api.ps1` for Linux agents
 - Fix seed user GoTrue login (auth trigger vs SQL insert)
 - Wire start flow project create ke `POST /api/projects`
 

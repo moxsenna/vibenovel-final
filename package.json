@@ -17,7 +17,8 @@
     "typecheck:shared": "npm run typecheck -w @vibenovel/shared",
     "typecheck:web": "npm run typecheck -w @vibenovel/web",
     "typecheck:api": "npm run typecheck -w @vibenovel/api",
-    "preview:web": "npm run preview -w @vibenovel/web"
+    "preview:web": "npm run preview -w @vibenovel/web",
+    "smoke:api": "powershell -ExecutionPolicy Bypass -File scripts/sprint2-smoke-api.ps1"
   },
   "engines": {
     "node": ">=18"
