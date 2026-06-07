@@ -64,6 +64,7 @@ apps/api/
       context-packet-safety.ts   # packet hash + safety asserts (Task 5.2)
       write-session.ts    # writing session start/patch/ready-for-summary (Task 5.3)
       chapter-beat.ts     # beat list/generate/patch stub (Task 5.3)
+      prose-draft.ts      # prose version save/list/make-current (Task 5.4)
       audit.ts         # append-only audit_logs (service role)
     lib/
       supabase.ts      # anon + service role clients
@@ -548,7 +549,58 @@ Allowed: `title`, `summary`, `direction`, `status` (`empty` | `draft` | `done`),
 
 Rejected: `proseText`, `chapterText`, `body`, `planningTruth`, `contextPacketJson`, identity fields. Updates `writing_sessions.last_activity_at` when beat is linked to a session.
 
-**Deferred Task 5.3:** Prose draft API, WritePage integration, OpenRouter, AI generation, full validator, chapter summary/canon update.
+### Prose Draft Persistence API (Task 5.4)
+
+All endpoints require Bearer JWT. Ownership via `getOwnedProjectRow` + beat/version `project_id` match — cross-user → `404`.
+
+**Draft only — not canon:** Prose versions are stored in `chapter_prose_versions` only. Does **not** write `facts`, `characters`, `speech_rules`, `story_foundations`, `chapter_outlines`, or create chapter summaries. No OpenRouter, no AI generation, no prose-to-fact parsing.
+
+**Gate (409):**
+
+| Requirement | Detail |
+|---|---|
+| Write room gates | Same as Task 5.2/5.3 (`outline_locked`/`writing`, locked plan, locked foundation) |
+| Writing session | Active or paused session required for beat's `chapter_outline_id` — else `409` `Writing session required` |
+
+**`GET /api/projects/:id/write/beats/:beatId/prose`**
+
+Returns `{ versions: ChapterProseVersion[], currentVersion: ChapterProseVersion | null }` ordered by `versionNumber` desc. Does not return `context_packet_logs.packet_json` — only `contextPacketLogId` on version rows when linked.
+
+**`POST /api/projects/:id/write/beats/:beatId/prose`**
+
+Body:
+
+```json
+{
+  "proseText": "required",
+  "source": "user_edited",
+  "contextPacketLogId": "optional-uuid",
+  "metadata": {}
+}
+```
+
+- `proseText` — non-empty, max 30_000 chars.
+- `source` — `user_edited` (default) or `stub_deterministic`. `ai_generated` → `400` (`ai_generated source is reserved`).
+- Versioning: `version_number = max + 1`; previous versions `is_current=false`; new version `is_current=true`.
+- Updates `chapter_beats.status`: `empty` → `draft`; `draft`/`done` preserved.
+- Recomputes `chapter_writing_states.word_count` as sum of current prose word counts across all beats in chapter; sets `last_saved_at`.
+- Touches `writing_sessions.last_activity_at`.
+
+Returns `201` `{ version, chapterWordCount }`.
+
+**Content safety (400):** Rejects internal leakage markers in `proseText` (`planningTruth`, `full_prompt`, `packet_json`, `openrouter`, `provider`, `model`, `token`, etc.) and JSON packet dumps containing `currentChapter` + `revealGate` + `forbiddenReveals`. Normal fictional secrets in prose are allowed.
+
+**Metadata safety:** Rejects `full_prompt`, `packet_json`, `planningTruth`, `model`, `provider`, `token`, raw AI payloads.
+
+**`GET /api/projects/:id/write/prose/:versionId`**
+
+Returns `{ version: ChapterProseVersion }` — owner-only, no context packet JSON.
+
+**`POST /api/projects/:id/write/prose/:versionId/make-current`**
+
+Sets selected version `is_current=true`, clears other current versions for same beat, recomputes chapter word count. Does not mutate canon.
+
+**Deferred Task 5.4:** WritePage integration, OpenRouter, AI generation, full validator, chapter summary/canon update.
 
 ### Auth approach (Task 2.6)
 

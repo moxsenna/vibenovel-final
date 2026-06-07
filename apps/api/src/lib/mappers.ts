@@ -2,6 +2,8 @@ import type {
   AiProposal,
   ChapterBeat,
   ChapterBeatStatus,
+  ChapterProseSource,
+  ChapterProseVersion,
   ChapterOutline,
   ChapterOutlineMarker,
   ChapterWritingState,
@@ -795,5 +797,35 @@ export function mapChapterWritingStateRow(row: ChapterWritingStateRow): ChapterW
     metadata: parseJsonObject(row.metadata),
     createdAt: row.created_at,
     updatedAt: row.updated_at,
+  };
+}
+
+export interface ChapterProseVersionRow {
+  id: string;
+  project_id: string;
+  chapter_beat_id: string;
+  version_number: number;
+  prose_text: string;
+  word_count: number;
+  source: string;
+  is_current: boolean;
+  context_packet_log_id: string | null;
+  metadata: JsonObject | unknown;
+  created_at: string;
+}
+
+export function mapChapterProseVersionRow(row: ChapterProseVersionRow): ChapterProseVersion {
+  return {
+    id: row.id,
+    projectId: row.project_id,
+    chapterBeatId: row.chapter_beat_id,
+    versionNumber: row.version_number,
+    proseText: row.prose_text,
+    wordCount: row.word_count,
+    source: row.source as ChapterProseSource,
+    isCurrent: row.is_current,
+    contextPacketLogId: row.context_packet_log_id,
+    metadata: parseJsonObject(row.metadata),
+    createdAt: row.created_at,
   };
 }

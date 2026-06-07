@@ -197,11 +197,58 @@ $patchSession = Invoke-Api -Method PATCH -Path "/api/projects/$projectId/write/s
   -Body (@{ activeBeatId = $beatId } | ConvertTo-Json)
 Add-StepResult "PATCH session activeBeatId" $(if ($patchSession.data.session.activeBeatId -eq $beatId) { "PASS" } else { "FAIL" }) ""
 
+# --- Task 5.4: Prose draft persistence ---
+Invoke-ApiExpectFailure -Name "POST prose no token" -Method POST `
+  -Path "/api/projects/$projectId/write/beats/$beatId/prose" -Body '{"proseText":"Teks uji"}'
+
+Invoke-Api -Method PATCH -Path "/api/projects/$projectId/write/sessions/$sessionId" -Headers $auth `
+  -Body '{"status":"abandoned"}' | Out-Null
+Invoke-ApiExpectFailure -Name "POST prose without session" -Method POST -Headers $auth `
+  -Path "/api/projects/$projectId/write/beats/$beatId/prose" -Body '{"proseText":"Teks tanpa sesi aktif"}'
+
+$sessionResume = Invoke-Api -Method POST -Path "/api/projects/$projectId/write/sessions" -Headers $auth `
+  -Body (@{ chapterOutlineId = $ch1 } | ConvertTo-Json)
+$sessionId = $sessionResume.data.session.id
+Add-StepResult "resume session for prose" $(if ($sessionResume.data.session.status -eq "active") { "PASS" } else { "FAIL" }) ""
+
+$prose1 = Invoke-Api -Method POST -Path "/api/projects/$projectId/write/beats/$beatId/prose" -Headers $auth `
+  -Body '{"proseText":"Nadira memangkas sayuran di dapur dengan irama yang sudah hafal di luar kepala."}'
+$version1Id = $prose1.data.version.id
+Add-StepResult "POST prose version 1" $(if ($prose1.data.version.versionNumber -eq 1 -and $prose1.data.version.isCurrent) { "PASS" } else { "FAIL" }) "v=$version1Id"
+
+$prose2Body = @{ proseText = "Pintu depan dibuka. Suara tawa memenuhi ruang tamu." }
+if ($packetLogId) { $prose2Body.contextPacketLogId = $packetLogId }
+$prose2 = Invoke-Api -Method POST -Path "/api/projects/$projectId/write/beats/$beatId/prose" -Headers $auth `
+  -Body ($prose2Body | ConvertTo-Json)
+$version2Id = $prose2.data.version.id
+Add-StepResult "POST prose version 2" $(if ($prose2.data.version.versionNumber -eq 2 -and $prose2.data.version.isCurrent) { "PASS" } else { "FAIL" }) ""
+
+$listProse = Invoke-Api -Path "/api/projects/$projectId/write/beats/$beatId/prose" -Headers $auth
+$v1Current = ($listProse.data.versions | Where-Object { $_.id -eq $version1Id } | Select-Object -First 1).isCurrent
+Add-StepResult "GET prose versions" $(if ($listProse.data.versions.Count -eq 2 -and $v1Current -eq $false) { "PASS" } else { "FAIL" }) ""
+
+$proseDetail = Invoke-Api -Path "/api/projects/$projectId/write/prose/$version2Id" -Headers $auth
+Add-StepResult "GET prose version detail" $(if ($proseDetail.data.version.id -eq $version2Id) { "PASS" } else { "FAIL" }) ""
+
+if ($packetLogId) {
+  Add-StepResult "contextPacketLogId linked" $(if ($prose2.data.version.contextPacketLogId -eq $packetLogId) { "PASS" } else { "FAIL" }) ""
+}
+
+Invoke-ApiExpectFailure -Name "POST prose ai_generated rejected" -Method POST -Headers $auth `
+  -Path "/api/projects/$projectId/write/beats/$beatId/prose" -Body '{"proseText":"Teks","source":"ai_generated"}'
+
+Invoke-ApiExpectFailure -Name "POST prose planningTruth rejected" -Method POST -Headers $auth `
+  -Path "/api/projects/$projectId/write/beats/$beatId/prose" -Body '{"proseText":"Ada planningTruth di sini"}'
+
+$dumpProse = '{"currentChapter":{"title":"x"},"revealGate":{"allowedBreadcrumbs":[]},"forbiddenReveals":[]}'
+Invoke-ApiExpectFailure -Name "POST prose packet dump rejected" -Method POST -Headers $auth `
+  -Path "/api/projects/$projectId/write/beats/$beatId/prose" -Body (@{ proseText = $dumpProse } | ConvertTo-Json)
+
 $ready = Invoke-Api -Method POST -Path "/api/projects/$projectId/write/sessions/$sessionId/ready-for-summary" -Headers $auth -Body '{}'
 Add-StepResult "POST ready-for-summary" $(if ($ready.data.session.status -eq "ready_for_summary") { "PASS" } else { "FAIL" }) ""
 
 $foundationFinal = Invoke-Api -Path "/api/projects/$projectId/foundation" -Headers $auth
-Add-StepResult "canon unchanged after session flow" $(if ($foundationFinal.data.facts.Count -eq $factsBefore -and $foundationFinal.data.characters.Count -eq $charsBefore) { "PASS" } else { "FAIL" }) ""
+Add-StepResult "canon unchanged after write flow" $(if ($foundationFinal.data.facts.Count -eq $factsBefore -and $foundationFinal.data.characters.Count -eq $charsBefore) { "PASS" } else { "FAIL" }) ""
 
 Invoke-ApiExpectFailure -Name "cross-user session 404" -Method GET -Headers $authB `
   -Path "/api/projects/$projectId/write/sessions/$sessionId"

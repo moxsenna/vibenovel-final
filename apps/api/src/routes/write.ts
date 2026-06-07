@@ -11,6 +11,12 @@ import {
   getContextPacketPreviewForOwner,
 } from "../services/context-packet-builder.js";
 import {
+  getProseVersionForOwner,
+  listProseVersionsForBeatForOwner,
+  makeProseVersionCurrentForOwner,
+  saveProseDraftForOwner,
+} from "../services/prose-draft.js";
+import {
   getWritingSessionDetailForOwner,
   markWritingSessionReadyForSummaryForOwner,
   patchWritingSessionForOwner,
@@ -114,4 +120,46 @@ export function registerWriteRoutes(app: Hono<AppEnv>): void {
     const beat = await patchChapterBeatForOwner(c.env, ownerId, projectId, beatId, body);
     return jsonSuccess(c, { beat });
   });
+
+  app.get("/api/projects/:id/write/beats/:beatId/prose", authMiddleware, async (c) => {
+    const ownerId = c.get("userId");
+    const projectId = c.req.param("id");
+    const beatId = c.req.param("beatId");
+    const result = await listProseVersionsForBeatForOwner(c.env, ownerId, projectId, beatId);
+    return jsonSuccess(c, result);
+  });
+
+  app.post("/api/projects/:id/write/beats/:beatId/prose", authMiddleware, async (c) => {
+    const ownerId = c.get("userId");
+    const projectId = c.req.param("id");
+    const beatId = c.req.param("beatId");
+    const body = await c.req.json().catch(() => ({}));
+    const result = await saveProseDraftForOwner(c.env, ownerId, projectId, beatId, body);
+    return jsonSuccess(c, result, 201);
+  });
+
+  app.get("/api/projects/:id/write/prose/:versionId", authMiddleware, async (c) => {
+    const ownerId = c.get("userId");
+    const projectId = c.req.param("id");
+    const versionId = c.req.param("versionId");
+    const version = await getProseVersionForOwner(c.env, ownerId, projectId, versionId);
+    return jsonSuccess(c, { version });
+  });
+
+  app.post(
+    "/api/projects/:id/write/prose/:versionId/make-current",
+    authMiddleware,
+    async (c) => {
+      const ownerId = c.get("userId");
+      const projectId = c.req.param("id");
+      const versionId = c.req.param("versionId");
+      const result = await makeProseVersionCurrentForOwner(
+        c.env,
+        ownerId,
+        projectId,
+        versionId,
+      );
+      return jsonSuccess(c, result);
+    },
+  );
 }
