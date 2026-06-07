@@ -1,4 +1,3 @@
-import { useMemo, useState } from "react";
 import {
   SettingsAccountSection,
   SettingsActionSection,
@@ -9,36 +8,41 @@ import {
   SettingsUsageSection,
   SettingsWriterPreferencesSection,
 } from "@/components/settings";
-import type { ModelTier } from "@/types";
-import { mockSettings } from "@/mocks/settings";
+import { IntegrationNotice } from "@/components/common/IntegrationNotice";
+import { useSettingsData } from "@/hooks/useSettingsData";
 
 /**
- * Pengaturan Pemakaian — Sprint 1 Task 1.14 (+ 1.17 desktop 2-col polish)
+ * Pengaturan Pemakaian — Sprint 1 Task 1.14 (+ Sprint 2 Task 2.13 API integration)
  * Source: stitch-reference/pengaturan_pemakaian
  * Wrapped by AppShell via router layout.
  */
 export function SettingsPage() {
-  const settings = mockSettings;
+  const {
+    settings,
+    selectedTier,
+    setSelectedTier,
+    notice,
+    saveMessage,
+    loading,
+    saving,
+    handleCancel,
+    handleSave,
+  } = useSettingsData();
+
   const { pageCopy } = settings;
-
-  const initialTier = useMemo(
-    () => settings.modelTiers.find((tier) => tier.isSelected)?.id ?? "seimbang",
-    [settings.modelTiers],
-  );
-
-  const [selectedTier, setSelectedTier] = useState<ModelTier>(initialTier);
-
-  const handleCancel = () => {
-    setSelectedTier(initialTier);
-  };
-
-  const handleSave = () => {
-    // Sprint 1: local UI only — no persistence layer yet.
-  };
 
   return (
     <div className="mx-auto flex w-full max-w-detail flex-col gap-lg pb-8">
       <SettingsPageHeader title={pageCopy.title} subtitle={pageCopy.subtitle} />
+
+      <IntegrationNotice message={notice} />
+      {saveMessage ? <IntegrationNotice message={saveMessage} /> : null}
+
+      {loading ? (
+        <p className="font-body-sm text-body-sm text-muted-text" role="status">
+          Memuat pengaturan...
+        </p>
+      ) : null}
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <SettingsCreditCard
@@ -89,9 +93,9 @@ export function SettingsPage() {
 
       <SettingsActionSection
         cancelCta={pageCopy.cancelCta}
-        saveCta={pageCopy.saveCta}
+        saveCta={saving ? "Menyimpan..." : pageCopy.saveCta}
         onCancel={handleCancel}
-        onSave={handleSave}
+        onSave={() => void handleSave()}
       />
     </div>
   );

@@ -1,10 +1,13 @@
 import { Icon } from "@/components/ui";
-import { DASHBOARD_GREETING, mockDashboardUsage } from "@/mocks/dashboard";
+import { DASHBOARD_GREETING, type DashboardUsageSummary } from "@/mocks/dashboard";
 
-export function DashboardGreeting() {
-  const usagePercent = Math.round(
-    (mockDashboardUsage.used / mockDashboardUsage.total) * 100,
-  );
+export interface DashboardGreetingProps {
+  usage: DashboardUsageSummary;
+}
+
+export function DashboardGreeting({ usage }: DashboardGreetingProps) {
+  const usagePercent =
+    usage.total > 0 ? Math.round((usage.used / usage.total) * 100) : 0;
 
   return (
     <div className="flex flex-col items-start justify-between gap-md md:flex-row md:items-center">
@@ -24,10 +27,10 @@ export function DashboardGreeting() {
         <div className="flex-1">
           <div className="mb-1 flex items-center justify-between">
             <span className="font-label-md text-label-md text-on-surface-variant">
-              {mockDashboardUsage.label}
+              {usage.label}
             </span>
             <span className="font-label-sm text-label-sm text-muted-text">
-              {mockDashboardUsage.used} / {mockDashboardUsage.total}
+              {usage.used} / {usage.total}
             </span>
           </div>
           <div className="h-1.5 w-full rounded-full bg-surface-variant">

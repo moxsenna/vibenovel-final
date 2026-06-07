@@ -6,22 +6,29 @@ import {
   FoundationSectionCard,
   FoundationWarningPanel,
 } from "@/components/foundation";
+import { IntegrationNotice } from "@/components/common/IntegrationNotice";
 import { Badge, Card, Icon } from "@/components/ui";
-import { mockStoryFoundation } from "@/mocks/storyFoundation";
+import { useFoundationData } from "@/hooks/useFoundationData";
 
 /**
- * Fondasi Cerita — Sprint 1 Task 1.9
+ * Fondasi Cerita — Sprint 1 Task 1.9 (+ Sprint 2 Task 2.13 API integration)
  * Source: stitch-reference/fondasi_cerita_refined
- * Content: Istri yang Mereka Buang (fondasi_cerita_drama_consistent cues)
  * Wrapped by AppShell via router layout.
  */
 export function FoundationPage() {
-  const foundation = mockStoryFoundation;
+  const { foundation, notice, loading } = useFoundationData();
   const { pageCopy } = foundation;
 
   return (
     <div className="mx-auto flex w-full max-w-detail flex-col gap-8">
       <FoundationPageHeader title={pageCopy.title} subtitle={pageCopy.subtitle} />
+
+      <IntegrationNotice message={notice} />
+      {loading ? (
+        <p className="font-body-sm text-body-sm text-muted-text" role="status">
+          Memuat fondasi cerita...
+        </p>
+      ) : null}
 
       <FoundationReadinessCard readiness={foundation.readiness} />
 

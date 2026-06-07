@@ -25,7 +25,7 @@ vibenovel-unified-blueprint/
 
 | Folder | Status Sprint 2 | Keterangan |
 |---|---|---|
-| `apps/web` | **Sprint 1 complete** | UI parity Stitch final, typed dummy data — belum terhubung API |
+| `apps/web` | **Sprint 1 + Task 2.13** | UI parity Stitch; dashboard/settings/foundation bisa baca API dengan fallback mock |
 | `apps/api` | **Scaffold (Task 2.5)** | Hono Worker: `/health`, CORS, auth guard shell — belum CRUD/auth penuh |
 | `packages/shared` | **Implemented (Task 2.1)** | Domain types, enums, API contracts |
 | `packages/core` | Placeholder | Engine AI/story — nanti |
@@ -46,6 +46,8 @@ npm install
 npm run dev:web    # frontend → http://localhost:5173
 npm run dev:api    # API lokal → http://127.0.0.1:8787
 ```
+
+**Web + API integration (Task 2.13):** salin `apps/web/.env.example` → `apps/web/.env.local`. Default `VITE_USE_MOCKS=true` (UI tetap mock). Set `VITE_USE_MOCKS=false` + login Supabase untuk membaca dashboard/settings/foundation dari API.
 
 ### Perintah root
 
