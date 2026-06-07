@@ -3,7 +3,7 @@ pid: 68296
 cwd: "D:\Coding\vibenovel-unified-blueprint"
 command: "Set-Location D:\\Coding\\vibenovel-unified-blueprint; npm run dev:api"
 started_at: 2026-06-07T19:49:21.825Z
-running_for_ms: 2555001  
+running_for_ms: 2824999  
 ---
 
 > vibenovel@0.1.0 dev:api
@@ -292,3 +292,43 @@ X [ERROR] projects select by id failed
 [wrangler:inf] POST /api/projects/9408c17e-dcb0-48bb-9b66-662dfd3b245c/intake/extract-signals 200 OK (175ms)
 [wrangler:inf] GET /api/projects/9408c17e-dcb0-48bb-9b66-662dfd3b245c/intake/signals 200 OK (104ms)
 [wrangler:inf] GET /api/projects/a0000000-0000-4000-8000-000000000101/intake 404 Not Found (66ms)
+⎔ Reloading local server...
+⎔ Reloading local server...
+⎔ Reloading local server...
+⎔ Reloading local server...
+⎔ Reloading local server...
+[wrangler:inf] GET /health 200 OK (21ms)
+[wrangler:inf] GET /api/projects/test/concepts 401 Unauthorized (46ms)
+[wrangler:inf] GET /api/projects 200 OK (232ms)
+[wrangler:inf] POST /api/projects 201 Created (388ms)
+[wrangler:inf] POST /api/projects 201 Created (219ms)
+[wrangler:inf] POST /api/projects/1d4f1438-f9cf-422a-946b-d3c398ce25ab/concepts/generate 201 Created (230ms)
+[wrangler:inf] GET /api/projects/8a6a6893-30f4-4bf0-8445-298d956c7f8f/settings 200 OK (166ms)
+[wrangler:inf] GET /api/projects/1d4f1438-f9cf-422a-946b-d3c398ce25ab/concepts 200 OK (129ms)
+[wrangler:inf] PUT /api/projects/8a6a6893-30f4-4bf0-8445-298d956c7f8f/settings 200 OK (183ms)
+[wrangler:inf] GET /api/projects/1d4f1438-f9cf-422a-946b-d3c398ce25ab/concepts/bc50ed32-6e15-4462-a4b2-6fd4c6d191a0 200 OK (175ms)
+[wrangler:inf] PATCH /api/projects/1d4f1438-f9cf-422a-946b-d3c398ce25ab/concepts/bc50ed32-6e15-4462-a4b2-6fd4c6d191a0 200 OK (161ms)
+[wrangler:inf] GET /api/projects/8a6a6893-30f4-4bf0-8445-298d956c7f8f/foundation 200 OK (239ms)
+[wrangler:inf] PUT /api/projects/8a6a6893-30f4-4bf0-8445-298d956c7f8f/foundation 200 OK (128ms)
+[wrangler:inf] POST /api/projects/1d4f1438-f9cf-422a-946b-d3c398ce25ab/concepts/bc50ed32-6e15-4462-a4b2-6fd4c6d191a0/select 200 OK (163ms)
+[wrangler:inf] POST /api/projects/8a6a6893-30f4-4bf0-8445-298d956c7f8f/characters 201 Created (113ms)
+[wrangler:inf] GET /api/projects/1d4f1438-f9cf-422a-946b-d3c398ce25ab 200 OK (101ms)
+[wrangler:inf] POST /api/projects/8a6a6893-30f4-4bf0-8445-298d956c7f8f/facts 201 Created (103ms)
+[wrangler:inf] PATCH /api/projects/1d4f1438-f9cf-422a-946b-d3c398ce25ab/concepts/bc50ed32-6e15-4462-a4b2-6fd4c6d191a0 409 Conflict (112ms)
+[wrangler:inf] POST /api/projects/8a6a6893-30f4-4bf0-8445-298d956c7f8f/facts 400 Bad Request (91ms)
+[wrangler:inf] POST /api/projects/1d4f1438-f9cf-422a-946b-d3c398ce25ab/concepts/generate 201 Created (174ms)
+[wrangler:inf] POST /api/projects/8a6a6893-30f4-4bf0-8445-298d956c7f8f/speech-rules 201 Created (102ms)
+[wrangler:inf] POST /api/projects/8a6a6893-30f4-4bf0-8445-298d956c7f8f/speech-rules 400 Bad Request (77ms)
+[wrangler:inf] GET /api/projects/a0000000-0000-4000-8000-000000000101/concepts 404 Not Found (121ms)
+[wrangler:inf] POST /api/projects/8a6a6893-30f4-4bf0-8445-298d956c7f8f/proposals 201 Created (111ms)
+[wrangler:inf] POST /api/projects/8a6a6893-30f4-4bf0-8445-298d956c7f8f/proposals/fe8d04c9-b18d-4d6d-9474-bcf98afd4a15/accept 200 OK (144ms)
+[wrangler:inf] GET /api/credits/balance 200 OK (79ms)
+[wrangler:inf] POST /api/projects 201 Created (150ms)
+[wrangler:inf] POST /api/projects/46856/concepts/generate 500 Internal Server Error (86ms)
+X [ERROR] projects select by id failed
+
+
+[wrangler:inf] POST /api/projects/46856/concepts/generate 500 Internal Server Error (254ms)
+X [ERROR] projects select by id failed
+
+

@@ -10,6 +10,7 @@ import type {
   Project,
   ProjectSettings,
   RelationshipSpeechRule,
+  StoryConcept,
   StoryFoundation,
   UserProfile,
 } from "@vibenovel/shared";
@@ -61,6 +62,8 @@ export interface ProjectRow {
   entry_path: string | null;
   is_active: boolean;
   last_edited_at: string;
+  workflow_phase?: string | null;
+  selected_concept_id?: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -76,6 +79,8 @@ export function mapProjectRow(row: ProjectRow): Project {
     entryPath: row.entry_path as Project["entryPath"],
     isActive: row.is_active,
     lastEditedAt: row.last_edited_at,
+    workflowPhase: row.workflow_phase as Project["workflowPhase"],
+    selectedConceptId: row.selected_concept_id ?? null,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -446,6 +451,44 @@ export function mapDetectedSignalRow(row: DetectedSignalRow): DetectedSignal {
     status: row.status as DetectedSignal["status"],
     sourceMessageId: row.source_message_id,
     metadata: parseJsonObject(row.metadata),
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
+export interface StoryConceptRow {
+  id: string;
+  project_id: string;
+  title: string;
+  short_pitch: string;
+  reader_promise: string | null;
+  core_conflict: string | null;
+  genre: string | null;
+  tone: string | null;
+  target_reader: string | null;
+  status: string;
+  source: string;
+  score: number | null;
+  payload: JsonObject | unknown;
+  created_at: string;
+  updated_at: string;
+}
+
+export function mapStoryConceptRow(row: StoryConceptRow): StoryConcept {
+  return {
+    id: row.id,
+    projectId: row.project_id,
+    title: row.title,
+    shortPitch: row.short_pitch,
+    readerPromise: row.reader_promise,
+    coreConflict: row.core_conflict,
+    genre: row.genre,
+    tone: row.tone,
+    targetReader: row.target_reader,
+    status: row.status as StoryConcept["status"],
+    source: row.source as StoryConcept["source"],
+    score: row.score,
+    payload: parseJsonObject(row.payload),
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };

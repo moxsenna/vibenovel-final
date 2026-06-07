@@ -34,6 +34,7 @@ apps/api/
       ai-proposals.ts  # AI proposal queue lifecycle
       credits.ts       # GET /api/credits/balance — read-only
       intake.ts        # GET/POST intake, messages, signals (Task 3.2)
+      concepts.ts      # GET/POST/PATCH concepts, generate, select (Task 3.3)
       index.ts
     services/
       profile.ts       # getOrCreateProfileForAuthUser
@@ -46,6 +47,7 @@ apps/api/
       speech-rule.ts   # speech rules CRUD + character ref validation
       ai-proposal.ts   # proposal queue CRUD + accept/reject/merge
       intake.ts        # intake sessions, messages, detected signals (stub extractor)
+      concept.ts       # story_concepts list/generate/select (stub generator)
       audit.ts         # append-only audit_logs (service role)
     lib/
       supabase.ts      # anon + service role clients
@@ -122,6 +124,11 @@ apps/api/
 | GET | `/api/projects/:id/intake/signals` | Bearer JWT | List detected signals (`?status=` optional) |
 | POST | `/api/projects/:id/intake/extract-signals` | Bearer JWT | Rule-based signal extraction from user messages (not AI) |
 | PATCH | `/api/projects/:id/intake/signals/:signalId` | Bearer JWT | Update signal status (`detected` / `confirmed` / `dismissed`) |
+| GET | `/api/projects/:id/concepts` | Bearer JWT | List concept options (`?status=`, `?includeRejected=true`) |
+| POST | `/api/projects/:id/concepts/generate` | Bearer JWT | Stub-generate 3 concepts (`regenerate`, `basedOnSignals` optional) |
+| GET | `/api/projects/:id/concepts/:conceptId` | Bearer JWT | Concept detail |
+| PATCH | `/api/projects/:id/concepts/:conceptId` | Bearer JWT | Update proposed concept only (`selected` → 409) |
+| POST | `/api/projects/:id/concepts/:conceptId/select` | Bearer JWT | Select concept → updates `projects.selected_concept_id`, `workflow_phase=foundation` |
 
 ### Intake routes (Task 3.2)
 
@@ -134,6 +141,18 @@ All intake endpoints require Bearer JWT. Ownership via `getOwnedProjectRow` — 
 **Signal extraction:** `POST .../extract-signals` uses keyword heuristics on user message text. Upserts/dedupes by `type` + `value`. Does not create foundation or concepts.
 
 **Audit:** No `audit_logs` writes for intake in Task 3.2 (`audit_action` enum extension deferred).
+
+### Concept routes (Task 3.3)
+
+All concept endpoints require Bearer JWT. Ownership via `getOwnedProjectRow` + concept `project_id` match → cross-user `404`.
+
+**Not canon:** `story_concepts` never writes to `facts`, `story_foundations`, or `ai_proposals`. Select concept does **not** lock foundation.
+
+**Generate:** `POST .../concepts/generate` uses deterministic stub templates informed by `detected_signals` and project title. `regenerate=false` (default) returns existing active concepts if ≥3; `regenerate=true` rejects old `proposed` and creates 3 new. No OpenRouter / AI.
+
+**Select:** Sets one `selected` concept, rejects others, updates `projects.selected_concept_id` and `workflow_phase=foundation`.
+
+**Audit:** No concept-specific `audit_logs` in Task 3.3.
 
 ### Auth approach (Task 2.6)
 

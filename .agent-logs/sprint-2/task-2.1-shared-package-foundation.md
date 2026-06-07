@@ -86,7 +86,7 @@ Membuat package shared resmi di `packages/shared` untuk types, enums, dan kontra
 - `apps/web` belum mengimpor `@vibenovel/shared` — types Sprint 1 masih terpisah.
 - `dist/` tidak di-commit (gitignored); konsumen perlu `npm run build:shared` atau resolve via `src/` exports.
 - Tidak ada unit test untuk shared package.
-- Task 2.0b (agent work logs rule) dan log ini dibuat setelah Task 2.1 selesai — handoff awal tanpa log formal.
+- Task 2.0b (agent work logs rule) dibuat bersamaan; log Task 2.0 (`task-2.0-data-model-implementation-plan.md`) ditambahkan retroaktif.
 
 ## Next recommended task
 

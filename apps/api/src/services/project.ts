@@ -20,7 +20,7 @@ import { AppError } from "../errors.js";
 import { writeAuditLog } from "./audit.js";
 
 const PROJECT_SELECT =
-  "id, owner_id, title, genre, status, current_chapter, entry_path, is_active, last_edited_at, created_at, updated_at";
+  "id, owner_id, title, genre, status, current_chapter, entry_path, is_active, last_edited_at, workflow_phase, selected_concept_id, created_at, updated_at";
 
 const TITLE_MAX_LENGTH = 120;
 const GENRE_MAX_LENGTH = 80;
