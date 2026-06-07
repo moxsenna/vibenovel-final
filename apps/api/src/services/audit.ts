@@ -40,6 +40,8 @@ export interface WriteAuditLogInput {
   entityType?: AuditEntityType;
   entityId?: string;
   metadata?: Record<string, unknown>;
+  beforeData?: Record<string, unknown>;
+  afterData?: Record<string, unknown>;
 }
 
 /** Append-only audit log — service role only; never log secrets or tokens. */
@@ -55,6 +57,8 @@ export async function writeAuditLog(
     entity_type: input.entityType ?? null,
     entity_id: input.entityId ?? null,
     metadata: input.metadata ?? null,
+    before_data: input.beforeData ?? null,
+    after_data: input.afterData ?? null,
   });
 
   if (error) {

@@ -1,4 +1,9 @@
-import type { CreditBalance, Project, UserProfile } from "@vibenovel/shared";
+import type {
+  CreditBalance,
+  Project,
+  ProjectSettings,
+  UserProfile,
+} from "@vibenovel/shared";
 
 export interface ProfileRow {
   id: string;
@@ -64,6 +69,58 @@ export function mapProjectRow(row: ProjectRow): Project {
     lastEditedAt: row.last_edited_at,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
+  };
+}
+
+export interface ProjectSettingsRow {
+  id: string;
+  project_id: string;
+  quality_tier: string;
+  output_style_preference: string;
+  default_format: string;
+  target_length_band: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+const OUTPUT_STYLE_LABELS: Record<string, string> = {
+  warm_emotional: "Narasi hangat & emosional",
+  fast_paced: "Cepat & dinamis",
+  poetic: "Puitis & imajinatif",
+  conversational: "Santai & percakapan",
+  custom: "Kustom",
+};
+
+export function mapProjectSettingsRow(row: ProjectSettingsRow): ProjectSettings {
+  return {
+    id: row.id,
+    projectId: row.project_id,
+    qualityTier: row.quality_tier as ProjectSettings["qualityTier"],
+    defaultOutputStyle:
+      OUTPUT_STYLE_LABELS[row.output_style_preference] ?? row.output_style_preference,
+    defaultFormat: row.default_format as ProjectSettings["defaultFormat"],
+    targetLengthBand: row.target_length_band as ProjectSettings["targetLengthBand"],
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
+/** API response with task-friendly aliases alongside shared ProjectSettings fields. */
+export interface ProjectSettingsResponse extends ProjectSettings {
+  qualityMode: ProjectSettings["qualityTier"];
+  outputStylePreference: string;
+  mobileFormatPreference: ProjectSettings["defaultFormat"];
+  targetLengthPlan: ProjectSettings["targetLengthBand"];
+}
+
+export function mapProjectSettingsResponse(row: ProjectSettingsRow): ProjectSettingsResponse {
+  const base = mapProjectSettingsRow(row);
+  return {
+    ...base,
+    qualityMode: base.qualityTier,
+    outputStylePreference: row.output_style_preference,
+    mobileFormatPreference: base.defaultFormat,
+    targetLengthPlan: base.targetLengthBand,
   };
 }
 

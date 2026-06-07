@@ -177,7 +177,7 @@ async function deactivateOtherProjects(
   }
 }
 
-async function getOwnedProjectRow(
+export async function getOwnedProjectRow(
   bindings: AppBindings,
   ownerId: string,
   projectId: string,

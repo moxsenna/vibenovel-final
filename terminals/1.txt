@@ -3,7 +3,7 @@ pid: 68296
 cwd: "D:\Coding\vibenovel-unified-blueprint"
 command: "Set-Location D:\\Coding\\vibenovel-unified-blueprint; npm run dev:api"
 started_at: 2026-06-07T19:49:21.825Z
-running_for_ms: 90009    
+running_for_ms: 399997   
 ---
 
 > vibenovel@0.1.0 dev:api
@@ -57,3 +57,35 @@ X [ERROR] projects insert failed
 [wrangler:inf] GET /api/projects 200 OK (85ms)
 [wrangler:inf] GET /api/projects 200 OK (111ms)
 [wrangler:inf] GET /api/projects/a0000000-0000-4000-8000-000000000101 404 Not Found (60ms)
+⎔ Reloading local server...
+⎔ Reloading local server...
+⎔ Reloading local server...
+⎔ Reloading local server...
+[wrangler:inf] POST /api/projects 201 Created (240ms)
+[wrangler:inf] GET /api/projects/65300/settings 401 Unauthorized (3ms)
+[wrangler:inf] GET /api/projects/65300/settings 500 Internal Server Error (100ms)
+X [ERROR] projects select by id failed
+
+
+[wrangler:inf] PUT /api/projects/65300/settings 500 Internal Server Error (69ms)
+X [ERROR] projects select by id failed
+
+
+[wrangler:inf] PUT /api/projects/65300/settings 500 Internal Server Error (61ms)
+X [ERROR] projects select by id failed
+
+
+[wrangler:inf] PUT /api/projects/65300/settings 400 Bad Request (50ms)
+[wrangler:inf] GET /api/projects/65300/settings 500 Internal Server Error (57ms)
+X [ERROR] projects select by id failed
+
+
+[wrangler:inf] GET /api/projects/a0000000-0000-4000-8000-000000000101/settings 404 Not Found (62ms)
+[wrangler:inf] POST /api/projects 201 Created (102ms)
+[wrangler:inf] GET /api/projects/2f7f4939-cfac-4d4e-8fbd-1ccd13c31572/settings 401 Unauthorized (3ms)
+[wrangler:inf] GET /api/projects/2f7f4939-cfac-4d4e-8fbd-1ccd13c31572/settings 200 OK (108ms)
+[wrangler:inf] PUT /api/projects/2f7f4939-cfac-4d4e-8fbd-1ccd13c31572/settings 200 OK (132ms)
+[wrangler:inf] PUT /api/projects/2f7f4939-cfac-4d4e-8fbd-1ccd13c31572/settings 200 OK (123ms)
+[wrangler:inf] PUT /api/projects/2f7f4939-cfac-4d4e-8fbd-1ccd13c31572/settings 400 Bad Request (65ms)
+[wrangler:inf] GET /api/projects/2f7f4939-cfac-4d4e-8fbd-1ccd13c31572/settings 200 OK (95ms)
+[wrangler:inf] GET /api/projects/a0000000-0000-4000-8000-000000000101/settings 404 Not Found (64ms)

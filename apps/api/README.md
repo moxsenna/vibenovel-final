@@ -1,6 +1,6 @@
 # apps/api — VibeNovel API (Sprint 2)
 
-Hono API on **Cloudflare Workers** — Supabase JWT auth, profile sync, `/api/me`, project persistence (Task 2.7).
+Hono API on **Cloudflare Workers** — Supabase JWT auth, profile sync, `/api/me`, projects + settings persistence (Task 2.7–2.8).
 
 ## Stack
 
@@ -26,11 +26,13 @@ apps/api/
       health.ts
       me.ts            # GET /api/me — profile + credit balance
       projects.ts      # CRUD /api/projects — owner-only
+      project-settings.ts  # GET/PUT /api/projects/:id/settings
       index.ts
     services/
       profile.ts       # getOrCreateProfileForAuthUser
       credit.ts        # read-only credit_balances
       project.ts       # project CRUD + default project_settings on create
+      project-settings.ts  # settings read/upsert + validation
       audit.ts         # append-only audit_logs (service role)
     lib/
       supabase.ts      # anon + service role clients
@@ -76,6 +78,8 @@ apps/api/
 | GET | `/api/projects/:id` | Bearer JWT | Project detail (owner only) |
 | PATCH | `/api/projects/:id` | Bearer JWT | Update title, status, isActive, genre, targetLengthPlan |
 | DELETE | `/api/projects/:id` | Bearer JWT | Soft archive (`is_active = false`) |
+| GET | `/api/projects/:id/settings` | Bearer JWT | Project settings (creates defaults if missing) |
+| PUT | `/api/projects/:id/settings` | Bearer JWT | Update settings (enum-validated upsert) |
 
 ### Auth approach (Task 2.6)
 
@@ -130,6 +134,31 @@ Returns `{ ok: true, data: Project[] }` ordered by `updated_at` desc. Default ex
 
 Soft archive only — sets `is_active = false`, no hard delete. Audit log `project_updated` with `metadata.reason = "archive"`.
 
+### Project settings routes (Task 2.8)
+
+All settings endpoints require Bearer JWT. Ownership verified via `projects.owner_id = JWT userId` before reading/writing `project_settings`. Cross-user access → `404`.
+
+**`GET /api/projects/:id/settings`**
+
+Returns camelCase settings. Creates default row if missing (`seimbang`, `warm_emotional`, `hp_kbm`). Includes `defaultLanguage` (from profile) and `defaultGenre` (from project) as read context.
+
+**`PUT /api/projects/:id/settings`**
+
+```json
+{
+  "qualityMode": "terbaik",
+  "outputStylePreference": "warm_emotional",
+  "mobileFormatPreference": "hp_kbm",
+  "targetLengthPlan": "70_100",
+  "defaultLanguage": "id",
+  "defaultGenre": "Drama Misteri"
+}
+```
+
+Accepted aliases: `qualityTier`, `defaultFormat`, `targetLengthBand`. Rejects raw model/provider strings (OpenRouter, Gemini, GPT, Claude, etc.). `qualityMode` must be `hemat | seimbang | terbaik` only. Invalid enum → `400 BAD_REQUEST`.
+
+Writes `audit_logs` action `settings_updated` with `changedFields`, compact `before_data` / `after_data`.
+
 ### Response format
 
 Success: `{ "ok": true, "data": { ... } }`
@@ -154,14 +183,13 @@ npm run build:api
 | `APP_ENV` | Optional | Default `development` |
 | `ALLOWED_ORIGINS` | Optional | CSV; default localhost:5173–5175 |
 
-## Not in Task 2.7
+## Not in Task 2.8
 
 - `POST /api/auth/*` — use Supabase Auth client in browser instead
-- `GET/PUT /projects/:id/settings` full settings API (Task 2.8)
 - Story foundation / characters / facts CRUD (Task 2.9+)
 - OpenRouter / AI generation
 - Credit deduction / ledger
 - Cloudflare deploy
 - Frontend dashboard wired to real data
 
-See `docs/27-sprint-2-data-model-implementation-plan.md` Task 2.8+.
+See `docs/27-sprint-2-data-model-implementation-plan.md` Task 2.9+.
