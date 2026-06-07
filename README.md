@@ -11,13 +11,13 @@ VibeNovel adalah **AI Serial Fiction Production OS** — bukan chatbot novel bia
 ```txt
 vibenovel-unified-blueprint/
 ├── apps/
-│   ├── web/          ✅ Frontend React — Sprint 1 UI + minimal API integration (Task 2.13)
-│   └── api/          ✅ Backend API — Hono/Cloudflare Worker (Task 2.5–2.12)
+│   ├── web/          ✅ Frontend React — Sprint 1 UI + API integration (Task 2.13, 3.6, 4.6)
+│   └── api/          ✅ Backend API — Hono/Cloudflare Worker (Task 2.5–4.5)
 ├── packages/
 │   ├── core/         ⏳ Placeholder — story/AI engine (Sprint 4–6+)
-│   └── shared/       ✅ Shared domain types & API contracts (Task 2.1)
-├── supabase/         ✅ Migration + seed — runtime verified (Task 2.3/2.4)
-├── scripts/          ✅ Smoke tests — API (2.15) + web E2E (3.8)
+│   └── shared/       ✅ Shared domain types & API contracts (Task 2.1, 4.1)
+├── supabase/         ✅ Migration + seed — runtime verified (Task 2.3/2.4, 4.1)
+├── scripts/          ✅ Smoke tests — API (2.15, 4.7) + web E2E (3.8)
 ├── docs/             📘 Unified product & technical blueprint
 ├── .agents/rules/    🤖 Agent behavior rules
 └── stitch-reference/ 🎨 Stitch UI source of truth
@@ -25,12 +25,12 @@ vibenovel-unified-blueprint/
 
 | Folder | Status Sprint 2 | Keterangan |
 |---|---|---|
-| `apps/web` | **Sprint 3 complete** | UI parity Stitch; dashboard/settings/foundation + intake/concepts/foundation flow |
-| `apps/api` | **Sprint 3 complete** | Sprint 2 APIs + intake, concepts, foundation proposals, readiness, lock |
-| `packages/shared` | **Implemented (Task 2.1)** | Domain types, enums, API contracts |
+| `apps/web` | **Sprint 4 complete** | UI parity Stitch; foundation flow + outline cerita API integration |
+| `apps/api` | **Sprint 4 complete** | Sprint 2–3 APIs + outline planning engine (generate, CRUD, approve/lock) |
+| `packages/shared` | **Implemented (Task 2.1, 4.1)** | Domain types, enums, outline planning contracts |
 | `packages/core` | Placeholder | Engine AI/story — nanti |
-| `supabase` | **Migration + seed (Task 2.3/2.4, 3.1)** | 14 tabel (+ intake/concepts), RLS, demo seed — `supabase db reset` verified |
-| `scripts` | **Smoke scripts (2.15, 3.8)** | `smoke:api`, `smoke:web` — see `scripts/README.md` |
+| `supabase` | **Migration + seed (Task 4.1)** | 18 tabel (+ outline planning), RLS, demo seed — `supabase db reset` verified |
+| `scripts` | **Smoke scripts (2.15, 3.8, 4.7)** | `smoke:api`, `smoke:web`, `sprint4-smoke-api.ps1` — see `scripts/README.md` |
 | `docs` | Dokumentasi | Sumber arsitektur & sprint plan |
 | `stitch-reference` | Referensi desain | HTML + screen.png per halaman |
 
@@ -170,7 +170,36 @@ Belum ada (sengaja — defer Sprint 4+):
 - Web E2E in GitHub Actions CI (deferred — local smoke only)
 - Full proposal reject/merge UI
 
-**Task berikutnya (disarankan):** Sprint 4 — Outline Planning Engine.
+---
+
+## Sprint 4 — selesai ✅
+
+**Outline Planning Engine — rencana 10 bab, tracking, approve/lock.**
+
+**Rencana:** [`docs/32-sprint-4-outline-planning-engine-implementation-plan.md`](docs/32-sprint-4-outline-planning-engine-implementation-plan.md)  
+**Laporan penutupan:** [`docs/33-sprint-4-verification-report.md`](docs/33-sprint-4-verification-report.md)
+
+| Task | Status | Deliverable |
+|---|---|---|
+| 4.0 Flow plan | ✅ | `docs/32` |
+| 4.1 Data model migration | ✅ | `00003_sprint4_outline_planning.sql` + shared types |
+| 4.2 Outline generation stub API | ✅ | GET/POST outline bundle + generate |
+| 4.2b Generation scope fix | ✅ | 3 loops / 3 reveals (MVP) |
+| 4.3 Chapter outline CRUD API | ✅ | GET/PATCH chapters |
+| 4.4 Open loop / reveal tracking API | ✅ | CRUD + `planningTruth` redaction |
+| 4.5 Approve/lock workflow API | ✅ | `reviewing` → `outline_locked` |
+| 4.6 Web OutlinePage integration | ✅ | API mode + mock fallback |
+| 4.7 Verification report | ✅ | `docs/33` + `sprint4-smoke-api.ps1` |
+
+Belum ada (sengaja — defer Sprint 5+):
+
+- Write Room persistence / prose generation
+- Writer Context Packet
+- OpenRouter / AI generation
+- Automated outline API-mode Playwright (**Task 4.8 optional**)
+- Web E2E in GitHub Actions CI
+
+**Task berikutnya (disarankan):** Sprint 5 — Safe Write Room & Context Packet. Opsional: Task 4.8 — Outline Web E2E API-mode smoke.
 
 ---
 
@@ -186,7 +215,9 @@ Belum ada (sengaja — defer Sprint 4+):
 6. `docs/22-sprint-1-verification-report.md` — status penutupan Sprint 1
 7. `docs/29-sprint-2-verification-report.md` — status penutupan Sprint 2
 8. `docs/31-sprint-3-verification-report.md` — status penutupan Sprint 3
-9. `docs/30-sprint-3-story-foundation-flow-implementation-plan.md` — rencana Sprint 3
+9. `docs/33-sprint-4-verification-report.md` — status penutupan Sprint 4
+10. `docs/32-sprint-4-outline-planning-engine-implementation-plan.md` — rencana Sprint 4
+11. `docs/30-sprint-3-story-foundation-flow-implementation-plan.md` — rencana Sprint 3
 10. `docs/27-sprint-2-data-model-implementation-plan.md` — rencana Sprint 2
 
 ### Untuk AI coding agent
