@@ -1,5 +1,7 @@
 import type {
   AiProposal,
+  ChapterOutline,
+  ChapterOutlineMarker,
   Character,
   CreditBalance,
   DetectedSignal,
@@ -7,6 +9,9 @@ import type {
   IntakeMessage,
   IntakeSession,
   JsonObject,
+  OpenLoop,
+  OutlinePlan,
+  PlannedReveal,
   Project,
   ProjectSettings,
   RelationshipSpeechRule,
@@ -492,4 +497,177 @@ export function mapStoryConceptRow(row: StoryConceptRow): StoryConcept {
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
+}
+
+function parseMarkers(value: unknown): ChapterOutlineMarker[] {
+  if (!Array.isArray(value)) return [];
+  return value
+    .filter(
+      (item): item is ChapterOutlineMarker =>
+        item !== null &&
+        typeof item === "object" &&
+        !Array.isArray(item) &&
+        typeof (item as ChapterOutlineMarker).type === "string",
+    )
+    .map((item) => ({
+      type: item.type,
+      ...(item.label ? { label: item.label } : {}),
+    }));
+}
+
+export interface OutlinePlanRow {
+  id: string;
+  project_id: string;
+  status: string;
+  season_label: string;
+  arc_summary: string | null;
+  retention_summary: string | null;
+  target_chapter_count: number;
+  planning_notes: string | null;
+  metadata: JsonObject | unknown;
+  locked_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export function mapOutlinePlanRow(row: OutlinePlanRow): OutlinePlan {
+  return {
+    id: row.id,
+    projectId: row.project_id,
+    status: row.status as OutlinePlan["status"],
+    seasonLabel: row.season_label,
+    arcSummary: row.arc_summary,
+    retentionSummary: row.retention_summary,
+    targetChapterCount: row.target_chapter_count,
+    planningNotes: row.planning_notes,
+    metadata: parseJsonObject(row.metadata),
+    lockedAt: row.locked_at,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
+export interface ChapterOutlineRow {
+  id: string;
+  project_id: string;
+  outline_plan_id: string;
+  chapter_number: number;
+  title: string;
+  summary: string;
+  purpose: string | null;
+  chapter_function: string;
+  emotional_direction: string | null;
+  hook: string | null;
+  ending_hook: string | null;
+  mini_victory: string | null;
+  pov_character_id: string | null;
+  status: string;
+  markers: JsonObject | unknown;
+  metadata: JsonObject | unknown;
+  created_at: string;
+  updated_at: string;
+}
+
+export function mapChapterOutlineRow(row: ChapterOutlineRow): ChapterOutline {
+  return {
+    id: row.id,
+    projectId: row.project_id,
+    outlinePlanId: row.outline_plan_id,
+    chapterNumber: row.chapter_number,
+    title: row.title,
+    summary: row.summary,
+    purpose: row.purpose,
+    chapterFunction: row.chapter_function as ChapterOutline["chapterFunction"],
+    emotionalDirection: row.emotional_direction as ChapterOutline["emotionalDirection"],
+    hook: row.hook,
+    endingHook: row.ending_hook,
+    miniVictory: row.mini_victory,
+    povCharacterId: row.pov_character_id,
+    status: row.status as ChapterOutline["status"],
+    markers: parseMarkers(row.markers),
+    metadata: parseJsonObject(row.metadata),
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
+export interface OpenLoopRow {
+  id: string;
+  project_id: string;
+  outline_plan_id: string;
+  opened_in_chapter_outline_id: string | null;
+  payoff_chapter_outline_id: string | null;
+  question: string;
+  reader_facing_hint: string | null;
+  status: string;
+  importance: string;
+  metadata: JsonObject | unknown;
+  created_at: string;
+  updated_at: string;
+}
+
+export function mapOpenLoopRow(row: OpenLoopRow): OpenLoop {
+  return {
+    id: row.id,
+    projectId: row.project_id,
+    outlinePlanId: row.outline_plan_id,
+    openedInChapterOutlineId: row.opened_in_chapter_outline_id,
+    payoffChapterOutlineId: row.payoff_chapter_outline_id,
+    question: row.question,
+    readerFacingHint: row.reader_facing_hint,
+    status: row.status as OpenLoop["status"],
+    importance: row.importance as OpenLoop["importance"],
+    metadata: parseJsonObject(row.metadata),
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
+export interface PlannedRevealRow {
+  id: string;
+  project_id: string;
+  outline_plan_id: string;
+  planned_chapter_outline_id: string | null;
+  related_fact_id: string | null;
+  related_proposal_id: string | null;
+  title: string;
+  planning_truth: string;
+  reader_facing_hint: string | null;
+  forbidden_before_chapter: number | null;
+  status: string;
+  risk_level: string;
+  metadata: JsonObject | unknown;
+  created_at: string;
+  updated_at: string;
+}
+
+export function mapPlannedRevealRow(row: PlannedRevealRow): PlannedReveal {
+  return {
+    id: row.id,
+    projectId: row.project_id,
+    outlinePlanId: row.outline_plan_id,
+    plannedChapterOutlineId: row.planned_chapter_outline_id,
+    relatedFactId: row.related_fact_id,
+    relatedProposalId: row.related_proposal_id,
+    title: row.title,
+    planningTruth: row.planning_truth,
+    readerFacingHint: row.reader_facing_hint,
+    forbiddenBeforeChapter: row.forbidden_before_chapter,
+    status: row.status as PlannedReveal["status"],
+    riskLevel: row.risk_level as PlannedReveal["riskLevel"],
+    metadata: parseJsonObject(row.metadata),
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
+/** Default GET — planner UI summary without raw planning_truth (writer-safe boundary). */
+export type PlannedRevealPublic = Omit<PlannedReveal, "planningTruth"> & {
+  planningTruthRedacted: true;
+};
+
+export function mapPlannedRevealPublic(row: PlannedRevealRow): PlannedRevealPublic {
+  const full = mapPlannedRevealRow(row);
+  const { planningTruth: _omitted, ...rest } = full;
+  return { ...rest, planningTruthRedacted: true };
 }

@@ -1,4 +1,4 @@
-# apps/api — VibeNovel API (Sprint 2–3)
+# apps/api — VibeNovel API (Sprint 2–4)
 
 Hono API on **Cloudflare Workers** — Supabase JWT auth, projects, canon APIs, AI proposal queue, credit balance read (Task 2.6–2.12), intake persistence (Task 3.2).
 
@@ -35,6 +35,7 @@ apps/api/
       credits.ts       # GET /api/credits/balance — read-only
       intake.ts        # GET/POST intake, messages, signals (Task 3.2)
       concepts.ts      # GET/POST/PATCH concepts, generate, select (Task 3.3)
+      outline.ts       # GET outline bundle, POST generate stub (Task 4.2)
       index.ts
     services/
       profile.ts       # getOrCreateProfileForAuthUser
@@ -51,6 +52,9 @@ apps/api/
       foundation-proposal.ts  # stub foundation proposal batch (Task 3.4)
       foundation-readiness.ts # server-side readiness calculator (Task 3.4)
       foundation-lock.ts      # lock workflow + safe canon promotion (Task 3.5)
+      outline.ts       # outline bundle read + stub generate (Task 4.2)
+      outline-snapshot.ts   # canon snapshot for planner (read-only)
+      outline-generator.ts  # deterministic 10-chapter stub (Task 4.2)
       audit.ts         # append-only audit_logs (service role)
     lib/
       supabase.ts      # anon + service role clients
@@ -136,6 +140,8 @@ apps/api/
 | GET | `/api/projects/:id/foundation/proposals` | Bearer JWT | Foundation-flow proposals (`?includeResolved=true`) |
 | GET | `/api/projects/:id/foundation/readiness` | Bearer JWT | Server-side readiness score, checks, `canLock` |
 | POST | `/api/projects/:id/foundation/lock` | Bearer JWT | Lock foundation + promote accepted safe proposals (Task 3.5) |
+| GET | `/api/projects/:id/outline` | Bearer JWT | Outline bundle: plan + chapters + loops + reveals (Task 4.2) |
+| POST | `/api/projects/:id/outline/generate` | Bearer JWT | Deterministic outline stub — requires foundation locked (Task 4.2) |
 
 ### Intake routes (Task 3.2)
 
@@ -213,6 +219,64 @@ Lock does **not** write `ai_proposal_accepted` audit (accept is separate). Write
 **On success:** Sets `story_foundations.is_locked=true`, `status=locked`, `locked_at`, updates readiness; sets `projects.workflow_phase=foundation_locked`. Returns `{ foundation, readiness, promoted: { characters, facts, speechRules } }`.
 
 **Limitation:** No DB transaction wrapper — all accepted proposals validated before writes; partial failure may leave promoted canon without lock if lock update fails (rare).
+
+### Outline routes (Task 4.2)
+
+All outline endpoints require Bearer JWT. Ownership via `getOwnedProjectRow` — cross-user access → `404`.
+
+**Not prose / not AI:** Outline generation is a **deterministic stub** (`outline_stub_deterministic`). No OpenRouter, no model router, no AI generation, no prose/chapter bodies.
+
+**Foundation gate:** `POST .../outline/generate` requires `story_foundations.is_locked=true` and a selected concept (`status=selected`). If foundation not locked → `409 CONFLICT` with message `Foundation must be locked before generating outline` and `details.missing: ["foundation_locked"]`.
+
+**`GET /api/projects/:id/outline`**
+
+Returns `200` with camelCase bundle:
+
+```json
+{
+  "ok": true,
+  "data": {
+    "outlinePlan": null,
+    "chapterOutlines": [],
+    "openLoops": [],
+    "plannedReveals": [],
+    "planningTruthRedacted": true
+  }
+}
+```
+
+When no plan exists, `outlinePlan` is `null` and arrays are empty (UI can show generate CTA). When plan exists, includes ordered `chapterOutlines`, `openLoops`, and `plannedReveals`.
+
+**Planner/writer boundary — `planning_truth` redaction:** Default GET (and generate response) **omit** `plannedReveals[].planningTruth`. Each reveal includes `planningTruthRedacted: true`. Raw `planning_truth` is planner-only DB data; writer Context Packet (Sprint 5+) must never receive it from this endpoint.
+
+**`POST /api/projects/:id/outline/generate`**
+
+Optional body:
+
+```json
+{
+  "targetChapterCount": 10,
+  "regenerate": false,
+  "seasonLabel": "Bab 1–10: Awal Konflik",
+  "arcSummary": "Ringkasan arc opsional"
+}
+```
+
+- `targetChapterCount` — integer `1..50` (Sprint 4 API cap; DB allows up to 200). Default `10`.
+- `regenerate=false` (default) — if outline plan exists with chapters, returns existing bundle (`200`, `created: false`).
+- `regenerate=true` — deletes existing `open_loops`, `planned_reveals`, `chapter_outlines` for the plan and inserts fresh stub. Rejected if `outline_plans.status=locked` → `409`.
+
+Stub output (default 10 chapters): parity baseline `apps/web/src/mocks/outline.ts` — drama rumah tangga / revenge arc, hooks every chapter, ≥3 mini victories, **3** `open_loops`, **3** `planned_reveals` (MVP cap 4 each before Reveal Gate matures).
+
+**Canon guardrails — outline does NOT mutate:**
+
+- `facts`, `characters`, `relationship_speech_rules`, `story_foundations`
+- No `ai_proposals` created from generate (Task 4.2)
+- No credit balance changes
+
+**Workflow:** On successful generate, if `projects.workflow_phase=foundation_locked`, sets `workflow_phase=outline`. Does not set `outline_locked` or unlock foundation.
+
+**Audit:** No outline-specific `audit_action` enum in Task 4.2. Workflow phase change may write existing `project_updated` audit when advancing from `foundation_locked`.
 
 ### Auth approach (Task 2.6)
 
