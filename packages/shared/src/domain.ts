@@ -8,22 +8,30 @@ import type {
   CharacterStatus,
   CreditBalanceSource,
   DefaultLanguage,
+  DetectedSignalStatus,
+  DetectedSignalType,
   FactCanonStatus,
   FactCategory,
   FactImportance,
   FactSource,
   FoundationReadinessLevel,
   FoundationStatus,
+  IntakeMessageRole,
+  IntakePhase,
+  IntakeSessionStatus,
   MobileFormatPreference,
   ProjectEntryPath,
   ProjectStatus,
   ReaderTarget,
   SpeechRuleSource,
   SpeechRuleStatus,
+  StoryConceptSource,
+  StoryConceptStatus,
   StoryGenre,
   SubscriptionPlan,
   TargetLengthPlan,
   UserRole,
+  WorkflowPhase,
   WriterQualityMode,
 } from "./enums.js";
 import type { ID, ISODateTime, JsonObject, Timestamps } from "./utils.js";
@@ -53,6 +61,10 @@ export interface Project extends Timestamps {
   entryPath: ProjectEntryPath | null;
   isActive: boolean;
   lastEditedAt: ISODateTime;
+  /** Sprint 3 — selected concept pointer; not canon. */
+  selectedConceptId?: ID | null;
+  /** Sprint 3 — workflow routing: intake → concepts → foundation → locked. */
+  workflowPhase?: WorkflowPhase;
 }
 
 export interface ProjectSettings extends Timestamps {
@@ -173,6 +185,60 @@ export interface CreditBalance {
   resetAt: string | null;
   source: CreditBalanceSource;
   updatedAt: ISODateTime;
+}
+
+// --- Sprint 3: intake & concepts (not canon — no direct writes to facts) ---
+
+export interface IntakeSession extends Timestamps {
+  id: ID;
+  projectId: ID;
+  status: IntakeSessionStatus;
+  phase: IntakePhase;
+  progressPercent: number;
+  summary: string | null;
+  metadata: JsonObject;
+}
+
+/** Chat messages during intake — not canon. */
+export interface IntakeMessage {
+  id: ID;
+  projectId: ID;
+  sessionId: ID;
+  role: IntakeMessageRole;
+  content: string;
+  metadata: JsonObject;
+  createdAt: ISODateTime;
+}
+
+/** Extracted signals from intake — not canon until promoted via proposals. */
+export interface DetectedSignal extends Timestamps {
+  id: ID;
+  projectId: ID;
+  sessionId: ID | null;
+  type: DetectedSignalType;
+  label: string;
+  value: string;
+  confidence: number | null;
+  status: DetectedSignalStatus;
+  sourceMessageId: ID | null;
+  metadata: JsonObject;
+}
+
+/** Concept options — not canon; selection does not lock foundation or write facts. */
+export interface StoryConcept extends Timestamps {
+  id: ID;
+  projectId: ID;
+  title: string;
+  shortPitch: string;
+  readerPromise: string | null;
+  coreConflict: string | null;
+  genre: string | null;
+  tone: string | null;
+  targetReader: string | null;
+  status: StoryConceptStatus;
+  source: StoryConceptSource;
+  score: number | null;
+  payload: JsonObject;
 }
 
 // Sprint 4+: chapters, reveals, beat_contracts, prose_versions — deferred.

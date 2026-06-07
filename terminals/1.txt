@@ -3,7 +3,7 @@ pid: 68296
 cwd: "D:\Coding\vibenovel-unified-blueprint"
 command: "Set-Location D:\\Coding\\vibenovel-unified-blueprint; npm run dev:api"
 started_at: 2026-06-07T19:49:21.825Z
-running_for_ms: 1435011  
+running_for_ms: 2370006  
 ---
 
 > vibenovel@0.1.0 dev:api
@@ -180,3 +180,56 @@ X [ERROR] projects select by id failed
 [wrangler:inf] GET /api/projects/a77dbcae-b2c8-4ba3-a106-a6d331527b66/settings 200 OK (107ms)
 [wrangler:inf] PUT /api/projects/a77dbcae-b2c8-4ba3-a106-a6d331527b66/settings 200 OK (162ms)
 [wrangler:inf] GET /api/projects/a77dbcae-b2c8-4ba3-a106-a6d331527b66/foundation 200 OK (211ms)
+[wrangler:inf] GET /health 200 OK (127ms)
+[wrangler:inf] GET /api/me 401 Unauthorized (621ms)
+[wrangler:inf] GET /api/projects 200 OK (358ms)
+[wrangler:inf] POST /api/projects 201 Created (219ms)
+[wrangler:inf] GET /api/projects/f9e8ec63-d976-40a4-bffb-eedc33944201/settings 200 OK (161ms)
+[wrangler:inf] PUT /api/projects/f9e8ec63-d976-40a4-bffb-eedc33944201/settings 200 OK (311ms)
+[wrangler:inf] GET /api/projects/f9e8ec63-d976-40a4-bffb-eedc33944201/foundation 200 OK (385ms)
+[wrangler:inf] PUT /api/projects/f9e8ec63-d976-40a4-bffb-eedc33944201/foundation 200 OK (229ms)
+[wrangler:inf] POST /api/projects/f9e8ec63-d976-40a4-bffb-eedc33944201/characters 201 Created (270ms)
+[wrangler:inf] POST /api/projects/f9e8ec63-d976-40a4-bffb-eedc33944201/facts 201 Created (176ms)
+[wrangler:inf] POST /api/projects/f9e8ec63-d976-40a4-bffb-eedc33944201/facts 400 Bad Request (199ms)
+[wrangler:inf] POST /api/projects/f9e8ec63-d976-40a4-bffb-eedc33944201/speech-rules 201 Created (259ms)
+[wrangler:inf] POST /api/projects/f9e8ec63-d976-40a4-bffb-eedc33944201/speech-rules 400 Bad Request (171ms)
+[wrangler:inf] POST /api/projects/f9e8ec63-d976-40a4-bffb-eedc33944201/proposals 201 Created (247ms)
+[wrangler:inf] POST /api/projects/f9e8ec63-d976-40a4-bffb-eedc33944201/proposals/7a317a44-4fe1-4c05-9591-2e9e4abd0fb8/accept 200 OK (283ms)
+[wrangler:inf] GET /api/credits/balance 200 OK (169ms)
+[wrangler:inf] GET /api/projects/a0000000-0000-4000-8000-000000000101 404 Not Found (93ms)
+⎔ Reloading local server...
+⎔ Reloading local server...
+⎔ Reloading local server...
+[wrangler:inf] GET /health 200 OK (17ms)
+[wrangler:inf] GET /health 200 OK (7ms)
+[wrangler:inf] GET /health 200 OK (5ms)
+[wrangler:inf] GET /api/projects 200 OK (284ms)
+[wrangler:inf] POST /api/projects 201 Created (248ms)
+[wrangler:inf] GET /api/projects/9256f6d0-a640-4f61-b1c9-50c717259c44/settings 200 OK (173ms)
+[wrangler:inf] PUT /api/projects/9256f6d0-a640-4f61-b1c9-50c717259c44/settings 200 OK (246ms)
+[wrangler:inf] GET /api/projects/9256f6d0-a640-4f61-b1c9-50c717259c44/foundation 200 OK (240ms)
+[wrangler:inf] PUT /api/projects/9256f6d0-a640-4f61-b1c9-50c717259c44/foundation 200 OK (191ms)
+[wrangler:inf] POST /api/projects/9256f6d0-a640-4f61-b1c9-50c717259c44/characters 201 Created (178ms)
+[wrangler:inf] POST /api/projects/9256f6d0-a640-4f61-b1c9-50c717259c44/facts 201 Created (344ms)
+[wrangler:inf] POST /api/projects/9256f6d0-a640-4f61-b1c9-50c717259c44/facts 400 Bad Request (103ms)
+[wrangler:inf] POST /api/projects/9256f6d0-a640-4f61-b1c9-50c717259c44/speech-rules 201 Created (147ms)
+[wrangler:inf] POST /api/projects/9256f6d0-a640-4f61-b1c9-50c717259c44/speech-rules 400 Bad Request (101ms)
+[wrangler:inf] POST /api/projects/9256f6d0-a640-4f61-b1c9-50c717259c44/proposals 201 Created (154ms)
+[wrangler:inf] POST /api/projects/9256f6d0-a640-4f61-b1c9-50c717259c44/proposals/e04ccae2-2fcb-41fb-974b-3679542f7ed8/accept 200 OK (161ms)
+[wrangler:inf] GET /api/credits/balance 200 OK (85ms)
+⎔ Reloading local server...
+[wrangler:inf] GET /health 200 OK (49ms)
+[wrangler:inf] GET /api/projects 200 OK (142ms)
+[wrangler:inf] POST /api/projects 201 Created (143ms)
+[wrangler:inf] GET /api/projects/7f3034e3-e08b-4334-be75-2a71da0f79df/settings 200 OK (150ms)
+[wrangler:inf] PUT /api/projects/7f3034e3-e08b-4334-be75-2a71da0f79df/settings 200 OK (155ms)
+[wrangler:inf] GET /api/projects/7f3034e3-e08b-4334-be75-2a71da0f79df/foundation 200 OK (165ms)
+[wrangler:inf] PUT /api/projects/7f3034e3-e08b-4334-be75-2a71da0f79df/foundation 200 OK (185ms)
+[wrangler:inf] POST /api/projects/7f3034e3-e08b-4334-be75-2a71da0f79df/characters 201 Created (131ms)
+[wrangler:inf] POST /api/projects/7f3034e3-e08b-4334-be75-2a71da0f79df/facts 201 Created (116ms)
+[wrangler:inf] POST /api/projects/7f3034e3-e08b-4334-be75-2a71da0f79df/facts 400 Bad Request (74ms)
+[wrangler:inf] POST /api/projects/7f3034e3-e08b-4334-be75-2a71da0f79df/speech-rules 201 Created (83ms)
+[wrangler:inf] POST /api/projects/7f3034e3-e08b-4334-be75-2a71da0f79df/speech-rules 400 Bad Request (69ms)
+[wrangler:inf] POST /api/projects/7f3034e3-e08b-4334-be75-2a71da0f79df/proposals 201 Created (151ms)
+[wrangler:inf] POST /api/projects/7f3034e3-e08b-4334-be75-2a71da0f79df/proposals/17a34bdd-e7f6-4f18-9e35-20a1b5785787/accept 200 OK (127ms)
+[wrangler:inf] GET /api/credits/balance 200 OK (89ms)

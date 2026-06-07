@@ -1,7 +1,8 @@
 -- =============================================================================
--- VibeNovel Sprint 2 — Dev/demo seed (Task 2.4)
+-- VibeNovel Sprint 2+ — Dev/demo seed (Task 2.4, extended Task 3.1)
 -- Maps Sprint 1 mocks → local DB. Idempotent: safe after `supabase db reset`.
 -- Canon: facts = confirmed only; AI suggestions → ai_proposals (proposed).
+-- Sprint 3 tables (intake/concepts) are NOT canon.
 -- =============================================================================
 
 -- Fixed UUIDs (repeatable; demo-project-001 concept → DEMO_PROJECT_ID)
@@ -435,3 +436,215 @@ VALUES
     '{"balance":1250,"source":"seed"}'::jsonb
   )
 ON CONFLICT (id) DO NOTHING;
+
+-- -----------------------------------------------------------------------------
+-- Sprint 3 — intake session (demo project; maps mockIntakeSession)
+-- -----------------------------------------------------------------------------
+INSERT INTO public.intake_sessions (
+  id,
+  project_id,
+  status,
+  phase,
+  progress_percent,
+  summary,
+  metadata
+)
+VALUES (
+  'a0000000-0000-4000-8000-000000000801',
+  'a0000000-0000-4000-8000-000000000101',
+  'completed',
+  'foundation_preparation',
+  40,
+  'Drama rumah tangga — istri diremehkan, berjuang bangkit.',
+  '{"source":"seed","mock_ref":"mockIntakeSession"}'::jsonb
+)
+ON CONFLICT (id) DO UPDATE SET
+  status = EXCLUDED.status,
+  phase = EXCLUDED.phase,
+  progress_percent = EXCLUDED.progress_percent,
+  summary = EXCLUDED.summary,
+  metadata = EXCLUDED.metadata,
+  updated_at = now();
+
+-- -----------------------------------------------------------------------------
+-- intake_messages (3 messages from Sprint 1 mock)
+-- -----------------------------------------------------------------------------
+INSERT INTO public.intake_messages (
+  id, project_id, session_id, role, content, metadata, created_at
+)
+VALUES
+  (
+    'a0000000-0000-4000-8000-000000000811',
+    'a0000000-0000-4000-8000-000000000101',
+    'a0000000-0000-4000-8000-000000000801',
+    'agent',
+    'Halo! Aku siap mendampingi kamu merangkai rasa cerita. Untuk memulai, ceritakan gambaran kasarmu — tidak perlu sempurna.',
+    '{"mock_id":"msg-001"}'::jsonb,
+    '2026-06-05T10:00:00+07:00'::timestamptz
+  ),
+  (
+    'a0000000-0000-4000-8000-000000000812',
+    'a0000000-0000-4000-8000-000000000101',
+    'a0000000-0000-4000-8000-000000000801',
+    'user',
+    'Aku mau tulis drama rumah tangga tentang istri yang diremehkan keluarga suami, lalu perlahan bangkit dan menemukan keberanian sendiri. Ceritanya emosional dan enak dibaca di HP.',
+    '{"mock_id":"msg-002"}'::jsonb,
+    '2026-06-05T10:02:00+07:00'::timestamptz
+  ),
+  (
+    'a0000000-0000-4000-8000-000000000813',
+    'a0000000-0000-4000-8000-000000000101',
+    'a0000000-0000-4000-8000-000000000801',
+    'agent',
+    'Rasa ceritanya sudah terasa kuat — drama rumah tangga dengan perjalanan harga diri. Aku catat sebagai Drama Rumah Tangga dengan nuansa Bangkit & Berani.
+
+Bisa ceritakan sedikit tentang tokoh utama? Siapa perempuan di pusat cerita ini, dan apa yang paling menyakitkan baginya?',
+    '{"mock_id":"msg-003"}'::jsonb,
+    '2026-06-05T10:03:00+07:00'::timestamptz
+  )
+ON CONFLICT (id) DO UPDATE SET
+  content = EXCLUDED.content,
+  metadata = EXCLUDED.metadata;
+
+-- -----------------------------------------------------------------------------
+-- detected_signals (from mockIntakeSession.detectedSignals)
+-- -----------------------------------------------------------------------------
+INSERT INTO public.detected_signals (
+  id, project_id, session_id, type, label, value, confidence, status, source_message_id, metadata
+)
+VALUES
+  (
+    'a0000000-0000-4000-8000-000000000821',
+    'a0000000-0000-4000-8000-000000000101',
+    'a0000000-0000-4000-8000-000000000801',
+    'genre',
+    'Drama Rumah Tangga',
+    'drama rumah tangga',
+    0.850,
+    'confirmed',
+    'a0000000-0000-4000-8000-000000000812',
+    '{"icon":"theater_comedy"}'::jsonb
+  ),
+  (
+    'a0000000-0000-4000-8000-000000000822',
+    'a0000000-0000-4000-8000-000000000101',
+    'a0000000-0000-4000-8000-000000000801',
+    'tone',
+    'Bangkit & Berani',
+    'bangkit dan berani',
+    0.780,
+    'confirmed',
+    'a0000000-0000-4000-8000-000000000812',
+    '{"icon":"local_fire_department"}'::jsonb
+  ),
+  (
+    'a0000000-0000-4000-8000-000000000823',
+    'a0000000-0000-4000-8000-000000000101',
+    'a0000000-0000-4000-8000-000000000801',
+    'target_reader',
+    'Serial HP',
+    'hp_serial',
+    0.720,
+    'confirmed',
+    'a0000000-0000-4000-8000-000000000812',
+    '{"icon":"smartphone"}'::jsonb
+  ),
+  (
+    'a0000000-0000-4000-8000-000000000824',
+    'a0000000-0000-4000-8000-000000000101',
+    'a0000000-0000-4000-8000-000000000801',
+    'secret_candidate',
+    'Menganalisis...',
+    '',
+    NULL,
+    'detected',
+    NULL,
+    '{"icon":"psychology_alt","pending":true}'::jsonb
+  )
+ON CONFLICT (id) DO UPDATE SET
+  label = EXCLUDED.label,
+  value = EXCLUDED.value,
+  status = EXCLUDED.status,
+  metadata = EXCLUDED.metadata,
+  updated_at = now();
+
+-- -----------------------------------------------------------------------------
+-- story_concepts (3 options from mockConcepts — concept 003 selected = project title)
+-- -----------------------------------------------------------------------------
+INSERT INTO public.story_concepts (
+  id,
+  project_id,
+  title,
+  short_pitch,
+  reader_promise,
+  core_conflict,
+  genre,
+  tone,
+  target_reader,
+  status,
+  source,
+  score,
+  payload
+)
+VALUES
+  (
+    'a0000000-0000-4000-8000-000000000831',
+    'a0000000-0000-4000-8000-000000000101',
+    'Luka yang Dibayar Mahal',
+    'Seorang istri yang bertahun-tahun menahan diri akhirnya menghadapi kebenaran tentang keluarga suaminya — setiap luka punya harganya, dan dia tidak lagi mau diam.',
+    'Perjalanan realistis seorang perempuan yang perlahan menemukan suara dan harga dirinya — tanpa keajaiban instan.',
+    'Memilih antara mempertahankan rumah tangga demi anak-anak atau menuntut keadilan yang bisa menghancurkan segalanya.',
+    'Drama Rumah Tangga',
+    'Emosional',
+    'hp_serial',
+    'proposed',
+    'stub',
+    78.50,
+    '{"mock_id":"concept-001","badgeLabel":"Drama Rumah Tangga / Emosional","badgeIcon":"favorite","decorativeAccent":"primary-soft"}'::jsonb
+  ),
+  (
+    'a0000000-0000-4000-8000-000000000832',
+    'a0000000-0000-4000-8000-000000000101',
+    'Setelah Aku Pergi',
+    'Dia pergi membawa hati yang remuk. Bertahun-tahun kemudian, keputusan itu kembali menghantui semua orang yang pernah meremehkannya.',
+    'Momen baper dan penyesalan yang menyentuh; pembaca ingin tahu apakah ada ruang untuk pengampunan atau kebenaran yang lebih pahit.',
+    'Mantan istri yang bangkit harus berhadapan lagi dengan keluarga yang dulu merendahkannya — tanpa kehilangan kedamaian yang sudah dibangunnya.',
+    'Drama Keluarga',
+    'Penyesalan',
+    'hp_serial',
+    'proposed',
+    'stub',
+    81.00,
+    '{"mock_id":"concept-002","badgeLabel":"Drama Keluarga / Penyesalan","badgeIcon":"auto_awesome","featured":true,"decorativeAccent":"secondary-container"}'::jsonb
+  ),
+  (
+    'a0000000-0000-4000-8000-000000000833',
+    'a0000000-0000-4000-8000-000000000101',
+    'Istri yang Mereka Buang',
+    'Diremehkan, dianggap lemah, lalu dibuang begitu saja — tapi dia bangkit dengan rencana yang tenang, mematikan, dan memuaskan.',
+    'Kemenangan kecil di tiap bab dan ending yang menggoda — pembaca ingin unlock bab berikutnya untuk melihat kejutan berikutnya.',
+    'Menjalankan pembalasan elegan tanpa kehilangan moral sebagai ibu dan perempuan yang ingin dihormati.',
+    'Drama Misteri',
+    'Balas Dendam / Satisfying',
+    'hp_serial',
+    'selected',
+    'stub',
+    88.00,
+    '{"mock_id":"concept-003","badgeLabel":"Balas Dendam / Satisfying","badgeIcon":"local_fire_department","decorativeAccent":"success-soft"}'::jsonb
+  )
+ON CONFLICT (id) DO UPDATE SET
+  title = EXCLUDED.title,
+  short_pitch = EXCLUDED.short_pitch,
+  status = EXCLUDED.status,
+  payload = EXCLUDED.payload,
+  updated_at = now();
+
+-- -----------------------------------------------------------------------------
+-- projects — Sprint 3 workflow pointer (selected concept aligns with demo title)
+-- -----------------------------------------------------------------------------
+UPDATE public.projects
+SET
+  selected_concept_id = 'a0000000-0000-4000-8000-000000000833',
+  workflow_phase = 'foundation',
+  updated_at = now()
+WHERE id = 'a0000000-0000-4000-8000-000000000101';

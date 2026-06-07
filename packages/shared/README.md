@@ -4,7 +4,7 @@ Kontrak data bersama antar `apps/web`, `apps/api`, dan migrasi database Sprint 2
 
 ## Status
 
-**Task 2.1 — implemented.** TypeScript types dan enums domain Sprint 2; belum ada Zod schema atau runtime validation.
+**Task 2.1 + 3.1 — implemented.** TypeScript types dan enums domain Sprint 2–3; belum ada Zod schema atau runtime validation.
 
 ## Isi package
 
@@ -12,7 +12,7 @@ Kontrak data bersama antar `apps/web`, `apps/api`, dan migrasi database Sprint 2
 |---|---|
 | `src/utils.ts` | `ID`, `ISODateTime`, `JsonValue`, `JsonObject`, `Timestamps` |
 | `src/enums.ts` | Const objects + union types (quality tier, proposal status, fact category, dll.) |
-| `src/domain.ts` | Entity interfaces: `Project`, `StoryFoundation`, `Fact`, `AiProposal`, … |
+| `src/domain.ts` | Entity interfaces: `Project`, `StoryFoundation`, `Fact`, `AiProposal`, `IntakeSession`, `StoryConcept`, … |
 | `src/api.ts` | `ApiResponse`, `PaginationParams`, `PaginatedResponse` |
 | `src/index.ts` | Barrel export |
 
@@ -20,6 +20,7 @@ Kontrak data bersama antar `apps/web`, `apps/api`, dan migrasi database Sprint 2
 
 - `facts` hanya untuk fakta confirmed/sah (`user`, `system`, `accepted_proposal`).
 - Output AI harus masuk `ai_proposals` dulu — jangan menulis langsung ke `facts`.
+- Sprint 3: `story_concepts`, `detected_signals`, `intake_messages` **bukan canon**.
 - Mode kualitas user-facing: `hemat` | `seimbang` | `terbaik` — bukan raw model ID.
 
 ## Scripts

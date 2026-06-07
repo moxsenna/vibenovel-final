@@ -256,6 +256,83 @@ export const HIGH_RISK_FACT_CATEGORY_LIST: readonly HighRiskFactCategory[] = Obj
   HIGH_RISK_FACT_CATEGORIES,
 );
 
+// --- Sprint 3: intake → concepts flow (not canon) ---
+
+export const WORKFLOW_PHASES = {
+  intake: "intake",
+  concepts: "concepts",
+  foundation: "foundation",
+  foundation_locked: "foundation_locked",
+} as const;
+export type WorkflowPhase = (typeof WORKFLOW_PHASES)[keyof typeof WORKFLOW_PHASES];
+
+export const INTAKE_SESSION_STATUSES = {
+  active: "active",
+  completed: "completed",
+  abandoned: "abandoned",
+} as const;
+export type IntakeSessionStatus =
+  (typeof INTAKE_SESSION_STATUSES)[keyof typeof INTAKE_SESSION_STATUSES];
+
+export const INTAKE_PHASES = {
+  idea_collection: "idea_collection",
+  signal_detection: "signal_detection",
+  concept_generation: "concept_generation",
+  foundation_preparation: "foundation_preparation",
+} as const;
+export type IntakePhase = (typeof INTAKE_PHASES)[keyof typeof INTAKE_PHASES];
+
+export const INTAKE_MESSAGE_ROLES = {
+  user: "user",
+  agent: "agent",
+  system: "system",
+} as const;
+export type IntakeMessageRole =
+  (typeof INTAKE_MESSAGE_ROLES)[keyof typeof INTAKE_MESSAGE_ROLES];
+
+export const DETECTED_SIGNAL_TYPES = {
+  genre: "genre",
+  target_reader: "target_reader",
+  protagonist: "protagonist",
+  antagonist: "antagonist",
+  core_conflict: "core_conflict",
+  reader_promise: "reader_promise",
+  tone: "tone",
+  secret_candidate: "secret_candidate",
+  relationship_dynamic: "relationship_dynamic",
+  setting: "setting",
+  theme: "theme",
+  style_preference: "style_preference",
+} as const;
+export type DetectedSignalType =
+  (typeof DETECTED_SIGNAL_TYPES)[keyof typeof DETECTED_SIGNAL_TYPES];
+
+export const DETECTED_SIGNAL_STATUSES = {
+  detected: "detected",
+  confirmed: "confirmed",
+  dismissed: "dismissed",
+} as const;
+export type DetectedSignalStatus =
+  (typeof DETECTED_SIGNAL_STATUSES)[keyof typeof DETECTED_SIGNAL_STATUSES];
+
+/** Concept options are not canon — selection does not write to facts. */
+export const STORY_CONCEPT_STATUSES = {
+  proposed: "proposed",
+  selected: "selected",
+  rejected: "rejected",
+} as const;
+export type StoryConceptStatus =
+  (typeof STORY_CONCEPT_STATUSES)[keyof typeof STORY_CONCEPT_STATUSES];
+
+export const STORY_CONCEPT_SOURCES = {
+  user: "user",
+  system: "system",
+  stub: "stub",
+  accepted_proposal: "accepted_proposal",
+} as const;
+export type StoryConceptSource =
+  (typeof STORY_CONCEPT_SOURCES)[keyof typeof STORY_CONCEPT_SOURCES];
+
 // --- Credit balance (display/seed only in Sprint 2) ---
 
 export const CREDIT_BALANCE_SOURCES = {

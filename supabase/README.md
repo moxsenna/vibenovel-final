@@ -26,6 +26,7 @@ supabase/
 | **2.2** ✅ | Setup + RLS draft | `config.toml`, `docs/28` |
 | **2.3** ✅ | Core migration | `migrations/00001_sprint2_core.sql` — 10 tabel, enums, RLS, triggers |
 | **2.4** ✅ | Seed | `seed.sql` — demo "Istri yang Mereka Buang" dari mock Sprint 1 |
+| **3.1** ✅ | Intake & concepts migration | `migrations/00002_sprint3_intake_concepts.sql` — 4 tabel + `projects` columns |
 | **Apply local** | Setelah Supabase CLI + Docker | `supabase start` lalu `supabase db reset` |
 | **Apply remote** | Manual / CI terpisah | **Tidak** tanpa approval eksplisit user |
 
@@ -48,7 +49,19 @@ Jalankan otomatis setelah migration saat `supabase db reset`.
 - 4 characters, 4 confirmed facts, 1 speech rule, 1 `ai_proposal` (proposed), credit 1250
 - Idempotent: `ON CONFLICT` — aman di-reset ulang
 
-**Belum ada:** `auth.users` trigger otomatis on signup (Task 2.6), tabel Sprint 4+.
+### Migration `00002_sprint3_intake_concepts.sql` (Task 3.1)
+
+Membuat:
+
+- **4 tabel:** `intake_sessions`, `intake_messages`, `detected_signals`, `story_concepts`
+- **Enums** Sprint 3 selaras `@vibenovel/shared`
+- **Kolom `projects`:** `workflow_phase` (default `intake`), `selected_concept_id` (FK → `story_concepts`)
+- **RLS** owner-only; tabel baru **bukan canon**
+- **Partial unique:** satu `story_concepts` dengan `status = selected` per project
+
+Seed Task 3.1: 1 intake session, 3 messages, 4 signals, 3 concepts (selected = "Istri yang Mereka Buang").
+
+**Belum ada:** `auth.users` trigger otomatis on signup (Task 2.6), `audit_action` enum Sprint 3 (deferred 3.2/3.3), tabel Sprint 4+.
 
 Urutan disarankan:
 
