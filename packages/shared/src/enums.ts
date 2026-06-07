@@ -217,6 +217,14 @@ export const AI_PROPOSAL_TYPES = {
   style: "style",
   foundation: "foundation",
   chapter_delta: "chapter_delta",
+  /** Sprint 6 — open loop status change candidate from chapter delta */
+  open_loop_update: "open_loop_update",
+  /** Sprint 6 — reveal status change candidate from chapter delta */
+  reveal_status_update: "reveal_status_update",
+  /** Sprint 6 — existing character state/description change candidate */
+  character_update: "character_update",
+  /** Sprint 6 — relationship dynamic change candidate */
+  relationship_update: "relationship_update",
 } as const;
 export type AiProposalType = (typeof AI_PROPOSAL_TYPES)[keyof typeof AI_PROPOSAL_TYPES];
 
@@ -235,6 +243,10 @@ export const AI_PROPOSAL_SOURCES = {
   ai_chat: "ai_chat",
   ai_foundation: "ai_foundation",
   ai_import: "ai_import",
+  /** Sprint 6 — deterministic summary stub extractor */
+  summary_stub: "summary_stub",
+  /** Sprint 6 — deterministic chapter delta stub extractor */
+  chapter_delta_stub: "chapter_delta_stub",
 } as const;
 export type AiProposalSource = (typeof AI_PROPOSAL_SOURCES)[keyof typeof AI_PROPOSAL_SOURCES];
 
@@ -463,6 +475,72 @@ export const CONTEXT_PACKET_BUILDER_VERSIONS = {
 } as const;
 export type ContextPacketBuilderVersion =
   (typeof CONTEXT_PACKET_BUILDER_VERSIONS)[keyof typeof CONTEXT_PACKET_BUILDER_VERSIONS];
+
+// --- Sprint 6: chapter summary & delta (NOT canon — proposals required for canon changes) ---
+
+/** Chapter summary lifecycle — approving summary does NOT auto-accept proposals. */
+export const CHAPTER_SUMMARY_STATUSES = {
+  draft: "draft",
+  generated: "generated",
+  reviewing: "reviewing",
+  approved: "approved",
+  superseded: "superseded",
+} as const;
+export type ChapterSummaryStatus =
+  (typeof CHAPTER_SUMMARY_STATUSES)[keyof typeof CHAPTER_SUMMARY_STATUSES];
+
+/** Chapter delta artifact lifecycle — delta_json is not canon. */
+export const CHAPTER_DELTA_STATUSES = {
+  generated: "generated",
+  reviewing: "reviewing",
+  approved: "approved",
+  superseded: "superseded",
+} as const;
+export type ChapterDeltaStatus =
+  (typeof CHAPTER_DELTA_STATUSES)[keyof typeof CHAPTER_DELTA_STATUSES];
+
+/** Normalized summary line items for SummaryPage parity — review hints, not canon. */
+export const CHAPTER_SUMMARY_ITEM_TYPES = {
+  synopsis: "synopsis",
+  mini_victory: "mini_victory",
+  character_change: "character_change",
+  relationship_change: "relationship_change",
+  new_fact_candidate: "new_fact_candidate",
+  open_loop_opened: "open_loop_opened",
+  open_loop_paid_off: "open_loop_paid_off",
+  reveal_candidate: "reveal_candidate",
+  emotional_outcome: "emotional_outcome",
+  ending_hook: "ending_hook",
+  continuity_note: "continuity_note",
+  safety_flag: "safety_flag",
+} as const;
+export type ChapterSummaryItemType =
+  (typeof CHAPTER_SUMMARY_ITEM_TYPES)[keyof typeof CHAPTER_SUMMARY_ITEM_TYPES];
+
+export const CHAPTER_SUMMARY_ITEM_SEVERITIES = {
+  info: "info",
+  warning: "warning",
+  high_risk: "high_risk",
+} as const;
+export type ChapterSummaryItemSeverity =
+  (typeof CHAPTER_SUMMARY_ITEM_SEVERITIES)[keyof typeof CHAPTER_SUMMARY_ITEM_SEVERITIES];
+
+/** Junction status linking a summary batch to ai_proposals queue items. */
+export const CHAPTER_SUMMARY_PROPOSAL_STATUSES = {
+  linked: "linked",
+  accepted: "accepted",
+  rejected: "rejected",
+  superseded: "superseded",
+} as const;
+export type ChapterSummaryProposalStatus =
+  (typeof CHAPTER_SUMMARY_PROPOSAL_STATUSES)[keyof typeof CHAPTER_SUMMARY_PROPOSAL_STATUSES];
+
+/** Chapter delta extractor version identifiers (string const — aligns DB default). */
+export const CHAPTER_DELTA_EXTRACTOR_VERSIONS = {
+  v1_stub: "chapter_delta_v1_stub",
+} as const;
+export type ChapterDeltaExtractorVersion =
+  (typeof CHAPTER_DELTA_EXTRACTOR_VERSIONS)[keyof typeof CHAPTER_DELTA_EXTRACTOR_VERSIONS];
 
 // --- Credit balance (display/seed only in Sprint 2) ---
 

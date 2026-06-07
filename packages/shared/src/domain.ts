@@ -6,8 +6,14 @@ import type {
   ChapterEmotion,
   ChapterFunction,
   ChapterBeatStatus,
+  ChapterDeltaExtractorVersion,
+  ChapterDeltaStatus,
   ChapterOutlineStatus,
   ChapterProseSource,
+  ChapterSummaryItemSeverity,
+  ChapterSummaryItemType,
+  ChapterSummaryProposalStatus,
+  ChapterSummaryStatus,
   ChapterWritingStatus,
   CharacterRole,
   CharacterSource,
@@ -546,4 +552,170 @@ export interface WriterContextPacketPreview {
   packetLogId: ID;
 }
 
-// Sprint 6+: chapter_deltas, validation_reports — deferred.
+// --- Sprint 6: chapter summary & delta (NOT canon — candidate changes go to ai_proposals) ---
+
+/**
+ * Safety flags on summary/delta artifacts — plain keys, not canon.
+ * Summary approval does NOT auto-accept proposals.
+ */
+export interface SummarySafetyFlags {
+  possibleHallucination?: boolean;
+  uncertainExtraction?: boolean;
+  revealRisk?: boolean;
+  summaryProseMismatch?: boolean;
+  overExtraction?: boolean;
+  [key: string]: boolean | undefined;
+}
+
+/** Line item inside structured chapter delta JSON. */
+export interface ChapterDeltaLineItem {
+  id?: ID;
+  label?: string;
+  body: string;
+  emphasis?: string;
+}
+
+export interface ChapterDeltaCharacterChange {
+  characterId?: ID;
+  characterName: string;
+  characterInitial?: string;
+  change: string;
+}
+
+export interface ChapterDeltaFactCandidate {
+  text: string;
+  category?: string;
+  importance?: string;
+  evidenceSnippet?: string;
+  proposalRequired: true;
+}
+
+export interface ChapterDeltaOpenLoopCandidate {
+  openLoopId?: ID;
+  question: string;
+  suggestedStatus?: string;
+  evidenceSnippet?: string;
+}
+
+export interface ChapterDeltaRevealCandidate {
+  plannedRevealId?: ID;
+  title: string;
+  suggestedStatus?: string;
+  evidenceSnippet?: string;
+}
+
+export interface ChapterDeltaStoryCheck {
+  id?: ID;
+  status: "ok" | "warning";
+  label: string;
+  detail?: string;
+}
+
+/**
+ * Structured delta payload stored in chapter_deltas.delta_json.
+ * NOT canon — extraction candidates must become ai_proposals before promotion.
+ */
+export interface ChapterDeltaPayload {
+  meta: {
+    chapterOutlineId: ID;
+    chapterNumber: number;
+    writingSessionId?: ID;
+    proseVersionIds: ID[];
+    extractorVersion: ChapterDeltaExtractorVersion | string;
+    generatedAt: ISODateTime;
+  };
+  synopsis: string;
+  emotionalOutcome: string | null;
+  endingHook: string | null;
+  continuityNotes: string | null;
+  miniVictories: ChapterDeltaLineItem[];
+  characterChanges: ChapterDeltaCharacterChange[];
+  relationshipChanges: ChapterDeltaLineItem[];
+  newFactCandidates: ChapterDeltaFactCandidate[];
+  openLoops: {
+    opened: ChapterDeltaLineItem[];
+    paidOffCandidates: ChapterDeltaOpenLoopCandidate[];
+  };
+  reveals: {
+    occurredCandidates: ChapterDeltaRevealCandidate[];
+    heldSecrets: ChapterDeltaLineItem[];
+  };
+  storyCheckNotes: ChapterDeltaStoryCheck[];
+  safetyFlags: SummarySafetyFlags;
+}
+
+/**
+ * Chapter summary artifact — user-facing review document.
+ * NOT canon automatically; approving does not write to facts/characters.
+ */
+export interface ChapterSummary extends Timestamps {
+  id: ID;
+  projectId: ID;
+  chapterOutlineId: ID;
+  writingSessionId: ID | null;
+  /** Snapshot of current prose version ids at generation time — reference only. */
+  currentProseVersionIds: ID[];
+  status: ChapterSummaryStatus;
+  chapterNumber: number;
+  title: string;
+  synopsis: string;
+  miniVictory: string | null;
+  emotionalOutcome: string | null;
+  endingHook: string | null;
+  wordCount: number;
+  summaryVersion: number;
+  isCurrent: boolean;
+  safetyFlags: SummarySafetyFlags;
+  metadata: JsonObject;
+  approvedAt: ISODateTime | null;
+}
+
+/**
+ * Structured chapter delta — 1:1 with a chapter summary generation.
+ * NOT canon — proposal queue is the promotion path.
+ */
+export interface ChapterDelta extends Timestamps {
+  id: ID;
+  projectId: ID;
+  chapterSummaryId: ID;
+  chapterOutlineId: ID;
+  status: ChapterDeltaStatus;
+  deltaJson: ChapterDeltaPayload | JsonObject;
+  safetyFlags: SummarySafetyFlags;
+  extractorVersion: ChapterDeltaExtractorVersion | string;
+}
+
+/**
+ * Normalized summary line item for SummaryPage sections.
+ * new_fact_candidate items are review hints — canon requires ai_proposals accept.
+ */
+export interface ChapterSummaryItem extends Timestamps {
+  id: ID;
+  projectId: ID;
+  chapterSummaryId: ID;
+  itemType: ChapterSummaryItemType;
+  severity: ChapterSummaryItemSeverity;
+  title: string;
+  body: string;
+  relatedCharacterId: ID | null;
+  relatedFactId: ID | null;
+  relatedOpenLoopId: ID | null;
+  relatedRevealId: ID | null;
+  metadata: JsonObject;
+  sortOrder: number;
+}
+
+/**
+ * Junction linking a summary generation batch to ai_proposals queue items.
+ * status tracks review outcome at summary scope — distinct from ai_proposals.status.
+ */
+export interface ChapterSummaryProposal extends Timestamps {
+  id: ID;
+  projectId: ID;
+  chapterSummaryId: ID;
+  aiProposalId: ID;
+  status: ChapterSummaryProposalStatus;
+  metadata: JsonObject;
+}
+
+// Sprint 6+: validation_reports — deferred.

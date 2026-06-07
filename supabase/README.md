@@ -29,6 +29,7 @@ supabase/
 | **3.1** ✅ | Intake & concepts migration | `migrations/00002_sprint3_intake_concepts.sql` — 4 tabel + `projects` columns |
 | **4.1** ✅ | Outline planning migration | `migrations/00003_sprint4_outline_planning.sql` — 4 tabel + `workflow_phase` extend |
 | **5.1** ✅ | Write room migration | `migrations/00004_sprint5_write_room.sql` — 5 tabel + `workflow_phase` extend |
+| **6.1** ✅ | Chapter summary & delta migration | `migrations/00005_sprint6_chapter_summary_delta.sql` — 4 tabel + enum extend |
 | **Apply local** | Setelah Supabase CLI + Docker | `supabase start` lalu `supabase db reset` |
 | **Apply remote** | Manual / CI terpisah | **Tidak** tanpa approval eksplisit user |
 
@@ -87,7 +88,21 @@ Membuat:
 
 Seed Task 5.1: `chapter_writing_states` Bab 1 (`not_started`), 5 `chapter_beats` parity `mockChapterDraft`; no prose versions, no context packet logs.
 
-**Belum ada:** `auth.users` trigger otomatis on signup (Task 2.6), `audit_action` enum Sprint 3 (deferred), `chapter_generation_attempts`, `validation_reports`, Context Packet Builder API (Task 5.2+).
+### Migration `00005_sprint6_chapter_summary_delta.sql` (Task 6.1)
+
+Membuat:
+
+- **4 tabel:** `chapter_summaries`, `chapter_deltas`, `chapter_summary_items`, `chapter_summary_proposals`
+- **5 enums baru** selaras `@vibenovel/shared` Sprint 6
+- **Extend** `ai_proposal_type`: `open_loop_update`, `reveal_status_update`, `character_update`, `relationship_update`
+- **Extend** `ai_proposal_source`: `summary_stub`, `chapter_delta_stub`
+- **RLS** owner-only; tabel baru **bukan canon**; summary approve tidak auto-accept proposals
+- **Partial unique:** satu `is_current = true` summary per `chapter_outline_id`
+- **Unique:** satu `chapter_deltas` per `chapter_summary_id`; `(chapter_summary_id, ai_proposal_id)` junction
+
+Seed Task 6.1: **no** `chapter_summaries` / deltas / items / summary proposals — runtime generation di Task 6.2+.
+
+**Belum ada:** `auth.users` trigger otomatis on signup (Task 2.6), `audit_action` enum Sprint 3 (deferred), `chapter_generation_attempts`, `validation_reports`, Summary Generation API (Task 6.2+).
 
 Urutan disarankan:
 

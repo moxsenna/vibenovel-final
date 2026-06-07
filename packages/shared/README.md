@@ -4,7 +4,7 @@ Kontrak data bersama antar `apps/web`, `apps/api`, dan migrasi database Sprint 2
 
 ## Status
 
-**Task 2.1 + 3.1 + 4.1 + 5.1 — implemented.** TypeScript types dan enums domain Sprint 2–5; belum ada Zod schema atau runtime validation.
+**Task 2.1 + 3.1 + 4.1 + 5.1 + 6.1 — implemented.** TypeScript types dan enums domain Sprint 2–6; belum ada Zod schema atau runtime validation.
 
 ## Isi package
 
@@ -12,7 +12,7 @@ Kontrak data bersama antar `apps/web`, `apps/api`, dan migrasi database Sprint 2
 |---|---|
 | `src/utils.ts` | `ID`, `ISODateTime`, `JsonValue`, `JsonObject`, `Timestamps` |
 | `src/enums.ts` | Const objects + union types (quality tier, proposal status, fact category, dll.) |
-| `src/domain.ts` | Entity interfaces: `Project`, `StoryFoundation`, `OutlinePlan`, `ChapterOutline`, `WritingSession`, `ChapterBeat`, `WriterContextPacket`, … |
+| `src/domain.ts` | Entity interfaces: `Project`, `StoryFoundation`, `OutlinePlan`, `ChapterOutline`, `WritingSession`, `ChapterBeat`, `ChapterSummary`, `ChapterDelta`, `WriterContextPacket`, … |
 | `src/api.ts` | `ApiResponse`, `PaginationParams`, `PaginatedResponse` |
 | `src/index.ts` | Barrel export |
 
@@ -23,6 +23,7 @@ Kontrak data bersama antar `apps/web`, `apps/api`, dan migrasi database Sprint 2
 - Sprint 3: `story_concepts`, `detected_signals`, `intake_messages` **bukan canon**.
 - Sprint 4: `outline_plans`, `chapter_outlines` **bukan prose**; `planned_reveals.planning_truth` planner-only (writer slice-only nanti).
 - Sprint 5: `chapter_prose_versions` **bukan canon**; `ContextPacketLog.packetJson` must not contain `planningTruth`; `WriterContextPacket` slice-only (no full outline dump). `ai_generated` prose source is reserved — not OpenRouter approval.
+- Sprint 6: `chapter_summaries`, `chapter_deltas`, `chapter_summary_items` **bukan canon**; `new_fact_candidate` items are review hints. Summary approval does **not** auto-accept `ai_proposals`. Canon changes require explicit proposal accept (Task 6.4+).
 - Mode kualitas user-facing: `hemat` | `seimbang` | `terbaik` — bukan raw model ID.
 
 ## Scripts

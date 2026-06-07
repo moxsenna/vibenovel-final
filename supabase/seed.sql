@@ -1090,6 +1090,12 @@ ON CONFLICT (chapter_outline_id, beat_number) DO UPDATE SET
   updated_at = now();
 
 -- -----------------------------------------------------------------------------
+-- Sprint 6 (Task 6.1): no chapter_summaries / chapter_deltas / summary items seeded.
+-- Summary rows are created at runtime by Task 6.2+ API after ready_for_summary.
+-- Do not seed ai_proposals from summary — avoids false canon promotion in smoke.
+-- -----------------------------------------------------------------------------
+
+-- -----------------------------------------------------------------------------
 -- projects — Sprint 4 workflow pointer (outline seeded; foundation lock unchanged)
 -- -----------------------------------------------------------------------------
 UPDATE public.projects
