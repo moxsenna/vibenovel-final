@@ -8,7 +8,7 @@
 
 Dokumen ini adalah laporan penutupan resmi Sprint 3. Dibaca oleh developer manusia dan AI agent sebelum memulai Sprint 4.
 
-**Work logs:** `.agent-logs/sprint-3/task-3.0` … `task-3.7`
+**Work logs:** `.agent-logs/sprint-3/task-3.0` … `task-3.8`
 
 ---
 
@@ -42,7 +42,8 @@ Tanpa OpenRouter, tanpa AI generation production, tanpa outline/chapter/prose pe
 | Foundation proposal + readiness | **Selesai (Task 3.4)** |
 | Lock foundation workflow | **Selesai (Task 3.5)** |
 | Web integration intake/concepts/foundation | **Selesai (Task 3.6)** |
-| Sprint 3 verification | **Selesai (Task 3.7 — dokumen ini)** |
+| Sprint 3 verification | **Selesai (Task 3.7)** |
+| Web E2E smoke automation | **Selesai (Task 3.8)** |
 | OpenRouter / AI generation | **Tidak ada (by design)** |
 | Remote deploy / remote migration | **Tidak dilakukan** |
 
@@ -67,7 +68,7 @@ Tanpa OpenRouter, tanpa AI generation production, tanpa outline/chapter/prose pe
 - Credit ledger / deduction nyata
 - Publish package production API
 - Full proposal reject/merge UI di web
-- Automated web E2E (Playwright/Cypress)
+- Web E2E in GitHub Actions CI (local `npm run smoke:web` available — Task 3.8)
 - `audit_action` enum untuk intake/concepts events
 - DB transaction wrapper untuk lock promotion
 - Halaman web lain (outline, write, summary, publish) masih mock
@@ -263,16 +264,16 @@ Semua endpoint Sprint 3 memerlukan **Bearer JWT**. Ownership via `getOwnedProjec
 - Route `demo-project-001` → `resolveProjectIdForRoute` → active API project UUID (Task 2.13 pattern)
 - `apps/web/src/lib/project-context.ts`
 
-### Web runtime smoke (Task 3.7)
+### Web runtime smoke (Task 3.7 / 3.8)
 
 | Check | Status | Catatan |
 |---|---|---|
-| `npm run build:web` | **PASS** | 8 Juni 2026 |
-| `VITE_USE_MOCKS=true` render intake/concepts/foundation | **Not run** | Browser manual tidak dijalankan di sesi verifikasi |
-| `VITE_USE_MOCKS=false` no login → no crash | **Not run** | Diverifikasi via hook logic Task 3.6; bukan live browser |
-| `VITE_USE_MOCKS=false` + login full flow | **Not run** | API flow diverifikasi via runtime script; UI wiring via typecheck + build |
+| `npm run build:web` | **PASS** | 8 Juni 2026, Task 3.7 |
+| `VITE_USE_MOCKS=true` render intake/concepts/foundation | **Not run** (3.7) | Task 3.8: Playwright mock smoke — lihat Task 3.8 log |
+| `VITE_USE_MOCKS=false` no login → no crash | **Not run** (3.7) | Hook pattern Task 3.6; partial via API-mode Playwright (3.8) |
+| `VITE_USE_MOCKS=false` + login full flow | **Not run** (3.7) | Task 3.8: optional `-IncludeApiMode` atau manual checklist |
 
-**Kejujuran verifikasi:** Browser E2E manual **tidak dijalankan** di Task 3.7. Tidak diklaim PASS untuk live web smoke. Manual UI smoke **direkomendasikan** sebelum Sprint 4 (non-blocking untuk penutupan Sprint 3).
+**Task 3.8 deliverable:** `npm run smoke:web`, `apps/web/e2e/sprint3-flow.spec.ts`, `scripts/sprint3-smoke-web-manual-checklist.md`. CI web E2E **deferred**.
 
 ---
 
@@ -357,13 +358,13 @@ npm run smoke:api    # scripts/sprint2-smoke-api.ps1
 
 Sprint 3 flow: manual PowerShell inline (belum script terpisah `sprint3-smoke-api.ps1`).
 
-### Web runtime smoke
+### Web runtime smoke (Task 3.8)
 
 | Test | Result |
 |---|---|
-| `VITE_USE_MOCKS=true` intake/concepts/foundation render | **Not run** — browser manual tidak dijalankan |
-| `VITE_USE_MOCKS=false` no login → no crash + fallback | **Not run** — hook pattern Task 3.6; bukan live browser |
-| `VITE_USE_MOCKS=false` + login full UI flow | **Not run** — API diverifikasi via script; UI via build/typecheck |
+| `npm run smoke:web` mock Playwright | Lihat `.agent-logs/sprint-3/task-3.8-web-e2e-smoke-automation.md` |
+| `npm run smoke:web -- -IncludeApiMode` | Lihat Task 3.8 log — **NOT RUN** jika flag tidak dipakai |
+| Manual API checklist | `scripts/sprint3-smoke-web-manual-checklist.md` |
 
 ---
 
@@ -373,7 +374,7 @@ Sprint 3 flow: manual PowerShell inline (belum script terpisah `sprint3-smoke-ap
 - **No AI generation** — agent reply, concepts, foundation proposals rule/template based
 - **No outline/chapter/prose persistence** — tabel Sprint 4+ belum ada
 - **No full proposal reject/merge UI** — web hanya accept safe proposals + lock CTA
-- **No automated web E2E** — smoke API script + build; browser manual skipped
+- **No web E2E in CI** — local `npm run smoke:web` (Task 3.8); GitHub Actions deferred
 - **No DB transaction for lock promotion** — partial failure teoretis jika lock update gagal setelah promote
 - **`audit_action` for intake/concepts deferred** — tidak ada audit log intake/concept events
 - **Only intake/concepts/foundation web integrated** — outline, write, summary, publish masih mock
@@ -390,11 +391,11 @@ Sprint 3 flow: manual PowerShell inline (belum script terpisah `sprint3-smoke-ap
 |---|---|
 | **Sprint 3 ready to close?** | **Yes** |
 | **Blockers** | **None** — API/runtime/build/db reset verified; limitations are intentional deferrals |
-| **Non-blocking limitations** | Manual web E2E not run; no Sprint 3 smoke script in repo; no DB transaction on lock |
+| **Non-blocking limitations** | API-mode web E2E may be NOT RUN without `-IncludeApiMode`; no DB transaction on lock; CI web E2E deferred |
 
-Sprint 3 deliverables (intake → concepts → foundation proposal → readiness → lock + web integration) are complete and verified for local development handoff.
+Sprint 3 deliverables (intake → concepts → foundation proposal → readiness → lock + web integration + web smoke script) are complete and verified for local development handoff.
 
-**Rekomendasi sebelum Sprint 4:** jalankan manual web smoke (`VITE_USE_MOCKS` true/false + DevAuthPanel) atau implement Task 3.8 web E2E automation.
+**Rekomendasi sebelum Sprint 4:** `npm run smoke:web` (mock) dan opsional `-IncludeApiMode` atau manual checklist.
 
 ---
 
@@ -410,15 +411,11 @@ Per [`docs/17-roadmap-sprint-plan-mvp-to-full.md`](17-roadmap-sprint-plan-mvp-to
 
 **Alasan:** Sprint 3 menutup loop story foundation; nilai produk berikutnya adalah perencanaan outline yang persist — bukan menambah lapisan pada flow yang sudah verified.
 
-### Optional pre-Sprint 4 hardening: **Task 3.8 — Web E2E Smoke Automation**
+### Completed pre-Sprint 4 hardening: **Task 3.8 — Web E2E Smoke Automation** ✅
 
-**Alasan memilih ini jika lebih aman:**
-
-- Browser manual smoke **tidak dijalankan** di Task 3.7
-- Web integration Task 3.6 kompleks (3 pages, hooks, fallback paths)
-- Automated E2E mengurangi regresi saat Sprint 4 menyentuh routing/workflow
-
-**Keputusan:** Sprint 3 boleh ditutup sekarang. Tim bisa mulai Sprint 4 langsung, atau invest 1 task ke 3.8 jika ingin confidence UI lebih tinggi.
+- `npm run smoke:web` — Playwright mock mode + optional API mode
+- Manual checklist for API-mode fallback
+- CI integration **deferred** (local-only)
 
 ---
 

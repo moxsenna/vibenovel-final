@@ -17,7 +17,7 @@ vibenovel-unified-blueprint/
 │   ├── core/         ⏳ Placeholder — story/AI engine (Sprint 4–6+)
 │   └── shared/       ✅ Shared domain types & API contracts (Task 2.1)
 ├── supabase/         ✅ Migration + seed — runtime verified (Task 2.3/2.4)
-├── scripts/          ⏳ Placeholder — helper scripts (nanti)
+├── scripts/          ✅ Smoke tests — API (2.15) + web E2E (3.8)
 ├── docs/             📘 Unified product & technical blueprint
 ├── .agents/rules/    🤖 Agent behavior rules
 └── stitch-reference/ 🎨 Stitch UI source of truth
@@ -30,7 +30,7 @@ vibenovel-unified-blueprint/
 | `packages/shared` | **Implemented (Task 2.1)** | Domain types, enums, API contracts |
 | `packages/core` | Placeholder | Engine AI/story — nanti |
 | `supabase` | **Migration + seed (Task 2.3/2.4, 3.1)** | 14 tabel (+ intake/concepts), RLS, demo seed — `supabase db reset` verified |
-| `scripts` | Placeholder | Dev/CI scripts — nanti |
+| `scripts` | **Smoke scripts (2.15, 3.8)** | `smoke:api`, `smoke:web` — see `scripts/README.md` |
 | `docs` | Dokumentasi | Sumber arsitektur & sprint plan |
 | `stitch-reference` | Referensi desain | HTML + screen.png per halaman |
 
@@ -72,9 +72,12 @@ npm run preview:web
 
 # API smoke test (Windows/PowerShell — local Supabase + dev:api required)
 npm run smoke:api
+
+# Web E2E smoke (Playwright — dev:web required; mock mode default)
+npm run smoke:web
 ```
 
-See [`scripts/README.md`](scripts/README.md) for prerequisites.
+See [`scripts/README.md`](scripts/README.md) for prerequisites (env: `VITE_USE_MOCKS`, `VITE_API_URL`, `VITE_SUPABASE_*`).
 
 ### Database lokal (Supabase CLI)
 
@@ -158,15 +161,16 @@ Belum ada (sengaja — defer Sprint 3+):
 | 3.5 Lock foundation workflow | ✅ | Safe promotion + `foundation_locked` |
 | 3.6 Web integration | ✅ | Intake/concepts/foundation + mock fallback |
 | 3.7 Verification report | ✅ | `docs/31` + smoke tests |
+| 3.8 Web E2E smoke automation | ✅ | `npm run smoke:web`, Playwright + manual checklist |
 
 Belum ada (sengaja — defer Sprint 4+):
 
 - OpenRouter / AI generation production
 - Outline / chapter / prose persistence
-- Automated web E2E (manual browser smoke direkomendasikan sebelum Sprint 4)
+- Web E2E in GitHub Actions CI (deferred — local smoke only)
 - Full proposal reject/merge UI
 
-**Task berikutnya (disarankan):** Sprint 4 — Outline Planning Engine. Opsional lebih aman: Task 3.8 — Web E2E smoke automation.
+**Task berikutnya (disarankan):** Sprint 4 — Outline Planning Engine.
 
 ---
 

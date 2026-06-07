@@ -106,5 +106,7 @@ Log **di-commit** ke repo (bukan `.gitignore`) agar handoff antar agent/manusia 
 | 3.1 | `sprint-3/task-3.1-intake-concept-data-model-migration.md` | ✅ committed |
 | 3.2 | `sprint-3/task-3.2-intake-sessions-messages-api.md` | ✅ committed |
 | 3.3 | `sprint-3/task-3.3-concept-options-api.md` | ✅ lokal — commit bersama kode Task 3.3 |
+| 3.7 | `sprint-3/task-3.7-sprint-3-verification-report.md` | ✅ |
+| 3.8 | `sprint-3/task-3.8-web-e2e-smoke-automation.md` | ✅ |
 
 **Sprint 1:** belum ada folder `.agent-logs/sprint-1/` (selesai sebelum rule work log).

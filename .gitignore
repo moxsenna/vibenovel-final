@@ -17,6 +17,11 @@ build/
 # Test coverage
 coverage/
 
+# Playwright (apps/web e2e)
+test-results/
+playwright-report/
+blob-report/
+
 # OS
 .DS_Store
 Thumbs.db
@@ -24,6 +29,9 @@ Thumbs.db
 # Supabase local CLI state
 supabase/.branches/
 supabase/.temp/
+
+# Local IDE terminal session dumps (not source)
+terminals/
 
 # Logs
 logs/
