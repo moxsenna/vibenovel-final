@@ -1,16 +1,21 @@
 import type {
   AiProposal,
+  ChapterOutline,
+  ChapterOutlineMarker,
   Character,
   CreditBalance,
   DetectedSignal as ApiDetectedSignal,
   Fact,
   IntakeMessage as ApiIntakeMessage,
   IntakeSession as ApiIntakeSession,
+  OpenLoop,
+  OutlinePlan,
   Project,
   StoryConcept as ApiStoryConcept,
   StoryFoundation,
   WriterQualityMode,
 } from "@vibenovel/shared";
+import type { PlannedRevealPublic } from "@/services/outline";
 import type {
   DashboardActiveProject,
   DashboardRecentProject,
@@ -22,12 +27,18 @@ import { ROUTES } from "@/routes/paths";
 import type { ModelTier, ModelTierOption, MonthlyUsage, UserSettings } from "@/types";
 import type { StoryFoundation as UiStoryFoundation } from "@/types/storyFoundation";
 import type {
+  ChapterBadge,
+  ChapterBadgeType,
   ConceptAccent,
   DetectedSignal,
   IntakeMessage,
   IntakeSession,
+  OutlineChapter,
+  OutlineRetentionHint,
   StoryConcept,
+  StoryOutline,
 } from "@/types";
+import { mockOutline } from "@/mocks/outline";
 import { mockIntakeSession } from "@/mocks/intake";
 import { mockSettings } from "@/mocks/settings";
 interface FoundationReadinessApi {
@@ -496,4 +507,257 @@ export function mapProposalToUi(proposal: AiProposal): UiFoundationProposal {
     status: proposal.status,
     riskLevel: proposal.riskLevel,
   };
+}
+
+const EMOTION_LABELS: Record<string, string> = {
+  hurt: "Terluka / tertekan",
+  tense: "Menegangkan",
+  angry: "Marah",
+  hopeful: "Penuh harapan",
+  satisfying: "Memuaskan",
+  curious: "Penasaran",
+  anxious: "Cemas",
+  triumphant: "Triumfan",
+};
+
+const PLAN_STATUS_LABELS: Record<string, string> = {
+  draft: "Draft",
+  generated: "Rencana dibuat",
+  reviewing: "Sedang ditinjau",
+  locked: "Outline terkunci",
+};
+
+const MARKER_BADGE_MAP: Record<string, { type: ChapterBadgeType; label: string }> = {
+  mini_victory: { type: "mini_victory", label: "Kemenangan Kecil" },
+  cliffhanger: { type: "cliffhanger", label: "Cliffhanger" },
+  secret_hint: { type: "reveal", label: "Rahasia" },
+  hook: { type: "emotion", label: "Hook" },
+  open_loop: { type: "conflict", label: "Menggantung" },
+  emotional_payoff: { type: "emotion", label: "Emosi" },
+  reversal: { type: "conflict", label: "Balikan" },
+};
+
+const OUTLINE_LOCK_MISSING_LABELS: Record<string, string> = {
+  foundationLocked: "Kunci fondasi cerita dulu",
+  outlineExists: "Buat rencana outline dulu",
+  notAlreadyLocked: "Outline sudah terkunci",
+  chapterCount: "Jumlah bab belum lengkap",
+  allChaptersHaveBasics: "Beberapa bab belum lengkap (judul, ringkasan, fungsi, hook)",
+  hooksEveryChapter: "Beberapa bab masih kurang hook akhir bab",
+  summariesEveryChapter: "Beberapa bab masih tanpa ringkasan",
+  miniVictoryCadence: "Kemenangan kecil belum cukup (minimal 3 bab)",
+  openLoopsEnough: "Yang masih menggantung belum cukup (minimal 2)",
+  plannedRevealsEnough: "Jadwal rahasia belum cukup (minimal 2)",
+  allChaptersApproveBasics: "Beberapa bab belum punya judul, ringkasan, atau hook",
+  hasChapters: "Belum ada rencana bab",
+  chapterCountMatchesTarget: "Jumlah bab belum sesuai target",
+};
+
+function mapMarkerToBadge(marker: ChapterOutlineMarker): ChapterBadge {
+  const mapped = MARKER_BADGE_MAP[marker.type];
+  if (mapped) {
+    return { type: mapped.type, label: marker.label?.trim() || mapped.label };
+  }
+  return { type: "emotion", label: marker.label?.trim() || "Marker" };
+}
+
+export function mapApiChapterToUi(chapter: ChapterOutline): OutlineChapter {
+  const badges = chapter.markers.map(mapMarkerToBadge);
+  if (chapter.miniVictory && !badges.some((b) => b.type === "mini_victory")) {
+    badges.push({ type: "mini_victory", label: "Kemenangan Kecil" });
+  }
+
+  return {
+    id: chapter.id,
+    number: chapter.chapterNumber,
+    title: chapter.title,
+    summary: chapter.summary,
+    goal: chapter.purpose ?? "",
+    emotionalGoal: chapter.emotionalDirection
+      ? (EMOTION_LABELS[chapter.emotionalDirection] ?? chapter.emotionalDirection)
+      : "",
+    endingHook: chapter.endingHook ?? chapter.hook ?? "",
+    badges,
+  };
+}
+
+function buildRetentionHints(
+  chapters: ChapterOutline[],
+  openLoops: OpenLoop[],
+  reveals: PlannedRevealPublic[],
+): OutlineRetentionHint[] {
+  const miniVictoryCount = chapters.filter(
+    (ch) =>
+      (ch.miniVictory && ch.miniVictory.trim().length > 0) ||
+      ch.markers.some((m) => m.type === "mini_victory"),
+  ).length;
+  const hookCount = chapters.filter((ch) => (ch.endingHook ?? ch.hook)?.trim()).length;
+
+  return [
+    {
+      id: "ret-open-loop",
+      label: "Yang Menggantung",
+      description: `${openLoops.length} pertanyaan pembaca dilacak di rencana ini.`,
+      icon: "all_inclusive",
+      tone: "primary",
+    },
+    {
+      id: "ret-mini-win",
+      label: "Kemenangan Kecil",
+      description: `${miniVictoryCount} bab punya momen bangkit kecil.`,
+      icon: "emoji_events",
+      tone: "success",
+    },
+    {
+      id: "ret-secret",
+      label: "Jadwal Rahasia",
+      description: `${reveals.length} rahasia dijadwalkan — detail internal tidak ditampilkan.`,
+      icon: "lock",
+      tone: "accent",
+    },
+    {
+      id: "ret-unlock",
+      label: "Hook Akhir Bab",
+      description: `${hookCount} dari ${chapters.length} bab punya hook penutup.`,
+      icon: "key",
+      tone: "warning",
+    },
+  ];
+}
+
+export function mapOutlineBundleToUi(
+  projectId: string,
+  bundle: {
+    outlinePlan: OutlinePlan | null;
+    chapterOutlines: ChapterOutline[];
+    openLoops: OpenLoop[];
+    plannedReveals: PlannedRevealPublic[];
+  },
+): StoryOutline {
+  const fallback = mockOutline;
+  const plan = bundle.outlinePlan;
+  const chapters = bundle.chapterOutlines.map(mapApiChapterToUi);
+  const total = plan?.targetChapterCount ?? (chapters.length || 10);
+  const statusKey = plan?.status ?? "draft";
+  const isLocked = statusKey === "locked";
+
+  return {
+    projectId,
+    seasonLabel: plan?.seasonLabel ?? fallback.seasonLabel,
+    arcSummary: plan?.arcSummary ?? fallback.arcSummary,
+    description:
+      plan?.planningNotes?.trim() ||
+      "Arah bab awal untuk membangun konflik dan daya tarik serial. Kamu bisa meninjau sebelum mulai menulis.",
+    progress: {
+      readyCount: chapters.length,
+      totalCount: total,
+      statusLabel: PLAN_STATUS_LABELS[statusKey] ?? "Rencana Bab",
+      statusDescription: isLocked
+        ? "Outline terkunci — siap lanjut ke ruang tulis."
+        : "Outline ini masih bisa kamu sesuaikan sebelum dikunci.",
+    },
+    chapters,
+    writeRoute: ROUTES.project.write(projectId),
+    retentionHints: buildRetentionHints(
+      bundle.chapterOutlines,
+      bundle.openLoops,
+      bundle.plannedReveals,
+    ),
+    pageCopy: {
+      ...fallback.pageCopy,
+      planBadge: isLocked
+        ? "Outline Terkunci"
+        : (PLAN_STATUS_LABELS[statusKey] ?? fallback.pageCopy.planBadge),
+      reviewNote: isLocked
+        ? "Outline sudah dikunci. Edit rencana bab tidak tersedia."
+        : fallback.pageCopy.reviewNote,
+    },
+  };
+}
+
+export interface UiOpenLoop {
+  id: string;
+  question: string;
+  hint: string | null;
+  statusLabel: string;
+}
+
+export interface UiPlannedReveal {
+  id: string;
+  title: string;
+  hint: string | null;
+  plannedChapterNumber: number | null;
+  riskLabel: string;
+  statusLabel: string;
+}
+
+const LOOP_STATUS_LABELS: Record<string, string> = {
+  opened: "Dibuka",
+  developed: "Berkembang",
+  paid_off: "Terjawab",
+  dropped: "Ditutup",
+};
+
+const REVEAL_STATUS_LABELS: Record<string, string> = {
+  planned: "Direncanakan",
+  armed: "Siap",
+  revealed: "Terungkap",
+  delayed: "Ditunda",
+  cancelled: "Dibatalkan",
+};
+
+const RISK_LABELS: Record<string, string> = {
+  low: "Rendah",
+  medium: "Sedang",
+  high: "Tinggi",
+};
+
+export function mapOpenLoopsToUi(
+  loops: OpenLoop[],
+  _chapterNumberById: Map<string, number>,
+): UiOpenLoop[] {
+  return loops.map((loop) => ({
+    id: loop.id,
+    question: loop.question,
+    hint: loop.readerFacingHint,
+    statusLabel: LOOP_STATUS_LABELS[loop.status] ?? loop.status,
+  }));
+}
+
+export function mapRevealsToUi(
+  reveals: PlannedRevealPublic[],
+  chapterNumberById: Map<string, number>,
+): UiPlannedReveal[] {
+  return reveals.map((reveal) => ({
+    id: reveal.id,
+    title: reveal.title,
+    hint: reveal.readerFacingHint,
+    plannedChapterNumber: reveal.plannedChapterOutlineId
+      ? (chapterNumberById.get(reveal.plannedChapterOutlineId) ?? null)
+      : null,
+    riskLabel: RISK_LABELS[reveal.riskLevel] ?? reveal.riskLevel,
+    statusLabel: REVEAL_STATUS_LABELS[reveal.status] ?? reveal.status,
+  }));
+}
+
+export function formatOutlineWorkflowError(
+  message: string,
+  details?: unknown,
+): string {
+  const d = details as
+    | { missing?: string[]; failedChecks?: string[]; readinessScore?: number }
+    | undefined;
+  const keys = [...(d?.missing ?? []), ...(d?.failedChecks ?? [])];
+  const unique = [...new Set(keys)];
+  const friendly = unique
+    .map((key) => OUTLINE_LOCK_MISSING_LABELS[key] ?? key)
+    .filter(Boolean);
+  const parts = [message];
+  if (friendly.length > 0) {
+    parts.push(friendly.join(" · "));
+  }
+  if (typeof d?.readinessScore === "number") {
+    parts.push(`Kesiapan: ${d.readinessScore}%`);
+  }
+  return parts.join(" — ");
 }

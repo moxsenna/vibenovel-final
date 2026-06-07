@@ -1,4 +1,4 @@
-import { useId } from "react";
+import { useId, type ReactNode } from "react";
 import type { OutlineChapter } from "@/types";
 import { Card, Icon } from "@/components/ui";
 import { OutlineChapterBadge } from "./OutlineChapterBadge";
@@ -8,6 +8,7 @@ export interface OutlineChapterCardProps {
   isExpanded: boolean;
   isFirst: boolean;
   onToggle: () => void;
+  expandedFooter?: ReactNode;
 }
 
 export function OutlineChapterCard({
@@ -15,6 +16,7 @@ export function OutlineChapterCard({
   isExpanded,
   isFirst,
   onToggle,
+  expandedFooter,
 }: OutlineChapterCardProps) {
   const panelId = useId();
 
@@ -124,6 +126,7 @@ export function OutlineChapterCard({
               </div>
             </Card>
           </div>
+          {expandedFooter}
         </div>
       </div>
     </Card>
