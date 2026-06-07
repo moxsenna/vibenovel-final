@@ -141,9 +141,13 @@ Belum ada (sengaja — defer Sprint 3+):
 
 ---
 
-## Langkah berikutnya
+## Sprint 3 — planning (belum coding)
 
-**Sprint 3 — Story Foundation Flow:** intake + concept + foundation real, proposal queue dengan canon promotion — lihat [`docs/17-roadmap-sprint-plan-mvp-to-full.md`](docs/17-roadmap-sprint-plan-mvp-to-full.md).
+**Rencana:** [`docs/30-sprint-3-story-foundation-flow-implementation-plan.md`](docs/30-sprint-3-story-foundation-flow-implementation-plan.md)
+
+Intake → concepts → foundation proposal → readiness → lock. Stub backend dulu; OpenRouter/AI production setelah flow data jelas.
+
+**Task berikutnya:** 3.1 — Intake & concept data model migration.
 
 ---
 
@@ -158,7 +162,8 @@ Belum ada (sengaja — defer Sprint 3+):
 5. `docs/21-stitch-frontend-parity-plan.md`
 6. `docs/22-sprint-1-verification-report.md` — status penutupan Sprint 1
 7. `docs/29-sprint-2-verification-report.md` — status penutupan Sprint 2
-8. `docs/27-sprint-2-data-model-implementation-plan.md` — rencana Sprint 2
+8. `docs/30-sprint-3-story-foundation-flow-implementation-plan.md` — rencana Sprint 3 (aktif)
+9. `docs/27-sprint-2-data-model-implementation-plan.md` — rencana Sprint 2
 
 ### Untuk AI coding agent
 
