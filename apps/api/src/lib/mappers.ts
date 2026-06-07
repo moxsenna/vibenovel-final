@@ -1,4 +1,4 @@
-import type { CreditBalance, UserProfile } from "@vibenovel/shared";
+import type { CreditBalance, Project, UserProfile } from "@vibenovel/shared";
 
 export interface ProfileRow {
   id: string;
@@ -32,6 +32,36 @@ export function mapProfileRow(row: ProfileRow): UserProfile {
     planLabel: row.plan_label,
     role: row.role as UserProfile["role"],
     subscriptionPlan: row.subscription_plan as UserProfile["subscriptionPlan"],
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
+export interface ProjectRow {
+  id: string;
+  owner_id: string;
+  title: string;
+  genre: string | null;
+  status: string;
+  current_chapter: number;
+  entry_path: string | null;
+  is_active: boolean;
+  last_edited_at: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export function mapProjectRow(row: ProjectRow): Project {
+  return {
+    id: row.id,
+    ownerId: row.owner_id,
+    title: row.title,
+    genre: row.genre,
+    status: row.status as Project["status"],
+    currentChapter: row.current_chapter,
+    entryPath: row.entry_path as Project["entryPath"],
+    isActive: row.is_active,
+    lastEditedAt: row.last_edited_at,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };

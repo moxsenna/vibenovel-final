@@ -1,0 +1,59 @@
+---
+pid: 68296
+cwd: "D:\Coding\vibenovel-unified-blueprint"
+command: "Set-Location D:\\Coding\\vibenovel-unified-blueprint; npm run dev:api"
+started_at: 2026-06-07T19:49:21.825Z
+running_for_ms: 90009    
+---
+
+> vibenovel@0.1.0 dev:api
+> npm run dev -w @vibenovel/api
+
+
+> @vibenovel/api@0.1.0 dev
+> wrangler dev
+
+
+ ⛅️ wrangler 3.114.17 (update available 4.98.0)
+-----------------------------------------------
+
+▲ [WARNING] The version of Wrangler you are using is now out-of-date.
+
+  Please update to the latest version to prevent critical errors.
+  Run `npm install --save-dev wrangler@4` to update to the latest version.
+  After installation, run Wrangler with `npx wrangler`.
+
+
+Using vars defined in .dev.vars
+Your Worker and resources are simulated locally via Miniflare. For more information, see: https://developers.cloudflare.com/workers/testing/local-development.
+
+Your worker has access to the following bindings:
+- Vars:
+  - APP_ENV: "development"
+  - ALLOWED_ORIGINS: "http://localhost:5173,http://localhos..."
+  - SUPABASE_URL: "(hidden)"
+  - SUPABASE_ANON_KEY: "(hidden)"
+  - SUPABASE_SERVICE_ROLE_KEY: "(hidden)"
+⎔ Starting local server...
+[wrangler:inf] Ready on http://127.0.0.1:8787
+[wrangler:inf] GET /api/projects 401 Unauthorized (22ms)
+[wrangler:inf] POST /api/projects 500 Internal Server Error (290ms)
+X [ERROR] projects insert failed
+
+
+[wrangler:inf] GET /api/projects 200 OK (93ms)
+[wrangler:inf] GET /api/projects/ 404 Not Found (3ms)
+[wrangler:inf] PATCH /api/projects/ 404 Not Found (7ms)
+[wrangler:inf] DELETE /api/projects/ 404 Not Found (2ms)
+[wrangler:inf] GET /api/projects 200 OK (85ms)
+[wrangler:inf] GET /api/projects 200 OK (72ms)
+[wrangler:inf] GET /api/projects/a0000000-0000-4000-8000-000000000101 404 Not Found (80ms)
+⎔ Reloading local server...
+[wrangler:inf] POST /api/projects 201 Created (239ms)
+[wrangler:inf] GET /api/projects 200 OK (129ms)
+[wrangler:inf] GET /api/projects/6a793d73-edad-4475-91f8-1fa6ae8d978d 200 OK (97ms)
+[wrangler:inf] PATCH /api/projects/6a793d73-edad-4475-91f8-1fa6ae8d978d 200 OK (178ms)
+[wrangler:inf] DELETE /api/projects/6a793d73-edad-4475-91f8-1fa6ae8d978d 200 OK (88ms)
+[wrangler:inf] GET /api/projects 200 OK (85ms)
+[wrangler:inf] GET /api/projects 200 OK (111ms)
+[wrangler:inf] GET /api/projects/a0000000-0000-4000-8000-000000000101 404 Not Found (60ms)

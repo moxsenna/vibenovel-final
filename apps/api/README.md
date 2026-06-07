@@ -1,6 +1,6 @@
 # apps/api — VibeNovel API (Sprint 2)
 
-Hono API on **Cloudflare Workers** — Supabase JWT auth, profile sync, `/api/me`. No CRUD or AI routes yet.
+Hono API on **Cloudflare Workers** — Supabase JWT auth, profile sync, `/api/me`, project persistence (Task 2.7).
 
 ## Stack
 
@@ -25,10 +25,13 @@ apps/api/
     routes/
       health.ts
       me.ts            # GET /api/me — profile + credit balance
+      projects.ts      # CRUD /api/projects — owner-only
       index.ts
     services/
       profile.ts       # getOrCreateProfileForAuthUser
       credit.ts        # read-only credit_balances
+      project.ts       # project CRUD + default project_settings on create
+      audit.ts         # append-only audit_logs (service role)
     lib/
       supabase.ts      # anon + service role clients
       mappers.ts
@@ -68,6 +71,11 @@ apps/api/
 | GET | `/health` | No | Service health + env presence flags |
 | GET | `/api/health` | No | Alias |
 | GET | `/api/me` | Bearer JWT | User + profile + creditBalance |
+| GET | `/api/projects` | Bearer JWT | List owner's projects (`?includeArchived=true` optional) |
+| POST | `/api/projects` | Bearer JWT | Create project + default `project_settings` |
+| GET | `/api/projects/:id` | Bearer JWT | Project detail (owner only) |
+| PATCH | `/api/projects/:id` | Bearer JWT | Update title, status, isActive, genre, targetLengthPlan |
+| DELETE | `/api/projects/:id` | Bearer JWT | Soft archive (`is_active = false`) |
 
 ### Auth approach (Task 2.6)
 
@@ -91,6 +99,36 @@ apps/api/
 ```
 
 `creditBalance` is `null` when no row exists. No credit mutation in Task 2.6.
+
+### Project routes (Task 2.7)
+
+All `/api/projects` endpoints require `Authorization: Bearer <access_token>`. Without token → `401 UNAUTHORIZED`.
+
+**Ownership:** Service role client with explicit `owner_id = JWT userId` filter on every query. `owner_id` from request body is never trusted. Cross-user access returns `404` (not `403`).
+
+**`POST /api/projects`**
+
+```json
+{
+  "title": "Cerita Baru",
+  "entryPath": "rough_idea",
+  "targetLengthPlan": "70_100",
+  "defaultSettings": {
+    "qualityTier": "seimbang",
+    "defaultFormat": "hp_kbm"
+  }
+}
+```
+
+Server sets `owner_id` from JWT, `status: draft`, `current_chapter: 1`, `is_active: true` only when user has no other active project. Creates default `project_settings` row. Writes `audit_logs` action `project_created`.
+
+**`GET /api/projects`**
+
+Returns `{ ok: true, data: Project[] }` ordered by `updated_at` desc. Default excludes `is_active = false` (archived/inactive). Pass `?includeArchived=true` to include all.
+
+**`DELETE /api/projects/:id`**
+
+Soft archive only — sets `is_active = false`, no hard delete. Audit log `project_updated` with `metadata.reason = "archive"`.
 
 ### Response format
 
@@ -116,13 +154,14 @@ npm run build:api
 | `APP_ENV` | Optional | Default `development` |
 | `ALLOWED_ORIGINS` | Optional | CSV; default localhost:5173–5175 |
 
-## Not in Task 2.6
+## Not in Task 2.7
 
 - `POST /api/auth/*` — use Supabase Auth client in browser instead
-- Project / settings / foundation CRUD
+- `GET/PUT /projects/:id/settings` full settings API (Task 2.8)
+- Story foundation / characters / facts CRUD (Task 2.9+)
 - OpenRouter / AI generation
 - Credit deduction / ledger
 - Cloudflare deploy
 - Frontend dashboard wired to real data
 
-See `docs/27-sprint-2-data-model-implementation-plan.md` Task 2.7+.
+See `docs/27-sprint-2-data-model-implementation-plan.md` Task 2.8+.
