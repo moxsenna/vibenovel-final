@@ -3,7 +3,7 @@ pid: 68296
 cwd: "D:\Coding\vibenovel-unified-blueprint"
 command: "Set-Location D:\\Coding\\vibenovel-unified-blueprint; npm run dev:api"
 started_at: 2026-06-07T19:49:21.825Z
-running_for_ms: 765001   
+running_for_ms: 999999   
 ---
 
 > vibenovel@0.1.0 dev:api
@@ -133,3 +133,24 @@ X [ERROR] Build failed with 1 error:
 [wrangler:inf] GET /api/projects/7dd9d0a1-8cc2-4994-b31c-814df2984eb3/speech-rules 200 OK (67ms)
 [wrangler:inf] GET /api/projects/a0000000-0000-4000-8000-000000000101/speech-rules 404 Not Found (60ms)
 [wrangler:inf] POST /api/projects/7dd9d0a1-8cc2-4994-b31c-814df2984eb3/speech-rules 400 Bad Request (72ms)
+⎔ Reloading local server...
+⎔ Reloading local server...
+⎔ Reloading local server...
+⎔ Reloading local server...
+⎔ Reloading local server...
+⎔ Reloading local server...
+⎔ Reloading local server...
+[wrangler:inf] POST /api/projects 201 Created (297ms)
+[wrangler:inf] GET /api/projects/992ed8b7-bc88-47d0-a569-14ddb9305efb/proposals 401 Unauthorized (3ms)
+[wrangler:inf] GET /api/projects/992ed8b7-bc88-47d0-a569-14ddb9305efb/proposals 200 OK (107ms)
+[wrangler:inf] POST /api/projects/992ed8b7-bc88-47d0-a569-14ddb9305efb/proposals 201 Created (95ms)
+[wrangler:inf] POST /api/projects/992ed8b7-bc88-47d0-a569-14ddb9305efb/proposals 201 Created (105ms)
+[wrangler:inf] POST /api/projects/992ed8b7-bc88-47d0-a569-14ddb9305efb/proposals 201 Created (98ms)
+[wrangler:inf] POST /api/projects/992ed8b7-bc88-47d0-a569-14ddb9305efb/proposals 400 Bad Request (70ms)
+[wrangler:inf] POST /api/projects/992ed8b7-bc88-47d0-a569-14ddb9305efb/proposals 400 Bad Request (68ms)
+[wrangler:inf] PATCH /api/projects/992ed8b7-bc88-47d0-a569-14ddb9305efb/proposals/053e3d7d-e9e1-4914-bad3-1b7041a3a36f 200 OK (107ms)
+[wrangler:inf] POST /api/projects/992ed8b7-bc88-47d0-a569-14ddb9305efb/proposals/053e3d7d-e9e1-4914-bad3-1b7041a3a36f/accept 200 OK (118ms)
+[wrangler:inf] PATCH /api/projects/992ed8b7-bc88-47d0-a569-14ddb9305efb/proposals/053e3d7d-e9e1-4914-bad3-1b7041a3a36f 409 Conflict (79ms)
+[wrangler:inf] POST /api/projects/992ed8b7-bc88-47d0-a569-14ddb9305efb/proposals/8473fdbc-e970-4bba-bd94-35e2a6c94617/reject 200 OK (94ms)
+[wrangler:inf] POST /api/projects/992ed8b7-bc88-47d0-a569-14ddb9305efb/proposals/9ba85b08-d73a-4c71-9186-96d4c2c15835/merge 200 OK (113ms)
+[wrangler:inf] GET /api/projects/a0000000-0000-4000-8000-000000000101/proposals 404 Not Found (76ms)

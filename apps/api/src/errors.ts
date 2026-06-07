@@ -33,6 +33,10 @@ export class AppError extends Error {
     return new AppError("BAD_REQUEST", message, 400, details);
   }
 
+  static conflict(message: string, details?: unknown): AppError {
+    return new AppError("CONFLICT", message, 409, details);
+  }
+
   static internal(message = "Internal server error"): AppError {
     return new AppError("INTERNAL_ERROR", message, 500);
   }

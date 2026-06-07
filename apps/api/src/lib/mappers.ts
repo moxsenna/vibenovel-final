@@ -1,7 +1,9 @@
 import type {
+  AiProposal,
   Character,
   CreditBalance,
   Fact,
+  JsonObject,
   Project,
   ProjectSettings,
   RelationshipSpeechRule,
@@ -280,6 +282,69 @@ export function mapSpeechRuleResponse(row: SpeechRuleRow): SpeechRuleResponse {
     fromCharacterId: base.characterAId,
     toCharacterId: base.characterBId,
     speechStyle: base.ruleText,
+  };
+}
+
+export interface AiProposalRow {
+  id: string;
+  project_id: string;
+  proposal_type: string;
+  status: string;
+  risk_level: string;
+  source: string;
+  title: string;
+  payload: JsonObject | unknown;
+  review_note: string | null;
+  reviewed_at: string | null;
+  reviewed_by: string | null;
+  merged_into_id: string | null;
+  result_fact_id: string | null;
+  result_character_id: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export function mapAiProposalRow(row: AiProposalRow): AiProposal {
+  const payload =
+    row.payload !== null && typeof row.payload === "object" && !Array.isArray(row.payload)
+      ? (row.payload as JsonObject)
+      : {};
+  return {
+    id: row.id,
+    projectId: row.project_id,
+    proposalType: row.proposal_type as AiProposal["proposalType"],
+    status: row.status as AiProposal["status"],
+    riskLevel: row.risk_level as AiProposal["riskLevel"],
+    source: row.source as AiProposal["source"],
+    title: row.title,
+    payload,
+    reviewNote: row.review_note,
+    reviewedAt: row.reviewed_at,
+    reviewedBy: row.reviewed_by,
+    mergedIntoId: row.merged_into_id,
+    resultFactId: row.result_fact_id,
+    resultCharacterId: row.result_character_id,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
+/** API response with task-friendly aliases. */
+export interface AiProposalResponse extends AiProposal {
+  type: AiProposal["proposalType"];
+  summary: string | null;
+}
+
+export function mapAiProposalResponse(row: AiProposalRow): AiProposalResponse {
+  const base = mapAiProposalRow(row);
+  const payload = base.payload;
+  const summary =
+    (typeof payload.summary === "string" ? payload.summary : null) ??
+    (typeof payload.description === "string" ? payload.description : null);
+  return {
+    ...base,
+    type: base.proposalType,
+    summary,
   };
 }
 

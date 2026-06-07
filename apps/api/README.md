@@ -1,6 +1,6 @@
 # apps/api — VibeNovel API (Sprint 2)
 
-Hono API on **Cloudflare Workers** — Supabase JWT auth, projects, settings, foundation, speech rules (Task 2.6–2.10).
+Hono API on **Cloudflare Workers** — Supabase JWT auth, projects, canon APIs, AI proposal queue (Task 2.6–2.11).
 
 ## Stack
 
@@ -31,6 +31,7 @@ apps/api/
       characters.ts    # CRUD /api/projects/:id/characters
       facts.ts         # CRUD /api/projects/:id/facts (soft deprecate)
       speech-rules.ts  # CRUD /api/projects/:id/speech-rules
+      ai-proposals.ts  # AI proposal queue lifecycle
       index.ts
     services/
       profile.ts       # getOrCreateProfileForAuthUser
@@ -41,6 +42,7 @@ apps/api/
       character.ts     # characters manual CRUD
       fact.ts          # facts manual CRUD + canon guardrails
       speech-rule.ts   # speech rules CRUD + character ref validation
+      ai-proposal.ts   # proposal queue CRUD + accept/reject/merge
       audit.ts         # append-only audit_logs (service role)
     lib/
       supabase.ts      # anon + service role clients
@@ -102,6 +104,13 @@ apps/api/
 | POST | `/api/projects/:id/speech-rules` | Bearer JWT | Create speech rule (source: user only) |
 | PATCH | `/api/projects/:id/speech-rules/:ruleId` | Bearer JWT | Update speech rule |
 | DELETE | `/api/projects/:id/speech-rules/:ruleId` | Bearer JWT | Soft deactivate (`status: deprecated`) |
+| GET | `/api/projects/:id/proposals` | Bearer JWT | List proposals (default: `proposed` only) |
+| POST | `/api/projects/:id/proposals` | Bearer JWT | Create manual proposal (`status: proposed`) |
+| GET | `/api/projects/:id/proposals/:proposalId` | Bearer JWT | Proposal detail |
+| PATCH | `/api/projects/:id/proposals/:proposalId` | Bearer JWT | Update proposed proposal only |
+| POST | `/api/projects/:id/proposals/:proposalId/accept` | Bearer JWT | Accept (status only — no canon promotion) |
+| POST | `/api/projects/:id/proposals/:proposalId/reject` | Bearer JWT | Reject proposal |
+| POST | `/api/projects/:id/proposals/:proposalId/merge` | Bearer JWT | Merge proposal |
 
 ### Auth approach (Task 2.6)
 
@@ -226,6 +235,29 @@ Aliases: `characterAId`/`characterBId`, `fromCharacterName`/`toCharacterName`, `
 
 **`DELETE /api/projects/:id/speech-rules/:ruleId`** — sets `status: deprecated` (no hard delete). Audit: `speech_rule_created` | `speech_rule_updated` (deactivate uses `metadata.reason = "deactivate"`).
 
+### AI proposal queue (Task 2.11)
+
+Canon safety gate — proposals stay in queue until explicit accept/reject/merge. **Accept does not auto-promote to facts/characters/speech rules** (deferred to Task 2.11b / Sprint 3).
+
+**`GET /api/projects/:id/proposals`** — default `status=proposed` only. Filters: `?status=`, `?type=`, `?riskLevel=`, `?includeResolved=true`.
+
+**`POST /api/projects/:id/proposals`**
+
+```json
+{
+  "type": "fact",
+  "title": "Saran fakta hubungan",
+  "summary": "Siska dekat dengan Arman di masa lalu",
+  "payload": { "suggested_text": "...", "category": "relationship" },
+  "riskLevel": "high",
+  "source": "user_manual"
+}
+```
+
+Status always `proposed` on create. Rejects raw provider sources (`openrouter`, `gemini`, `gpt`, etc.). Payload max 8KB; blocks `full_prompt`, `prose`, `chapter_text`.
+
+**Lifecycle:** `proposed` → `accepted` | `rejected` | `merged` via explicit POST actions. Resolved proposals return `409 CONFLICT` on PATCH. Audit: `ai_proposal_created` | `ai_proposal_accepted` | `ai_proposal_rejected` | `ai_proposal_merged`.
+
 ### Response format
 
 Success: `{ "ok": true, "data": { ... } }`
@@ -250,13 +282,13 @@ npm run build:api
 | `APP_ENV` | Optional | Default `development` |
 | `ALLOWED_ORIGINS` | Optional | CSV; default localhost:5173–5175 |
 
-## Not in Task 2.10
+## Not in Task 2.11
 
 - `POST /api/auth/*` — use Supabase Auth client in browser instead
-- AI proposal acceptance workflow (Task 2.11)
+- Canon auto-promotion on accept (Task 2.11b / Sprint 3)
 - OpenRouter / AI generation
 - Credit deduction / ledger
 - Cloudflare deploy
 - Frontend wired to real data
 
-See `docs/27-sprint-2-data-model-implementation-plan.md` Task 2.11+.
+See `docs/27-sprint-2-data-model-implementation-plan.md` Task 2.12+.
