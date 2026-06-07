@@ -1,8 +1,13 @@
 import type {
+  AiProposal,
   Character,
   CreditBalance,
+  DetectedSignal as ApiDetectedSignal,
   Fact,
+  IntakeMessage as ApiIntakeMessage,
+  IntakeSession as ApiIntakeSession,
   Project,
+  StoryConcept as ApiStoryConcept,
   StoryFoundation,
   WriterQualityMode,
 } from "@vibenovel/shared";
@@ -16,7 +21,21 @@ import { mockStoryFoundation } from "@/mocks/storyFoundation";
 import { ROUTES } from "@/routes/paths";
 import type { ModelTier, ModelTierOption, MonthlyUsage, UserSettings } from "@/types";
 import type { StoryFoundation as UiStoryFoundation } from "@/types/storyFoundation";
+import type {
+  ConceptAccent,
+  DetectedSignal,
+  IntakeMessage,
+  IntakeSession,
+  StoryConcept,
+} from "@/types";
+import { mockIntakeSession } from "@/mocks/intake";
 import { mockSettings } from "@/mocks/settings";
+interface FoundationReadinessApi {
+  readinessScore: number;
+  readinessLevel: string;
+  canLock: boolean;
+  missing: string[];
+}
 
 const GENRE_BADGE_CLASSES = [
   "bg-accent-soft text-on-secondary-container",
@@ -257,14 +276,12 @@ export function mapFoundationBundleToUi(
       description: c.description,
     }));
 
-  const lockedFacts = facts
-    .filter((f) => f.isLocked)
-    .map((f) => ({
-      id: f.id,
-      label: f.category,
-      value: f.text,
-      isLocked: f.isLocked,
-    }));
+  const lockedFacts = facts.map((f) => ({
+    id: f.id,
+    label: f.category,
+    value: f.text,
+    isLocked: f.isLocked,
+  }));
 
   const fallback = mockStoryFoundation;
 
@@ -308,4 +325,175 @@ export function resolveApiProjectId(
   if (!routeProjectId) return activeProjectId;
   if (routeProjectId === DEMO_PROJECT_ID && activeProjectId) return activeProjectId;
   return routeProjectId;
+}
+
+const SIGNAL_TYPE_ICONS: Record<string, string> = {
+  genre: "theater_comedy",
+  tone: "local_fire_department",
+  target_reader: "smartphone",
+  relationship_dynamic: "family_restroom",
+  secret_candidate: "key",
+  conflict: "swords",
+  reader_promise: "volunteer_activism",
+};
+
+const CONCEPT_ACCENTS: ConceptAccent[] = [
+  "primary-soft",
+  "secondary-container",
+  "success-soft",
+];
+
+const CONCEPT_BADGE_TONES = [
+  "text-primary-dark",
+  "text-secondary",
+  "text-tertiary-container",
+] as const;
+
+function parsePayloadRecord(value: unknown): Record<string, unknown> {
+  if (value !== null && typeof value === "object" && !Array.isArray(value)) {
+    return value as Record<string, unknown>;
+  }
+  return {};
+}
+
+export function mapApiMessageToUi(message: ApiIntakeMessage): IntakeMessage {
+  const role: IntakeMessage["role"] =
+    message.role === "user" ? "user" : "agent";
+  return {
+    id: message.id,
+    role,
+    content: message.content,
+    timestamp: message.createdAt,
+  };
+}
+
+export function mapApiSignalToUi(signal: ApiDetectedSignal): DetectedSignal {
+  const pending = signal.status === "detected";
+  return {
+    id: signal.id,
+    label: signal.label || signal.value,
+    icon: SIGNAL_TYPE_ICONS[signal.type] ?? "psychology_alt",
+    pending,
+  };
+}
+
+export function mapIntakeBundleToUi(
+  projectId: string,
+  session: ApiIntakeSession,
+  messages: ApiIntakeMessage[],
+  signals: ApiDetectedSignal[],
+): IntakeSession {
+  const fallback = mockIntakeSession;
+  const uiMessages =
+    messages.length > 0 ? messages.map(mapApiMessageToUi) : fallback.messages;
+  const uiSignals =
+    signals.length > 0 ? signals.map(mapApiSignalToUi) : fallback.detectedSignals;
+
+  return {
+    projectId,
+    pageTitle: fallback.pageTitle,
+    introTitle: fallback.introTitle,
+    introSubtitle: fallback.introSubtitle,
+    messages: uiMessages,
+    progress: fallback.progress,
+    progressPercent: session.progressPercent ?? fallback.progressPercent,
+    detectedSignals: uiSignals,
+    suggestedActions: fallback.suggestedActions,
+    conceptsRoute: ROUTES.project.concepts(projectId),
+    inputPlaceholder: fallback.inputPlaceholder,
+    inputTip: isApiModeEnabled()
+      ? "Balasan dari server (stub). Pesan tersimpan ke API."
+      : fallback.inputTip,
+    ctaLabel: fallback.ctaLabel,
+    ctaHint: fallback.ctaHint,
+  };
+}
+
+function isApiModeEnabled(): boolean {
+  const raw = import.meta.env.VITE_USE_MOCKS?.trim().toLowerCase();
+  return raw === "false";
+}
+
+export function mapApiConceptToUi(concept: ApiStoryConcept, projectId: string, index: number): StoryConcept {
+  const payload = parsePayloadRecord(concept.payload);
+  const accent =
+    (payload.decorativeAccent as ConceptAccent | undefined) ??
+    CONCEPT_ACCENTS[index % CONCEPT_ACCENTS.length];
+  const badgeLabel =
+    (typeof payload.badgeLabel === "string" && payload.badgeLabel) ||
+    [concept.genre, concept.tone].filter(Boolean).join(" / ") ||
+    "Konsep Cerita";
+  const badgeIcon =
+    (typeof payload.badgeIcon === "string" && payload.badgeIcon) || "auto_awesome";
+
+  return {
+    id: concept.id,
+    title: concept.title,
+    pitchShort: concept.shortPitch,
+    badgeLabel,
+    badgeIcon,
+    badgeToneClass: CONCEPT_BADGE_TONES[index % CONCEPT_BADGE_TONES.length],
+    mainConflict: concept.coreConflict ?? "",
+    readerPromise: concept.readerPromise ?? "",
+    commercialStrength:
+      (typeof payload.whyReadersCare === "string" && payload.whyReadersCare) ||
+      (typeof payload.emotionalPromise === "string" && payload.emotionalPromise) ||
+      "Arah cerita ini punya daya tarik emosional untuk pembaca serial.",
+    decorativeAccent: accent,
+    featured: payload.featured === true,
+    foundationRoute: ROUTES.project.foundation(projectId),
+    status: concept.status,
+  };
+}
+
+export function mapReadinessApiToUi(
+  readiness: FoundationReadinessApi,
+): UiStoryFoundation["readiness"] {
+  const percent = readiness.readinessScore;
+  return {
+    percent,
+    title: "Kesiapan Fondasi",
+    statusLabel: READINESS_LABELS[readiness.readinessLevel] ?? readiness.readinessLevel,
+    hint: readiness.canLock
+      ? "Fondasi siap dikunci. Tinjau usulan yang tersisa sebelum mengunci."
+      : percent >= 45
+        ? "Lengkapi bagian yang masih kurang dan terima usulan yang diperlukan."
+        : "Lengkapi intake dan konsep terlebih dahulu.",
+    missingItems: readiness.missing,
+  };
+}
+
+export interface UiFoundationProposal {
+  id: string;
+  proposalType: string;
+  title: string;
+  summary: string | null;
+  status: string;
+  riskLevel: string;
+}
+
+const PROPOSAL_TYPE_LABELS: Record<string, string> = {
+  foundation: "Fondasi",
+  character: "Tokoh",
+  fact: "Fakta",
+  relationship_speech_rule: "Aturan Bicara",
+  style: "Gaya",
+  secret: "Rahasia",
+  reveal: "Pengungkapan",
+};
+
+export function mapProposalToUi(proposal: AiProposal): UiFoundationProposal {
+  const payload = parsePayloadRecord(proposal.payload);
+  const summary =
+    (typeof payload.summary === "string" ? payload.summary : null) ??
+    (typeof payload.reason === "string" ? payload.reason : null);
+
+  return {
+    id: proposal.id,
+    proposalType: PROPOSAL_TYPE_LABELS[proposal.proposalType] ?? proposal.proposalType,
+    title: proposal.title,
+    summary,
+    status: proposal.status,
+    riskLevel: proposal.riskLevel,
+  };
 }

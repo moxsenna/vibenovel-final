@@ -18,10 +18,13 @@ function SectionLabel({ children }: { children: string }) {
 
 export interface ConceptCardProps {
   concept: StoryConcept;
+  onSelect?: (conceptId: string) => void | Promise<void>;
+  selecting?: boolean;
 }
 
-export function ConceptCard({ concept }: ConceptCardProps) {
+export function ConceptCard({ concept, onSelect, selecting = false }: ConceptCardProps) {
   const accentBg = ACCENT_BG[concept.decorativeAccent];
+  const isSelected = concept.status === "selected";
 
   return (
     <Card
@@ -49,13 +52,20 @@ export function ConceptCard({ concept }: ConceptCardProps) {
 
       <div className="relative z-10 flex flex-1 flex-col">
         <div className="mb-5 flex items-start justify-between">
-          <Badge
-            variant="neutral"
-            icon={<Icon name={concept.badgeIcon} size={16} />}
-            className={`gap-1.5 rounded-full border-0 bg-surface-container-low px-3 py-1.5 shadow-sm ${concept.badgeToneClass}`}
-          >
-            {concept.badgeLabel}
-          </Badge>
+          <div className="flex flex-wrap items-center gap-2">
+            <Badge
+              variant="neutral"
+              icon={<Icon name={concept.badgeIcon} size={16} />}
+              className={`gap-1.5 rounded-full border-0 bg-surface-container-low px-3 py-1.5 shadow-sm ${concept.badgeToneClass}`}
+            >
+              {concept.badgeLabel}
+            </Badge>
+            {isSelected && (
+              <Badge variant="primary" className="rounded-full px-2 py-0.5 text-[11px]">
+                Dipilih
+              </Badge>
+            )}
+          </div>
         </div>
 
         <h3 className="mb-5 font-headline-lg text-headline-lg text-on-surface">{concept.title}</h3>
@@ -97,15 +107,27 @@ export function ConceptCard({ concept }: ConceptCardProps) {
           </Card>
         </div>
 
-        <Link to={concept.foundationRoute} className="mt-auto block w-full">
+        {onSelect ? (
           <Button
             variant="primary"
-            className="w-full rounded-xl py-3 shadow-md md:py-4"
+            className="mt-auto w-full rounded-xl py-3 shadow-md md:py-4"
             rightIcon={<Icon name="arrow_forward" size={18} />}
+            disabled={selecting || isSelected}
+            onClick={() => void onSelect(concept.id)}
           >
-            Pilih Konsep Ini
+            {selecting ? "Memilih..." : isSelected ? "Sudah Dipilih" : "Pilih Konsep Ini"}
           </Button>
-        </Link>
+        ) : (
+          <Link to={concept.foundationRoute} className="mt-auto block w-full">
+            <Button
+              variant="primary"
+              className="w-full rounded-xl py-3 shadow-md md:py-4"
+              rightIcon={<Icon name="arrow_forward" size={18} />}
+            >
+              Pilih Konsep Ini
+            </Button>
+          </Link>
+        )}
       </div>
     </Card>
   );

@@ -1,4 +1,4 @@
-import { useCallback, useId, useState } from "react";
+import { useCallback, useEffect, useId, useState } from "react";
 import type { IntakeMessage } from "@/types";
 import { INTAKE_DUMMY_REPLY } from "@/mocks/intake";
 import { ChatBubble } from "./ChatBubble";
@@ -12,6 +12,9 @@ export interface ChatPanelProps {
   suggestedActions: string[];
   inputPlaceholder: string;
   inputTip: string;
+  apiMode?: boolean;
+  sending?: boolean;
+  onSendMessage?: (text: string) => Promise<void>;
 }
 
 function createMessage(role: IntakeMessage["role"], content: string): IntakeMessage {
@@ -31,19 +34,35 @@ export function ChatPanel({
   suggestedActions,
   inputPlaceholder,
   inputTip,
+  apiMode = false,
+  sending = false,
+  onSendMessage,
 }: ChatPanelProps) {
   const [messages, setMessages] = useState(initialMessages);
   const [chipDraft, setChipDraft] = useState<string | undefined>();
   const listId = useId();
 
-  const handleSend = useCallback((text: string) => {
-    setMessages((prev) => [
-      ...prev,
-      createMessage("user", text),
-      createMessage("agent", INTAKE_DUMMY_REPLY),
-    ]);
-    setChipDraft(undefined);
-  }, []);
+  useEffect(() => {
+    setMessages(initialMessages);
+  }, [initialMessages]);
+
+  const handleSend = useCallback(
+    async (text: string) => {
+      setChipDraft(undefined);
+
+      if (apiMode && onSendMessage) {
+        await onSendMessage(text);
+        return;
+      }
+
+      setMessages((prev) => [
+        ...prev,
+        createMessage("user", text),
+        createMessage("agent", INTAKE_DUMMY_REPLY),
+      ]);
+    },
+    [apiMode, onSendMessage],
+  );
 
   const handleChipSelect = useCallback((action: string) => {
     setChipDraft(action);
@@ -73,6 +92,7 @@ export function ChatPanel({
         placeholder={inputPlaceholder}
         tip={inputTip}
         onSend={handleSend}
+        disabled={sending}
         externalValue={chipDraft}
         onExternalValueConsumed={() => setChipDraft(undefined)}
       />

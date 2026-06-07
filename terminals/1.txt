@@ -3,7 +3,7 @@ pid: 68296
 cwd: "D:\Coding\vibenovel-unified-blueprint"
 command: "Set-Location D:\\Coding\\vibenovel-unified-blueprint; npm run dev:api"
 started_at: 2026-06-07T19:49:21.825Z
-running_for_ms: 3354997  
+running_for_ms: 3915011  
 ---
 
 > vibenovel@0.1.0 dev:api
@@ -544,3 +544,19 @@ X [ERROR] Build failed with 1 error:
 [wrangler:inf] POST /api/projects/eb5b1304-a798-435b-a6cc-d1d459a21919/proposals 201 Created (83ms)
 [wrangler:inf] POST /api/projects/eb5b1304-a798-435b-a6cc-d1d459a21919/proposals/8f9dc944-d058-4a42-965d-52e90bdfa378/accept 200 OK (85ms)
 [wrangler:inf] GET /api/credits/balance 200 OK (71ms)
+⎔ Reloading local server...
+[wrangler:inf] GET /health 200 OK (18ms)
+[wrangler:inf] GET /api/projects 200 OK (305ms)
+[wrangler:inf] POST /api/projects 201 Created (428ms)
+[wrangler:inf] GET /api/projects/af261dd8-2735-4d07-a896-a185529a4048/settings 200 OK (230ms)
+[wrangler:inf] PUT /api/projects/af261dd8-2735-4d07-a896-a185529a4048/settings 200 OK (228ms)
+[wrangler:inf] GET /api/projects/af261dd8-2735-4d07-a896-a185529a4048/foundation 200 OK (229ms)
+[wrangler:inf] PUT /api/projects/af261dd8-2735-4d07-a896-a185529a4048/foundation 200 OK (178ms)
+[wrangler:inf] POST /api/projects/af261dd8-2735-4d07-a896-a185529a4048/characters 201 Created (173ms)
+[wrangler:inf] POST /api/projects/af261dd8-2735-4d07-a896-a185529a4048/facts 201 Created (134ms)
+[wrangler:inf] POST /api/projects/af261dd8-2735-4d07-a896-a185529a4048/facts 400 Bad Request (149ms)
+[wrangler:inf] POST /api/projects/af261dd8-2735-4d07-a896-a185529a4048/speech-rules 201 Created (297ms)
+[wrangler:inf] POST /api/projects/af261dd8-2735-4d07-a896-a185529a4048/speech-rules 400 Bad Request (95ms)
+[wrangler:inf] POST /api/projects/af261dd8-2735-4d07-a896-a185529a4048/proposals 201 Created (164ms)
+[wrangler:inf] POST /api/projects/af261dd8-2735-4d07-a896-a185529a4048/proposals/444afd9d-7e82-4388-892c-db262ce057a1/accept 200 OK (232ms)
+[wrangler:inf] GET /api/credits/balance 200 OK (90ms)

@@ -17,4 +17,6 @@ export interface StoryConcept {
   /** Kartu rekomendasi utama (border highlight) */
   featured?: boolean;
   foundationRoute: string;
+  /** API-only — status konsep (proposed/selected/rejected) */
+  status?: string;
 }

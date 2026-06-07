@@ -4,12 +4,14 @@ import { supabase } from "@/lib/supabase";
 export class ApiClientError extends Error {
   readonly code: string;
   readonly status: number;
+  readonly details?: unknown;
 
-  constructor(code: string, message: string, status: number) {
+  constructor(code: string, message: string, status: number, details?: unknown) {
     super(message);
     this.name = "ApiClientError";
     this.code = code;
     this.status = status;
+    this.details = details;
   }
 }
 
@@ -23,6 +25,7 @@ interface ApiErrorBody {
   error: {
     code: string;
     message: string;
+    details?: unknown;
   };
 }
 
@@ -81,6 +84,7 @@ export async function apiRequest<T>(
       payload.error.code,
       payload.error.message,
       response.status,
+      payload.error.details,
     );
   }
 

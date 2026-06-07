@@ -2,21 +2,35 @@ import {
   FoundationCharacterList,
   FoundationLockCta,
   FoundationPageHeader,
+  FoundationProposalsPanel,
   FoundationReadinessCard,
   FoundationSectionCard,
   FoundationWarningPanel,
 } from "@/components/foundation";
 import { IntegrationNotice } from "@/components/common/IntegrationNotice";
 import { Badge, Card, Icon } from "@/components/ui";
-import { useFoundationData } from "@/hooks/useFoundationData";
+import { useFoundationFlow } from "@/hooks/useFoundationFlow";
 
 /**
- * Fondasi Cerita — Sprint 1 Task 1.9 (+ Sprint 2 Task 2.13 API integration)
+ * Fondasi Cerita — Sprint 1 Task 1.9 (+ Sprint 3 Task 3.6 API integration)
  * Source: stitch-reference/fondasi_cerita_refined
  * Wrapped by AppShell via router layout.
  */
 export function FoundationPage() {
-  const { foundation, notice, loading } = useFoundationData();
+  const {
+    foundation,
+    proposals,
+    notice,
+    lockNotice,
+    loading,
+    generating,
+    locking,
+    acceptingId,
+    apiMode,
+    generateProposals,
+    acceptProposalById,
+    lockFoundationNow,
+  } = useFoundationFlow();
   const { pageCopy } = foundation;
 
   return (
@@ -24,13 +38,40 @@ export function FoundationPage() {
       <FoundationPageHeader title={pageCopy.title} subtitle={pageCopy.subtitle} />
 
       <IntegrationNotice message={notice} />
+      {lockNotice && (
+        <IntegrationNotice
+          message={lockNotice}
+          className={
+            foundation.isLocked
+              ? "border-success-soft bg-success-soft text-on-surface"
+              : undefined
+          }
+        />
+      )}
+
       {loading ? (
         <p className="font-body-sm text-body-sm text-muted-text" role="status">
           Memuat fondasi cerita...
         </p>
       ) : null}
 
+      {foundation.isLocked && (
+        <Badge variant="primary" className="w-fit rounded-full px-3 py-1">
+          Fondasi Terkunci
+        </Badge>
+      )}
+
       <FoundationReadinessCard readiness={foundation.readiness} />
+
+      {apiMode && (
+        <FoundationProposalsPanel
+          proposals={proposals}
+          generating={generating}
+          acceptingId={acceptingId}
+          onGenerate={generateProposals}
+          onAccept={acceptProposalById}
+        />
+      )}
 
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
         <FoundationSectionCard title="Tentang Cerita" icon="import_contacts">
@@ -125,6 +166,9 @@ export function FoundationPage() {
         <FoundationLockCta
           label={pageCopy.lockCtaLabel}
           outlineRoute={foundation.outlineRoute}
+          locked={foundation.isLocked}
+          locking={locking}
+          onLock={apiMode ? lockFoundationNow : undefined}
         />
       </div>
     </div>

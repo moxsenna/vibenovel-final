@@ -4,3 +4,4 @@ export { FoundationLockCta } from "./FoundationLockCta";
 export { FoundationPageHeader } from "./FoundationPageHeader";
 export { FoundationSectionCard } from "./FoundationSectionCard";
 export { FoundationWarningPanel } from "./FoundationWarningPanel";
+export { FoundationProposalsPanel } from "./FoundationProposalsPanel";

@@ -4,9 +4,10 @@ import { Icon } from "@/components/ui";
 export interface ChatInputProps {
   placeholder: string;
   tip: string;
-  onSend: (text: string) => void;
+  onSend: (text: string) => void | Promise<void>;
   externalValue?: string;
   onExternalValueConsumed?: () => void;
+  disabled?: boolean;
 }
 
 export function ChatInput({
@@ -15,6 +16,7 @@ export function ChatInput({
   onSend,
   externalValue,
   onExternalValueConsumed,
+  disabled = false,
 }: ChatInputProps) {
   const [value, setValue] = useState("");
 
@@ -26,11 +28,12 @@ export function ChatInput({
 
   const handleSend = useCallback(() => {
     const text = value.trim();
-    if (!text) return;
-    onSend(text);
-    setValue("");
-    onExternalValueConsumed?.();
-  }, [value, onSend, onExternalValueConsumed]);
+    if (!text || disabled) return;
+    void Promise.resolve(onSend(text)).then(() => {
+      setValue("");
+      onExternalValueConsumed?.();
+    });
+  }, [value, onSend, onExternalValueConsumed, disabled]);
 
   const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -56,13 +59,15 @@ export function ChatInput({
           onKeyDown={handleKeyDown}
           placeholder={placeholder}
           rows={1}
-          className="max-h-32 w-full resize-none border-none bg-transparent py-2 font-body-md text-body-md text-on-background placeholder:text-muted-text focus:ring-0"
+          disabled={disabled}
+          className="max-h-32 w-full resize-none border-none bg-transparent py-2 font-body-md text-body-md text-on-background placeholder:text-muted-text focus:ring-0 disabled:opacity-60"
         />
         <button
           type="button"
           aria-label="Kirim"
           onClick={handleSend}
-          className="flex-shrink-0 rounded-lg bg-primary p-2 text-on-primary shadow-sm transition-colors hover:bg-primary-dark min-h-[44px] min-w-[44px] flex items-center justify-center"
+          disabled={disabled}
+          className="flex-shrink-0 rounded-lg bg-primary p-2 text-on-primary shadow-sm transition-colors hover:bg-primary-dark min-h-[44px] min-w-[44px] flex items-center justify-center disabled:opacity-60"
         >
           <Icon name="send" size={20} filled />
         </button>
