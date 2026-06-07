@@ -1,6 +1,6 @@
 # apps/api — VibeNovel API (Sprint 2)
 
-Hono API on **Cloudflare Workers** — Supabase JWT auth, projects, canon APIs, AI proposal queue (Task 2.6–2.11).
+Hono API on **Cloudflare Workers** — Supabase JWT auth, projects, canon APIs, AI proposal queue, credit balance read (Task 2.6–2.12).
 
 ## Stack
 
@@ -32,6 +32,7 @@ apps/api/
       facts.ts         # CRUD /api/projects/:id/facts (soft deprecate)
       speech-rules.ts  # CRUD /api/projects/:id/speech-rules
       ai-proposals.ts  # AI proposal queue lifecycle
+      credits.ts       # GET /api/credits/balance — read-only
       index.ts
     services/
       profile.ts       # getOrCreateProfileForAuthUser
@@ -111,6 +112,7 @@ apps/api/
 | POST | `/api/projects/:id/proposals/:proposalId/accept` | Bearer JWT | Accept (status only — no canon promotion) |
 | POST | `/api/projects/:id/proposals/:proposalId/reject` | Bearer JWT | Reject proposal |
 | POST | `/api/projects/:id/proposals/:proposalId/merge` | Bearer JWT | Merge proposal |
+| GET | `/api/credits/balance` | Bearer JWT | Read-only credit balance for authenticated user |
 
 ### Auth approach (Task 2.6)
 
@@ -134,6 +136,27 @@ apps/api/
 ```
 
 `creditBalance` is `null` when no row exists. No credit mutation in Task 2.6.
+
+### Credit balance read (Task 2.12)
+
+`GET /api/credits/balance` — read-only display balance for the authenticated user. Uses the same `getCreditBalanceForUser` service as `/api/me`. No query/body `userId`; no mutation, ledger, deduction, or audit log on GET.
+
+```json
+{
+  "ok": true,
+  "data": {
+    "creditBalance": {
+      "balance": 1250,
+      "monthlyQuota": 1000,
+      "monthlyUsed": 450,
+      "source": "seed",
+      "updatedAt": "..."
+    }
+  }
+}
+```
+
+`creditBalance` is `null` when no `credit_balances` row exists (no auto-create in Sprint 2).
 
 ### Project routes (Task 2.7)
 
@@ -282,13 +305,14 @@ npm run build:api
 | `APP_ENV` | Optional | Default `development` |
 | `ALLOWED_ORIGINS` | Optional | CSV; default localhost:5173–5175 |
 
-## Not in Task 2.11
+## Not in Task 2.12
 
 - `POST /api/auth/*` — use Supabase Auth client in browser instead
 - Canon auto-promotion on accept (Task 2.11b / Sprint 3)
 - OpenRouter / AI generation
-- Credit deduction / ledger
+- Credit deduction / ledger / top-up / payment
+- `PATCH /api/credits/*` or balance auto-create for new users
 - Cloudflare deploy
 - Frontend wired to real data
 
-See `docs/27-sprint-2-data-model-implementation-plan.md` Task 2.12+.
+See `docs/27-sprint-2-data-model-implementation-plan.md` Task 2.13+.
