@@ -1,44 +1,74 @@
-# supabase — Database Migrations (Placeholder)
+# supabase — Database & Migrations (Sprint 2+)
 
-## Fungsi folder ini
+Folder ini menyimpan **schema Postgres**, migrasi, seed dev, dan konfigurasi Supabase CLI untuk VibeNovel Core v2.
 
-Tempat **schema database** dan migrasi Supabase/Postgres VibeNovel:
+## Tujuan
+
+- Satu tempat canonical persistence: profiles, projects, story foundation, characters, facts, speech rules, AI proposals, credit display, audit logs.
+- Migrasi versioned di `migrations/` — diterapkan hanya lewat workflow yang disetujui (Task 2.3+).
+- RLS (Row Level Security) melindungi data per user; detail draft di [`docs/28-supabase-rls-policy-draft.md`](../docs/28-supabase-rls-policy-draft.md).
+
+## Struktur folder
 
 ```txt
-supabase/migrations/
-  0001_initial_schema.sql
-  0002_rls_policies.sql
-  ...
+supabase/
+  config.toml          # Konfigurasi local Supabase CLI (bukan secret)
+  migrations/          # SQL migrasi berurutan (Task 2.3+)
+  seed/                # Seed dev/demo (Task 2.4+)
+  README.md            # File ini
 ```
 
-Menyimpan canonical persistence: projects, story foundation, characters, facts, outlines, prose versions, chapter deltas, usage logs, dll.
+## Cara migration akan dikelola
 
-## Status saat ini
+| Fase | Task | Apa yang dilakukan |
+|---|---|---|
+| **Sekarang (2.2)** | Setup + RLS draft | Folder siap, `config.toml` minimal, dokumen kebijakan — **tanpa** migration SQL final |
+| **2.3** | Core migration | `migrations/00001_sprint2_core.sql` — 9 tabel + `audit_logs`; enum selaras `@vibenovel/shared` |
+| **2.4** | Seed | `seed/` atau script — demo project dari mock Sprint 1 |
+| **Apply local** | Setelah approval user | `supabase start` + `supabase db reset` (hanya dev lokal) |
+| **Apply remote** | Manual / CI terpisah | **Tidak** di Task 2.2 atau 2.3 tanpa approval eksplisit user |
 
-**Belum diimplementasikan.** Tidak ada migration atau Supabase project terhubung.
+Urutan disarankan:
 
-Sprint 1 **tidak** membangun schema atau koneksi database nyata.
+1. Review `docs/28-supabase-rls-policy-draft.md`
+2. Tulis/review migration di `migrations/`
+3. Test lokal dengan Supabase CLI
+4. Seed dev
+5. Hubungkan `apps/api` (Sprint 2.5+) — canon writes lewat API, bukan client direct ke tabel sensitif
 
-## Kapan akan dipakai
+## Sprint 2 — belum menjalankan remote migration
 
-| Sprint | Cakupan |
-|---|---|
-| Sprint 2 | Schema projects + persistence dasar |
-| Sprint 3 | Story foundation, intake messages |
-| Sprint 4 | Outline & beat contracts |
-| Sprint 5–6 | Prose versions, chapter deltas |
-| Sprint 7+ | Publish package, billing tables |
+Task 2.2 **tidak**:
 
-Lihat `docs/12-database-schema-and-data-model.md` dan `stitch-reference/architecture_paths.md`.
+- menjalankan `supabase link` ke project remote,
+- menjalankan `supabase db push` ke hosted Supabase,
+- menyimpan URL/key production di repo.
 
-## Larangan untuk agent / developer
+Remote setup (project Supabase hosted, env di mesin dev) dilakukan manusia developer di luar scope agent Task 2.2.
 
-Jangan di Sprint 1:
+## Environment variables (referensi nama saja)
 
-- membuat migration production tanpa sprint plan
-- mengedit migration lama yang sudah applied
-- menaruh service role key di frontend
-- membangun RLS/payment sebelum model data stabil
-- menghubungkan UI ke Supabase tanpa typed data layer
+Variabel yang akan dipakai nanti (nilai **tidak** disimpan di repo):
 
-Gunakan mock data di `apps/web/src/mocks/` sampai Sprint 2.
+| Variable | Konsumen | Catatan |
+|---|---|---|
+| `SUPABASE_URL` | `apps/api`, optional web anon | Public project URL |
+| `SUPABASE_ANON_KEY` | `apps/web` (read terbatas) | Bukan service role |
+| `SUPABASE_SERVICE_ROLE_KEY` | `apps/api`, seed scripts | **Server only** — jangan di frontend |
+| `DATABASE_URL` | migrasi lokal / CI | Connection string Postgres |
+
+Gunakan `.env` lokal (di-`.gitignore`). Contoh nama variabel boleh ada di docs; **jangan commit nilai**.
+
+## Larangan
+
+- Jangan commit `.env`, service role key, JWT secret, atau OpenRouter key.
+- Jangan taruh service role di `apps/web` atau bundle browser.
+- Jangan edit migration yang sudah applied di shared environment tanpa strategi rollback.
+- Jangan buat tabel Sprint 4+ (chapters, prose_versions, credits_ledger) di migrasi Sprint 2.
+- Jangan INSERT AI output langsung ke `facts` — lihat canon rule di doc 28.
+
+## Dokumen terkait
+
+- [`docs/27-sprint-2-data-model-implementation-plan.md`](../docs/27-sprint-2-data-model-implementation-plan.md) — 9 tabel + task breakdown
+- [`docs/28-supabase-rls-policy-draft.md`](../docs/28-supabase-rls-policy-draft.md) — RLS draft Sprint 2
+- [`packages/shared`](../packages/shared/) — enums/types domain
