@@ -167,6 +167,8 @@ export function useOutlineData(): OutlineData {
     try {
       const result = await generateOutline(projectId, token, {});
       applyBundle(projectId, result);
+      setSource("api");
+      setNotice(null);
       setWorkflowNotice("Rencana 10 bab berhasil dibuat.");
     } catch (error) {
       setWorkflowNotice(

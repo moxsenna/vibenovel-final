@@ -9,7 +9,8 @@
     "typecheck": "tsc --noEmit",
     "preview": "vite preview",
     "test:e2e": "playwright test",
-    "test:e2e:sprint3": "playwright test e2e/sprint3-flow.spec.ts"
+    "test:e2e:sprint3": "playwright test e2e/sprint3-flow.spec.ts",
+    "test:e2e:sprint4": "playwright test e2e/sprint4-outline-flow.spec.ts"
   },
   "dependencies": {
     "@vibenovel/shared": "*",

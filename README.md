@@ -30,7 +30,7 @@ vibenovel-unified-blueprint/
 | `packages/shared` | **Implemented (Task 2.1, 4.1)** | Domain types, enums, outline planning contracts |
 | `packages/core` | Placeholder | Engine AI/story — nanti |
 | `supabase` | **Migration + seed (Task 4.1)** | 18 tabel (+ outline planning), RLS, demo seed — `supabase db reset` verified |
-| `scripts` | **Smoke scripts (2.15, 3.8, 4.7)** | `smoke:api`, `smoke:web`, `sprint4-smoke-api.ps1` — see `scripts/README.md` |
+| `scripts` | **Smoke scripts (2.15, 3.8, 4.7–4.8)** | `smoke:api`, `smoke:web`, `smoke:web:outline` — see `scripts/README.md` |
 | `docs` | Dokumentasi | Sumber arsitektur & sprint plan |
 | `stitch-reference` | Referensi desain | HTML + screen.png per halaman |
 
@@ -75,6 +75,9 @@ npm run smoke:api
 
 # Web E2E smoke (Playwright — dev:web required; mock mode default)
 npm run smoke:web
+
+# Outline page E2E (Task 4.8 — mock default; add -- -IncludeApiMode for API flow)
+npm run smoke:web:outline
 ```
 
 See [`scripts/README.md`](scripts/README.md) for prerequisites (env: `VITE_USE_MOCKS`, `VITE_API_URL`, `VITE_SUPABASE_*`).
@@ -190,16 +193,17 @@ Belum ada (sengaja — defer Sprint 4+):
 | 4.5 Approve/lock workflow API | ✅ | `reviewing` → `outline_locked` |
 | 4.6 Web OutlinePage integration | ✅ | API mode + mock fallback |
 | 4.7 Verification report | ✅ | `docs/33` + `sprint4-smoke-api.ps1` |
+| 4.8 Outline web E2E smoke | ✅ | `smoke:web:outline`, `sprint4-outline-flow.spec.ts` |
 
 Belum ada (sengaja — defer Sprint 5+):
 
 - Write Room persistence / prose generation
 - Writer Context Packet
 - OpenRouter / AI generation
-- Automated outline API-mode Playwright (**Task 4.8 optional**)
+- Outline web E2E (`npm run smoke:web:outline`) — Task 4.8 ✅
 - Web E2E in GitHub Actions CI
 
-**Task berikutnya (disarankan):** Sprint 5 — Safe Write Room & Context Packet. Opsional: Task 4.8 — Outline Web E2E API-mode smoke.
+**Task berikutnya (disarankan):** Sprint 5 — Safe Write Room & Context Packet.
 
 ---
 

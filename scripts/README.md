@@ -198,12 +198,85 @@ If API-mode automation cannot run: [`sprint3-smoke-web-manual-checklist.md`](spr
 - API mode needs fresh ephemeral user/project per run (script creates via Supabase + API)
 - DevAuthPanel dev-only; no production E2E
 - Mock and API modes need different `VITE_USE_MOCKS` — restart `dev:web` when switching
-- Does not test outline/write/summary/publish pages (still mock Sprint 1)
+- Does not test outline/write/summary/publish pages (Sprint 3 scope only)
 
 ### Related docs
 
 - [`docs/31-sprint-3-verification-report.md`](../docs/31-sprint-3-verification-report.md)
 - [`docs/30-sprint-3-story-foundation-flow-implementation-plan.md`](../docs/30-sprint-3-story-foundation-flow-implementation-plan.md)
+
+## Sprint 4 outline web E2E smoke (Task 4.8)
+
+### `sprint4-smoke-web.ps1`
+
+Playwright browser smoke for **`/projects/:id/outline`**: mock mode (default) and optional API mode (`-IncludeApiMode`).
+
+**Platform:** Windows / PowerShell 5.1+. Tests in `apps/web/e2e/sprint4-outline-flow.spec.ts`.
+
+### Prerequisites — mock mode (default)
+
+Same as Sprint 3 mock mode:
+
+1. `npm install` from repo root
+2. `cd apps/web && npx playwright install chromium` (first run)
+3. `apps/web/.env.local` with `VITE_USE_MOCKS=true` (default)
+4. `npm run dev:web` → http://localhost:5173
+
+### Prerequisites — API mode (`-IncludeApiMode`)
+
+All mock prerequisites, plus:
+
+1. `supabase start && supabase db reset`
+2. `apps/api/.dev.vars` configured (never commit)
+3. `npm run dev:api` → http://127.0.0.1:8787
+4. `apps/web/.env.local`:
+   - `VITE_USE_MOCKS=false`
+   - `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `VITE_API_URL`
+5. **Restart** `dev:web` after env changes
+
+Script bootstraps foundation locked via API (intake → concepts → proposals → lock) before Playwright outline flow.
+
+### Run from repo root
+
+```bash
+# Mock mode — outline page renders mock, no planningTruth in DOM
+npm run smoke:web:outline
+
+# Mock + API-mode outline flow (generate, edit, approve, lock)
+npm run smoke:web:outline -- -IncludeApiMode
+```
+
+Playwright only (web server must be running):
+
+```bash
+npm run test:e2e:sprint4 -w @vibenovel/web
+```
+
+### What is tested
+
+| Mode | Coverage |
+|---|---|
+| **Mock** | `/projects/demo-project-001/outline` — not blank; mock markers; no `planningTruth` in DOM |
+| **API** (`-IncludeApiMode`) | DevAuth login → outline generate → 10 chapters → tracking panels → chapter edit → approve → lock → locked badge + disabled editor; DOM redaction |
+
+### Output
+
+- `[PASS]` / `[FAIL]` / `[NOT RUN]` per step
+- **Exit code 0** = no FAIL steps
+
+**Do not claim API-mode PASS** without `-IncludeApiMode` and `VITE_USE_MOCKS=false` web server.
+
+### Known limitations
+
+- Not in GitHub Actions CI (browser + Supabase + dual `VITE_USE_MOCKS` env)
+- API mode bootstraps foundation via API (not full browser upstream flow) — faster, still uses real session
+- Does not test write/summary/publish pages
+- Mock and API modes need different `VITE_USE_MOCKS` — restart `dev:web` when switching
+
+### Related docs
+
+- [`docs/33-sprint-4-verification-report.md`](../docs/33-sprint-4-verification-report.md)
+- [`scripts/sprint4-smoke-api.ps1`](sprint4-smoke-api.ps1)
 
 ## Future scripts (not yet implemented)
 

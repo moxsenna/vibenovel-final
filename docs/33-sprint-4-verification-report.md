@@ -358,13 +358,12 @@ powershell -ExecutionPolicy Bypass -File scripts/sprint4-smoke-api.ps1
 
 | Test | Result |
 |---|---|
-| `npm run smoke:web` mock (intake/concepts/foundation) | **PASS** |
-| `VITE_USE_MOCKS=true` `/outline` renders mock | **NOT RUN** (no Playwright spec for outline) |
-| `VITE_USE_MOCKS=false` no login — no crash | **NOT RUN** (automated) |
-| `VITE_USE_MOCKS=false` login — full outline API flow in browser | **NOT RUN** (automated) |
-| `planningTruth` not visible in DOM | **NOT RUN** (automated) |
+| `npm run smoke:web` mock (intake/concepts/foundation) | **PASS** (Task 4.7) |
+| `npm run smoke:web:outline` mock `/outline` | **PASS** (8 Juni 2026, Task 4.8) |
+| `npm run smoke:web:outline -- -IncludeApiMode` | **PASS** (8 Juni 2026, Task 4.8) |
+| `planningTruth` DOM redaction (Playwright) | **PASS** — mock + API mode (Task 4.8) |
 
-**Catatan:** Jangan klaim full browser API-mode E2E PASS untuk `/outline`. Task 4.8 (optional) disarankan sebelum Sprint 5 jika ingin otomasi DOM/redaction check.
+**Task 4.8 deliverable:** `apps/web/e2e/sprint4-outline-flow.spec.ts`, `scripts/sprint4-smoke-web.ps1`, `npm run smoke:web:outline`. CI outline API-mode E2E **deferred**.
 
 ---
 
@@ -409,12 +408,11 @@ Per [`docs/17-roadmap-sprint-plan-mvp-to-full.md`](17-roadmap-sprint-plan-mvp-to
 
 **Alasan:** Outline planning engine sudah terverifikasi; nilai produk berikutnya adalah menulis bab pertama dengan context aman — bukan menambah lapisan planning.
 
-### Optional pre-Sprint 5 hardening: **Task 4.8 — Outline Web E2E API-mode Smoke Automation**
+### Completed pre-Sprint 5 hardening: **Task 4.8 — Outline Web E2E Smoke Automation** ✅
 
-- Playwright spec untuk `/projects/:id/outline` di API mode
-- Assert: generate, chapters, loops/reveals, no `planningTruth` in DOM, approve/lock, locked badge
-- Extend `npm run smoke:web` atau script terpisah
-- **Alasan:** Menutup gap verifikasi browser yang sengaja **NOT RUN** di Task 4.7; mengurangi risiko regresi web integration sebelum prose writer.
+- `npm run smoke:web:outline` — mock `/outline` + optional `-IncludeApiMode`
+- Playwright: generate, chapters, tracking panels, edit, approve/lock, DOM redaction
+- CI integration **deferred** (local-only)
 
 ---
 

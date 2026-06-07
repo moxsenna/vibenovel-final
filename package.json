@@ -19,7 +19,8 @@
     "typecheck:api": "npm run typecheck -w @vibenovel/api",
     "preview:web": "npm run preview -w @vibenovel/web",
     "smoke:api": "powershell -ExecutionPolicy Bypass -File scripts/sprint2-smoke-api.ps1",
-    "smoke:web": "powershell -ExecutionPolicy Bypass -File scripts/sprint3-smoke-web.ps1"
+    "smoke:web": "powershell -ExecutionPolicy Bypass -File scripts/sprint3-smoke-web.ps1",
+    "smoke:web:outline": "powershell -ExecutionPolicy Bypass -File scripts/sprint4-smoke-web.ps1"
   },
   "engines": {
     "node": ">=18"
