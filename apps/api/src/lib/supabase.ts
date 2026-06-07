@@ -1,31 +1,32 @@
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import type { AppBindings } from "../env.js";
 
-/**
- * Supabase client factory shell — no queries in Task 2.5.
- * Wire @supabase/supabase-js in Task 2.6+.
- */
-export type SupabaseClientKind = "anon" | "service_role";
+const CLIENT_OPTIONS = {
+  auth: {
+    autoRefreshToken: false,
+    persistSession: false,
+    detectSessionInUrl: false,
+  },
+} as const;
 
-export interface SupabaseClientShell {
-  kind: SupabaseClientKind;
-  url: string;
+function requireUrl(bindings: AppBindings): string {
+  const url = bindings.SUPABASE_URL?.trim();
+  if (!url) throw new Error("SUPABASE_URL is not configured");
+  return url;
 }
 
-export function createAnonClientShell(
-  bindings: AppBindings,
-): SupabaseClientShell | null {
-  const url = bindings.SUPABASE_URL?.trim();
+/** Anon client — JWT validation via auth.getUser(token). */
+export function createAnonClient(bindings: AppBindings): SupabaseClient {
+  const url = requireUrl(bindings);
   const key = bindings.SUPABASE_ANON_KEY?.trim();
-  if (!url || !key) return null;
-  return { kind: "anon", url };
+  if (!key) throw new Error("SUPABASE_ANON_KEY is not configured");
+  return createClient(url, key, CLIENT_OPTIONS);
 }
 
-/** Service role — server only; never expose to browser. */
-export function createServiceRoleClientShell(
-  bindings: AppBindings,
-): SupabaseClientShell | null {
-  const url = bindings.SUPABASE_URL?.trim();
+/** Service role — server only; bypasses RLS for profile sync. Never expose to client. */
+export function createServiceRoleClient(bindings: AppBindings): SupabaseClient {
+  const url = requireUrl(bindings);
   const key = bindings.SUPABASE_SERVICE_ROLE_KEY?.trim();
-  if (!url || !key) return null;
-  return { kind: "service_role", url };
+  if (!key) throw new Error("SUPABASE_SERVICE_ROLE_KEY is not configured");
+  return createClient(url, key, CLIENT_OPTIONS);
 }

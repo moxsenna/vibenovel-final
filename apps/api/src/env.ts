@@ -42,15 +42,20 @@ export function getEnvPresenceFlags(bindings: AppBindings): EnvPresenceFlags {
   };
 }
 
-/**
- * Validates required bindings for future data routes (Task 2.6+).
- * Not enforced on /health — scaffold only.
- */
-export function assertDataBindings(bindings: AppBindings): void {
+/** Required for JWT validation + profile/credit reads (Task 2.6+). */
+export function assertAuthBindings(bindings: AppBindings): void {
   const missing: string[] = [];
   if (!bindings.SUPABASE_URL?.trim()) missing.push("SUPABASE_URL");
-  if (!bindings.SUPABASE_SERVICE_ROLE_KEY?.trim()) missing.push("SUPABASE_SERVICE_ROLE_KEY");
+  if (!bindings.SUPABASE_ANON_KEY?.trim()) missing.push("SUPABASE_ANON_KEY");
+  if (!bindings.SUPABASE_SERVICE_ROLE_KEY?.trim()) {
+    missing.push("SUPABASE_SERVICE_ROLE_KEY");
+  }
   if (missing.length > 0) {
     throw new Error(`Missing required env: ${missing.join(", ")}`);
   }
+}
+
+/** Alias for data routes that require service role. */
+export function assertDataBindings(bindings: AppBindings): void {
+  assertAuthBindings(bindings);
 }

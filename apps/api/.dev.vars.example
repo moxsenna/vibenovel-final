@@ -1,8 +1,8 @@
 # Copy to `.dev.vars` for local `wrangler dev` — never commit `.dev.vars`
-# Variable names only; fill values locally.
+# Values from `supabase status` after `supabase start`
 
-SUPABASE_URL=
-SUPABASE_ANON_KEY=
-SUPABASE_SERVICE_ROLE_KEY=
+SUPABASE_URL=http://127.0.0.1:54321
+SUPABASE_ANON_KEY=your-local-anon-key
+SUPABASE_SERVICE_ROLE_KEY=your-local-service-role-key
 APP_ENV=development
 ALLOWED_ORIGINS=http://localhost:5173,http://localhost:5174,http://localhost:5175

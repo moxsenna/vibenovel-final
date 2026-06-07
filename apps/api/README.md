@@ -1,47 +1,59 @@
-# apps/api — VibeNovel API (Sprint 2 Task 2.5)
+# apps/api — VibeNovel API (Sprint 2)
 
-Hono API on **Cloudflare Workers** — health, env shell, CORS, auth guard shell. No CRUD or AI routes yet.
+Hono API on **Cloudflare Workers** — Supabase JWT auth, profile sync, `/api/me`. No CRUD or AI routes yet.
 
 ## Stack
 
 - [Hono](https://hono.dev/) 4.x
 - TypeScript
 - Wrangler 3.x (local dev)
-- `@vibenovel/shared` for `JsonValue` types
+- `@supabase/supabase-js` — JWT validation + server-side reads
+- `@vibenovel/shared` — domain types
 
 ## Structure
 
 ```txt
 apps/api/
   src/
-    index.ts           # Worker entry
-    env.ts             # Bindings + safe env flags
-    errors.ts          # AppError + global handlers
-    response.ts        # { ok, data } / { ok, error }
+    index.ts
+    env.ts
+    errors.ts
+    response.ts
     middleware/
       cors.ts
-      auth.ts          # Bearer shell (full auth → Task 2.6)
+      auth.ts          # JWT validation via Supabase Auth
     routes/
       health.ts
-      me.ts
+      me.ts            # GET /api/me — profile + credit balance
       index.ts
+    services/
+      profile.ts       # getOrCreateProfileForAuthUser
+      credit.ts        # read-only credit_balances
     lib/
-      supabase.ts      # Client factory shell (no queries)
+      supabase.ts      # anon + service role clients
+      mappers.ts
   wrangler.toml
   .dev.vars.example
 ```
 
 ## Local development
 
-1. Copy env template (no secrets in git):
+1. Start Supabase locally:
+
+   ```bash
+   supabase start
+   supabase status   # copy API URL and keys
+   ```
+
+2. Copy env template (no secrets in git):
 
    ```bash
    cp apps/api/.dev.vars.example apps/api/.dev.vars
    ```
 
-2. Fill `.dev.vars` locally with Supabase local URLs/keys if needed.
+3. Fill `.dev.vars` with values from `supabase status`.
 
-3. From repo root:
+4. From repo root:
 
    ```bash
    npm run dev:api
@@ -49,29 +61,42 @@ apps/api/
 
    Default: http://127.0.0.1:8787
 
-## Endpoints (Task 2.5)
+## Endpoints
 
 | Method | Path | Auth | Description |
 |---|---|---|---|
 | GET | `/health` | No | Service health + env presence flags |
 | GET | `/api/health` | No | Alias |
-| GET | `/api/me` | Bearer | Auth shell — 401 without token |
+| GET | `/api/me` | Bearer JWT | User + profile + creditBalance |
+
+### Auth approach (Task 2.6)
+
+- **No custom password auth on API.** Identity comes from Supabase Auth.
+- Frontend signs in via `@supabase/supabase-js` (browser anon client).
+- API validates `Authorization: Bearer <access_token>` with `supabase.auth.getUser(token)`.
+- Profile sync uses **service role** server-side only, filtered by validated `user.id`.
+- Service role key never appears in responses, logs, or `/health`.
+
+### `GET /api/me` response
+
+```json
+{
+  "ok": true,
+  "data": {
+    "user": { "id": "...", "email": "..." },
+    "profile": { "displayName": "...", "email": "...", "role": "writer" },
+    "creditBalance": { "balance": 1250, "monthlyQuota": 1000 } 
+  }
+}
+```
+
+`creditBalance` is `null` when no row exists. No credit mutation in Task 2.6.
 
 ### Response format
 
-Success:
+Success: `{ "ok": true, "data": { ... } }`
 
-```json
-{ "ok": true, "data": { ... } }
-```
-
-Error:
-
-```json
-{ "ok": false, "error": { "code": "UNAUTHORIZED", "message": "..." } }
-```
-
-`/health` never returns env **values** — only booleans like `hasSupabaseUrl`.
+Error: `{ "ok": false, "error": { "code": "UNAUTHORIZED", "message": "..." } }`
 
 ## Scripts (root)
 
@@ -83,21 +108,21 @@ npm run build:api
 
 ## Environment variables
 
-| Variable | Required (2.5) | Notes |
+| Variable | Required (2.6) | Notes |
 |---|---|---|
-| `SUPABASE_URL` | Optional | Flag only on /health |
-| `SUPABASE_ANON_KEY` | Optional | Never sent to browser from API |
-| `SUPABASE_SERVICE_ROLE_KEY` | Optional | Server only — Task 2.6+ data routes |
+| `SUPABASE_URL` | Yes for `/api/me` | Local: `http://127.0.0.1:54321` |
+| `SUPABASE_ANON_KEY` | Yes for JWT validation | Never sent to browser from API |
+| `SUPABASE_SERVICE_ROLE_KEY` | Yes for profile/credit reads | Server only |
 | `APP_ENV` | Optional | Default `development` |
 | `ALLOWED_ORIGINS` | Optional | CSV; default localhost:5173–5175 |
 
-## Not in Task 2.5
+## Not in Task 2.6
 
+- `POST /api/auth/*` — use Supabase Auth client in browser instead
 - Project / settings / foundation CRUD
-- Supabase query execution
 - OpenRouter / AI generation
-- Credit deduction
+- Credit deduction / ledger
 - Cloudflare deploy
-- Frontend integration
+- Frontend dashboard wired to real data
 
-See `docs/27-sprint-2-data-model-implementation-plan.md` Task 2.6+.
+See `docs/27-sprint-2-data-model-implementation-plan.md` Task 2.7+.
