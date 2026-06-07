@@ -25,11 +25,11 @@ vibenovel-unified-blueprint/
 
 | Folder | Status Sprint 2 | Keterangan |
 |---|---|---|
-| `apps/web` | **Sprint 2 complete** | UI parity Stitch; dashboard/settings/foundation baca API + fallback mock |
-| `apps/api` | **Sprint 2 complete** | Auth, projects, settings, foundation, canon APIs, proposals, credits read |
+| `apps/web` | **Sprint 3 complete** | UI parity Stitch; dashboard/settings/foundation + intake/concepts/foundation flow |
+| `apps/api` | **Sprint 3 complete** | Sprint 2 APIs + intake, concepts, foundation proposals, readiness, lock |
 | `packages/shared` | **Implemented (Task 2.1)** | Domain types, enums, API contracts |
 | `packages/core` | Placeholder | Engine AI/story — nanti |
-| `supabase` | **Migration + seed (Task 2.3/2.4)** | 10 tabel, RLS, demo seed lokal — `supabase db reset` verified |
+| `supabase` | **Migration + seed (Task 2.3/2.4, 3.1)** | 14 tabel (+ intake/concepts), RLS, demo seed — `supabase db reset` verified |
 | `scripts` | Placeholder | Dev/CI scripts — nanti |
 | `docs` | Dokumentasi | Sumber arsitektur & sprint plan |
 | `stitch-reference` | Referensi desain | HTML + screen.png per halaman |
@@ -141,13 +141,32 @@ Belum ada (sengaja — defer Sprint 3+):
 
 ---
 
-## Sprint 3 — planning (belum coding)
+## Sprint 3 — selesai ✅
 
-**Rencana:** [`docs/30-sprint-3-story-foundation-flow-implementation-plan.md`](docs/30-sprint-3-story-foundation-flow-implementation-plan.md)
+**Story foundation flow — intake → concepts → foundation proposal → readiness → lock.**
 
-Intake → concepts → foundation proposal → readiness → lock. Stub backend dulu; OpenRouter/AI production setelah flow data jelas.
+**Rencana:** [`docs/30-sprint-3-story-foundation-flow-implementation-plan.md`](docs/30-sprint-3-story-foundation-flow-implementation-plan.md)  
+**Laporan penutupan:** [`docs/31-sprint-3-verification-report.md`](docs/31-sprint-3-verification-report.md)
 
-**Task berikutnya:** 3.1 — Intake & concept data model migration.
+| Task | Status | Deliverable |
+|---|---|---|
+| 3.0 Flow plan | ✅ | `docs/30` |
+| 3.1 Data model migration | ✅ | `00002_sprint3_intake_concepts.sql` + shared types |
+| 3.2 Intake API | ✅ | Sessions, messages, signals, agent stub |
+| 3.3 Concept options API | ✅ | Generate/list/select 3 concepts |
+| 3.4 Foundation proposal + readiness | ✅ | Stub batch → `ai_proposals`, readiness score |
+| 3.5 Lock foundation workflow | ✅ | Safe promotion + `foundation_locked` |
+| 3.6 Web integration | ✅ | Intake/concepts/foundation + mock fallback |
+| 3.7 Verification report | ✅ | `docs/31` + smoke tests |
+
+Belum ada (sengaja — defer Sprint 4+):
+
+- OpenRouter / AI generation production
+- Outline / chapter / prose persistence
+- Automated web E2E (manual browser smoke direkomendasikan sebelum Sprint 4)
+- Full proposal reject/merge UI
+
+**Task berikutnya (disarankan):** Sprint 4 — Outline Planning Engine. Opsional lebih aman: Task 3.8 — Web E2E smoke automation.
 
 ---
 
@@ -162,8 +181,9 @@ Intake → concepts → foundation proposal → readiness → lock. Stub backend
 5. `docs/21-stitch-frontend-parity-plan.md`
 6. `docs/22-sprint-1-verification-report.md` — status penutupan Sprint 1
 7. `docs/29-sprint-2-verification-report.md` — status penutupan Sprint 2
-8. `docs/30-sprint-3-story-foundation-flow-implementation-plan.md` — rencana Sprint 3 (aktif)
-9. `docs/27-sprint-2-data-model-implementation-plan.md` — rencana Sprint 2
+8. `docs/31-sprint-3-verification-report.md` — status penutupan Sprint 3
+9. `docs/30-sprint-3-story-foundation-flow-implementation-plan.md` — rencana Sprint 3
+10. `docs/27-sprint-2-data-model-implementation-plan.md` — rencana Sprint 2
 
 ### Untuk AI coding agent
 
@@ -174,9 +194,10 @@ Intake → concepts → foundation proposal → readiness → lock. Stub backend
 5. `docs/19-implementation-checklist.md`
 6. `docs/22-sprint-1-verification-report.md`
 7. `docs/29-sprint-2-verification-report.md`
-8. `docs/30-sprint-3-story-foundation-flow-implementation-plan.md`
-9. `docs/27-sprint-2-data-model-implementation-plan.md`
-10. Dokumen domain sesuai task.
+8. `docs/31-sprint-3-verification-report.md`
+9. `docs/30-sprint-3-story-foundation-flow-implementation-plan.md`
+10. `docs/27-sprint-2-data-model-implementation-plan.md`
+11. Dokumen domain sesuai task.
 
 ---
 

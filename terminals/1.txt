@@ -3,7 +3,7 @@ pid: 68296
 cwd: "D:\Coding\vibenovel-unified-blueprint"
 command: "Set-Location D:\\Coding\\vibenovel-unified-blueprint; npm run dev:api"
 started_at: 2026-06-07T19:49:21.825Z
-running_for_ms: 3915011  
+running_for_ms: 4509997  
 ---
 
 > vibenovel@0.1.0 dev:api
@@ -560,3 +560,155 @@ X [ERROR] Build failed with 1 error:
 [wrangler:inf] POST /api/projects/af261dd8-2735-4d07-a896-a185529a4048/proposals 201 Created (164ms)
 [wrangler:inf] POST /api/projects/af261dd8-2735-4d07-a896-a185529a4048/proposals/444afd9d-7e82-4388-892c-db262ce057a1/accept 200 OK (232ms)
 [wrangler:inf] GET /api/credits/balance 200 OK (90ms)
+[wrangler:inf] GET /health 200 OK (124ms)
+[wrangler:inf] GET /api/projects 200 OK (607ms)
+[wrangler:inf] POST /api/projects 201 Created (583ms)
+[wrangler:inf] GET /api/projects/f6270841-cd58-4e50-91ad-72efe240be9b/settings 200 OK (1217ms)
+[wrangler:inf] PUT /api/projects/f6270841-cd58-4e50-91ad-72efe240be9b/settings 200 OK (191ms)
+[wrangler:inf] GET /api/projects/f6270841-cd58-4e50-91ad-72efe240be9b/foundation 200 OK (282ms)
+[wrangler:inf] PUT /api/projects/f6270841-cd58-4e50-91ad-72efe240be9b/foundation 200 OK (151ms)
+[wrangler:inf] POST /api/projects/f6270841-cd58-4e50-91ad-72efe240be9b/characters 201 Created (117ms)
+[wrangler:inf] POST /api/projects/f6270841-cd58-4e50-91ad-72efe240be9b/facts 201 Created (129ms)
+[wrangler:inf] POST /api/projects/f6270841-cd58-4e50-91ad-72efe240be9b/facts 400 Bad Request (89ms)
+[wrangler:inf] POST /api/projects/f6270841-cd58-4e50-91ad-72efe240be9b/speech-rules 201 Created (100ms)
+[wrangler:inf] POST /api/projects/f6270841-cd58-4e50-91ad-72efe240be9b/speech-rules 400 Bad Request (110ms)
+[wrangler:inf] POST /api/projects/f6270841-cd58-4e50-91ad-72efe240be9b/proposals 201 Created (171ms)
+[wrangler:inf] POST /api/projects/f6270841-cd58-4e50-91ad-72efe240be9b/proposals/17eb4ec2-f94e-47cd-9646-31b9a46ca902/accept 200 OK (257ms)
+[wrangler:inf] GET /api/credits/balance 200 OK (77ms)
+[wrangler:inf] GET /api/projects/00000000-0000-4000-8000-000000000001/intake 401 Unauthorized (21ms)
+[wrangler:inf] POST /api/projects 201 Created (253ms)
+[wrangler:inf] GET /api/projects/67519ece-8a6e-4ea4-9bdd-7661a2400c5a/intake 200 OK (245ms)
+[wrangler:inf] POST /api/projects/67519ece-8a6e-4ea4-9bdd-7661a2400c5a/intake/messages 201 Created (237ms)
+[wrangler:inf] POST /api/projects/67519ece-8a6e-4ea4-9bdd-7661a2400c5a/intake/extract-signals 200 OK (145ms)
+[wrangler:inf] POST /api/projects/67519ece-8a6e-4ea4-9bdd-7661a2400c5a/concepts/generate 201 Created (182ms)
+[wrangler:inf] GET /api/projects/67519ece-8a6e-4ea4-9bdd-7661a2400c5a/concepts 200 OK (86ms)
+[wrangler:inf] POST /api/projects/67519ece-8a6e-4ea4-9bdd-7661a2400c5a/concepts/07a7c3ab-3d62-4900-a6e3-2a785f77b464/select 200 OK (179ms)
+[wrangler:inf] POST /api/projects/67519ece-8a6e-4ea4-9bdd-7661a2400c5a/foundation/proposals/generate 201 Created (214ms)
+[wrangler:inf] GET /api/projects/67519ece-8a6e-4ea4-9bdd-7661a2400c5a/foundation/readiness 200 OK (210ms)
+[wrangler:inf] POST /api/projects/67519ece-8a6e-4ea4-9bdd-7661a2400c5a/foundation/lock 409 Conflict (188ms)
+[wrangler:inf] GET /api/projects/67519ece-8a6e-4ea4-9bdd-7661a2400c5a/foundation/proposals 200 OK (99ms)
+[wrangler:inf] POST /api/projects/67519ece-8a6e-4ea4-9bdd-7661a2400c5a/proposals/16281e2d-b3a5-449b-b4b9-0708d0798510/accept 200 OK (248ms)
+[wrangler:inf] POST /api/projects/67519ece-8a6e-4ea4-9bdd-7661a2400c5a/proposals/b9186041-f8b9-4b7e-9e63-243ae42a38bd/accept 200 OK (453ms)
+[wrangler:inf] POST /api/projects/67519ece-8a6e-4ea4-9bdd-7661a2400c5a/proposals/25a8cff0-f998-4ba5-89b2-d017b46f178b/accept 200 OK (259ms)
+[wrangler:inf] POST /api/projects/67519ece-8a6e-4ea4-9bdd-7661a2400c5a/proposals/d95d7cda-54b2-47da-8412-95a7380a6937/accept 200 OK (178ms)
+[wrangler:inf] POST /api/projects/67519ece-8a6e-4ea4-9bdd-7661a2400c5a/proposals/2722afb7-f00c-4fda-972f-1e905be5dc84/accept 200 OK (287ms)
+[wrangler:inf] POST /api/projects/67519ece-8a6e-4ea4-9bdd-7661a2400c5a/proposals/15bbed6e-e541-4ede-b92f-28b6fcf98b4f/accept 200 OK (451ms)
+[wrangler:inf] POST /api/projects/67519ece-8a6e-4ea4-9bdd-7661a2400c5a/proposals/a7b795ad-172a-4a09-96d6-185eb233ca0f/accept 200 OK (157ms)
+[wrangler:inf] POST /api/projects/67519ece-8a6e-4ea4-9bdd-7661a2400c5a/proposals/d6d5314f-5e13-439e-825f-157f8b38fcc4/accept 200 OK (103ms)
+[wrangler:inf] POST /api/projects/67519ece-8a6e-4ea4-9bdd-7661a2400c5a/proposals/7f8dc84d-024b-40f4-b230-e704fc743eaa/accept 200 OK (176ms)
+[wrangler:inf] POST /api/projects/67519ece-8a6e-4ea4-9bdd-7661a2400c5a/foundation/lock 200 OK (682ms)
+[wrangler:inf] GET /api/projects/67519ece-8a6e-4ea4-9bdd-7661a2400c5a/foundation 200 OK (232ms)
+[wrangler:inf] GET /api/projects/67519ece-8a6e-4ea4-9bdd-7661a2400c5a/intake 404 Not Found (71ms)
+[wrangler:inf] GET /api/projects/67519ece-8a6e-4ea4-9bdd-7661a2400c5a 200 OK (76ms)
+[wrangler:inf] GET /health 200 OK (81ms)
+[wrangler:inf] GET /api/projects 200 OK (201ms)
+[wrangler:inf] POST /api/projects 201 Created (405ms)
+[wrangler:inf] GET /api/projects/6bde23e1-a5a5-4a6f-9e99-dd37c6d10d64/settings 200 OK (139ms)
+[wrangler:inf] PUT /api/projects/6bde23e1-a5a5-4a6f-9e99-dd37c6d10d64/settings 200 OK (160ms)
+[wrangler:inf] GET /api/projects/6bde23e1-a5a5-4a6f-9e99-dd37c6d10d64/foundation 200 OK (195ms)
+[wrangler:inf] PUT /api/projects/6bde23e1-a5a5-4a6f-9e99-dd37c6d10d64/foundation 200 OK (160ms)
+[wrangler:inf] POST /api/projects/6bde23e1-a5a5-4a6f-9e99-dd37c6d10d64/characters 201 Created (95ms)
+[wrangler:inf] POST /api/projects/6bde23e1-a5a5-4a6f-9e99-dd37c6d10d64/facts 201 Created (84ms)
+[wrangler:inf] POST /api/projects/6bde23e1-a5a5-4a6f-9e99-dd37c6d10d64/facts 400 Bad Request (82ms)
+[wrangler:inf] POST /api/projects/6bde23e1-a5a5-4a6f-9e99-dd37c6d10d64/speech-rules 201 Created (76ms)
+[wrangler:inf] POST /api/projects/6bde23e1-a5a5-4a6f-9e99-dd37c6d10d64/speech-rules 400 Bad Request (61ms)
+[wrangler:inf] POST /api/projects/6bde23e1-a5a5-4a6f-9e99-dd37c6d10d64/proposals 201 Created (83ms)
+[wrangler:inf] POST /api/projects/6bde23e1-a5a5-4a6f-9e99-dd37c6d10d64/proposals/dce50a58-360e-4c38-9807-d6555859a73d/accept 200 OK (104ms)
+[wrangler:inf] GET /api/credits/balance 200 OK (77ms)
+[wrangler:inf] GET /api/projects/test/intake 401 Unauthorized (10ms)
+[wrangler:inf] POST /api/projects 201 Created (155ms)
+[wrangler:inf] POST /api/projects/11184/intake 500 Internal Server Error (116ms)
+X [ERROR] projects select by id failed
+
+
+[wrangler:inf] GET /api/projects/11184/intake 500 Internal Server Error (100ms)
+X [ERROR] projects select by id failed
+
+
+[wrangler:inf] POST /api/projects/11184/intake/messages 500 Internal Server Error (90ms)
+X [ERROR] projects select by id failed
+
+
+[wrangler:inf] POST /api/projects/11184/intake/extract-signals 500 Internal Server Error (89ms)
+X [ERROR] projects select by id failed
+
+
+[wrangler:inf] POST /api/projects/11184/concepts/generate 500 Internal Server Error (68ms)
+X [ERROR] projects select by id failed
+
+
+[wrangler:inf] POST /api/projects/11184/concepts//select 404 Not Found (4ms)
+X [ERROR] projects select by id failed
+
+
+[wrangler:inf] POST /api/projects/11184/foundation/proposals/generate 500 Internal Server Error (66ms)
+[wrangler:inf] GET /api/projects/11184/foundation/readiness 500 Internal Server Error (70ms)
+X [ERROR] projects select by id failed
+
+
+[wrangler:inf] POST /api/projects/11184/foundation/lock 500 Internal Server Error (92ms)
+X [ERROR] projects select by id failed
+
+
+[wrangler:inf] GET /api/projects/11184/foundation/proposals 500 Internal Server Error (87ms)
+X [ERROR] projects select by id failed
+
+
+[wrangler:inf] POST /api/projects/11184/foundation/lock 500 Internal Server Error (73ms)
+X [ERROR] projects select by id failed
+
+
+[wrangler:inf] GET /api/projects/11184/facts 500 Internal Server Error (67ms)
+X [ERROR] projects select by id failed
+
+
+[wrangler:inf] GET /api/projects/a0000000-0000-4000-8000-000000000101/intake 404 Not Found (71ms)
+[wrangler:inf] GET /api/projects/test/intake 401 Unauthorized (8ms)
+[wrangler:inf] POST /api/projects 201 Created (136ms)
+[wrangler:inf] POST /api/projects/6589ac16-1e15-491e-9799-079c08f03962/intake 201 Created (154ms)
+[wrangler:inf] GET /api/projects/6589ac16-1e15-491e-9799-079c08f03962/intake 200 OK (116ms)
+[wrangler:inf] POST /api/projects/6589ac16-1e15-491e-9799-079c08f03962/intake/messages 201 Created (182ms)
+[wrangler:inf] POST /api/projects/6589ac16-1e15-491e-9799-079c08f03962/intake/extract-signals 200 OK (271ms)
+[wrangler:inf] POST /api/projects/6589ac16-1e15-491e-9799-079c08f03962/concepts/generate 201 Created (145ms)
+[wrangler:inf] POST /api/projects/6589ac16-1e15-491e-9799-079c08f03962/concepts/de8158a2-61ff-4fee-89b3-14da8d5930e6/select 200 OK (157ms)
+[wrangler:inf] POST /api/projects/6589ac16-1e15-491e-9799-079c08f03962/foundation/proposals/generate 201 Created (126ms)
+[wrangler:inf] GET /api/projects/6589ac16-1e15-491e-9799-079c08f03962/foundation/readiness 200 OK (170ms)
+[wrangler:inf] POST /api/projects/6589ac16-1e15-491e-9799-079c08f03962/foundation/lock 409 Conflict (163ms)
+[wrangler:inf] GET /api/projects/6589ac16-1e15-491e-9799-079c08f03962/foundation/proposals 200 OK (101ms)
+[wrangler:inf] POST /api/projects/6589ac16-1e15-491e-9799-079c08f03962/proposals/ad788588-c330-4dd6-9e64-2bbea50efd9d/accept 200 OK (99ms)
+[wrangler:inf] POST /api/projects/6589ac16-1e15-491e-9799-079c08f03962/proposals/d067d03c-52db-41ee-a868-5c290dcecde6/accept 200 OK (95ms)
+[wrangler:inf] POST /api/projects/6589ac16-1e15-491e-9799-079c08f03962/proposals/aa37b313-5eca-4312-ab49-97234ff0448b/accept 200 OK (89ms)
+[wrangler:inf] POST /api/projects/6589ac16-1e15-491e-9799-079c08f03962/proposals/1595f7df-c481-436d-b237-818e82231af3/accept 200 OK (86ms)
+[wrangler:inf] POST /api/projects/6589ac16-1e15-491e-9799-079c08f03962/proposals/df3d7d53-7ea6-4eeb-ae31-3470642b142f/accept 200 OK (82ms)
+[wrangler:inf] POST /api/projects/6589ac16-1e15-491e-9799-079c08f03962/proposals/ec6fcfbb-117a-47ea-98b0-075ca10f8a62/accept 200 OK (82ms)
+[wrangler:inf] POST /api/projects/6589ac16-1e15-491e-9799-079c08f03962/proposals/b8e2fd0c-daa1-49b5-bc04-e93b8a4adddd/accept 200 OK (86ms)
+[wrangler:inf] POST /api/projects/6589ac16-1e15-491e-9799-079c08f03962/proposals/c714dcc6-72b6-47ce-ab90-832c482f1abf/accept 200 OK (90ms)
+[wrangler:inf] POST /api/projects/6589ac16-1e15-491e-9799-079c08f03962/proposals/f1b8d6a1-1a5c-434f-85a4-6bdf022334d5/accept 200 OK (89ms)
+[wrangler:inf] POST /api/projects/6589ac16-1e15-491e-9799-079c08f03962/foundation/lock 200 OK (383ms)
+[wrangler:inf] GET /api/projects/6589ac16-1e15-491e-9799-079c08f03962/facts 200 OK (84ms)
+[wrangler:inf] GET /api/projects/a0000000-0000-4000-8000-000000000101/intake 404 Not Found (75ms)
+[wrangler:inf] GET /api/projects/6589ac16-1e15-491e-9799-079c08f03962 200 OK (67ms)
+[wrangler:inf] GET /api/projects/test/intake 401 Unauthorized (10ms)
+[wrangler:inf] POST /api/projects 201 Created (343ms)
+[wrangler:inf] POST /api/projects/fa6cae0e-8f22-4a93-afdc-6ef953390978/intake 201 Created (109ms)
+[wrangler:inf] GET /api/projects/fa6cae0e-8f22-4a93-afdc-6ef953390978/intake 200 OK (83ms)
+[wrangler:inf] POST /api/projects/fa6cae0e-8f22-4a93-afdc-6ef953390978/intake/messages 201 Created (317ms)
+[wrangler:inf] POST /api/projects/fa6cae0e-8f22-4a93-afdc-6ef953390978/intake/extract-signals 200 OK (525ms)
+[wrangler:inf] POST /api/projects/fa6cae0e-8f22-4a93-afdc-6ef953390978/concepts/generate 201 Created (138ms)
+[wrangler:inf] POST /api/projects/fa6cae0e-8f22-4a93-afdc-6ef953390978/concepts/7acd97a9-d96d-4a36-bd65-f8c5cad2e388/select 200 OK (136ms)
+[wrangler:inf] POST /api/projects/fa6cae0e-8f22-4a93-afdc-6ef953390978/foundation/proposals/generate 201 Created (108ms)
+[wrangler:inf] GET /api/projects/fa6cae0e-8f22-4a93-afdc-6ef953390978/foundation/readiness 200 OK (115ms)
+[wrangler:inf] POST /api/projects/fa6cae0e-8f22-4a93-afdc-6ef953390978/foundation/lock 409 Conflict (132ms)
+[wrangler:inf] GET /api/projects/fa6cae0e-8f22-4a93-afdc-6ef953390978/foundation/proposals 200 OK (193ms)
+[wrangler:inf] POST /api/projects/fa6cae0e-8f22-4a93-afdc-6ef953390978/proposals/b43d83c5-eadb-4004-9366-269aee41cb3e/accept 200 OK (123ms)
+[wrangler:inf] POST /api/projects/fa6cae0e-8f22-4a93-afdc-6ef953390978/proposals/aa7e6256-a2c4-4f59-9974-9b64fa36f4e0/accept 200 OK (117ms)
+[wrangler:inf] POST /api/projects/fa6cae0e-8f22-4a93-afdc-6ef953390978/proposals/c8f0b137-a1d9-46fb-96b8-6f2cec8575f6/accept 200 OK (100ms)
+[wrangler:inf] POST /api/projects/fa6cae0e-8f22-4a93-afdc-6ef953390978/proposals/75e37f03-a6fc-44bb-bae0-4f58513acc99/accept 200 OK (81ms)
+[wrangler:inf] POST /api/projects/fa6cae0e-8f22-4a93-afdc-6ef953390978/proposals/308e23d8-2c6e-4c67-92e6-6e4fd110aff5/accept 200 OK (118ms)
+[wrangler:inf] POST /api/projects/fa6cae0e-8f22-4a93-afdc-6ef953390978/proposals/9df24e41-2ce2-46a9-960a-d54f1cd5be11/accept 200 OK (76ms)
+[wrangler:inf] POST /api/projects/fa6cae0e-8f22-4a93-afdc-6ef953390978/proposals/4a0bf01c-4517-4db0-a93c-09018c2b1fe0/accept 200 OK (78ms)
+[wrangler:inf] POST /api/projects/fa6cae0e-8f22-4a93-afdc-6ef953390978/proposals/5be1bbc2-2647-4e12-bbce-019a73adf33f/accept 200 OK (77ms)
+[wrangler:inf] POST /api/projects/fa6cae0e-8f22-4a93-afdc-6ef953390978/proposals/48a4104f-055d-4f48-b835-73bb63b76a73/accept 200 OK (79ms)
+[wrangler:inf] POST /api/projects/fa6cae0e-8f22-4a93-afdc-6ef953390978/foundation/lock 200 OK (447ms)
+[wrangler:inf] GET /api/projects/fa6cae0e-8f22-4a93-afdc-6ef953390978/facts 200 OK (67ms)
+[wrangler:inf] GET /api/projects/a0000000-0000-4000-8000-000000000101/intake 404 Not Found (60ms)
