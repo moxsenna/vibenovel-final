@@ -1,0 +1,292 @@
+<!DOCTYPE html><html lang="id"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>VibeNovel - Menulis Serial Panjang Jadi Lebih Terarah</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "tertiary-fixed-dim": "#96d4b1",
+                      "surface-container-low": "#edf4ff",
+                      "warning-soft": "#FFF4D8",
+                      "inverse-on-surface": "#e8f2ff",
+                      "error-container": "#ffdad6",
+                      "tertiary-fixed": "#b2f0cc",
+                      "surface-dim": "#d1dbe8",
+                      "primary": "#823850",
+                      "outline": "#857276",
+                      "surface-container-high": "#dfe9f7",
+                      "on-primary-fixed": "#3e011b",
+                      "primary-container": "#9f4f68",
+                      "primary-fixed": "#ffd9e1",
+                      "surface-container-highest": "#d9e3f1",
+                      "accent-soft": "#EFE9F7",
+                      "secondary": "#6d528e",
+                      "surface-variant": "#d9e3f1",
+                      "secondary-container": "#dbbcff",
+                      "inverse-surface": "#27313c",
+                      "border": "#E6DDE2",
+                      "on-tertiary-fixed": "#002112",
+                      "inverse-primary": "#ffb1c5",
+                      "primary-soft": "#F6E7EC",
+                      "surface-soft": "#FFF7F8",
+                      "surface-container": "#e4effd",
+                      "surface-tint": "#93455e",
+                      "primary-dark": "#7A334C",
+                      "background": "#FBF8F6",
+                      "on-error-container": "#93000a",
+                      "on-secondary-fixed-variant": "#543a74",
+                      "surface-bright": "#f7f9ff",
+                      "secondary-fixed-dim": "#d9b9fd",
+                      "on-tertiary-fixed-variant": "#115136",
+                      "on-surface-variant": "#534346",
+                      "on-background": "#121d26",
+                      "surface-container-lowest": "#ffffff",
+                      "secondary-fixed": "#eedbff",
+                      "success-soft": "#E7F3EC",
+                      "on-secondary-container": "#624883",
+                      "subtle-text": "#9CA3AF",
+                      "surface": "#FFFFFF",
+                      "on-primary": "#ffffff",
+                      "tertiary-container": "#397456",
+                      "warning": "#B7791F",
+                      "on-tertiary-container": "#b8f7d2",
+                      "danger": "#B94A48",
+                      "on-primary-fixed-variant": "#762e46",
+                      "on-secondary-fixed": "#270c46",
+                      "muted-text": "#6B7280",
+                      "error": "#ba1a1a",
+                      "primary-fixed-dim": "#ffb1c5",
+                      "tertiary": "#1e5b3f",
+                      "danger-soft": "#FCE8E7",
+                      "on-secondary": "#ffffff",
+                      "outline-variant": "#d8c1c5",
+                      "on-tertiary": "#ffffff",
+                      "on-surface": "#121d26",
+                      "on-error": "#ffffff",
+                      "on-primary-container": "#ffe2e7"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.25rem",
+                      "lg": "0.5rem",
+                      "xl": "0.75rem",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "sm": "8px",
+                      "lg": "24px",
+                      "xs": "4px",
+                      "unit": "4px",
+                      "container-max-dashboard": "1200px",
+                      "md": "16px",
+                      "container-max-editor": "760px",
+                      "container-max-form": "720px",
+                      "xl": "40px"
+              },
+              "fontFamily": {
+                      "label-sm": ["Inter"],
+                      "headline-lg": ["Inter"],
+                      "headline-md": ["Inter"],
+                      "body-md": ["Inter"],
+                      "display": ["Inter"],
+                      "body-sm": ["Inter"],
+                      "body-editor": ["Inter"],
+                      "label-md": ["Inter"],
+                      "body-lg": ["Inter"]
+              },
+              "fontSize": {
+                      "label-sm": ["12px", {"lineHeight": "1.2", "letterSpacing": "0.02em", "fontWeight": "500"}],
+                      "headline-lg": ["24px", {"lineHeight": "1.3", "fontWeight": "600"}],
+                      "headline-md": ["20px", {"lineHeight": "1.4", "fontWeight": "600"}],
+                      "body-md": ["16px", {"lineHeight": "1.5", "fontWeight": "400"}],
+                      "display": ["32px", {"lineHeight": "1.2", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                      "body-sm": ["14px", {"lineHeight": "1.5", "fontWeight": "400"}],
+                      "body-editor": ["17px", {"lineHeight": "1.8", "fontWeight": "400"}],
+                      "label-md": ["14px", {"lineHeight": "1.2", "letterSpacing": "0.01em", "fontWeight": "600"}],
+                      "body-lg": ["18px", {"lineHeight": "1.6", "fontWeight": "400"}]
+              }
+            },
+          },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .material-symbols-outlined.fill {
+            font-variation-settings: 'FILL' 1;
+        }
+        
+        /* Ambient Background Effect */
+        .ambient-blob {
+            position: absolute;
+            filter: blur(80px);
+            opacity: 0.4;
+            z-index: -1;
+            border-radius: 50%;
+            pointer-events: none;
+        }
+        
+        .blob-1 {
+            top: -10%;
+            right: -5%;
+            width: 40vw;
+            height: 40vw;
+            background: radial-gradient(circle, var(--primary-soft) 0%, transparent 70%);
+        }
+        
+        .blob-2 {
+            bottom: -20%;
+            left: -10%;
+            width: 50vw;
+            height: 50vw;
+            background: radial-gradient(circle, var(--accent-soft) 0%, transparent 70%);
+        }
+    </style>
+</head>
+<body class="bg-background text-on-surface font-body-md min-h-screen relative selection:bg-primary-soft selection:text-primary-dark">
+<!-- Ambient Background -->
+<div class="ambient-blob blob-1"></div>
+<div class="ambient-blob blob-2"></div>
+<!-- Top Navigation -->
+<header class="flex justify-between items-center w-full px-lg h-16 sticky top-0 z-50 bg-background/80 backdrop-blur-md border-b border-border/50">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary-container fill text-[24px]" data-icon="auto_awesome">auto_awesome</span>
+<span class="text-headline-md font-headline-md font-bold text-primary">VibeNovel</span>
+</div>
+<div class="flex items-center gap-4">
+<a class="font-label-md text-label-md text-on-surface-variant hover:text-primary transition-colors hidden md:block" href="#">Masuk</a>
+<a class="font-label-md text-label-md bg-primary-container text-on-primary px-4 py-2 rounded-lg hover:bg-primary-dark transition-colors" href="#">Daftar</a>
+</div>
+</header>
+<!-- Main Content -->
+<main class="max-w-container-max-dashboard mx-auto px-lg py-xl flex flex-col items-center justify-center min-h-[calc(100vh-64px)] min-h-0">
+<!-- Hero Section -->
+<section class="text-center max-w-[800px] mb-xl flex flex-col items-center">
+<div class="inline-flex items-center gap-2 px-4 py-2 bg-primary-soft rounded-full text-primary-dark font-label-sm text-label-sm mb-6 border border-primary-fixed">
+<span class="material-symbols-outlined text-[16px]" data-icon="edit_note">edit_note</span>
+<span class="">Workspace Penulis Serial</span>
+</div>
+<h1 class="font-display text-display text-on-surface mb-6 leading-tight capitalize">
+                Menulis serial panjang jadi lebih <span class="text-primary-container relative inline-block">terarah<svg class="absolute -bottom-2 left-0 w-full h-3 text-primary-fixed" fill="none" preserveAspectRatio="none" stroke="currentColor" stroke-linecap="round" stroke-width="4" viewBox="0 0 100 20"><path d="M0 10 Q 50 20 100 10"></path></svg></span>.
+            </h1>
+<p class="font-body-lg text-body-lg text-muted-text mb-8 max-w-[640px]">
+                Dari ide, fondasi cerita, outline, sampai bab siap publish — VibeNovel bantu menjaga alur, karakter, rahasia cerita, dan format bacaan HP.
+            </p>
+<div class="flex flex-col sm:flex-row gap-4 items-center justify-center w-full sm:w-auto">
+<button class="w-full sm:w-auto bg-primary-container text-on-primary font-label-md text-label-md px-8 py-4 rounded-xl hover:bg-primary-dark transition-all shadow-[0_8px_24px_rgba(159,79,104,0.2)] flex items-center justify-center gap-2 group">
+<span class="">Mulai Tulis Cerita</span>
+<span class="material-symbols-outlined text-[18px] group-hover:translate-x-1 transition-transform" data-icon="arrow_forward">arrow_forward</span>
+</button>
+<button class="w-full sm:w-auto bg-transparent border border-border text-on-surface font-label-md text-label-md px-8 py-4 rounded-xl hover:bg-surface-soft hover:border-outline-variant transition-all flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-[18px]" data-icon="play_circle">play_circle</span>
+<span class="">Lihat Cara Kerja</span>
+</button>
+</div>
+</section>
+<!-- Visual Editor Preview Placeholder / Bento Grid Intro -->
+<section class="w-full max-w-[960px] relative mt-8 mb-24">
+<!-- Decorative Editor Frame -->
+<div class="bg-surface rounded-2xl p-2 sm:p-4 shadow-[0_8px_32px_rgba(31,41,51,0.06)] border border-border/60 relative z-10">
+<!-- Editor Top Bar -->
+<div class="flex items-center justify-between border-b border-border pb-3 mb-4 px-2">
+<div class="flex gap-2">
+<div class="w-3 h-3 rounded-full bg-border"></div>
+<div class="w-3 h-3 rounded-full bg-border"></div>
+<div class="w-3 h-3 rounded-full bg-border"></div>
+</div>
+<div class="font-label-sm text-label-sm text-muted-text">Bab 1: Suamiku Pulang Membawa Masalah Baru</div>
+<div class="material-symbols-outlined text-muted-text text-[18px]" data-icon="dock_to_right">dock_to_right</div>
+</div>
+<!-- Editor Content area simulation -->
+<div class="flex flex-col md:flex-row gap-6 relative">
+<!-- Main Text Area -->
+<div class="flex-1 p-4 md:p-8 border border-border/40 rounded-xl bg-background/50">
+<div class="w-3/4 h-6 bg-surface-variant rounded-md mb-6 animate-pulse"></div>
+<div class="w-full h-4 bg-surface-variant/60 rounded-md mb-3"></div>
+<div class="w-full h-4 bg-surface-variant/60 rounded-md mb-3"></div>
+<div class="w-5/6 h-4 bg-surface-variant/60 rounded-md mb-6"></div>
+<div class="w-full h-4 bg-surface-variant/60 rounded-md mb-3"></div>
+<div class="w-4/5 h-4 bg-surface-variant/60 rounded-md mb-3"></div>
+<div class="w-full h-4 bg-surface-variant/60 rounded-md mb-3"></div>
+</div>
+<!-- AI Assistant Sidebar Simulation -->
+<div class="w-full md:w-64 flex flex-col gap-3">
+<div class="bg-surface-soft border border-primary-fixed-dim rounded-xl p-4 shadow-sm">
+<div class="flex items-center gap-2 mb-2">
+<span class="material-symbols-outlined text-primary-container text-[16px]" data-icon="auto_awesome">auto_awesome</span>
+<span class="font-label-sm text-label-sm text-primary-dark">Asisten Menulis</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Sikap mertua di bab ini bertentangan dengan deskripsi di Bab 3. Pertimbangkan untuk merevisi dialognya agar lebih pasif-agresif.</p>
+</div>
+<div class="bg-surface border border-border rounded-xl p-4 shadow-sm">
+<div class="flex items-center gap-2 mb-2">
+<span class="material-symbols-outlined text-secondary text-[16px]" data-icon="menu_book">menu_book</span>
+<span class="font-label-sm text-label-sm text-on-surface">Story Bible</span>
+</div>
+<div class="w-full h-2 bg-border/50 rounded-md mb-2"></div>
+<div class="w-2/3 h-2 bg-border/50 rounded-md"></div>
+</div>
+</div>
+</div>
+</div>
+<!-- Floating Decorative Elements -->
+<div class="absolute -right-12 top-1/4 bg-surface px-4 py-3 rounded-xl shadow-[0_4px_16px_rgba(31,41,51,0.08)] border border-border flex items-center gap-3 z-20 animate-[bounce_4s_infinite]">
+<span class="material-symbols-outlined text-success-soft bg-tertiary p-1.5 rounded-full fill text-[16px]" data-icon="check_circle">check_circle</span>
+<span class="font-label-sm text-label-sm">Cerita Tetap Nyambung</span>
+</div>
+<div class="absolute -left-8 bottom-1/4 bg-surface px-4 py-3 rounded-xl shadow-[0_4px_16px_rgba(31,41,51,0.08)] border border-border flex items-center gap-3 z-20 animate-[bounce_5s_infinite_reverse]">
+<span class="material-symbols-outlined text-warning-soft bg-warning p-1.5 rounded-full fill text-[16px]" data-icon="vpn_key">vpn_key</span>
+<span class="font-label-sm text-label-sm">Rahasia Terjaga</span>
+</div>
+</section>
+<!-- Value Props (Bento Grid Style) -->
+<section class="w-full max-w-[1024px]">
+<div class="text-center mb-10">
+<h2 class="font-headline-md text-headline-md text-on-surface mb-2">Kenapa Menulis di VibeNovel?</h2>
+<p class="font-body-sm text-body-sm text-muted-text">Dirancang khusus untuk ritme penulisan serial panjang.</p>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+<!-- Prop 1 -->
+<div class="bg-surface rounded-2xl p-6 shadow-sm border border-border hover:shadow-md transition-shadow hover:border-primary-fixed-dim group flex flex-col items-start">
+<div class="w-12 h-12 rounded-xl bg-primary-soft text-primary-container flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined text-[24px]" data-icon="timeline">timeline</span>
+</div>
+<h3 class="font-label-md text-label-md text-on-surface mb-2">Cerita Tetap Nyambung</h3>
+<p class="font-body-sm text-body-sm text-muted-text leading-relaxed">Workspace otomatis mencatat detail penting. Tidak ada lagi plot hole atau karakter yang tiba-tiba berubah sifat.</p>
+</div>
+<!-- Prop 2 -->
+<div class="bg-surface rounded-2xl p-6 shadow-sm border border-border hover:shadow-md transition-shadow hover:border-primary-fixed-dim group flex flex-col items-start">
+<div class="w-12 h-12 rounded-xl bg-accent-soft text-secondary flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined text-[24px]" data-icon="lock">lock</span>
+</div>
+<h3 class="font-label-md text-label-md text-on-surface mb-2">Rahasia Tidak Bocor Terlalu Cepat</h3>
+<p class="font-body-sm text-body-sm text-muted-text leading-relaxed">Atur 'timeline rahasia'. Workspace akan mengingatkan jika kamu mengungkap misteri terlalu cepat.</p>
+</div>
+<!-- Prop 3 -->
+<div class="bg-surface rounded-2xl p-6 shadow-sm border border-border hover:shadow-md transition-shadow hover:border-primary-fixed-dim group flex flex-col items-start">
+<div class="w-12 h-12 rounded-xl bg-surface-container text-primary-dark flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined text-[24px]" data-icon="smartphone">smartphone</span>
+</div>
+<h3 class="font-label-md text-label-md text-on-surface mb-2">Format Enak Dibaca di HP</h3>
+<p class="font-body-sm text-body-sm text-muted-text leading-relaxed">Pratinjau langsung bagaimana paragrafmu terlihat di layar ponsel pembaca.</p>
+</div>
+<!-- Prop 4 -->
+<div class="bg-surface rounded-2xl p-6 shadow-sm border border-border hover:shadow-md transition-shadow hover:border-primary-fixed-dim group flex flex-col items-start">
+<div class="w-12 h-12 rounded-xl bg-success-soft text-tertiary-container flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined text-[24px]" data-icon="key">key</span>
+</div>
+<h3 class="font-label-md text-label-md text-on-surface mb-2">Bantu Pembaca Lanjut Unlock</h3>
+<p class="font-body-sm text-body-sm text-muted-text leading-relaxed">Analisis untuk menciptakan 'cliffhanger' yang tepat di akhir bab agar pembaca lanjut membaca.</p>
+</div>
+</div>
+</section>
+</main>
+
+
+</body></html>

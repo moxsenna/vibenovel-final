@@ -1,0 +1,221 @@
+<!DOCTYPE html><html lang="id"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>Pilih Arah Ceritamu - VibeNovel</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "tertiary-fixed-dim": "#96d4b1",
+                        "surface-container-low": "#edf4ff",
+                        "warning-soft": "#FFF4D8",
+                        "inverse-on-surface": "#e8f2ff",
+                        "error-container": "#ffdad6",
+                        "tertiary-fixed": "#b2f0cc",
+                        "surface-dim": "#d1dbe8",
+                        "primary": "#823850",
+                        "outline": "#857276",
+                        "surface-container-high": "#dfe9f7",
+                        "on-primary-fixed": "#3e011b",
+                        "primary-container": "#9f4f68",
+                        "primary-fixed": "#ffd9e1",
+                        "surface-container-highest": "#d9e3f1",
+                        "accent-soft": "#EFE9F7",
+                        "secondary": "#6d528e",
+                        "surface-variant": "#d9e3f1",
+                        "secondary-container": "#dbbcff",
+                        "inverse-surface": "#27313c",
+                        "border": "#E6DDE2",
+                        "on-tertiary-fixed": "#002112",
+                        "inverse-primary": "#ffb1c5",
+                        "primary-soft": "#F6E7EC",
+                        "surface-soft": "#FFF7F8",
+                        "surface-container": "#e4effd",
+                        "surface-tint": "#93455e",
+                        "primary-dark": "#7A334C",
+                        "background": "#FBF8F6",
+                        "on-error-container": "#93000a",
+                        "on-secondary-fixed-variant": "#543a74",
+                        "surface-bright": "#f7f9ff",
+                        "secondary-fixed-dim": "#d9b9fd",
+                        "on-tertiary-fixed-variant": "#115136",
+                        "on-surface-variant": "#534346",
+                        "on-background": "#121d26",
+                        "surface-container-lowest": "#ffffff",
+                        "secondary-fixed": "#eedbff",
+                        "success-soft": "#E7F3EC",
+                        "on-secondary-container": "#624883",
+                        "subtle-text": "#9CA3AF",
+                        "surface": "#FFFFFF",
+                        "on-primary": "#ffffff",
+                        "tertiary-container": "#397456",
+                        "warning": "#B7791F",
+                        "on-tertiary-container": "#b8f7d2",
+                        "danger": "#B94A48",
+                        "on-primary-fixed-variant": "#762e46",
+                        "on-secondary-fixed": "#270c46",
+                        "muted-text": "#6B7280",
+                        "error": "#ba1a1a",
+                        "primary-fixed-dim": "#ffb1c5",
+                        "tertiary": "#1e5b3f",
+                        "danger-soft": "#FCE8E7",
+                        "on-secondary": "#ffffff",
+                        "outline-variant": "#d8c1c5",
+                        "on-tertiary": "#ffffff",
+                        "on-surface": "#121d26",
+                        "on-error": "#ffffff",
+                        "on-primary-container": "#ffe2e7"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "sm": "8px",
+                        "lg": "24px",
+                        "xs": "4px",
+                        "unit": "4px",
+                        "container-max-dashboard": "1200px",
+                        "md": "16px",
+                        "container-max-editor": "760px",
+                        "container-max-form": "720px",
+                        "xl": "40px"
+                    },
+                    "fontFamily": {
+                        "label-sm": ["Inter"],
+                        "headline-lg": ["Inter"],
+                        "headline-md": ["Inter"],
+                        "body-md": ["Inter"],
+                        "display": ["Inter"],
+                        "body-sm": ["Inter"],
+                        "body-editor": ["Inter"],
+                        "label-md": ["Inter"],
+                        "body-lg": ["Inter"]
+                    },
+                    "fontSize": {
+                        "label-sm": ["12px", { "lineHeight": "1.2", "letterSpacing": "0.02em", "fontWeight": "500" }],
+                        "headline-lg": ["24px", { "lineHeight": "1.3", "fontWeight": "600" }],
+                        "headline-md": ["20px", { "lineHeight": "1.4", "fontWeight": "600" }],
+                        "body-md": ["16px", { "lineHeight": "1.5", "fontWeight": "400" }],
+                        "display": ["32px", { "lineHeight": "1.2", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "body-sm": ["14px", { "lineHeight": "1.5", "fontWeight": "400" }],
+                        "body-editor": ["17px", { "lineHeight": "1.8", "fontWeight": "400" }],
+                        "label-md": ["14px", { "lineHeight": "1.2", "letterSpacing": "0.01em", "fontWeight": "600" }],
+                        "body-lg": ["18px", { "lineHeight": "1.6", "fontWeight": "400" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body { background-color: #FBF8F6; }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(230, 221, 226, 0.6);
+            box-shadow: 0 10px 30px rgba(31, 41, 51, 0.05);
+        }
+    </style>
+</head>
+<body class="text-on-background font-body-md h-screen flex flex-col md:flex-row overflow-hidden">
+<!-- SideNavBar (Desktop) -->
+<nav class="hidden md:flex flex-col h-screen p-md gap-2 fixed left-0 top-0 bg-surface dark:bg-inverse-surface border-r border-border dark:border-outline-variant docked w-64 z-40">
+<div class="mb-8 px-4 py-2">
+<h1 class="text-headline-lg font-headline-lg font-bold text-primary dark:text-inverse-primary">VibeNovel</h1>
+<p class="font-label-sm text-label-sm text-muted-text mt-1">Workspace Penulis Serial</p>
+</div>
+<button class="mb-6 mx-4 bg-primary text-on-primary py-3 px-4 rounded-lg font-label-md text-label-md flex justify-center items-center gap-2 hover:bg-primary-dark transition-colors">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">add</span>
+            Proyek Baru
+        </button>
+<div class="flex flex-col gap-2 flex-grow">
+<a class="flex items-center gap-3 text-on-surface-variant dark:text-surface-variant px-4 py-3 font-label-md text-label-md hover:bg-surface-container dark:hover:bg-surface-container-high transition-all rounded-xl" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">dashboard</span>
+                Dashboard
+            </a>
+<a class="flex items-center gap-3 bg-primary-soft dark:bg-on-primary-fixed-variant text-primary dark:text-primary-fixed rounded-xl px-4 py-3 font-label-md text-label-md opacity-80 transition-opacity" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">menu_book</span>
+                Fondasi Cerita
+            </a>
+<a class="flex items-center gap-3 text-on-surface-variant dark:text-surface-variant px-4 py-3 font-label-md text-label-md hover:bg-surface-container dark:hover:bg-surface-container-high transition-all rounded-xl" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">format_list_bulleted</span>
+                Outline
+            </a>
+<a class="flex items-center gap-3 text-on-surface-variant dark:text-surface-variant px-4 py-3 font-label-md text-label-md hover:bg-surface-container dark:hover:bg-surface-container-high transition-all rounded-xl" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">edit_note</span>
+                Tulis Bab
+            </a>
+<a class="flex items-center gap-3 text-on-surface-variant dark:text-surface-variant px-4 py-3 font-label-md text-label-md hover:bg-surface-container dark:hover:bg-surface-container-high transition-all rounded-xl" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">auto_stories</span>
+                Paket Publish
+            </a>
+</div>
+<div class="mt-auto">
+<a class="flex items-center gap-3 text-on-surface-variant dark:text-surface-variant px-4 py-3 font-label-md text-label-md hover:bg-surface-container dark:hover:bg-surface-container-high transition-all rounded-xl" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">settings</span>
+                Pengaturan
+            </a>
+</div>
+</nav>
+<!-- TopNavBar (Mobile) -->
+<header class="flex md:hidden justify-between items-center w-full px-lg h-16 sticky top-0 z-50 bg-surface dark:bg-inverse-surface border-b border-border dark:border-outline-variant docked full-width">
+<h1 class="text-headline-md font-headline-md font-bold text-primary dark:text-inverse-primary">VibeNovel</h1>
+<div class="flex gap-4">
+<button class="text-primary dark:text-inverse-primary hover:bg-primary-soft dark:hover:bg-on-primary-fixed-variant transition-colors p-2 rounded-full">
+<span class="material-symbols-outlined">electric_bolt</span>
+</button>
+<button class="text-primary dark:text-inverse-primary hover:bg-primary-soft dark:hover:bg-on-primary-fixed-variant transition-colors p-2 rounded-full">
+<span class="material-symbols-outlined">account_circle</span>
+</button>
+</div>
+</header>
+<!-- Main Content Area -->
+<main class="flex-1 md:ml-64 overflow-y-auto w-full h-full p-4 md:p-8 lg:p-12 pb-24 md:pb-12 bg-background flex flex-col">
+<div class="max-w-container-max-dashboard mx-auto w-full flex-1 flex flex-col">
+<!-- Header Section -->
+<div class="mb-8 md:mb-12 text-center md:text-left">
+<h2 class="text-display font-display text-on-background mb-3">Pilih Arah Ceritamu</h2>
+<p class="text-body-lg font-body-lg text-muted-text max-w-2xl">
+                    Kami telah meramu 3 konsep cerita potensial berdasarkan idemu. Pilih salah satu yang paling beresonansi dengan gaya penulisanmu.
+                </p>
+</div>
+<!-- Concept Cards Bento Grid -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8 flex-1">
+<!-- Card 1 -->
+<div class="glass-card rounded-[20px] p-6 md:p-8 flex flex-col relative overflow-hidden group hover:-translate-y-1 transition-transform duration-300"><div class="absolute top-0 right-0 w-32 h-32 bg-primary-soft rounded-bl-full -mr-8 -mt-8 z-0 opacity-50 group-hover:scale-110 transition-transform"></div><div class="relative z-10 flex-1 flex flex-col"><div class="flex justify-between items-start mb-5"><span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-surface-container-low text-primary-dark font-label-sm text-label-sm shadow-sm"><span class="material-symbols-outlined text-[16px]">favorite</span> Drama Rumah Tangga / Rahasia Masa Lalu</span></div><h3 class="text-headline-lg font-headline-lg text-on-surface mb-5">Bayang-Bayang Siska</h3><div class="mb-6 space-y-5 flex-1"><div><h4 class="font-label-md text-label-md text-muted-text mb-1.5 uppercase tracking-wider text-[11px]">Pitch Singkat</h4><p class="text-body-md font-body-md text-on-surface-variant italic leading-relaxed">"Kebahagiaan rumah tangga Siska hancur saat seorang wanita dari masa lalu suaminya muncul membawa rahasia yang terkubur sepuluh tahun."</p></div><div><h4 class="font-label-md text-label-md text-muted-text mb-1.5 uppercase tracking-wider text-[11px]">Janji Emosional</h4><p class="text-body-sm font-body-sm text-on-surface-variant leading-relaxed">Perjuangan seorang istri mempertahankan martabat di tengah badai pengkhianatan yang menyayat hati.</p></div><div><h4 class="font-label-md text-label-md text-muted-text mb-1.5 uppercase tracking-wider text-[11px]">Konflik Utama</h4><p class="text-body-sm font-body-sm text-on-surface-variant leading-relaxed">Dilema antara memaafkan demi anak-anak atau membongkar kebenaran pahit yang bisa menghancurkan segalanya.</p></div><div class="bg-surface-soft/80 p-4 rounded-xl border border-primary-soft mt-2"><h4 class="font-label-md text-label-md text-primary-dark mb-1.5 flex items-center gap-1.5"><span class="material-symbols-outlined text-[16px]">trending_up</span> Potensi Cerita Panjang</h4><p class="text-body-sm font-body-sm text-on-surface-variant leading-relaxed">Plot twist berlapis mengenai identitas asli sang wanita misterius dan keterlibatan keluarga besar.</p></div></div><button class="w-full mt-auto bg-primary text-on-primary py-3 md:py-4 px-6 rounded-xl font-label-md text-label-md hover:bg-primary-dark transition-colors flex justify-center items-center gap-2 shadow-md">Pilih Konsep Ini <span class="material-symbols-outlined text-[18px]">arrow_forward</span></button></div></div>
+<!-- Card 2 -->
+<div class="glass-card rounded-[20px] p-6 md:p-8 flex flex-col relative overflow-hidden group hover:-translate-y-1 transition-transform duration-300 border-2 border-primary-soft shadow-lg"><div class="absolute top-6 right-6 z-20"><span class="inline-flex items-center justify-center w-7 h-7 rounded-full bg-primary text-on-primary shadow-sm"><span class="material-symbols-outlined text-[14px]">star</span></span></div><div class="absolute top-0 right-0 w-32 h-32 bg-secondary-container rounded-bl-full -mr-8 -mt-8 z-0 opacity-40 group-hover:scale-110 transition-transform"></div><div class="relative z-10 flex-1 flex flex-col"><div class="flex justify-between items-start mb-5"><span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-surface-container-low text-secondary font-label-sm text-label-sm shadow-sm"><span class="material-symbols-outlined text-[16px]">auto_awesome</span> Drama Keluarga / Balas Dendam Elegan</span></div><h3 class="text-headline-lg font-headline-lg text-on-surface mb-5">Istri yang Tak Lagi Diam</h3><div class="mb-6 space-y-5 flex-1"><div><h4 class="font-label-md text-label-md text-muted-text mb-1.5 uppercase tracking-wider text-[11px]">Pitch Singkat</h4><p class="text-body-md font-body-md text-on-surface-variant italic leading-relaxed">"Setelah bertahun-tahun direndahkan oleh keluarga mertua, seorang menantu penurut mulai merancang pembalasan yang manis namun mematikan."</p></div><div><h4 class="font-label-md text-label-md text-muted-text mb-1.5 uppercase tracking-wider text-[11px]">Janji Emosional</h4><p class="text-body-sm font-body-sm text-on-surface-variant leading-relaxed">Kepuasan melihat tokoh yang tertindas bangkit dan mengambil alih kendali dengan kecerdasan.</p></div><div><h4 class="font-label-md text-label-md text-muted-text mb-1.5 uppercase tracking-wider text-[11px]">Konflik Utama</h4><p class="text-body-sm font-body-sm text-on-surface-variant leading-relaxed">Menjalankan rencana balas dendam tanpa kehilangan jati diri sebagai ibu dan wanita yang bermoral.</p></div><div class="bg-surface-soft/80 p-4 rounded-xl border border-primary-soft mt-2"><h4 class="font-label-md text-label-md text-primary-dark mb-1.5 flex items-center gap-1.5"><span class="material-symbols-outlined text-[16px]">trending_up</span> Potensi Cerita Panjang</h4><p class="text-body-sm font-body-sm text-on-surface-variant leading-relaxed">Intrik bisnis keluarga dan perebutan warisan yang menambah kompleksitas rencana balas dendam.</p></div></div><button class="w-full mt-auto bg-primary text-on-primary py-3 md:py-4 px-6 rounded-xl font-label-md text-label-md hover:bg-primary-dark transition-colors flex justify-center items-center gap-2 shadow-md">Pilih Konsep Ini <span class="material-symbols-outlined text-[18px]">arrow_forward</span></button></div></div>
+<!-- Card 3 -->
+<div class="glass-card rounded-[20px] p-6 md:p-8 flex flex-col relative overflow-hidden group hover:-translate-y-1 transition-transform duration-300"><div class="absolute top-0 right-0 w-32 h-32 bg-success-soft rounded-bl-full -mr-8 -mt-8 z-0 opacity-50 group-hover:scale-110 transition-transform"></div><div class="relative z-10 flex-1 flex flex-col"><div class="flex justify-between items-start mb-5"><span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-surface-container-low text-tertiary-container font-label-sm text-label-sm shadow-sm"><span class="material-symbols-outlined text-[16px]">work</span> Romansa Pernikahan / Konflik Keluarga</span></div><h3 class="text-headline-lg font-headline-lg text-on-surface mb-5">Kontrak yang Membuatnya Terjebak</h3><div class="mb-6 space-y-5 flex-1"><div><h4 class="font-label-md text-label-md text-muted-text mb-1.5 uppercase tracking-wider text-[11px]">Pitch Singkat</h4><p class="text-body-md font-body-md text-on-surface-variant italic leading-relaxed">"Demi melunasi hutang ayahnya, Maya setuju menikah kontrak dengan CEO dingin yang ternyata menyimpan trauma masa kecil yang mendalam."</p></div><div><h4 class="font-label-md text-label-md text-muted-text mb-1.5 uppercase tracking-wider text-[11px]">Janji Emosional</h4><p class="text-body-sm font-body-sm text-on-surface-variant leading-relaxed">Perjalanan dari benci menjadi cinta (enemies-to-lovers) yang penuh dengan momen manis dan mengharukan.</p></div><div><h4 class="font-label-md text-label-md text-muted-text mb-1.5 uppercase tracking-wider text-[11px]">Konflik Utama</h4><p class="text-body-sm font-body-sm text-on-surface-variant leading-relaxed">Berusaha tidak jatuh cinta dalam pernikahan kontrak sementara rahasia gelap sang CEO mulai terungkap.</p></div><div class="bg-surface-soft/80 p-4 rounded-xl border border-primary-soft mt-2"><h4 class="font-label-md text-label-md text-primary-dark mb-1.5 flex items-center gap-1.5"><span class="material-symbols-outlined text-[16px]">trending_up</span> Potensi Cerita Panjang</h4><p class="text-body-sm font-body-sm text-on-surface-variant leading-relaxed">Munculnya orang ketiga dari masa lalu dan sabotase dari anggota keluarga yang tidak setuju dengan pernikahan tersebut.</p></div></div><button class="w-full mt-auto bg-primary text-on-primary py-3 md:py-4 px-6 rounded-xl font-label-md text-label-md hover:bg-primary-dark transition-colors flex justify-center items-center gap-2 shadow-md">Pilih Konsep Ini <span class="material-symbols-outlined text-[18px]">arrow_forward</span></button></div></div>
+</div>
+</div>
+</main>
+<!-- BottomNavBar (Mobile) -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex md:hidden justify-around items-center px-4 py-2 bg-surface dark:bg-inverse-surface border-t border-border dark:border-outline-variant shadow-sm rounded-t-xl docked full-width">
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-surface-variant hover:bg-primary-soft dark:hover:bg-on-primary-fixed-variant p-2 rounded-lg transition-colors" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">home</span>
+<span class="font-label-sm text-label-sm-mobile mt-1">Home</span>
+</a>
+<a class="flex flex-col items-center justify-center text-primary dark:text-inverse-primary font-bold hover:bg-primary-soft dark:hover:bg-on-primary-fixed-variant p-2 rounded-lg transition-colors scale-90 duration-150" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">menu_book</span>
+<span class="font-label-sm text-label-sm-mobile mt-1">Bible</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-surface-variant hover:bg-primary-soft dark:hover:bg-on-primary-fixed-variant p-2 rounded-lg transition-colors" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">edit_note</span>
+<span class="font-label-sm text-label-sm-mobile mt-1">Writer</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-surface-variant hover:bg-primary-soft dark:hover:bg-on-primary-fixed-variant p-2 rounded-lg transition-colors" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">settings</span>
+<span class="font-label-sm text-label-sm-mobile mt-1">Settings</span>
+</a>
+</nav>
+
+
+</body></html>

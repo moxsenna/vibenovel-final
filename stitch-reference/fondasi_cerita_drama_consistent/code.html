@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+
+<html lang="id"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Story Bible - VibeNovel</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "tertiary-fixed-dim": "#96d4b1",
+                      "surface-container-low": "#edf4ff",
+                      "warning-soft": "#FFF4D8",
+                      "inverse-on-surface": "#e8f2ff",
+                      "error-container": "#ffdad6",
+                      "tertiary-fixed": "#b2f0cc",
+                      "surface-dim": "#d1dbe8",
+                      "primary": "#823850",
+                      "outline": "#857276",
+                      "surface-container-high": "#dfe9f7",
+                      "on-primary-fixed": "#3e011b",
+                      "primary-container": "#9f4f68",
+                      "primary-fixed": "#ffd9e1",
+                      "surface-container-highest": "#d9e3f1",
+                      "accent-soft": "#EFE9F7",
+                      "secondary": "#6d528e",
+                      "surface-variant": "#d9e3f1",
+                      "secondary-container": "#dbbcff",
+                      "inverse-surface": "#27313c",
+                      "border": "#E6DDE2",
+                      "on-tertiary-fixed": "#002112",
+                      "inverse-primary": "#ffb1c5",
+                      "primary-soft": "#F6E7EC",
+                      "surface-soft": "#FFF7F8",
+                      "surface-container": "#e4effd",
+                      "surface-tint": "#93455e",
+                      "primary-dark": "#7A334C",
+                      "background": "#FBF8F6",
+                      "on-error-container": "#93000a",
+                      "on-secondary-fixed-variant": "#543a74",
+                      "surface-bright": "#f7f9ff",
+                      "secondary-fixed-dim": "#d9b9fd",
+                      "on-tertiary-fixed-variant": "#115136",
+                      "on-surface-variant": "#534346",
+                      "on-background": "#121d26",
+                      "surface-container-lowest": "#ffffff",
+                      "secondary-fixed": "#eedbff",
+                      "success-soft": "#E7F3EC",
+                      "on-secondary-container": "#624883",
+                      "subtle-text": "#9CA3AF",
+                      "surface": "#FFFFFF",
+                      "on-primary": "#ffffff",
+                      "tertiary-container": "#397456",
+                      "warning": "#B7791F",
+                      "on-tertiary-container": "#b8f7d2",
+                      "danger": "#B94A48",
+                      "on-primary-fixed-variant": "#762e46",
+                      "on-secondary-fixed": "#270c46",
+                      "muted-text": "#6B7280",
+                      "error": "#ba1a1a",
+                      "primary-fixed-dim": "#ffb1c5",
+                      "tertiary": "#1e5b3f",
+                      "danger-soft": "#FCE8E7",
+                      "on-secondary": "#ffffff",
+                      "outline-variant": "#d8c1c5",
+                      "on-tertiary": "#ffffff",
+                      "on-surface": "#121d26",
+                      "on-error": "#ffffff",
+                      "on-primary-container": "#ffe2e7"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.25rem",
+                      "lg": "0.5rem",
+                      "xl": "0.75rem",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "sm": "8px",
+                      "lg": "24px",
+                      "xs": "4px",
+                      "unit": "4px",
+                      "container-max-dashboard": "1200px",
+                      "md": "16px",
+                      "container-max-editor": "760px",
+                      "container-max-form": "720px",
+                      "xl": "40px"
+              },
+              "fontFamily": {
+                      "label-sm": [
+                              "Inter"
+                      ],
+                      "headline-lg": [
+                              "Inter"
+                      ],
+                      "headline-md": [
+                              "Inter"
+                      ],
+                      "body-md": [
+                              "Inter"
+                      ],
+                      "display": [
+                              "Inter"
+                      ],
+                      "body-sm": [
+                              "Inter"
+                      ],
+                      "body-editor": [
+                              "Inter"
+                      ],
+                      "label-md": [
+                              "Inter"
+                      ],
+                      "body-lg": [
+                              "Inter"
+                      ]
+              },
+              "fontSize": {
+                      "label-sm": [
+                              "12px",
+                              {
+                                      "lineHeight": "1.2",
+                                      "letterSpacing": "0.02em",
+                                      "fontWeight": "500"
+                              }
+                      ],
+                      "headline-lg": [
+                              "24px",
+                              {
+                                      "lineHeight": "1.3",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "headline-md": [
+                              "20px",
+                              {
+                                      "lineHeight": "1.4",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "body-md": [
+                              "16px",
+                              {
+                                      "lineHeight": "1.5",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "display": [
+                              "32px",
+                              {
+                                      "lineHeight": "1.2",
+                                      "letterSpacing": "-0.02em",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "body-sm": [
+                              "14px",
+                              {
+                                      "lineHeight": "1.5",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "body-editor": [
+                              "17px",
+                              {
+                                      "lineHeight": "1.8",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "label-md": [
+                              "14px",
+                              {
+                                      "lineHeight": "1.2",
+                                      "letterSpacing": "0.01em",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "body-lg": [
+                              "18px",
+                              {
+                                      "lineHeight": "1.6",
+                                      "fontWeight": "400"
+                              }
+                      ]
+              }
+      },
+          },
+        }
+      </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background antialiased font-body-md min-h-screen flex">
+<!-- SideNavBar (Desktop) -->
+<nav class="hidden md:flex flex-col h-screen p-md gap-2 fixed left-0 top-0 docked h-full left-0 w-64 border-r border-border dark:border-outline-variant flat no shadows bg-surface dark:bg-inverse-surface z-40">
+<div class="px-4 py-6 mb-4">
+<h1 class="text-headline-lg font-headline-lg font-bold text-primary dark:text-inverse-primary">VibeNovel</h1>
+<p class="text-body-sm font-body-sm text-subtle-text mt-1">Workspace Penulis Serial</p>
+</div>
+<div class="flex-1 flex flex-col gap-2">
+<a class="flex items-center gap-3 text-on-surface-variant dark:text-surface-variant px-4 py-3 hover:bg-surface-container dark:hover:bg-surface-container-high transition-all rounded-xl font-label-md text-label-md" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+<span class="">Dashboard</span>
+</a>
+<a class="flex items-center gap-3 bg-primary-soft dark:bg-on-primary-fixed-variant text-primary dark:text-primary-fixed rounded-xl px-4 py-3 hover:bg-surface-container dark:hover:bg-surface-container-high transition-all font-label-md text-label-md" href="#">
+<span class="material-symbols-outlined" data-icon="menu_book">menu_book</span>
+<span class="">Fondasi Cerita</span>
+</a>
+<a class="flex items-center gap-3 text-on-surface-variant dark:text-surface-variant px-4 py-3 hover:bg-surface-container dark:hover:bg-surface-container-high transition-all rounded-xl font-label-md text-label-md" href="#">
+<span class="material-symbols-outlined" data-icon="format_list_bulleted">format_list_bulleted</span>
+<span class="">Outline</span>
+</a>
+<a class="flex items-center gap-3 text-on-surface-variant dark:text-surface-variant px-4 py-3 hover:bg-surface-container dark:hover:bg-surface-container-high transition-all rounded-xl font-label-md text-label-md" href="#">
+<span class="material-symbols-outlined" data-icon="edit_note">edit_note</span>
+<span class="">Tulis Bab</span>
+</a>
+<a class="flex items-center gap-3 text-on-surface-variant dark:text-surface-variant px-4 py-3 hover:bg-surface-container dark:hover:bg-surface-container-high transition-all rounded-xl font-label-md text-label-md" href="#">
+<span class="material-symbols-outlined" data-icon="auto_stories">auto_stories</span>
+<span class="">Paket Publish</span>
+</a>
+<a class="flex items-center gap-3 text-on-surface-variant dark:text-surface-variant px-4 py-3 hover:bg-surface-container dark:hover:bg-surface-container-high transition-all rounded-xl font-label-md text-label-md" href="#">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+<span class="">Pengaturan</span>
+</a>
+</div>
+<div class="mt-auto px-4 py-4 border-t border-border">
+<button class="w-full bg-primary hover:bg-primary-dark text-on-primary font-label-md text-label-md py-3 rounded-xl transition-colors shadow-[0_1px_2px_rgba(31,41,51,0.05)]">Proyek Baru</button>
+</div>
+</nav>
+<!-- TopNavBar (Mobile) -->
+<header class="flex justify-between items-center w-full px-lg h-16 sticky top-0 z-50 md:hidden bg-surface dark:bg-inverse-surface border-b border-border dark:border-outline-variant flat no shadows">
+<h1 class="text-headline-md font-headline-md font-bold text-primary dark:text-inverse-primary">VibeNovel</h1>
+<div class="flex gap-4">
+<button class="text-on-surface-variant hover:bg-primary-soft p-2 rounded-full transition-colors">
+<span class="material-symbols-outlined" data-icon="account_circle">account_circle</span>
+</button>
+<button class="text-on-surface-variant hover:bg-primary-soft p-2 rounded-full transition-colors">
+<span class="material-symbols-outlined" data-icon="electric_bolt">electric_bolt</span>
+</button>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="flex-1 md:ml-64 w-full flex flex-col items-center pb-24 md:pb-lg pt-lg px-4 sm:px-6 md:px-lg">
+<div class="w-full max-w-container-max-editor flex flex-col gap-8">
+<!-- Page Header -->
+<div class="flex flex-col gap-2">
+<h2 class="text-display font-display text-on-background">Fondasi Cerita</h2>
+<p class="text-body-lg font-body-lg text-muted-text">Buku panduan utama untuk universe cerita Anda. Definisi awal ini akan memandu asisten AI menjaga konsistensi selama proses penulisan.</p>
+</div>
+<!-- Bento Grid Layout for Cards -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+<!-- Card 1: Tentang Cerita -->
+<div class="bg-surface border border-border rounded-[20px] p-[16px] md:p-[24px] shadow-[0_1px_2px_rgba(31,41,51,0.05)] hover:shadow-[0_8px_24px_rgba(31,41,51,0.08)] transition-shadow group relative overflow-hidden">
+<div class="flex justify-between items-start mb-4">
+<div class="flex items-center gap-2">
+<div class="w-10 h-10 rounded-full bg-primary-soft flex items-center justify-center text-primary">
+<span class="material-symbols-outlined" data-icon="import_contacts" data-weight="fill" style="font-variation-settings: 'FILL' 1;">import_contacts</span>
+</div>
+<h3 class="text-headline-md font-headline-md text-on-background">Tentang Cerita</h3>
+</div>
+<button aria-label="Edit" class="text-subtle-text hover:text-primary transition-colors p-1">
+<span class="material-symbols-outlined" data-icon="edit">edit</span>
+</button>
+</div>
+<p class="text-body-md font-body-md text-on-surface-variant line-clamp-4">Nadira, istri yang selama ini mengalah, mulai curiga ketika nama Siska muncul di ponsel Arman. Di tengah tekanan keluarga dan rahasia masa lalu suaminya, Nadira perlahan belajar mengumpulkan bukti dan mengambil kendali atas hidupnya.</p>
+</div>
+<!-- Card 2: Tokoh Utama -->
+<div class="bg-surface border border-border rounded-[20px] p-[16px] md:p-[24px] shadow-[0_1px_2px_rgba(31,41,51,0.05)] hover:shadow-[0_8px_24px_rgba(31,41,51,0.08)] transition-shadow group relative overflow-hidden">
+<div class="flex justify-between items-start mb-4">
+<div class="flex items-center gap-2">
+<div class="w-10 h-10 rounded-full bg-primary-soft flex items-center justify-center text-primary">
+<span class="material-symbols-outlined" data-icon="person" data-weight="fill" style="font-variation-settings: 'FILL' 1;">person</span>
+</div>
+<h3 class="text-headline-md font-headline-md text-on-background">Tokoh Utama</h3>
+</div>
+<button aria-label="Edit" class="text-subtle-text hover:text-primary transition-colors p-1">
+<span class="material-symbols-outlined" data-icon="edit">edit</span>
+</button>
+</div>
+<div class="flex flex-col gap-4"><div class="flex flex-col gap-1"><div class="flex items-center gap-3"><div class="w-2 h-2 rounded-full bg-primary"></div><span class="text-body-md font-body-md text-on-surface-variant font-medium">Nadira</span></div><p class="text-body-sm font-body-sm text-muted-text pl-5">Istri yang terabaikan namun mulai bangkit</p></div><div class="flex flex-col gap-1"><div class="flex items-center gap-3"><div class="w-2 h-2 rounded-full bg-primary"></div><span class="text-body-md font-body-md text-on-surface-variant font-medium">Arman</span></div><p class="text-body-sm font-body-sm text-muted-text pl-5">Suami dengan rahasia masa lalu</p></div></div>
+</div>
+<!-- Card 3: Konflik Utama -->
+<div class="bg-surface border border-border rounded-[20px] p-[16px] md:p-[24px] shadow-[0_1px_2px_rgba(31,41,51,0.05)] hover:shadow-[0_8px_24px_rgba(31,41,51,0.08)] transition-shadow group relative overflow-hidden">
+<div class="flex justify-between items-start mb-4">
+<div class="flex items-center gap-2">
+<div class="w-10 h-10 rounded-full bg-primary-soft flex items-center justify-center text-primary">
+<span class="material-symbols-outlined" data-icon="swords" data-weight="fill" style="font-variation-settings: 'FILL' 1;">swords</span>
+</div>
+<h3 class="text-headline-md font-headline-md text-on-background">Konflik Utama</h3>
+</div>
+<button aria-label="Edit" class="text-subtle-text hover:text-primary transition-colors p-1">
+<span class="material-symbols-outlined" data-icon="edit">edit</span>
+</button>
+</div>
+<p class="text-body-md font-body-md text-on-surface-variant">Nadira mulai curiga Arman menyembunyikan hubungan masa lalu dengan Siska, sementara tekanan keluarga membuatnya sulit bertanya secara langsung.</p>
+</div>
+<!-- Card 4: Janji ke Pembaca -->
+<div class="bg-surface border border-border rounded-[20px] p-[16px] md:p-[24px] shadow-[0_1px_2px_rgba(31,41,51,0.05)] hover:shadow-[0_8px_24px_rgba(31,41,51,0.08)] transition-shadow group relative overflow-hidden">
+<div class="flex justify-between items-start mb-4">
+<div class="flex items-center gap-2">
+<div class="w-10 h-10 rounded-full bg-primary-soft flex items-center justify-center text-primary">
+<span class="material-symbols-outlined" data-icon="volunteer_activism" data-weight="fill" style="font-variation-settings: 'FILL' 1;">volunteer_activism</span>
+</div>
+<h3 class="text-headline-md font-headline-md text-on-background">Janji ke Pembaca</h3>
+</div>
+<button aria-label="Edit" class="text-subtle-text hover:text-primary transition-colors p-1">
+<span class="material-symbols-outlined" data-icon="edit">edit</span>
+</button>
+</div>
+<ul class="text-body-md font-body-md text-on-surface-variant list-disc list-inside space-y-1">
+<li class="">Romansa slow-burn yang manis</li>
+<li class="">Dinamika benci-jadi-cinta yang seru</li>
+<li class="">Penyelesaian trauma dengan happy ending yang hangat</li>
+</ul>
+</div>
+<!-- Card 5: Rahasia Cerita -->
+<div class="bg-surface border border-border rounded-[20px] p-[16px] md:p-[24px] shadow-[0_1px_2px_rgba(31,41,51,0.05)] hover:shadow-[0_8px_24px_rgba(31,41,51,0.08)] transition-shadow group relative overflow-hidden md:col-span-2">
+<div class="flex justify-between items-start mb-4">
+<div class="flex items-center gap-2">
+<div class="w-10 h-10 rounded-full bg-primary-soft flex items-center justify-center text-primary">
+<span class="material-symbols-outlined" data-icon="key" data-weight="fill" style="font-variation-settings: 'FILL' 1;">key</span>
+</div>
+<h3 class="text-headline-md font-headline-md text-on-background">Rahasia Cerita</h3>
+</div>
+<button aria-label="Edit" class="text-subtle-text hover:text-primary transition-colors p-1">
+<span class="material-symbols-outlined" data-icon="edit">edit</span>
+</button>
+</div>
+<div class="bg-surface-soft border border-border rounded-xl p-4 flex items-start gap-3">
+<span class="material-symbols-outlined text-muted-text mt-0.5" data-icon="lock">lock</span>
+<p class="text-body-md font-body-md text-on-surface-variant italic">Arman sebenarnya adalah putra tunggal dari pemilik awal bangunan kafe tersebut sebelum disita bank sepuluh tahun lalu, rahasia besar yang ia tutupi dari Nadira.</p>
+</div>
+</div>
+<!-- Card 6: Gaya Cerita -->
+<div class="bg-surface border border-border rounded-[20px] p-[16px] md:p-[24px] shadow-[0_1px_2px_rgba(31,41,51,0.05)] hover:shadow-[0_8px_24px_rgba(31,41,51,0.08)] transition-shadow group relative overflow-hidden md:col-span-2">
+<div class="flex justify-between items-start mb-4">
+<div class="flex items-center gap-2">
+<div class="w-10 h-10 rounded-full bg-primary-soft flex items-center justify-center text-primary">
+<span class="material-symbols-outlined" data-icon="palette" data-weight="fill" style="font-variation-settings: 'FILL' 1;">palette</span>
+</div>
+<h3 class="text-headline-md font-headline-md text-on-background">Gaya Cerita</h3>
+</div>
+<button aria-label="Edit" class="text-subtle-text hover:text-primary transition-colors p-1">
+<span class="material-symbols-outlined" data-icon="edit">edit</span>
+</button>
+</div>
+<div class="flex flex-wrap gap-2">
+<span class="px-3 py-1 bg-surface-variant text-on-surface-variant rounded-full text-label-sm font-label-sm">Romansa Kontemporer</span>
+<span class="px-3 py-1 bg-surface-variant text-on-surface-variant rounded-full text-label-sm font-label-sm">POV Ganda Bergantian</span>
+<span class="px-3 py-1 bg-surface-variant text-on-surface-variant rounded-full text-label-sm font-label-sm">Deskripsi Menggugah Selera</span>
+</div>
+</div>
+<!-- Card 7: Fakta yang Dikunci -->
+<div class="bg-surface border border-border rounded-[20px] p-[16px] md:p-[24px] shadow-[0_1px_2px_rgba(31,41,51,0.05)] hover:shadow-[0_8px_24px_rgba(31,41,51,0.08)] transition-shadow group relative overflow-hidden">
+<div class="flex justify-between items-start mb-4">
+<div class="flex items-center gap-2">
+<div class="w-10 h-10 rounded-full bg-primary-soft flex items-center justify-center text-primary">
+<span class="material-symbols-outlined" data-icon="push_pin" data-weight="fill" style="font-variation-settings: 'FILL' 1;">push_pin</span>
+</div>
+<h3 class="text-headline-md font-headline-md text-on-background">Fakta yang Dikunci</h3>
+</div>
+<button aria-label="Edit" class="text-subtle-text hover:text-primary transition-colors p-1">
+<span class="material-symbols-outlined" data-icon="edit">edit</span>
+</button>
+</div>
+<ul class="text-body-md font-body-md text-on-surface-variant list-disc list-inside space-y-1"><li class="">Nadira adalah istri Arman.</li><li class="">Nama Siska muncul di ponsel Arman.</li><li class="">Nadira belum tahu siapa Siska sebenarnya.</li><li class="">Arman selalu menghindar setiap kali nama Siska dibahas.</li></ul>
+</div>
+<!-- Card 8: Jadwal Rahasia -->
+<div class="bg-surface border border-border rounded-[20px] p-[16px] md:p-[24px] shadow-[0_1px_2px_rgba(31,41,51,0.05)] hover:shadow-[0_8px_24px_rgba(31,41,51,0.08)] transition-shadow group relative overflow-hidden">
+<div class="flex justify-between items-start mb-4">
+<div class="flex items-center gap-2">
+<div class="w-10 h-10 rounded-full bg-primary-soft flex items-center justify-center text-primary">
+<span class="material-symbols-outlined" data-icon="schedule" data-weight="fill" style="font-variation-settings: 'FILL' 1;">schedule</span>
+</div>
+<h3 class="text-headline-md font-headline-md text-on-background">Jadwal Rahasia</h3>
+</div>
+<button aria-label="Edit" class="text-subtle-text hover:text-primary transition-colors p-1">
+<span class="material-symbols-outlined" data-icon="edit">edit</span>
+</button>
+</div>
+<ul class="text-body-md font-body-md text-on-surface-variant space-y-2"><li class=""><span class="font-medium text-primary">Bab 1:</span> Nama Siska muncul sebagai petunjuk awal.</li><li class=""><span class="font-medium text-primary">Bab 3:</span> Nadira menemukan bukti kecil, tapi belum paham maknanya.</li><li class=""><span class="font-medium text-primary">Bab 8:</span> Nadira mulai tahu Siska bagian dari masa lalu Arman.</li><li class=""><span class="font-medium text-primary">Bab 12:</span> Hubungan Arman dan Siska mulai terbuka.</li></ul>
+</div>
+</div>
+<!-- Warning Panel & CTA -->
+<div class="flex flex-col gap-6 mt-4">
+<div class="bg-warning-soft border border-warning rounded-xl p-4 flex items-start gap-3 shadow-[0_1px_2px_rgba(31,41,51,0.05)]">
+<span class="material-symbols-outlined text-warning mt-0.5" data-icon="warning">warning</span>
+<div>
+<h4 class="text-label-md font-label-md text-on-background mb-1">Perhatian</h4>
+<p class="text-body-sm font-body-sm text-on-surface-variant">Mengubah fondasi cerita nanti bisa memengaruhi outline dan bab berikutnya.</p>
+<p class="text-body-sm font-body-sm text-on-surface-variant mt-2 font-medium">Catatan: Bagian kuning = perlu dicek</p></div>
+</div>
+<button class="w-full md:w-auto self-end bg-primary hover:bg-primary-dark text-on-primary font-label-md text-label-md py-3 px-8 rounded-xl transition-colors shadow-[0_1px_2px_rgba(31,41,51,0.05)] min-h-[48px] flex items-center justify-center gap-2">
+<span class="material-symbols-outlined" data-icon="lock" data-weight="fill" style="font-variation-settings: 'FILL' 1;">lock</span>
+                    Kunci Fondasi Cerita
+                </button>
+</div>
+</div>
+</main>
+<!-- BottomNavBar (Mobile) -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex md:hidden justify-around items-center px-4 py-2 docked full-width bottom-0 rounded-t-xl border-t border-border dark:border-outline-variant shadow-sm bg-surface dark:bg-inverse-surface">
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-surface-variant hover:bg-primary-soft dark:hover:bg-on-primary-fixed-variant p-2 rounded-lg transition-all duration-150 font-label-sm text-label-sm-mobile" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="home">home</span>
+<span class="">Home</span>
+</a>
+<a class="flex flex-col items-center justify-center text-primary dark:text-inverse-primary font-bold hover:bg-primary-soft dark:hover:bg-on-primary-fixed-variant p-2 rounded-lg transition-all duration-150 font-label-sm text-label-sm-mobile" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="menu_book" data-weight="fill" style="font-variation-settings: 'FILL' 1;">menu_book</span>
+<span class="">Bible</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-surface-variant hover:bg-primary-soft dark:hover:bg-on-primary-fixed-variant p-2 rounded-lg transition-all duration-150 font-label-sm text-label-sm-mobile" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="edit_note">edit_note</span>
+<span class="">Writer</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-surface-variant hover:bg-primary-soft dark:hover:bg-on-primary-fixed-variant p-2 rounded-lg transition-all duration-150 font-label-sm text-label-sm-mobile" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="settings">settings</span>
+<span class="">Settings</span>
+</a>
+</nav>
+</body></html>

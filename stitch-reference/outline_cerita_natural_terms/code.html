@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+
+<html lang="id"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>VibeNovel - Outline</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "tertiary-fixed-dim": "#96d4b1",
+                    "surface-container-low": "#edf4ff",
+                    "warning-soft": "#FFF4D8",
+                    "inverse-on-surface": "#e8f2ff",
+                    "error-container": "#ffdad6",
+                    "tertiary-fixed": "#b2f0cc",
+                    "surface-dim": "#d1dbe8",
+                    "primary": "#823850",
+                    "outline": "#857276",
+                    "surface-container-high": "#dfe9f7",
+                    "on-primary-fixed": "#3e011b",
+                    "primary-container": "#9f4f68",
+                    "primary-fixed": "#ffd9e1",
+                    "surface-container-highest": "#d9e3f1",
+                    "accent-soft": "#EFE9F7",
+                    "secondary": "#6d528e",
+                    "surface-variant": "#d9e3f1",
+                    "secondary-container": "#dbbcff",
+                    "inverse-surface": "#27313c",
+                    "border": "#E6DDE2",
+                    "on-tertiary-fixed": "#002112",
+                    "inverse-primary": "#ffb1c5",
+                    "primary-soft": "#F6E7EC",
+                    "surface-soft": "#FFF7F8",
+                    "surface-container": "#e4effd",
+                    "surface-tint": "#93455e",
+                    "primary-dark": "#7A334C",
+                    "background": "#FBF8F6",
+                    "on-error-container": "#93000a",
+                    "on-secondary-fixed-variant": "#543a74",
+                    "surface-bright": "#f7f9ff",
+                    "secondary-fixed-dim": "#d9b9fd",
+                    "on-tertiary-fixed-variant": "#115136",
+                    "on-surface-variant": "#534346",
+                    "on-background": "#121d26",
+                    "surface-container-lowest": "#ffffff",
+                    "secondary-fixed": "#eedbff",
+                    "success-soft": "#E7F3EC",
+                    "on-secondary-container": "#624883",
+                    "subtle-text": "#9CA3AF",
+                    "surface": "#FFFFFF",
+                    "on-primary": "#ffffff",
+                    "tertiary-container": "#397456",
+                    "warning": "#B7791F",
+                    "on-tertiary-container": "#b8f7d2",
+                    "danger": "#B94A48",
+                    "on-primary-fixed-variant": "#762e46",
+                    "on-secondary-fixed": "#270c46",
+                    "muted-text": "#6B7280",
+                    "error": "#ba1a1a",
+                    "primary-fixed-dim": "#ffb1c5",
+                    "tertiary": "#1e5b3f",
+                    "danger-soft": "#FCE8E7",
+                    "on-secondary": "#ffffff",
+                    "outline-variant": "#d8c1c5",
+                    "on-tertiary": "#ffffff",
+                    "on-surface": "#121d26",
+                    "on-error": "#ffffff",
+                    "on-primary-container": "#ffe2e7"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "sm": "8px",
+                    "lg": "24px",
+                    "xs": "4px",
+                    "unit": "4px",
+                    "container-max-dashboard": "1200px",
+                    "md": "16px",
+                    "container-max-editor": "760px",
+                    "container-max-form": "720px",
+                    "xl": "40px"
+            },
+            "fontFamily": {
+                    "label-sm": ["Inter"],
+                    "headline-lg": ["Inter"],
+                    "headline-md": ["Inter"],
+                    "body-md": ["Inter"],
+                    "display": ["Inter"],
+                    "body-sm": ["Inter"],
+                    "body-editor": ["Inter"],
+                    "label-md": ["Inter"],
+                    "body-lg": ["Inter"]
+            },
+            "fontSize": {
+                    "label-sm": ["12px", {"lineHeight": "1.2", "letterSpacing": "0.02em", "fontWeight": "500"}],
+                    "headline-lg": ["24px", {"lineHeight": "1.3", "fontWeight": "600"}],
+                    "headline-md": ["20px", {"lineHeight": "1.4", "fontWeight": "600"}],
+                    "body-md": ["16px", {"lineHeight": "1.5", "fontWeight": "400"}],
+                    "display": ["32px", {"lineHeight": "1.2", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "body-sm": ["14px", {"lineHeight": "1.5", "fontWeight": "400"}],
+                    "body-editor": ["17px", {"lineHeight": "1.8", "fontWeight": "400"}],
+                    "label-md": ["14px", {"lineHeight": "1.2", "letterSpacing": "0.01em", "fontWeight": "600"}],
+                    "body-lg": ["18px", {"lineHeight": "1.6", "fontWeight": "400"}]
+            }
+          }
+        }
+      }
+    </script>
+<style>
+        .accordion-content {
+            transition: max-height 0.3s ease-in-out, opacity 0.3s ease-in-out, padding 0.3s ease-in-out;
+            max-height: 0;
+            opacity: 0;
+            overflow: hidden;
+        }
+        .accordion-content.expanded {
+            max-height: 500px;
+            opacity: 1;
+        }
+        .chevron-icon {
+            transition: transform 0.3s ease;
+        }
+        .expanded-icon {
+            transform: rotate(180deg);
+        }
+        /* Mobile safe area padding for bottom nav */
+        @supports (padding-bottom: env(safe-area-inset-bottom)) {
+            .pb-safe { padding-bottom: env(safe-area-inset-bottom); }
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background font-body-md antialiased flex h-screen overflow-hidden selection:bg-primary-soft selection:text-primary-dark">
+<!-- Desktop Sidebar Component -->
+<aside class="hidden md:flex flex-col h-screen p-md gap-2 fixed left-0 top-0 w-64 bg-surface dark:bg-inverse-surface border-r border-border dark:border-outline-variant z-40">
+<!-- Brand Header -->
+<div class="px-4 py-6 mb-2">
+<h1 class="text-headline-lg font-headline-lg font-bold text-primary dark:text-inverse-primary tracking-tight">VibeNovel</h1>
+<p class="text-label-sm font-label-sm text-subtle-text mt-1">Workspace Penulis Serial</p>
+</div>
+<!-- CTA -->
+<div class="px-4 mb-6">
+<button class="w-full bg-primary text-on-primary py-3 rounded-xl font-label-md text-label-md flex justify-center items-center gap-2 hover:bg-primary-dark transition-colors shadow-[0_1px_2px_rgba(31,41,51,0.05)] hover:shadow-[0_8px_24px_rgba(31,41,51,0.08)]">
+<span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 1;">add</span>
+                Proyek Baru
+            </button>
+</div>
+<!-- Navigation Links -->
+<nav class="flex flex-col gap-1 flex-1 overflow-y-auto">
+<a class="flex items-center gap-3 text-on-surface-variant dark:text-surface-variant px-4 py-3 hover:bg-surface-container dark:hover:bg-surface-container-high transition-all rounded-xl group font-label-md text-label-md" href="#">
+<span class="material-symbols-outlined text-outline group-hover:text-primary transition-colors">dashboard</span>
+                Dashboard
+            </a>
+<a class="flex items-center gap-3 text-on-surface-variant dark:text-surface-variant px-4 py-3 hover:bg-surface-container dark:hover:bg-surface-container-high transition-all rounded-xl group font-label-md text-label-md" href="#">
+<span class="material-symbols-outlined text-outline group-hover:text-primary transition-colors">menu_book</span>
+                Fondasi Cerita
+            </a>
+<!-- Active State: Outline -->
+<a class="flex items-center gap-3 bg-primary-soft dark:bg-on-primary-fixed-variant text-primary dark:text-primary-fixed rounded-xl px-4 py-3 hover:bg-surface-container dark:hover:bg-surface-container-high transition-all scale-95 font-label-md text-label-md font-bold" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">format_list_bulleted</span>
+                Outline
+            </a>
+<a class="flex items-center gap-3 text-on-surface-variant dark:text-surface-variant px-4 py-3 hover:bg-surface-container dark:hover:bg-surface-container-high transition-all rounded-xl group font-label-md text-label-md" href="#">
+<span class="material-symbols-outlined text-outline group-hover:text-primary transition-colors">edit_note</span>
+                Tulis Bab
+            </a>
+<a class="flex items-center gap-3 text-on-surface-variant dark:text-surface-variant px-4 py-3 hover:bg-surface-container dark:hover:bg-surface-container-high transition-all rounded-xl group font-label-md text-label-md" href="#">
+<span class="material-symbols-outlined text-outline group-hover:text-primary transition-colors">auto_stories</span>
+                Paket Publish
+            </a>
+<div class="mt-auto pt-4 border-t border-border">
+<a class="flex items-center gap-3 text-on-surface-variant dark:text-surface-variant px-4 py-3 hover:bg-surface-container dark:hover:bg-surface-container-high transition-all rounded-xl group font-label-md text-label-md" href="#">
+<span class="material-symbols-outlined text-outline group-hover:text-primary transition-colors">settings</span>
+                    Pengaturan
+                </a>
+</div>
+</nav>
+</aside>
+<!-- Main Workspace -->
+<main class="flex-1 md:ml-64 h-full overflow-y-auto bg-background p-md md:p-xl flex justify-center pb-24 md:pb-xl">
+<div class="w-full max-w-container-max-editor flex flex-col gap-lg">
+<!-- Page Header -->
+<header class="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 border-b border-border pb-6">
+<div>
+<div class="inline-flex items-center gap-2 px-3 py-1 bg-surface-container rounded-full mb-3 border border-outline-variant">
+<span class="material-symbols-outlined text-[16px] text-primary">auto_awesome</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Rencana 10 Bab Awal</span>
+</div>
+<h2 class="text-display font-display text-on-background">Bab 1–10: Awal Konflik</h2>
+<p class="text-body-md font-body-md text-subtle-text mt-2 max-w-xl">Panduan struktural untuk membangun fondasi karakter dan memicu insiden utama dalam cerita Anda.</p>
+</div>
+<button class="bg-primary text-on-primary px-6 py-3 rounded-full font-label-md text-label-md flex items-center gap-2 hover:bg-primary-dark transition-colors shadow-[0_8px_24px_rgba(31,41,51,0.08)] shrink-0 w-full md:w-auto justify-center">
+<span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 1;">edit_document</span>
+                    Mulai Tulis Bab 1
+                </button>
+</header>
+<!-- Chapter Roadmap List -->
+<div class="flex flex-col gap-4">
+<!-- Chapter Card 1 (Expanded Default) -->
+<article class="bg-surface rounded-xl shadow-[0_1px_2px_rgba(31,41,51,0.05)] border border-border overflow-hidden transition-all duration-300 focus-within:ring-2 focus-within:ring-primary-soft">
+<!-- Accordion Header -->
+<button class="w-full p-4 md:p-lg flex justify-between items-start md:items-center text-left hover:bg-surface-soft transition-colors outline-none" onclick="toggleAccordion(this)">
+<div class="flex items-start md:items-center gap-4">
+<div class="w-12 h-12 rounded-full bg-primary-soft text-primary flex items-center justify-center font-headline-md text-headline-md shrink-0 border border-primary-fixed">1</div>
+<div class="flex flex-col md:flex-row md:items-center gap-2 md:gap-4">
+<h3 class="text-headline-md font-headline-md text-on-background">Bab 1: Pertemuan Tak Terduga</h3>
+<!-- Badges -->
+<div class="flex gap-2 mt-1 md:mt-0">
+<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-accent-soft text-secondary font-label-sm text-label-sm border border-secondary-container">
+<span class="material-symbols-outlined text-[14px]">visibility</span>
+                                        Rahasia
+                                    </span>
+</div>
+</div>
+</div>
+<span class="material-symbols-outlined text-outline chevron-icon expanded-icon mt-2 md:mt-0">expand_more</span>
+</button>
+<!-- Accordion Body -->
+<div class="accordion-content expanded bg-surface-bright border-t border-border">
+<div class="p-4 md:p-lg grid grid-cols-1 md:grid-cols-2 gap-6">
+<!-- Chapter Goal -->
+<div class="bg-surface rounded-lg p-4 border border-outline-variant shadow-sm">
+<h4 class="text-label-md font-label-md text-secondary mb-2 flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px]">flag</span> Goal Bab
+                                </h4>
+<p class="text-body-md font-body-md text-on-surface-variant">Memperkenalkan tokoh utama dalam rutinitas kesehariannya, lalu mengganggu rutinitas tersebut dengan sebuah insiden kecil namun membekas di sebuah kedai kopi.</p>
+</div>
+<!-- Emotional Goal -->
+<div class="bg-surface rounded-lg p-4 border border-outline-variant shadow-sm">
+<h4 class="text-label-md font-label-md text-tertiary-container mb-2 flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px]">favorite</span> Goal Emosional
+                                </h4>
+<p class="text-body-md font-body-md text-on-surface-variant">Membangun rasa simpati pembaca terhadap rasa kesepian tokoh utama, sekaligus memberikan percikan harapan dan rasa penasaran di akhir adegan.</p>
+</div>
+<!-- Ending Hook -->
+<div class="md:col-span-2 bg-warning-soft border border-warning/30 p-5 rounded-lg flex gap-4 items-start shadow-sm">
+<span class="material-symbols-outlined text-warning text-[24px] mt-1">front_hand</span>
+<div>
+<h4 class="text-label-md font-label-md text-warning mb-1">Ending Hook</h4>
+<p class="text-body-md font-body-md text-on-surface-variant">Tokoh utama menemukan sebuah amplop tebal tanpa nama tertinggal di mejanya. Saat dibuka, isinya adalah sketsa wajahnya sendiri yang digambar dengan sangat detail.</p>
+</div>
+</div>
+</div>
+</div>
+</article>
+<!-- Chapter Card 2 (Collapsed) -->
+<article class="bg-surface rounded-xl shadow-[0_1px_2px_rgba(31,41,51,0.05)] border border-border overflow-hidden transition-all duration-300 focus-within:ring-2 focus-within:ring-primary-soft">
+<button class="w-full p-4 md:p-lg flex justify-between items-start md:items-center text-left hover:bg-surface-soft transition-colors outline-none" onclick="toggleAccordion(this)">
+<div class="flex items-start md:items-center gap-4">
+<div class="w-12 h-12 rounded-full bg-surface-container text-outline flex items-center justify-center font-headline-md text-headline-md shrink-0 border border-border">2</div>
+<div class="flex flex-col md:flex-row md:items-center gap-2 md:gap-4">
+<h3 class="text-headline-md font-headline-md text-on-background">Bab 2: Jejak yang Tertinggal</h3>
+<div class="flex gap-2 mt-1 md:mt-0">
+<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-success-soft text-tertiary font-label-sm text-label-sm border border-tertiary-container">
+<span class="material-symbols-outlined text-[14px]">emoji_events</span>
+                                        Kemenangan Kecil
+                                    </span>
+</div>
+</div>
+</div>
+<span class="material-symbols-outlined text-outline chevron-icon mt-2 md:mt-0">expand_more</span>
+</button>
+<div class="accordion-content bg-surface-bright border-t border-border">
+<div class="p-4 md:p-lg grid grid-cols-1 md:grid-cols-2 gap-6">
+<div class="bg-surface rounded-lg p-4 border border-outline-variant shadow-sm">
+<h4 class="text-label-md font-label-md text-secondary mb-2 flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px]">flag</span> Goal Bab
+                                </h4>
+<p class="text-body-md font-body-md text-on-surface-variant">Menyelidiki asal-usul sketsa misterius tersebut dengan kembali ke kedai kopi dan mewawancarai barista.</p>
+</div>
+<div class="bg-surface rounded-lg p-4 border border-outline-variant shadow-sm">
+<h4 class="text-label-md font-label-md text-tertiary-container mb-2 flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px]">favorite</span> Goal Emosional
+                                </h4>
+<p class="text-body-md font-body-md text-on-surface-variant">Menciptakan ketegangan ringan (suspense) yang dipadukan dengan determinasi karakter utama yang mulai bangkit dari kelesuan.</p>
+</div>
+<div class="md:col-span-2 bg-warning-soft border border-warning/30 p-5 rounded-lg flex gap-4 items-start shadow-sm">
+<span class="material-symbols-outlined text-warning text-[24px] mt-1">front_hand</span>
+<div>
+<h4 class="text-label-md font-label-md text-warning mb-1">Ending Hook</h4>
+<p class="text-body-md font-body-md text-on-surface-variant">Barista memberikan sebuah petunjuk berupa saputangan dengan inisial yang tertinggal bersama amplop tersebut.</p>
+</div>
+</div>
+</div>
+</div>
+</article>
+<!-- Chapter Card 3 (Collapsed) -->
+<article class="bg-surface rounded-xl shadow-[0_1px_2px_rgba(31,41,51,0.05)] border border-border overflow-hidden transition-all duration-300 focus-within:ring-2 focus-within:ring-primary-soft opacity-70 hover:opacity-100">
+<button class="w-full p-4 md:p-lg flex justify-between items-start md:items-center text-left hover:bg-surface-soft transition-colors outline-none" onclick="toggleAccordion(this)">
+<div class="flex items-start md:items-center gap-4">
+<div class="w-12 h-12 rounded-full bg-surface-container text-outline flex items-center justify-center font-headline-md text-headline-md shrink-0 border border-border">3</div>
+<div class="flex flex-col md:flex-row md:items-center gap-2 md:gap-4">
+<h3 class="text-headline-md font-headline-md text-on-background">Bab 3: Pemilik Inisial</h3>
+</div>
+</div>
+<span class="material-symbols-outlined text-outline chevron-icon mt-2 md:mt-0">expand_more</span>
+</button>
+<div class="accordion-content bg-surface-bright border-t border-border">
+<div class="p-4 md:p-lg text-center text-on-surface-variant py-8">
+<p class="font-body-md text-body-md italic">Detail bab ini akan dihasilkan setelah Anda menyelesaikan Bab 2.</p>
+</div>
+</div>
+</article>
+<!-- Bottom CTA -->
+<div class="mt-8 flex justify-center">
+<button class="bg-surface text-primary border border-primary-fixed px-8 py-3 rounded-full font-label-md text-label-md flex items-center gap-2 hover:bg-primary-soft transition-colors shadow-sm">
+                        Muat Bab Selanjutnya
+                    </button>
+</div>
+</div>
+</div>
+</main>
+<!-- Mobile BottomNavBar Component -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex md:hidden justify-around items-center px-4 py-2 bg-surface dark:bg-inverse-surface border-t border-border dark:border-outline-variant shadow-[0_-4px_16px_rgba(31,41,51,0.05)] rounded-t-xl pb-safe">
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-surface-variant hover:bg-primary-soft dark:hover:bg-on-primary-fixed-variant p-2 rounded-lg transition-colors w-16" href="#">
+<span class="material-symbols-outlined">home</span>
+<span class="font-label-sm text-[10px] mt-1">Home</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-surface-variant hover:bg-primary-soft dark:hover:bg-on-primary-fixed-variant p-2 rounded-lg transition-colors w-16" href="#">
+<span class="material-symbols-outlined">menu_book</span>
+<span class="font-label-sm text-[10px] mt-1">Bible</span>
+</a>
+<!-- Active Tab Mapping for Outline context -->
+<a class="flex flex-col items-center justify-center text-primary dark:text-inverse-primary font-bold bg-primary-soft dark:bg-on-primary-fixed-variant p-2 rounded-lg transition-colors w-16 scale-90" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">edit_note</span>
+<span class="font-label-sm text-[10px] mt-1">Writer</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-surface-variant hover:bg-primary-soft dark:hover:bg-on-primary-fixed-variant p-2 rounded-lg transition-colors w-16" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-label-sm text-[10px] mt-1">Settings</span>
+</a>
+</nav>
+<script>
+        function toggleAccordion(button) {
+            const content = button.nextElementSibling;
+            const icon = button.querySelector('.chevron-icon');
+            
+            // Toggle current
+            if (content.classList.contains('expanded')) {
+                content.classList.remove('expanded');
+                icon.classList.remove('expanded-icon');
+                content.style.padding = '0';
+            } else {
+                content.classList.add('expanded');
+                icon.classList.add('expanded-icon');
+            }
+        }
+    </script>
+</body></html>

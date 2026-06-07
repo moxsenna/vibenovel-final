@@ -1,0 +1,241 @@
+<!DOCTYPE html><html lang="id" style=""><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>VibeNovel - Editor Bab</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com" rel="preconnect">
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "tertiary-fixed-dim": "#96d4b1",
+                      "surface-container-low": "#edf4ff",
+                      "warning-soft": "#FFF4D8",
+                      "inverse-on-surface": "#e8f2ff",
+                      "error-container": "#ffdad6",
+                      "tertiary-fixed": "#b2f0cc",
+                      "surface-dim": "#d1dbe8",
+                      "primary": "#823850",
+                      "outline": "#857276",
+                      "surface-container-high": "#dfe9f7",
+                      "on-primary-fixed": "#3e011b",
+                      "primary-container": "#9f4f68",
+                      "primary-fixed": "#ffd9e1",
+                      "surface-container-highest": "#d9e3f1",
+                      "accent-soft": "#EFE9F7",
+                      "secondary": "#6d528e",
+                      "surface-variant": "#d9e3f1",
+                      "secondary-container": "#dbbcff",
+                      "inverse-surface": "#27313c",
+                      "border": "#E6DDE2",
+                      "on-tertiary-fixed": "#002112",
+                      "inverse-primary": "#ffb1c5",
+                      "primary-soft": "#F6E7EC",
+                      "surface-soft": "#FFF7F8",
+                      "surface-container": "#e4effd",
+                      "surface-tint": "#93455e",
+                      "primary-dark": "#7A334C",
+                      "background": "#FBF8F6",
+                      "on-error-container": "#93000a",
+                      "on-secondary-fixed-variant": "#543a74",
+                      "surface-bright": "#f7f9ff",
+                      "secondary-fixed-dim": "#d9b9fd",
+                      "on-tertiary-fixed-variant": "#115136",
+                      "on-surface-variant": "#534346",
+                      "on-background": "#121d26",
+                      "surface-container-lowest": "#ffffff",
+                      "secondary-fixed": "#eedbff",
+                      "success-soft": "#E7F3EC",
+                      "on-secondary-container": "#624883",
+                      "subtle-text": "#9CA3AF",
+                      "surface": "#FFFFFF",
+                      "on-primary": "#ffffff",
+                      "tertiary-container": "#397456",
+                      "warning": "#B7791F",
+                      "on-tertiary-container": "#b8f7d2",
+                      "danger": "#B94A48",
+                      "on-primary-fixed-variant": "#762e46",
+                      "on-secondary-fixed": "#270c46",
+                      "muted-text": "#6B7280",
+                      "error": "#ba1a1a",
+                      "primary-fixed-dim": "#ffb1c5",
+                      "tertiary": "#1e5b3f",
+                      "danger-soft": "#FCE8E7",
+                      "on-secondary": "#ffffff",
+                      "outline-variant": "#d8c1c5",
+                      "on-tertiary": "#ffffff",
+                      "on-surface": "#121d26",
+                      "on-error": "#ffffff",
+                      "on-primary-container": "#ffe2e7"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.25rem",
+                      "lg": "0.5rem",
+                      "xl": "0.75rem",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "sm": "8px",
+                      "lg": "24px",
+                      "xs": "4px",
+                      "unit": "4px",
+                      "container-max-dashboard": "1200px",
+                      "md": "16px",
+                      "container-max-editor": "760px",
+                      "container-max-form": "720px",
+                      "xl": "40px"
+              },
+              "fontFamily": {
+                      "label-sm": ["Inter"],
+                      "headline-lg": ["Inter"],
+                      "headline-md": ["Inter"],
+                      "body-md": ["Inter"],
+                      "display": ["Inter"],
+                      "body-sm": ["Inter"],
+                      "body-editor": ["Inter"],
+                      "label-md": ["Inter"],
+                      "body-lg": ["Inter"]
+              },
+              "fontSize": {
+                      "label-sm": ["12px", { "lineHeight": "1.2", "letterSpacing": "0.02em", "fontWeight": "500" }],
+                      "headline-lg": ["24px", { "lineHeight": "1.3", "fontWeight": "600" }],
+                      "headline-md": ["20px", { "lineHeight": "1.4", "fontWeight": "600" }],
+                      "body-md": ["16px", { "lineHeight": "1.5", "fontWeight": "400" }],
+                      "display": ["32px", { "lineHeight": "1.2", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                      "body-sm": ["14px", { "lineHeight": "1.5", "fontWeight": "400" }],
+                      "body-editor": ["17px", { "lineHeight": "1.8", "fontWeight": "400" }],
+                      "label-md": ["14px", { "lineHeight": "1.2", "letterSpacing": "0.01em", "fontWeight": "600" }],
+                      "body-lg": ["18px", { "lineHeight": "1.6", "fontWeight": "400" }]
+              }
+            }
+          }
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .material-symbols-outlined.filled {
+            font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        /* Custom scrollbar for webkit */
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #d8c1c5; border-radius: 4px; }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+</head>
+<body class="bg-background text-on-surface h-screen flex flex-col antialiased">
+<!-- Top Header (Task Focused) -->
+<header class="flex items-center justify-between px-md h-14 bg-surface border-b border-border shrink-0 z-10 shadow-sm relative">
+<button aria-label="Kembali" class="p-2 -ml-2 text-on-surface-variant hover:text-on-surface transition-colors">
+<span class="material-symbols-outlined">arrow_back</span>
+</button>
+<div class="flex flex-col items-center">
+<span class="font-label-sm text-label-sm text-on-surface-variant opacity-80">Workspace VibeNovel</span>
+<span class="font-label-md text-label-md text-on-surface">Bab 3: Senja di Kaca</span>
+</div>
+<button class="font-label-md text-label-md text-primary font-bold hover:text-primary-dark transition-colors px-2">Terima</button>
+</header>
+<!-- Main Editor Canvas -->
+<main class="flex-grow overflow-y-auto bg-surface w-full px-lg py-xl relative z-0 pb-[180px] pb-32">
+<article class="w-full max-w-container-max-editor mx-auto outline-none">
+<p class="font-body-editor text-body-editor text-on-surface mb-6">Siska menatap pantulan dirinya di cermin rias yang retak. Di belakangnya, tumpukan koper tua masih terbuka, memuntahkan pakaian-pakaian lama yang berbau apek lemari. Sepuluh tahun di kota ini, dan hari ini ia harus mengemas segalanya kembali ke titik nol.</p>
+<p class="font-body-editor text-body-editor text-on-surface mb-6">Langkah kaki berat terdengar dari lorong. Suaminya, Bram, muncul dengan kemeja yang kusut dan mata yang merah. Ia tidak berkata apa-apa, hanya bersandar di kusen pintu sambil menyulut rokok terakhirnya.</p>
+<p class="font-body-editor text-body-editor text-on-surface mb-6">
+                "Kopiku sudah dibuatkan?" tanyanya datar, tanpa menatap mata Nadira.
+            </p>
+<p class="font-body-editor text-body-editor text-on-surface mb-6 relative group">
+<span class="bg-warning-soft border-b-2 border-warning/50">Nadira meremas ujung kemeja yang baru dilipatnya. Ingatannya kembali pada struk restoran yang ia temukan kemarin, dengan tanggal dan jam di mana Arman mengaku sedang rapat penting di kantor.</span></p><div class="absolute -top-8 left-0 bg-inverse-surface text-inverse-on-surface text-[10px] px-2 py-1 rounded shadow-lg z-10 font-medium whitespace-nowrap">Bagian kuning = perlu dicek</div> Ia menelan ludah, mencoba mencari keberanian di sisa-sisa harga dirinya.
+            <p></p>
+<p class="font-body-editor text-body-editor text-on-surface mb-6">
+                "Ada di meja makan," jawab Nadira pelan. "Mas, nanti malam kita perlu bicara."
+            </p>
+<p class="font-body-editor text-body-editor text-on-surface mb-6">
+                Langkah Arman terhenti sejenak di ambang pintu. Ia menoleh perlahan, kerutan halus muncul di dahinya. "Bicara apa lagi, Nad? Aku lelah, jangan mulai drama lagi."
+            </p>
+</article>
+</main>
+<!-- Floating AI Bar -->
+<div class="fixed bottom-[84px] left-1/2 -translate-x-1/2 bg-surface shadow-[0_8px_24px_rgba(31,41,51,0.08)] border border-border rounded-full flex items-center p-unit gap-unit z-20 w-max max-w-[90vw]">
+<button class="flex items-center justify-center gap-2 bg-primary hover:bg-primary-dark text-on-primary rounded-full px-5 h-[44px] transition-colors">
+<span class="material-symbols-outlined text-[20px] filled">auto_awesome</span>
+<span class="font-label-md text-label-md">Tulis</span>
+</button>
+<button class="flex items-center justify-center gap-1.5 hover:bg-surface-container-high rounded-full px-4 h-[44px] transition-colors text-on-surface-variant">
+<span class="material-symbols-outlined text-[20px]">auto_fix_high</span>
+<span class="font-label-md text-label-md">Perbaiki</span>
+</button>
+<button class="flex items-center justify-center gap-1.5 hover:bg-surface-container-high rounded-full px-4 h-[44px] transition-colors text-on-surface-variant">
+<span class="material-symbols-outlined text-[20px]">spellcheck</span>
+<span class="font-label-md text-label-md">Cek</span>
+</button>
+</div>
+<!-- Validation Bottom Sheet (Peeking) -->
+<div class="fixed bottom-0 left-0 w-full bg-surface border-t border-border rounded-t-[20px] shadow-[0_-8px_24px_rgba(31,41,51,0.06)] z-30 transition-transform duration-300 ease-in-out transform translate-y-[calc(100%-64px)]" id="validation-sheet">
+<!-- Handle & Header Area (Clickable) -->
+<div class="cursor-pointer" onclick="toggleSheet()">
+<div class="w-10 h-1.5 bg-border rounded-full mx-auto mt-3 mb-3"></div>
+<div class="flex items-center justify-between px-lg pb-4">
+<div class="flex items-center gap-2 text-primary"><span class="material-symbols-outlined filled">verified</span><div class="flex flex-col"><span class="font-label-md text-label-md font-semibold">Cek Otomatis • 3 aman · 3 perlu dicek</span></div></div>
+<span class="material-symbols-outlined text-on-surface-variant transition-transform duration-300" id="sheet-arrow">expand_less</span>
+</div>
+</div>
+<!-- Scrollable Content -->
+<div class="px-lg pb-lg max-h-[500px] overflow-y-auto">
+<div class="space-y-4 mb-6"><div class="grid grid-cols-1 sm:grid-cols-2 gap-3"><div class="flex items-center gap-2 text-tertiary"><span class="material-symbols-outlined text-[18px]">check_circle</span><span class="font-body-sm text-body-sm">Cerita nyambung</span></div><div class="flex items-center gap-2 text-tertiary"><span class="material-symbols-outlined text-[18px]">check_circle</span><span class="font-body-sm text-body-sm">Rahasia belum bocor</span></div><div class="flex items-center gap-2 text-tertiary"><span class="material-symbols-outlined text-[18px]">check_circle</span><span class="font-body-sm text-body-sm">Pengetahuan tokoh aman</span></div></div><div class="h-px bg-border w-full"></div><div class="flex gap-3 items-start"><span class="material-symbols-outlined text-warning text-[20px]">warning</span><div><h4 class="font-label-md text-label-md text-on-surface">Fakta tidak nabrak</h4><p class="font-body-sm text-body-sm text-on-surface-variant mt-1">Konsistensi alibi Bram di Bab 2 perlu dipastikan kembali.</p></div></div><div class="flex gap-3 items-start"><span class="material-symbols-outlined text-warning text-[20px]">format_align_justify</span><div><h4 class="font-label-md text-label-md text-on-surface">Format HP nyaman</h4><p class="font-body-sm text-body-sm text-on-surface-variant mt-1">Paragraf narasi Siska cukup padat untuk layar ponsel.</p></div></div><div class="flex gap-3 items-start"><span class="material-symbols-outlined text-error text-[20px]">error</span><div><h4 class="font-label-md text-label-md text-error">Ending bisa diperkuat</h4><p class="font-body-sm text-body-sm text-on-surface-variant mt-1">Konflik batin Siska di akhir bab perlu ledakan emosi yang lebih kuat.</p><button class="mt-2 font-label-sm text-label-sm text-primary bg-primary-soft px-3 py-1.5 rounded-lg hover:bg-primary-fixed transition-colors">Bantu Perbaiki Ending</button></div></div></div>
+<!-- Potensi Unlock Section -->
+<div class="bg-surface-container-low rounded-xl p-md border border-border">
+<h4 class="font-label-md text-label-md text-on-surface flex items-center gap-2 mb-3">
+<span class="material-symbols-outlined text-[18px] text-primary">lightbulb</span>
+            Potensi Unlock
+        </h4>
+<p class="font-body-sm text-body-sm text-on-surface-variant mb-4">Elemen naratif yang bisa diperkuat di bab ini:</p>
+<div class="flex flex-wrap gap-2">
+<span class="inline-flex items-center gap-1 bg-surface border border-border px-3 py-1.5 rounded-full font-label-sm text-label-sm text-on-surface-variant">
+                Hook Bab
+            </span>
+<span class="inline-flex items-center gap-1 bg-surface border border-border px-3 py-1.5 rounded-full font-label-sm text-label-sm text-on-surface-variant">
+                Open Loop
+            </span>
+<span class="inline-flex items-center gap-1 bg-surface border border-border px-3 py-1.5 rounded-full font-label-sm text-label-sm text-on-surface-variant">
+                Mini Victory
+            </span>
+</div>
+</div>
+</div>
+</div>
+<script>
+        function toggleSheet() {
+            const sheet = document.getElementById('validation-sheet');
+            const arrow = document.getElementById('sheet-arrow');
+            
+            if (sheet.classList.contains('translate-y-[calc(100%-64px)]')) {
+                // Expand
+                sheet.classList.remove('translate-y-[calc(100%-64px)]');
+                sheet.classList.add('translate-y-0');
+                arrow.classList.add('rotate-180');
+            } else {
+                // Collapse
+                sheet.classList.add('translate-y-[calc(100%-64px)]');
+                sheet.classList.remove('translate-y-0');
+                arrow.classList.remove('rotate-180');
+            }
+        }
+    </script>
+
+
+
+
+
+
+</body></html>

@@ -1,0 +1,20 @@
+{
+  "name": "vibenovel",
+  "private": true,
+  "version": "0.1.0",
+  "description": "VibeNovel — AI Serial Fiction Production OS (monorepo)",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev:web": "npm run dev -w @vibenovel/web",
+    "build:web": "npm run build -w @vibenovel/web",
+    "typecheck": "npm run typecheck -w @vibenovel/web",
+    "typecheck:web": "npm run typecheck -w @vibenovel/web",
+    "preview:web": "npm run preview -w @vibenovel/web"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

@@ -1,0 +1,207 @@
+<!DOCTYPE html><html lang="id"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>VibeNovel - Mulai Dari Mana?</title>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&amp;display=swap" rel="stylesheet">
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .icon-fill {
+            font-variation-settings: 'FILL' 1;
+        }
+    </style>
+<!-- Tailwind Config -->
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "tertiary-fixed-dim": "#96d4b1",
+                      "surface-container-low": "#edf4ff",
+                      "warning-soft": "#FFF4D8",
+                      "inverse-on-surface": "#e8f2ff",
+                      "error-container": "#ffdad6",
+                      "tertiary-fixed": "#b2f0cc",
+                      "surface-dim": "#d1dbe8",
+                      "primary": "#823850",
+                      "outline": "#857276",
+                      "surface-container-high": "#dfe9f7",
+                      "on-primary-fixed": "#3e011b",
+                      "primary-container": "#9f4f68",
+                      "primary-fixed": "#ffd9e1",
+                      "surface-container-highest": "#d9e3f1",
+                      "accent-soft": "#EFE9F7",
+                      "secondary": "#6d528e",
+                      "surface-variant": "#d9e3f1",
+                      "secondary-container": "#dbbcff",
+                      "inverse-surface": "#27313c",
+                      "border": "#E6DDE2",
+                      "on-tertiary-fixed": "#002112",
+                      "inverse-primary": "#ffb1c5",
+                      "primary-soft": "#F6E7EC",
+                      "surface-soft": "#FFF7F8",
+                      "surface-container": "#e4effd",
+                      "surface-tint": "#93455e",
+                      "primary-dark": "#7A334C",
+                      "background": "#FBF8F6",
+                      "on-error-container": "#93000a",
+                      "on-secondary-fixed-variant": "#543a74",
+                      "surface-bright": "#f7f9ff",
+                      "secondary-fixed-dim": "#d9b9fd",
+                      "on-tertiary-fixed-variant": "#115136",
+                      "on-surface-variant": "#534346",
+                      "on-background": "#121d26",
+                      "surface-container-lowest": "#ffffff",
+                      "secondary-fixed": "#eedbff",
+                      "success-soft": "#E7F3EC",
+                      "on-secondary-container": "#624883",
+                      "subtle-text": "#9CA3AF",
+                      "surface": "#FFFFFF",
+                      "on-primary": "#ffffff",
+                      "tertiary-container": "#397456",
+                      "warning": "#B7791F",
+                      "on-tertiary-container": "#b8f7d2",
+                      "danger": "#B94A48",
+                      "on-primary-fixed-variant": "#762e46",
+                      "on-secondary-fixed": "#270c46",
+                      "muted-text": "#6B7280",
+                      "error": "#ba1a1a",
+                      "primary-fixed-dim": "#ffb1c5",
+                      "tertiary": "#1e5b3f",
+                      "danger-soft": "#FCE8E7",
+                      "on-secondary": "#ffffff",
+                      "outline-variant": "#d8c1c5",
+                      "on-tertiary": "#ffffff",
+                      "on-surface": "#121d26",
+                      "on-error": "#ffffff",
+                      "on-primary-container": "#ffe2e7"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.25rem",
+                      "lg": "0.5rem",
+                      "xl": "0.75rem",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "sm": "8px",
+                      "lg": "24px",
+                      "xs": "4px",
+                      "unit": "4px",
+                      "container-max-dashboard": "1200px",
+                      "md": "16px",
+                      "container-max-editor": "760px",
+                      "container-max-form": "720px",
+                      "xl": "40px"
+              },
+              "fontFamily": {
+                      "label-sm": ["Inter"],
+                      "headline-lg": ["Inter"],
+                      "headline-md": ["Inter"],
+                      "body-md": ["Inter"],
+                      "display": ["Inter"],
+                      "body-sm": ["Inter"],
+                      "body-editor": ["Inter"],
+                      "label-md": ["Inter"],
+                      "body-lg": ["Inter"]
+              },
+              "fontSize": {
+                      "label-sm": ["12px", { "lineHeight": "1.2", "letterSpacing": "0.02em", "fontWeight": "500" }],
+                      "headline-lg": ["24px", { "lineHeight": "1.3", "fontWeight": "600" }],
+                      "headline-md": ["20px", { "lineHeight": "1.4", "fontWeight": "600" }],
+                      "body-md": ["16px", { "lineHeight": "1.5", "fontWeight": "400" }],
+                      "display": ["32px", { "lineHeight": "1.2", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                      "body-sm": ["14px", { "lineHeight": "1.5", "fontWeight": "400" }],
+                      "body-editor": ["17px", { "lineHeight": "1.8", "fontWeight": "400" }],
+                      "label-md": ["14px", { "lineHeight": "1.2", "letterSpacing": "0.01em", "fontWeight": "600" }],
+                      "body-lg": ["18px", { "lineHeight": "1.6", "fontWeight": "400" }]
+              }
+            }
+          }
+        }
+    </script>
+</head>
+<body class="bg-background text-on-background font-body-md text-body-md min-h-screen flex flex-col antialiased selection:bg-primary-soft selection:text-primary-dark">
+<!-- Suppressed App Shell (Top/Side/Bottom Nav) because this is a Linear/Transactional Onboarding flow -->
+<!-- Main Canvas -->
+<main class="flex flex-col items-center p-md md:p-xl w-full py-xl">
+<div class="max-w-[760px] w-full flex flex-col gap-xl">
+<!-- Header Section -->
+<header class="flex flex-col items-center text-center gap-sm mt-8 md:mt-0">
+<span class="font-headline-md text-headline-md text-primary mb-4 tracking-tight">VibeNovel - Workspace Penulis Serial</span>
+<h1 class="font-display text-display text-on-surface">Kamu mulai dari mana?</h1>
+<p class="font-body-lg text-body-lg text-on-surface-variant max-w-lg">
+                    Ruang menulismu sudah siap. Pilih jalur yang paling sesuai dengan kondisimu saat ini.
+                </p>
+</header>
+<!-- Options Grid (Bento Style) -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-md md:gap-lg w-full">
+<!-- Option 4: Lanjut Menulis (Prominent, spans 2 cols on desktop) -->
+<button class="col-span-1 md:col-span-2 group bg-surface border border-border rounded-[20px] p-lg flex flex-col sm:flex-row items-start sm:items-center gap-md text-left transition-all duration-300 hover:border-primary-container hover:shadow-[0_8px_24px_rgba(31,41,51,0.08)] hover:-translate-y-1 focus:outline-none focus:ring-2 focus:ring-primary-soft">
+<div class="bg-primary-soft text-primary p-md rounded-xl flex-shrink-0 group-hover:scale-110 transition-transform duration-300">
+<span class="material-symbols-outlined icon-fill text-[32px]">history_edu</span>
+</div>
+<div class="flex-grow">
+<h2 class="font-headline-md text-headline-md text-on-surface mb-xs group-hover:text-primary transition-colors">Aku ingin lanjut menulis</h2>
+<p class="font-body-md text-body-md text-muted-text">Rangkai kembali kepingan rindu di bab terakhirmu dan tuntaskan kisah cinta yang menyentuh hati.</p>
+</div>
+<span class="material-symbols-outlined text-border group-hover:text-primary transition-colors hidden sm:block">arrow_forward</span>
+</button>
+<!-- Option 1: Belum punya ide -->
+<button class="group bg-surface border border-border rounded-[20px] p-lg flex flex-col gap-md text-left transition-all duration-300 hover:border-primary-container hover:shadow-[0_8px_24px_rgba(31,41,51,0.08)] hover:-translate-y-1 focus:outline-none focus:ring-2 focus:ring-primary-soft">
+<div class="bg-surface-container-low text-secondary p-sm rounded-lg w-fit group-hover:bg-accent-soft transition-colors">
+<span class="material-symbols-outlined icon-fill">auto_awesome</span>
+</div>
+<div>
+<h2 class="font-headline-md text-headline-md text-on-surface mb-xs group-hover:text-secondary transition-colors">Aku belum punya ide</h2>
+<p class="font-body-md text-body-md text-muted-text">Bangun chemistry manis antara dua insan melalui obrolan hangat dengan asisten kreatif AI kami.</p>
+</div>
+</button>
+<!-- Option 2: Punya ide kasar -->
+<button class="group bg-surface border border-border rounded-[20px] p-lg flex flex-col gap-md text-left transition-all duration-300 hover:border-primary-container hover:shadow-[0_8px_24px_rgba(31,41,51,0.08)] hover:-translate-y-1 focus:outline-none focus:ring-2 focus:ring-primary-soft">
+<div class="bg-warning-soft text-warning p-sm rounded-lg w-fit group-hover:bg-[#fcefc7] transition-colors">
+<span class="material-symbols-outlined icon-fill">edit_note</span>
+</div>
+<div>
+<h2 class="font-headline-md text-headline-md text-on-surface mb-xs group-hover:text-warning transition-colors">Aku punya ide kasar</h2>
+<p class="font-body-md text-body-md text-muted-text">Ubah coretan konflik rumah tangga atau debaran cinta pertamamu menjadi alur cerita yang memikat.</p>
+</div>
+</button>
+<!-- Option 3: Sudah punya draft (Disabled / Segera Hadir) -->
+<div class="relative bg-background border border-outline-variant/40 rounded-[20px] p-lg flex flex-col gap-md text-left opacity-75 cursor-not-allowed">
+<div class="absolute top-md right-md bg-surface-variant text-on-surface-variant font-label-sm text-label-sm px-3 py-1 rounded-full">
+                        Segera hadir
+                    </div>
+<div class="text-subtle-text p-sm rounded-lg w-fit">
+<span class="material-symbols-outlined">upload_file</span>
+</div>
+<div>
+<h2 class="font-headline-md text-headline-md text-on-surface-variant mb-xs">Aku sudah punya draft</h2>
+<p class="font-body-md text-body-md text-subtle-text">Bawa naskah romansamu yang setengah jadi untuk dipoles hingga setiap emosinya terasa nyata.</p>
+</div>
+</div>
+<!-- Option 5: Cek cerita (Disabled / Segera Hadir) -->
+<div class="relative bg-background border border-outline-variant/40 rounded-[20px] p-lg flex flex-col gap-md text-left opacity-75 cursor-not-allowed">
+<div class="absolute top-md right-md bg-surface-variant text-on-surface-variant font-label-sm text-label-sm px-3 py-1 rounded-full">
+                        Segera hadir
+                    </div>
+<div class="text-subtle-text p-sm rounded-lg w-fit">
+<span class="material-symbols-outlined">analytics</span>
+</div>
+<div>
+<h2 class="font-headline-md text-headline-md text-on-surface-variant mb-xs">Aku hanya mau cek cerita</h2>
+<p class="font-body-md text-body-md text-subtle-text">Bedah dinamika karakter dan kedalaman emosi ceritamu untuk memastikan pembaca ikut terbawa suasana.</p>
+</div>
+</div>
+</div>
+ <!-- Bottom padding spacer -->
+</div>
+</main>
+
+
+</body></html>
