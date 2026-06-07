@@ -1,11 +1,20 @@
+import type { SafeContextPreview } from "@/hooks/useWriteRoomData";
 import type { ChapterDraft } from "@/types";
 import { Button, Card, Icon } from "@/components/ui";
 
 export interface WriterAssistantPanelProps {
   draft: ChapterDraft;
+  contextPreview?: SafeContextPreview | null;
+  onBuildContext?: () => void;
+  buildingContext?: boolean;
 }
 
-export function WriterAssistantPanel({ draft }: WriterAssistantPanelProps) {
+export function WriterAssistantPanel({
+  draft,
+  contextPreview = null,
+  onBuildContext,
+  buildingContext = false,
+}: WriterAssistantPanelProps) {
   const { pageCopy, storyChecks } = draft;
 
   return (
@@ -26,6 +35,62 @@ export function WriterAssistantPanel({ draft }: WriterAssistantPanelProps) {
       </div>
 
       <div className="flex flex-col gap-6 p-lg">
+        {onBuildContext ? (
+          <div className="flex flex-col gap-3">
+            <h3 className="font-label-md text-label-md uppercase tracking-wider text-muted-text text-[11px]">
+              Konteks Aman Bab Ini
+            </h3>
+            <Button
+              variant="ghost"
+              className="w-full rounded-xl border border-primary-soft bg-primary-soft/20 py-3 text-primary hover:bg-primary-soft/40"
+              leftIcon={<Icon name="shield" size={20} />}
+              disabled={buildingContext}
+              onClick={onBuildContext}
+            >
+              {buildingContext ? "Menyiapkan…" : "Siapkan Konteks Aman"}
+            </Button>
+            {contextPreview ? (
+              <Card padding="sm" shadow={false} className="rounded-xl border border-border bg-surface-soft">
+                <p className="font-label-md text-label-md text-on-surface">{contextPreview.chapterTitle}</p>
+                <p className="mt-1 font-body-sm text-body-sm text-muted-text">
+                  Bab {contextPreview.chapterNumber}
+                </p>
+                <ul className="mt-3 space-y-1 font-body-sm text-body-sm text-on-surface-variant">
+                  <li>Item wajib: {contextPreview.mustIncludeCount}</li>
+                  <li>Item dilarang: {contextPreview.mustNotIncludeCount}</li>
+                  <li>Cek cerita aman: {contextPreview.storyCheckLabels.length}</li>
+                  {contextPreview.packetHashShort ? (
+                    <li>Hash paket: {contextPreview.packetHashShort}…</li>
+                  ) : null}
+                </ul>
+                {contextPreview.direction ? (
+                  <p className="mt-3 font-body-sm text-body-sm text-on-surface-variant">
+                    {contextPreview.direction}
+                  </p>
+                ) : null}
+                {contextPreview.storyCheckLabels.length > 0 ? (
+                  <div className="mt-3 flex flex-wrap gap-1">
+                    {contextPreview.storyCheckLabels.map((label) => (
+                      <span
+                        key={label}
+                        className="rounded-full bg-success-soft px-2 py-0.5 font-label-sm text-label-sm text-tertiary"
+                      >
+                        {label}
+                      </span>
+                    ))}
+                  </div>
+                ) : null}
+              </Card>
+            ) : (
+              <p className="font-body-sm text-body-sm text-muted-text">
+                Siapkan konteks aman sebelum menyimpan narasi. Tidak menampilkan data teknis internal.
+              </p>
+            )}
+          </div>
+        ) : null}
+
+        {onBuildContext ? <div className="h-px w-full bg-border/50" /> : null}
+
         <div className="flex flex-col gap-3">
           <h3 className="font-label-md text-label-md uppercase tracking-wider text-muted-text text-[11px]">
             Bantu Menulis

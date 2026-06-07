@@ -9,6 +9,13 @@ export interface WriterMobileLayoutProps {
   activeBeat: Beat;
   activeBeatId: string;
   onSelectBeat: (beatId: string) => void;
+  editable?: boolean;
+  proseText?: string;
+  onProseChange?: (text: string) => void;
+  onSave?: () => void;
+  saving?: boolean;
+  onFinish?: () => void;
+  finishing?: boolean;
 }
 
 export function WriterMobileLayout({
@@ -16,9 +23,17 @@ export function WriterMobileLayout({
   activeBeat,
   activeBeatId,
   onSelectBeat,
+  editable = false,
+  proseText,
+  onProseChange,
+  onSave,
+  saving = false,
+  onFinish,
+  finishing = false,
 }: WriterMobileLayoutProps) {
   const { pageCopy } = draft;
-  const paragraphs = activeBeat.prose.split("\n\n").filter(Boolean);
+  const displayProse = proseText ?? activeBeat.prose;
+  const paragraphs = displayProse.split("\n\n").filter(Boolean);
   const outlineRoute = ROUTES.project.outline(draft.projectId);
 
   return (
@@ -46,12 +61,14 @@ export function WriterMobileLayout({
             {draft.chapterStatus === "draft" ? "Draft" : "Selesai"}
           </Badge>
         </div>
-        <Link
-          to={draft.summaryRoute}
-          className="min-h-[44px] px-2 font-label-md text-label-md font-bold text-primary transition-colors hover:text-primary-dark"
+        <button
+          type="button"
+          onClick={onFinish}
+          disabled={finishing}
+          className="min-h-[44px] px-2 font-label-md text-label-md font-bold text-primary transition-colors hover:text-primary-dark disabled:opacity-60"
         >
-          {pageCopy.mobileSummaryCta}
-        </Link>
+          {finishing ? "…" : pageCopy.mobileSummaryCta}
+        </button>
       </header>
 
       {/* Compact beat selector */}
@@ -101,17 +118,29 @@ export function WriterMobileLayout({
         </Card>
 
         <article className="mx-auto w-full max-w-full outline-none">
-          {paragraphs.map((paragraph, index) => (
-            <p
-              key={index}
-              className="mb-6 font-body-editor text-[17px] leading-[1.8] text-on-surface"
-            >
-              {paragraph}
-            </p>
-          ))}
-          <p className="mb-6 font-body-editor text-[17px] italic leading-[1.8] text-muted-text">
-            ... (Kursor berkedip di sini)
-          </p>
+          {editable && onProseChange ? (
+            <textarea
+              value={displayProse}
+              onChange={(event) => onProseChange(event.target.value)}
+              className="mb-6 min-h-[280px] w-full resize-y border-0 bg-transparent font-body-editor text-[17px] leading-[1.8] text-on-surface outline-none"
+              placeholder="Tulis narasi adegan di sini…"
+              aria-label={`Narasi adegan ${activeBeat.number}`}
+            />
+          ) : (
+            <>
+              {paragraphs.map((paragraph, index) => (
+                <p
+                  key={index}
+                  className="mb-6 font-body-editor text-[17px] leading-[1.8] text-on-surface"
+                >
+                  {paragraph}
+                </p>
+              ))}
+              <p className="mb-6 font-body-editor text-[17px] italic leading-[1.8] text-muted-text">
+                ... (Kursor berkedip di sini)
+              </p>
+            </>
+          )}
         </article>
 
         <p className="font-body-sm text-body-sm text-muted-text">
@@ -125,11 +154,12 @@ export function WriterMobileLayout({
           <Button
             variant="primary"
             pill
-            disabled
+            disabled={!editable || !onSave || saving}
+            onClick={onSave}
             className="min-h-[44px] gap-2 px-5"
-            leftIcon={<Icon name="auto_awesome" size={20} filled />}
+            leftIcon={<Icon name={editable ? "save" : "auto_awesome"} size={20} filled={!editable} />}
           >
-            {pageCopy.mobileWriteAction}
+            {saving ? "…" : editable ? pageCopy.saveLabel : pageCopy.mobileWriteAction}
           </Button>
           <Button
             variant="ghost"

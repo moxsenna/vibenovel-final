@@ -1,15 +1,32 @@
-import { Link } from "react-router-dom";
 import type { Beat, ChapterDraft } from "@/types";
 import { Button, Card, Icon } from "@/components/ui";
 
 export interface WriterEditorPanelProps {
   draft: ChapterDraft;
   activeBeat: Beat;
+  editable?: boolean;
+  proseText?: string;
+  onProseChange?: (text: string) => void;
+  onSave?: () => void;
+  saving?: boolean;
+  onFinish?: () => void;
+  finishing?: boolean;
 }
 
-export function WriterEditorPanel({ draft, activeBeat }: WriterEditorPanelProps) {
+export function WriterEditorPanel({
+  draft,
+  activeBeat,
+  editable = false,
+  proseText,
+  onProseChange,
+  onSave,
+  saving = false,
+  onFinish,
+  finishing = false,
+}: WriterEditorPanelProps) {
   const { pageCopy } = draft;
-  const paragraphs = activeBeat.prose.split("\n\n").filter(Boolean);
+  const displayProse = proseText ?? activeBeat.prose;
+  const paragraphs = displayProse.split("\n\n").filter(Boolean);
 
   return (
     <div className="flex flex-1 justify-center overflow-y-auto bg-background p-4 md:p-lg">
@@ -45,10 +62,11 @@ export function WriterEditorPanel({ draft, activeBeat }: WriterEditorPanelProps)
                 variant="ghost"
                 size="sm"
                 className="ml-1 border border-primary-soft bg-surface text-primary shadow-sm"
-                disabled
+                disabled={!editable || !onSave || saving}
+                onClick={onSave}
                 leftIcon={<Icon name="save" size={18} />}
               >
-                {pageCopy.saveLabel}
+                {saving ? "Menyimpan…" : pageCopy.saveLabel}
               </Button>
               <Button
                 variant="ghost"
@@ -84,26 +102,36 @@ export function WriterEditorPanel({ draft, activeBeat }: WriterEditorPanelProps)
           padding="lg"
           className="min-h-[480px] cursor-text rounded-xl border-border p-6 shadow-sm transition-shadow focus-within:ring-1 focus-within:ring-primary/20 md:p-10 lg:p-[60px]"
         >
-          <div className="font-body-editor text-body-editor leading-[1.8] text-on-surface outline-none">
-            {paragraphs.map((paragraph, index) => (
-              <p key={index} className="mb-4 whitespace-pre-wrap">
-                {paragraph}
-              </p>
-            ))}
-            <p className="italic text-muted-text">... (Kursor berkedip di sini)</p>
-          </div>
+          {editable && onProseChange ? (
+            <textarea
+              value={displayProse}
+              onChange={(event) => onProseChange(event.target.value)}
+              className="min-h-[400px] w-full resize-y border-0 bg-transparent font-body-editor text-body-editor leading-[1.8] text-on-surface outline-none"
+              placeholder="Tulis narasi adegan di sini…"
+              aria-label={`Narasi adegan ${activeBeat.number}`}
+            />
+          ) : (
+            <div className="font-body-editor text-body-editor leading-[1.8] text-on-surface outline-none">
+              {paragraphs.map((paragraph, index) => (
+                <p key={index} className="mb-4 whitespace-pre-wrap">
+                  {paragraph}
+                </p>
+              ))}
+              <p className="italic text-muted-text">... (Kursor berkedip di sini)</p>
+            </div>
+          )}
         </Card>
 
         <div className="flex justify-end pb-4">
-          <Link to={draft.summaryRoute}>
-            <Button
-              variant="primary"
-              className="rounded-xl shadow-md"
-              rightIcon={<Icon name="arrow_forward" size={18} />}
-            >
-              {pageCopy.finishCta}
-            </Button>
-          </Link>
+          <Button
+            variant="primary"
+            className="rounded-xl shadow-md"
+            disabled={finishing}
+            onClick={onFinish}
+            rightIcon={<Icon name="arrow_forward" size={18} />}
+          >
+            {finishing ? "Menandai…" : pageCopy.finishCta}
+          </Button>
         </div>
       </div>
     </div>

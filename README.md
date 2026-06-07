@@ -47,7 +47,7 @@ npm run dev:web    # frontend → http://localhost:5173
 npm run dev:api    # API lokal → http://127.0.0.1:8787
 ```
 
-**Web + API integration (Task 2.13, 3.6, 4.6):** salin `apps/web/.env.example` → `apps/web/.env.local`. Default `VITE_USE_MOCKS=true` (UI tetap mock). Set `VITE_USE_MOCKS=false` + login Supabase untuk API mode: dashboard/settings/foundation (2.13), intake/concepts/foundation flow (3.6), serta outline cerita generate/edit/approve/lock (4.6).
+**Web + API integration (Task 2.13, 3.6, 4.6, 5.5):** salin `apps/web/.env.example` → `apps/web/.env.local`. Default `VITE_USE_MOCKS=true` (UI tetap mock). Set `VITE_USE_MOCKS=false` + login Supabase untuk API mode: dashboard/settings/foundation (2.13), intake/concepts/foundation flow (3.6), outline cerita generate/edit/approve/lock (4.6), serta ruang tulis session/beats/prose/context preview (5.5).
 
 ### Perintah root
 
