@@ -14,6 +14,7 @@ import { registerIntakeRoutes } from "./intake.js";
 import { registerConceptRoutes } from "./concepts.js";
 import { registerOutlineRoutes } from "./outline.js";
 import { registerWriteRoutes } from "./write.js";
+import { registerSummaryRoutes } from "./summary.js";
 
 export function registerRoutes(app: Hono<AppEnv>): void {
   registerHealthRoutes(app);
@@ -30,4 +31,5 @@ export function registerRoutes(app: Hono<AppEnv>): void {
   registerConceptRoutes(app);
   registerOutlineRoutes(app);
   registerWriteRoutes(app);
+  registerSummaryRoutes(app);
 }

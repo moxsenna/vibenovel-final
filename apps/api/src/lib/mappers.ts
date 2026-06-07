@@ -6,6 +6,11 @@ import type {
   ChapterProseVersion,
   ChapterOutline,
   ChapterOutlineMarker,
+  ChapterSummary,
+  ChapterSummaryItem,
+  ChapterSummaryItemSeverity,
+  ChapterSummaryItemType,
+  ChapterSummaryStatus,
   ChapterWritingState,
   ChapterWritingStatus,
   Character,
@@ -23,6 +28,7 @@ import type {
   RelationshipSpeechRule,
   StoryConcept,
   StoryFoundation,
+  SummarySafetyFlags,
   UserProfile,
   WritingSession,
   WritingSessionStatus,
@@ -829,3 +835,90 @@ export function mapChapterProseVersionRow(row: ChapterProseVersionRow): ChapterP
     createdAt: row.created_at,
   };
 }
+
+export interface ChapterSummaryRow {
+  id: string;
+  project_id: string;
+  chapter_outline_id: string;
+  writing_session_id: string | null;
+  current_prose_version_ids: string[];
+  status: string;
+  chapter_number: number;
+  title: string;
+  synopsis: string;
+  mini_victory: string | null;
+  emotional_outcome: string | null;
+  ending_hook: string | null;
+  word_count: number;
+  summary_version: number;
+  is_current: boolean;
+  safety_flags: JsonObject | unknown;
+  metadata: JsonObject | unknown;
+  approved_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export function mapChapterSummaryRow(row: ChapterSummaryRow): ChapterSummary {
+  return {
+    id: row.id,
+    projectId: row.project_id,
+    chapterOutlineId: row.chapter_outline_id,
+    writingSessionId: row.writing_session_id,
+    currentProseVersionIds: row.current_prose_version_ids ?? [],
+    status: row.status as ChapterSummaryStatus,
+    chapterNumber: row.chapter_number,
+    title: row.title,
+    synopsis: row.synopsis,
+    miniVictory: row.mini_victory,
+    emotionalOutcome: row.emotional_outcome,
+    endingHook: row.ending_hook,
+    wordCount: row.word_count,
+    summaryVersion: row.summary_version,
+    isCurrent: row.is_current,
+    safetyFlags: parseJsonObject(row.safety_flags) as SummarySafetyFlags,
+    metadata: parseJsonObject(row.metadata),
+    approvedAt: row.approved_at,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
+export interface ChapterSummaryItemRow {
+  id: string;
+  project_id: string;
+  chapter_summary_id: string;
+  item_type: string;
+  severity: string;
+  title: string;
+  body: string;
+  related_character_id: string | null;
+  related_fact_id: string | null;
+  related_open_loop_id: string | null;
+  related_reveal_id: string | null;
+  metadata: JsonObject | unknown;
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export function mapChapterSummaryItemRow(row: ChapterSummaryItemRow): ChapterSummaryItem {
+  return {
+    id: row.id,
+    projectId: row.project_id,
+    chapterSummaryId: row.chapter_summary_id,
+    itemType: row.item_type as ChapterSummaryItemType,
+    severity: row.severity as ChapterSummaryItemSeverity,
+    title: row.title,
+    body: row.body,
+    relatedCharacterId: row.related_character_id,
+    relatedFactId: row.related_fact_id,
+    relatedOpenLoopId: row.related_open_loop_id,
+    relatedRevealId: row.related_reveal_id,
+    metadata: parseJsonObject(row.metadata),
+    sortOrder: row.sort_order,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+

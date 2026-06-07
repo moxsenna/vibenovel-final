@@ -602,6 +602,58 @@ Sets selected version `is_current=true`, clears other current versions for same 
 
 **Deferred Task 5.4:** WritePage integration, OpenRouter, AI generation, full validator, chapter summary/canon update.
 
+### Chapter Summary Generation API (Task 6.2)
+
+All endpoints require Bearer JWT. Ownership via `getOwnedProjectRow` + row `project_id` match — cross-user → `404`.
+
+**Summary artifact — not canon:** `chapter_summaries` and `chapter_summary_items` are review documents only. Does **not** write `facts`, `characters`, `speech_rules`, `open_loops`, `planned_reveals`, or create `ai_proposals` / `chapter_deltas`. Does **not** mark `chapter_writing_states.summarized` or approve summary. No OpenRouter, no AI generation.
+
+**Gate (409) for `POST .../summary/generate`:**
+
+| Requirement | `details.missing` |
+|---|---|
+| `writing_sessions.status = ready_for_summary` | `session_ready_for_summary` |
+| `chapter_writing_states.status = ready_for_summary` | `chapter_ready_for_summary` |
+| ≥1 current prose version on a beat | `current_prose_required` |
+| Locked outline plan | `outline_plan_locked` |
+| Locked foundation | `foundation_locked` |
+| Write room phase gates | `outline_locked` (via shared gate) |
+
+**`POST /api/projects/:id/summary/generate`**
+
+Body:
+
+```json
+{
+  "chapterOutlineId": "required-uuid",
+  "writingSessionId": "optional-uuid",
+  "regenerate": false
+}
+```
+
+- Deterministic stub (`summary_stub_v1`) from current prose + beat metadata + chapter outline fields.
+- `regenerate=false` + current summary exists → returns existing (`created=false`, `200`).
+- `regenerate=true` → supersedes current (`is_current=false`, `status=superseded`), inserts `summary_version+1`.
+- `regenerate=true` on `approved` summary → `409`.
+- Prose with internal leak markers → `400` (no summary insert).
+- Returns `{ summary, items, created }` — no raw `proseText`, no `planningTruth`, no `packet_json`.
+
+**`GET /api/projects/:id/summary`**
+
+Query: `chapterOutlineId`, `status`. Default: current summaries (`is_current=true`) with `itemCount`. Ordered by `chapterNumber`.
+
+**`GET /api/projects/:id/summary/:summaryId`**
+
+Returns `{ summary, items }` — owner-only, no prose text.
+
+**`GET /api/projects/:id/summary/by-chapter/:chapterOutlineId`**
+
+Returns current summary for chapter or `{ summary: null, items: [] }`.
+
+**Deferred Task 6.2:** delta extraction, `ai_proposals` enqueue, summary approval, SummaryPage integration, canon promotion.
+
+Local smoke: `npm run smoke:api:sprint6` (`scripts/sprint6-smoke-api.ps1`).
+
 ### Safety smoke tests (Task 5.6)
 
 Local verification script: `scripts/sprint5-smoke-api.ps1` (run with `supabase start`, `supabase db reset`, `npm run dev:api`).
