@@ -11,8 +11,8 @@ VibeNovel adalah **AI Serial Fiction Production OS** — bukan chatbot novel bia
 ```txt
 vibenovel-unified-blueprint/
 ├── apps/
-│   ├── web/          ✅ Frontend React — Sprint 1 UI complete (mock data)
-│   └── api/          ✅ Backend scaffold — Hono/Cloudflare Worker (Task 2.5)
+│   ├── web/          ✅ Frontend React — Sprint 1 UI + minimal API integration (Task 2.13)
+│   └── api/          ✅ Backend API — Hono/Cloudflare Worker (Task 2.5–2.12)
 ├── packages/
 │   ├── core/         ⏳ Placeholder — story/AI engine (Sprint 4–6+)
 │   └── shared/       ✅ Shared domain types & API contracts (Task 2.1)
@@ -25,8 +25,8 @@ vibenovel-unified-blueprint/
 
 | Folder | Status Sprint 2 | Keterangan |
 |---|---|---|
-| `apps/web` | **Sprint 1 + Task 2.13** | UI parity Stitch; dashboard/settings/foundation bisa baca API dengan fallback mock |
-| `apps/api` | **Scaffold (Task 2.5)** | Hono Worker: `/health`, CORS, auth guard shell — belum CRUD/auth penuh |
+| `apps/web` | **Sprint 2 complete** | UI parity Stitch; dashboard/settings/foundation baca API + fallback mock |
+| `apps/api` | **Sprint 2 complete** | Auth, projects, settings, foundation, canon APIs, proposals, credits read |
 | `packages/shared` | **Implemented (Task 2.1)** | Domain types, enums, API contracts |
 | `packages/core` | Placeholder | Engine AI/story — nanti |
 | `supabase` | **Migration + seed (Task 2.3/2.4)** | 10 tabel, RLS, demo seed lokal — `supabase db reset` verified |
@@ -101,9 +101,12 @@ Sudah ada:
 
 ---
 
-## Sprint 2 — progress (data model & API shell)
+## Sprint 2 — selesai ✅
 
-**Rencana:** [`docs/27-sprint-2-data-model-implementation-plan.md`](docs/27-sprint-2-data-model-implementation-plan.md)
+**Data model, API shell, canon infrastructure, minimal web integration.**
+
+**Rencana:** [`docs/27-sprint-2-data-model-implementation-plan.md`](docs/27-sprint-2-data-model-implementation-plan.md)  
+**Laporan penutupan:** [`docs/29-sprint-2-verification-report.md`](docs/29-sprint-2-verification-report.md)
 
 | Task | Status | Deliverable |
 |---|---|---|
@@ -111,24 +114,30 @@ Sudah ada:
 | 2.2 Supabase setup | ✅ | `config.toml`, RLS policy draft |
 | 2.3 Core migration | ✅ | `00001_sprint2_core.sql` — 10 tabel + RLS |
 | 2.4 Seed demo | ✅ | `seed.sql` — "Istri yang Mereka Buang" |
-| 2.5 API scaffold | ✅ | `apps/api` — health, CORS, auth guard shell |
-| 2.5b README hygiene | ✅ | Dokumentasi & build scripts diselaraskan |
-| **2.6 Auth shell** | ⏳ **Berikutnya** | Register/login, profiles sync, `/api/me` penuh |
+| 2.5 API scaffold | ✅ | Hono Worker: health, CORS, error format |
+| 2.6 Auth shell | ✅ | JWT auth, profiles sync, `GET /api/me` |
+| 2.7 Projects API | ✅ | CRUD + soft archive |
+| 2.8 Settings API | ✅ | GET/PUT project settings |
+| 2.9 Foundation API | ✅ | Foundation + characters + facts |
+| 2.10 Speech rules API | ✅ | CRUD + soft deactivate |
+| 2.11 AI proposals API | ✅ | Queue lifecycle (accept status-only) |
+| 2.12 Credit balance read | ✅ | `GET /api/credits/balance` |
+| 2.13 Web integration | ✅ | Dashboard/settings/foundation + mock fallback |
+| 2.14 Verification report | ✅ | `docs/29` + smoke tests |
 
-Belum ada (sengaja — bukan Sprint 2 Task 2.5):
+Belum ada (sengaja — defer Sprint 3+):
 
-- auth UI, project CRUD API, settings/foundation persistence
-- frontend terhubung ke API
-- OpenRouter / AI generation, credit deduction production
-- Cloudflare deploy remote
-
-**Catatan:** `apps/web` masih memakai mock data. API scaffold berjalan terpisah; integrasi masuk task berikutnya.
+- AI generation / OpenRouter
+- Credit ledger / deduction
+- Outline / chapter / prose persistence
+- Publish API, validator, reveal gate
+- Remote Cloudflare deploy
 
 ---
 
 ## Langkah berikutnya
 
-**Task 2.6 — Auth Shell + Profiles:** JWT validation via Supabase, register/login/logout routes, `profiles` sync on first sign-in, `GET /api/me` dengan profile + credit balance.
+**Sprint 3 — Story Foundation Flow:** intake + concept + foundation real, proposal queue dengan canon promotion — lihat [`docs/17-roadmap-sprint-plan-mvp-to-full.md`](docs/17-roadmap-sprint-plan-mvp-to-full.md).
 
 ---
 
@@ -142,7 +151,8 @@ Belum ada (sengaja — bukan Sprint 2 Task 2.5):
 4. `docs/17-roadmap-sprint-plan-mvp-to-full.md`
 5. `docs/21-stitch-frontend-parity-plan.md`
 6. `docs/22-sprint-1-verification-report.md` — status penutupan Sprint 1
-7. `docs/27-sprint-2-data-model-implementation-plan.md` — Sprint 2 aktif
+7. `docs/29-sprint-2-verification-report.md` — status penutupan Sprint 2
+8. `docs/27-sprint-2-data-model-implementation-plan.md` — rencana Sprint 2
 
 ### Untuk AI coding agent
 
@@ -152,8 +162,9 @@ Belum ada (sengaja — bukan Sprint 2 Task 2.5):
 4. `docs/17-roadmap-sprint-plan-mvp-to-full.md`
 5. `docs/19-implementation-checklist.md`
 6. `docs/22-sprint-1-verification-report.md`
-7. `docs/27-sprint-2-data-model-implementation-plan.md`
-8. Dokumen domain sesuai task.
+7. `docs/29-sprint-2-verification-report.md`
+8. `docs/27-sprint-2-data-model-implementation-plan.md`
+9. Dokumen domain sesuai task.
 
 ---
 
