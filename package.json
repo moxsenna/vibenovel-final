@@ -10,7 +10,9 @@
   "scripts": {
     "dev:web": "npm run dev -w @vibenovel/web",
     "build:web": "npm run build -w @vibenovel/web",
-    "typecheck": "npm run typecheck -w @vibenovel/web",
+    "build:shared": "npm run build -w @vibenovel/shared",
+    "typecheck": "npm run typecheck -w @vibenovel/shared && npm run typecheck -w @vibenovel/web",
+    "typecheck:shared": "npm run typecheck -w @vibenovel/shared",
     "typecheck:web": "npm run typecheck -w @vibenovel/web",
     "preview:web": "npm run preview -w @vibenovel/web"
   },

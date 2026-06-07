@@ -165,7 +165,22 @@ Read:
 1. `docs/18-agent-build-instructions.md`
 2. `docs/19-implementation-checklist.md`
 3. `docs/17-roadmap-sprint-plan-mvp-to-full.md`
-4. the domain document related to the feature
+4. `.agents/rules/09-agent-work-logs.md`
+5. `.agent-logs/README.md`
+6. existing log for the same task under `.agent-logs/<sprint>/` if any
+7. the domain document related to the feature
+
+After the task: create or update `.agent-logs/<sprint>/task-<number>-<slug>.md` per `09-agent-work-logs.md`.
+
+## Agent work logs (handoff)
+
+Read:
+
+1. `.agents/rules/09-agent-work-logs.md`
+2. `.agent-logs/README.md`
+3. prior logs in `.agent-logs/<sprint>/` for the active sprint
+
+Use when: starting or continuing any non-trivial sprint task; before assuming prior work is complete.
 
 ## Mandatory rule
 

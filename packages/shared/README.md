@@ -1,40 +1,34 @@
-# packages/shared — Shared Types & Schema (Placeholder)
+# packages/shared — Shared Types & Contracts
 
-## Fungsi folder ini
+Kontrak data bersama antar `apps/web`, `apps/api`, dan migrasi database Sprint 2+.
 
-Kontrak data **bersama** antar `apps/web`, `apps/api`, dan `packages/core`:
+## Status
 
-- TypeScript types / Zod schemas
-- DTO request/response API
-- enum status (project, chapter, validation, credits)
-- shared constants (model tier labels, route names)
+**Task 2.1 — implemented.** TypeScript types dan enums domain Sprint 2; belum ada Zod schema atau runtime validation.
 
-Tujuan: satu sumber kebenaran tipe agar frontend dan backend tidak drift.
+## Isi package
 
-## Status saat ini
-
-**Belum diimplementasikan.**
-
-Sprint 1: types sementara hidup di `apps/web/src/types/` dan `apps/web/src/mocks/` untuk keperluan UI dummy.
-
-## Kapan akan dipakai
-
-| Sprint | Migrasi |
+| File | Isi |
 |---|---|
-| Sprint 2 | Project & foundation types → shared |
-| Sprint 3–4 | Story foundation, outline, beat types |
-| Sprint 5–6 | Chapter, prose version, chapter delta types |
-| Sprint 7+ | Publish package, usage/credits types |
+| `src/utils.ts` | `ID`, `ISODateTime`, `JsonValue`, `JsonObject`, `Timestamps` |
+| `src/enums.ts` | Const objects + union types (quality tier, proposal status, fact category, dll.) |
+| `src/domain.ts` | Entity interfaces: `Project`, `StoryFoundation`, `Fact`, `AiProposal`, … |
+| `src/api.ts` | `ApiResponse`, `PaginationParams`, `PaginatedResponse` |
+| `src/index.ts` | Barrel export |
 
-Lihat `docs/12-database-schema-and-data-model.md`.
+## Canon guardrails
 
-## Larangan untuk agent / developer
+- `facts` hanya untuk fakta confirmed/sah (`user`, `system`, `accepted_proposal`).
+- Output AI harus masuk `ai_proposals` dulu — jangan menulis langsung ke `facts`.
+- Mode kualitas user-facing: `hemat` | `seimbang` | `terbaik` — bukan raw model ID.
 
-Jangan:
+## Scripts
 
-- menduplikasi schema di banyak folder tanpa rencana migrasi
-- mengedit migration production di `supabase/` tanpa sprint yang jelas
-- memindahkan semua types ke shared sebelum ada konsumen backend nyata
-- menghapus types di `apps/web` secara prematur tanpa update import
+```bash
+npm run typecheck:shared   # dari root
+npm run build:shared       # emit dist/
+```
 
-Saat shared package aktif, `apps/web` boleh re-export atau import dari `@vibenovel/shared`.
+## Konsumen
+
+Sprint 2.13+: `apps/web` dan `apps/api` impor dari `@vibenovel/shared`. Types Sprint 1 di `apps/web/src/types/` tetap ada sampai migrasi bertahap.
