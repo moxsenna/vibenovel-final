@@ -4,6 +4,7 @@ import type {
   Fact,
   Project,
   ProjectSettings,
+  RelationshipSpeechRule,
   StoryFoundation,
   UserProfile,
 } from "@vibenovel/shared";
@@ -231,6 +232,54 @@ export function mapFactRow(row: FactRow): Fact {
     acceptedFromProposalId: row.accepted_from_proposal_id,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
+  };
+}
+
+export interface SpeechRuleRow {
+  id: string;
+  project_id: string;
+  relationship_label: string;
+  character_a_id: string | null;
+  character_b_id: string | null;
+  rule_text: string;
+  examples: string[] | unknown;
+  status: string;
+  source: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export function mapSpeechRuleRow(row: SpeechRuleRow): RelationshipSpeechRule {
+  const examples = Array.isArray(row.examples) ? (row.examples as string[]) : null;
+  return {
+    id: row.id,
+    projectId: row.project_id,
+    relationshipLabel: row.relationship_label,
+    characterAId: row.character_a_id,
+    characterBId: row.character_b_id,
+    ruleText: row.rule_text,
+    examples,
+    status: row.status as RelationshipSpeechRule["status"],
+    source: row.source as RelationshipSpeechRule["source"],
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
+/** API response with task-friendly aliases. */
+export interface SpeechRuleResponse extends RelationshipSpeechRule {
+  fromCharacterId: RelationshipSpeechRule["characterAId"];
+  toCharacterId: RelationshipSpeechRule["characterBId"];
+  speechStyle: string;
+}
+
+export function mapSpeechRuleResponse(row: SpeechRuleRow): SpeechRuleResponse {
+  const base = mapSpeechRuleRow(row);
+  return {
+    ...base,
+    fromCharacterId: base.characterAId,
+    toCharacterId: base.characterBId,
+    speechStyle: base.ruleText,
   };
 }
 

@@ -1,6 +1,6 @@
 # apps/api — VibeNovel API (Sprint 2)
 
-Hono API on **Cloudflare Workers** — Supabase JWT auth, profile sync, projects, settings, foundation/characters/facts (Task 2.6–2.9).
+Hono API on **Cloudflare Workers** — Supabase JWT auth, projects, settings, foundation, speech rules (Task 2.6–2.10).
 
 ## Stack
 
@@ -30,6 +30,7 @@ apps/api/
       foundation.ts    # GET/PUT /api/projects/:id/foundation
       characters.ts    # CRUD /api/projects/:id/characters
       facts.ts         # CRUD /api/projects/:id/facts (soft deprecate)
+      speech-rules.ts  # CRUD /api/projects/:id/speech-rules
       index.ts
     services/
       profile.ts       # getOrCreateProfileForAuthUser
@@ -39,6 +40,7 @@ apps/api/
       foundation.ts    # story_foundations bundle + upsert
       character.ts     # characters manual CRUD
       fact.ts          # facts manual CRUD + canon guardrails
+      speech-rule.ts   # speech rules CRUD + character ref validation
       audit.ts         # append-only audit_logs (service role)
     lib/
       supabase.ts      # anon + service role clients
@@ -96,6 +98,10 @@ apps/api/
 | POST | `/api/projects/:id/facts` | Bearer JWT | Create confirmed fact (user/system source only) |
 | PATCH | `/api/projects/:id/facts/:factId` | Bearer JWT | Update fact |
 | DELETE | `/api/projects/:id/facts/:factId` | Bearer JWT | Soft deprecate (`canon_status: deprecated`) |
+| GET | `/api/projects/:id/speech-rules` | Bearer JWT | List speech rules (`?includeInactive=true` optional) |
+| POST | `/api/projects/:id/speech-rules` | Bearer JWT | Create speech rule (source: user only) |
+| PATCH | `/api/projects/:id/speech-rules/:ruleId` | Bearer JWT | Update speech rule |
+| DELETE | `/api/projects/:id/speech-rules/:ruleId` | Bearer JWT | Soft deactivate (`status: deprecated`) |
 
 ### Auth approach (Task 2.6)
 
@@ -200,6 +206,26 @@ Creates default foundation row if missing. Characters: active only. Facts: confi
 
 **Facts** — canon confirmed only. POST rejects AI sources (`ai`, `ai_direct`, `openrouter`, `gemini`, etc.). DELETE sets `canon_status: deprecated` (no hard delete). Audit: `fact_created` | `fact_updated` | `fact_deprecated`.
 
+### Speech rules (Task 2.10)
+
+All endpoints require Bearer JWT. Ownership via `projects.owner_id = JWT userId`. Cross-user project/rule → `404`. Invalid character ref → `400`.
+
+**`POST /api/projects/:id/speech-rules`**
+
+```json
+{
+  "fromCharacterId": "...",
+  "toCharacterId": "...",
+  "addressTerm": "Bu",
+  "speechStyle": "Nada merendahkan dari Bu Siti; Nadira menjawab singkat dan dingin.",
+  "examples": ["Bu Siti: Kau masih belajar, Nak.", "Nadira: Iya, Bu."]
+}
+```
+
+Aliases: `characterAId`/`characterBId`, `fromCharacterName`/`toCharacterName`, `relationshipLabel`, `ruleText`, `panggilan`, `gayaBicara`. POST source must be `user`. Rejects AI/provider sources. Character IDs validated against project.
+
+**`DELETE /api/projects/:id/speech-rules/:ruleId`** — sets `status: deprecated` (no hard delete). Audit: `speech_rule_created` | `speech_rule_updated` (deactivate uses `metadata.reason = "deactivate"`).
+
 ### Response format
 
 Success: `{ "ok": true, "data": { ... } }`
@@ -224,14 +250,13 @@ npm run build:api
 | `APP_ENV` | Optional | Default `development` |
 | `ALLOWED_ORIGINS` | Optional | CSV; default localhost:5173–5175 |
 
-## Not in Task 2.9
+## Not in Task 2.10
 
 - `POST /api/auth/*` — use Supabase Auth client in browser instead
-- Speech rules API (Task 2.10)
 - AI proposal acceptance workflow (Task 2.11)
 - OpenRouter / AI generation
 - Credit deduction / ledger
 - Cloudflare deploy
 - Frontend wired to real data
 
-See `docs/27-sprint-2-data-model-implementation-plan.md` Task 2.10+.
+See `docs/27-sprint-2-data-model-implementation-plan.md` Task 2.11+.

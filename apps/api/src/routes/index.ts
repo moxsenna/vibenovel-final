@@ -7,6 +7,7 @@ import { registerProjectSettingsRoutes } from "./project-settings.js";
 import { registerFoundationRoutes } from "./foundation.js";
 import { registerCharacterRoutes } from "./characters.js";
 import { registerFactRoutes } from "./facts.js";
+import { registerSpeechRuleRoutes } from "./speech-rules.js";
 
 export function registerRoutes(app: Hono<AppEnv>): void {
   registerHealthRoutes(app);
@@ -16,4 +17,5 @@ export function registerRoutes(app: Hono<AppEnv>): void {
   registerFoundationRoutes(app);
   registerCharacterRoutes(app);
   registerFactRoutes(app);
+  registerSpeechRuleRoutes(app);
 }

@@ -3,7 +3,7 @@ pid: 68296
 cwd: "D:\Coding\vibenovel-unified-blueprint"
 command: "Set-Location D:\\Coding\\vibenovel-unified-blueprint; npm run dev:api"
 started_at: 2026-06-07T19:49:21.825Z
-running_for_ms: 610002   
+running_for_ms: 765001   
 ---
 
 > vibenovel@0.1.0 dev:api
@@ -106,3 +106,30 @@ X [ERROR] projects select by id failed
 [wrangler:inf] DELETE /api/projects/d0b7c4d6-baca-46ce-9f5a-db74f7e95962/facts/c54ec26f-fa34-402f-a24b-971a619cd99e 200 OK (116ms)
 [wrangler:inf] GET /api/projects/d0b7c4d6-baca-46ce-9f5a-db74f7e95962/facts 200 OK (92ms)
 [wrangler:inf] GET /api/projects/a0000000-0000-4000-8000-000000000101/foundation 404 Not Found (60ms)
+X [ERROR] Build failed with 1 error:
+
+  X [ERROR] No matching export in "src/lib/mappers.ts" for import "mapSpeechRuleResponse"
+  
+      src/services/speech-rule.ts:10:2:
+        10 │   mapSpeechRuleResponse,
+           ╵   ~~~~~~~~~~~~~~~~~~~~~
+  
+  
+
+
+⎔ Reloading local server...
+⎔ Reloading local server...
+⎔ Reloading local server...
+[wrangler:inf] POST /api/projects 201 Created (224ms)
+[wrangler:inf] POST /api/projects/7dd9d0a1-8cc2-4994-b31c-814df2984eb3/characters 201 Created (91ms)
+[wrangler:inf] POST /api/projects/7dd9d0a1-8cc2-4994-b31c-814df2984eb3/characters 201 Created (92ms)
+[wrangler:inf] GET /api/projects/7dd9d0a1-8cc2-4994-b31c-814df2984eb3/speech-rules 401 Unauthorized (4ms)
+[wrangler:inf] GET /api/projects/7dd9d0a1-8cc2-4994-b31c-814df2984eb3/speech-rules 200 OK (99ms)
+[wrangler:inf] POST /api/projects/7dd9d0a1-8cc2-4994-b31c-814df2984eb3/speech-rules 201 Created (181ms)
+[wrangler:inf] PATCH /api/projects/7dd9d0a1-8cc2-4994-b31c-814df2984eb3/speech-rules/1f4f985f-96fa-48f8-9b7c-7c43f60b260f 200 OK (147ms)
+[wrangler:inf] POST /api/projects/7dd9d0a1-8cc2-4994-b31c-814df2984eb3/speech-rules 400 Bad Request (78ms)
+[wrangler:inf] POST /api/projects/7dd9d0a1-8cc2-4994-b31c-814df2984eb3/speech-rules 400 Bad Request (63ms)
+[wrangler:inf] DELETE /api/projects/7dd9d0a1-8cc2-4994-b31c-814df2984eb3/speech-rules/1f4f985f-96fa-48f8-9b7c-7c43f60b260f 200 OK (84ms)
+[wrangler:inf] GET /api/projects/7dd9d0a1-8cc2-4994-b31c-814df2984eb3/speech-rules 200 OK (67ms)
+[wrangler:inf] GET /api/projects/a0000000-0000-4000-8000-000000000101/speech-rules 404 Not Found (60ms)
+[wrangler:inf] POST /api/projects/7dd9d0a1-8cc2-4994-b31c-814df2984eb3/speech-rules 400 Bad Request (72ms)
