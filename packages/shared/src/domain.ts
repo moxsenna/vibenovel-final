@@ -3,6 +3,9 @@ import type {
   AiProposalSource,
   AiProposalStatus,
   AiProposalType,
+  ChapterEmotion,
+  ChapterFunction,
+  ChapterOutlineStatus,
   CharacterRole,
   CharacterSource,
   CharacterStatus,
@@ -20,9 +23,14 @@ import type {
   IntakePhase,
   IntakeSessionStatus,
   MobileFormatPreference,
+  OpenLoopStatus,
+  OutlinePlanStatus,
+  PlannedRevealStatus,
   ProjectEntryPath,
   ProjectStatus,
   ReaderTarget,
+  RevealRiskLevel,
+  RetentionMarkerType,
   SpeechRuleSource,
   SpeechRuleStatus,
   StoryConceptSource,
@@ -63,7 +71,7 @@ export interface Project extends Timestamps {
   lastEditedAt: ISODateTime;
   /** Sprint 3 — selected concept pointer; not canon. */
   selectedConceptId?: ID | null;
-  /** Sprint 3 — workflow routing: intake → concepts → foundation → locked. */
+  /** Sprint 3+ — workflow routing through outline lock. */
   workflowPhase?: WorkflowPhase;
 }
 
@@ -241,4 +249,87 @@ export interface StoryConcept extends Timestamps {
   payload: JsonObject;
 }
 
-// Sprint 4+: chapters, reveals, beat_contracts, prose_versions — deferred.
+// --- Sprint 4: outline planning (NOT prose — beat_contracts/prose_versions deferred Sprint 5+) ---
+
+/** Retention marker on a chapter outline row (maps to UI badges). */
+export interface ChapterOutlineMarker {
+  type: RetentionMarkerType;
+  label?: string;
+}
+
+/**
+ * Outline plan for a project batch (e.g. chapters 1–10).
+ * Planning artifact only — not accepted prose.
+ */
+export interface OutlinePlan extends Timestamps {
+  id: ID;
+  projectId: ID;
+  status: OutlinePlanStatus;
+  seasonLabel: string;
+  arcSummary: string | null;
+  retentionSummary: string | null;
+  targetChapterCount: number;
+  planningNotes: string | null;
+  metadata: JsonObject;
+  lockedAt: ISODateTime | null;
+}
+
+/**
+ * Chapter outline row — planner may reference future plot.
+ * Writer context (Sprint 5+) must receive slice-only fields for the active chapter.
+ */
+export interface ChapterOutline extends Timestamps {
+  id: ID;
+  projectId: ID;
+  outlinePlanId: ID;
+  chapterNumber: number;
+  title: string;
+  summary: string;
+  purpose: string | null;
+  chapterFunction: ChapterFunction;
+  emotionalDirection: ChapterEmotion | null;
+  hook: string | null;
+  endingHook: string | null;
+  miniVictory: string | null;
+  povCharacterId: ID | null;
+  status: ChapterOutlineStatus;
+  markers: ChapterOutlineMarker[];
+  metadata: JsonObject;
+}
+
+/** Reader question tracked across chapters — status changes do not mutate facts. */
+export interface OpenLoop extends Timestamps {
+  id: ID;
+  projectId: ID;
+  outlinePlanId: ID;
+  openedInChapterOutlineId: ID | null;
+  payoffChapterOutlineId: ID | null;
+  question: string;
+  readerFacingHint: string | null;
+  status: OpenLoopStatus;
+  importance: FactImportance;
+  metadata: JsonObject;
+}
+
+/**
+ * Reveal schedule entry — planning_truth is planner-only.
+ * Must NOT enter raw writer prompts; Reveal Gate compiles safe breadcrumbs later.
+ */
+export interface PlannedReveal extends Timestamps {
+  id: ID;
+  projectId: ID;
+  outlinePlanId: ID;
+  plannedChapterOutlineId: ID | null;
+  relatedFactId: ID | null;
+  relatedProposalId: ID | null;
+  title: string;
+  /** Planner-only — never ship raw to writer Context Packet. */
+  planningTruth: string;
+  readerFacingHint: string | null;
+  forbiddenBeforeChapter: number | null;
+  status: PlannedRevealStatus;
+  riskLevel: RevealRiskLevel;
+  metadata: JsonObject;
+}
+
+// Sprint 5+: beat_contracts, prose_versions, chapter_deltas — deferred.

@@ -3,6 +3,7 @@
 -- Maps Sprint 1 mocks → local DB. Idempotent: safe after `supabase db reset`.
 -- Canon: facts = confirmed only; AI suggestions → ai_proposals (proposed).
 -- Sprint 3 tables (intake/concepts) are NOT canon.
+-- Sprint 4 tables (outline planning) are NOT prose; planned_reveals.planning_truth is planner-only.
 -- =============================================================================
 
 -- Fixed UUIDs (repeatable; demo-project-001 concept → DEMO_PROJECT_ID)
@@ -646,5 +647,352 @@ UPDATE public.projects
 SET
   selected_concept_id = 'a0000000-0000-4000-8000-000000000833',
   workflow_phase = 'foundation',
+  updated_at = now()
+WHERE id = 'a0000000-0000-4000-8000-000000000101';
+
+-- -----------------------------------------------------------------------------
+-- Sprint 4: outline_plans (parity mockOutline — Bab 1–10: Awal Konflik)
+-- -----------------------------------------------------------------------------
+INSERT INTO public.outline_plans (
+  id,
+  project_id,
+  status,
+  season_label,
+  arc_summary,
+  retention_summary,
+  target_chapter_count,
+  planning_notes,
+  metadata
+)
+VALUES (
+  'a0000000-0000-4000-8000-000000000901',
+  'a0000000-0000-4000-8000-000000000101',
+  'generated',
+  'Bab 1–10: Awal Konflik',
+  'Sepuluh bab pertama mengantar Nadira dari istri yang diam dan diremehkan menjadi perempuan yang mulai mengumpulkan bukti dan keberanian. Rahasia Siska belum terbuka sepenuhnya — tapi ketegangan keluarga sudah tidak bisa ditahan.',
+  '7 dari 10 bab punya hook penutup kuat; 3 mini victory; rahasia Siska ditahan; Bab 10 cliffhanger siap unlock lanjutan.',
+  10,
+  'Seed parity apps/web/src/mocks/outline.ts — planner-only, bukan prose.',
+  '{"mock_source":"outline.ts","description":"Arah 10 bab awal untuk membangun konflik, menahan rahasia, dan memberi ruang bagi Nadira mulai bangkit."}'::jsonb
+)
+ON CONFLICT (project_id) DO UPDATE SET
+  status = EXCLUDED.status,
+  season_label = EXCLUDED.season_label,
+  arc_summary = EXCLUDED.arc_summary,
+  retention_summary = EXCLUDED.retention_summary,
+  target_chapter_count = EXCLUDED.target_chapter_count,
+  planning_notes = EXCLUDED.planning_notes,
+  metadata = EXCLUDED.metadata,
+  updated_at = now();
+
+-- -----------------------------------------------------------------------------
+-- chapter_outlines (10 bab — parity mockOutline chapters)
+-- -----------------------------------------------------------------------------
+INSERT INTO public.chapter_outlines (
+  id,
+  project_id,
+  outline_plan_id,
+  chapter_number,
+  title,
+  summary,
+  purpose,
+  chapter_function,
+  emotional_direction,
+  ending_hook,
+  mini_victory,
+  pov_character_id,
+  status,
+  markers
+)
+VALUES
+  (
+    'a0000000-0000-4000-8000-000000000911',
+    'a0000000-0000-4000-8000-000000000101',
+    'a0000000-0000-4000-8000-000000000901',
+    1,
+    'Makan Malam yang Dingin',
+    'Nadira duduk di meja makan malam keluarga yang terasa dingin; sindiran halus dari ibu mertua membuatnya semakin kecil di kursinya.',
+    'Perkenalkan dinamika keluarga dan posisi Nadira yang diremehkan tanpa langsung membuatnya korban total.',
+    'setup',
+    'curious',
+    'Arman mematikan ponselnya saat notifikasi berbunyi — Nadira melihat nama "Siska" sekilas sebelum layar gelap.',
+    NULL,
+    'a0000000-0000-4000-8000-000000000201',
+    'planned',
+    '[{"type":"emotional_payoff","label":"Emosi"},{"type":"reversal","label":"Konflik"}]'::jsonb
+  ),
+  (
+    'a0000000-0000-4000-8000-000000000912',
+    'a0000000-0000-4000-8000-000000000101',
+    'a0000000-0000-4000-8000-000000000901',
+    2,
+    'Pesan di Ponsel Arman',
+    'Nadira tidak sengaja melihat pesan yang terhapus cepat, tapi cukup untuk membuat hatinya tidak tenang sepanjang malam.',
+    'Tanam petunjuk pertama tanpa konfrontasi langsung — rahasia masih ditahan.',
+    'escalation',
+    'curious',
+    'Pesan yang sempat terbaca berakhir dengan kalimat: "Sampai jumpa besok."',
+    NULL,
+    'a0000000-0000-4000-8000-000000000201',
+    'planned',
+    '[{"type":"secret_hint","label":"Rahasia"}]'::jsonb
+  ),
+  (
+    'a0000000-0000-4000-8000-000000000913',
+    'a0000000-0000-4000-8000-000000000101',
+    'a0000000-0000-4000-8000-000000000901',
+    3,
+    'Senyum yang Terlalu Akrab',
+    'Di acara keluarga, Nadira memperhatikan bagaimana Arman dan seorang wanita saling bertukar senyum yang terasa terlalu akrab.',
+    'Naikkan ketegangan sosial tanpa membuka identitas wanita itu terlalu cepat.',
+    'escalation',
+    'anxious',
+    'Wanita itu memanggil Arman dengan nama kecil yang bukan "Sayang" — dan Nadira mendengarnya.',
+    NULL,
+    'a0000000-0000-4000-8000-000000000201',
+    'planned',
+    '[{"type":"reversal","label":"Konflik"},{"type":"secret_hint","label":"Rahasia"}]'::jsonb
+  ),
+  (
+    'a0000000-0000-4000-8000-000000000914',
+    'a0000000-0000-4000-8000-000000000101',
+    'a0000000-0000-4000-8000-000000000901',
+    4,
+    'Sindiran yang Tak Dibela',
+    'Bu Siti menyinggung Nadira di depan tamu; Arman diam. Nadira tersenyum tipis — pertama kali ia tidak langsung menunduk.',
+    'Tunjukkan Nadira sendirian di medan pertempuran rumah tangga, sekaligus isyarat agency kecil.',
+    'conflict',
+    'angry',
+    'Setelah tamu pulang, Nadira berkata pelan: "Kamu tidak perlu membelaku. Tapi jangan pura-pura tidak melihat."',
+    NULL,
+    'a0000000-0000-4000-8000-000000000201',
+    'planned',
+    '[{"type":"emotional_payoff","label":"Emosi"},{"type":"reversal","label":"Konflik"}]'::jsonb
+  ),
+  (
+    'a0000000-0000-4000-8000-000000000915',
+    'a0000000-0000-4000-8000-000000000101',
+    'a0000000-0000-4000-8000-000000000901',
+    5,
+    'Nadira Mulai Diam',
+    'Nadira berhenti membela diri dengan argumen panjang dan memilih mengamati — diam bukan berarti menyerah.',
+    'Tandai perubahan strategi Nadira: dari reaktif menjadi pengamat yang sadar.',
+    'mini_victory',
+    'hopeful',
+    'Di buku catatannya, Nadira menulis daftar hal kecil yang selama ini diabaikan — halaman pertama penuh.',
+    'Nadira mulai mengambil kendali atas dirinya dengan mengamati, bukan menyerah.',
+    'a0000000-0000-4000-8000-000000000201',
+    'planned',
+    '[{"type":"mini_victory","label":"Kemenangan Kecil"}]'::jsonb
+  ),
+  (
+    'a0000000-0000-4000-8000-000000000916',
+    'a0000000-0000-4000-8000-000000000101',
+    'a0000000-0000-4000-8000-000000000901',
+    6,
+    'Bukti Kecil di Laci',
+    'Nadira menemukan struk dan foto lama di laci Arman — belum cukup untuk konfrontasi, tapi cukup untuk keyakinan.',
+    'Beri Nadira bukti tanpa membuka rahasia besar Siska terlalu dini.',
+    'mini_victory',
+    'satisfying',
+    'Di balik foto, ada tanggal yang tidak cocok dengan cerita Arman soal masa lalunya.',
+    'Nadira punya bukti kecil — bukti bahwa curigaannya tidak berimajinasi.',
+    'a0000000-0000-4000-8000-000000000201',
+    'planned',
+    '[{"type":"secret_hint","label":"Rahasia"},{"type":"mini_victory","label":"Kemenangan Kecil"}]'::jsonb
+  ),
+  (
+    'a0000000-0000-4000-8000-000000000917',
+    'a0000000-0000-4000-8000-000000000101',
+    'a0000000-0000-4000-8000-000000000901',
+    7,
+    'Siska Datang ke Rumah',
+    'Tamu tak diundang muncul di pintu — Nadira akhirnya mendengar nama itu diucapkan langsung di rumahnya sendiri.',
+    'Eskalasi konflik; Siska masuk sebagai tokoh aktif tanpa reveal hubungan penuh.',
+    'cliffhanger',
+    'anxious',
+    'Siska berkata santai: "Aku kira kamu sudah bilang ke istri kamu." Ruang tamu mendadak hening.',
+    NULL,
+    'a0000000-0000-4000-8000-000000000201',
+    'planned',
+    '[{"type":"reversal","label":"Konflik"},{"type":"cliffhanger","label":"Cliffhanger"}]'::jsonb
+  ),
+  (
+    'a0000000-0000-4000-8000-000000000918',
+    'a0000000-0000-4000-8000-000000000101',
+    'a0000000-0000-4000-8000-000000000901',
+    8,
+    'Nadira Menahan Air Mata',
+    'Konfrontasi hampir pecah di depan keluarga; Nadira menahan air mata dan memilih pergi ke kamar.',
+    'Puncak emosional awal tanpa reveal pengkhianatan penuh — rahasia masih ditahan.',
+    'emotional_turn',
+    'hurt',
+    'Arman menarik Nadira ke kamar dan berkata: "Besok kita bicara." Nadira mengangguk, tapi matanya sudah berbeda.',
+    NULL,
+    'a0000000-0000-4000-8000-000000000201',
+    'planned',
+    '[{"type":"emotional_payoff","label":"Emosi"}]'::jsonb
+  ),
+  (
+    'a0000000-0000-4000-8000-000000000919',
+    'a0000000-0000-4000-8000-000000000101',
+    'a0000000-0000-4000-8000-000000000901',
+    9,
+    'Keputusan Pertama Nadira',
+    'Nadira membuat langkah pertama: menghubungi teman lama untuk minta saran soal dokumen rumah tangga.',
+    'Tunjukkan Nadira mulai bertindak, bukan hanya menderita — agency yang konkret.',
+    'mini_victory',
+    'hopeful',
+    'Teman lamanya bilang: "Ada satu hal yang perlu kamu cek dulu sebelum konfrontasi."',
+    'Nadira mengambil langkah konkret menuju rencana, bukan sekadar menderita.',
+    'a0000000-0000-4000-8000-000000000201',
+    'planned',
+    '[{"type":"mini_victory","label":"Kemenangan Kecil"},{"type":"cliffhanger","label":"Cliffhanger"}]'::jsonb
+  ),
+  (
+    'a0000000-0000-4000-8000-000000000920',
+    'a0000000-0000-4000-8000-000000000101',
+    'a0000000-0000-4000-8000-000000000901',
+    10,
+    'Malam Ketika Arman Pulang Terlambat',
+    'Arman pulang larut malam dengan alasan rapat; Nadira sudah menunggu di ruang tamu dengan daftar pertanyaan.',
+    'Tutup arc 10 bab dengan open loop kuat menuju bab berikutnya.',
+    'cliffhanger',
+    'tense',
+    'Arman membuka jas dan struk restoran jatuh — bukan dari kantor, tapi dari tempat yang Nadira kenal.',
+    NULL,
+    'a0000000-0000-4000-8000-000000000201',
+    'planned',
+    '[{"type":"cliffhanger","label":"Cliffhanger"},{"type":"secret_hint","label":"Rahasia"}]'::jsonb
+  )
+ON CONFLICT (outline_plan_id, chapter_number) DO UPDATE SET
+  title = EXCLUDED.title,
+  summary = EXCLUDED.summary,
+  purpose = EXCLUDED.purpose,
+  chapter_function = EXCLUDED.chapter_function,
+  emotional_direction = EXCLUDED.emotional_direction,
+  ending_hook = EXCLUDED.ending_hook,
+  mini_victory = EXCLUDED.mini_victory,
+  markers = EXCLUDED.markers,
+  updated_at = now();
+
+-- -----------------------------------------------------------------------------
+-- open_loops (2–3 samples — tracked questions, not canon)
+-- -----------------------------------------------------------------------------
+INSERT INTO public.open_loops (
+  id,
+  project_id,
+  outline_plan_id,
+  opened_in_chapter_outline_id,
+  question,
+  reader_facing_hint,
+  status,
+  importance
+)
+VALUES
+  (
+    'a0000000-0000-4000-8000-000000000921',
+    'a0000000-0000-4000-8000-000000000101',
+    'a0000000-0000-4000-8000-000000000901',
+    'a0000000-0000-4000-8000-000000000911',
+    'Siapa Siska dan apa hubungannya dengan Arman?',
+    'Nama itu muncul di ponsel Arman — pembaca ingin tahu lebih.',
+    'opened',
+    'core'
+  ),
+  (
+    'a0000000-0000-4000-8000-000000000922',
+    'a0000000-0000-4000-8000-000000000101',
+    'a0000000-0000-4000-8000-000000000901',
+    'a0000000-0000-4000-8000-000000000912',
+    'Apa isi pesan yang Arman hapus begitu cepat?',
+    'Satu kalimat sempat terbaca — "Sampai jumpa besok."',
+    'developed',
+    'major'
+  ),
+  (
+    'a0000000-0000-4000-8000-000000000923',
+    'a0000000-0000-4000-8000-000000000101',
+    'a0000000-0000-4000-8000-000000000901',
+    'a0000000-0000-4000-8000-000000000920',
+    'Apa yang akan terjadi saat Nadira konfrontasi Arman dengan daftar pertanyaannya?',
+    'Struk restoran jatuh dari jas Arman — konfrontasi tak terhindarkan.',
+    'opened',
+    'core'
+  )
+ON CONFLICT (id) DO UPDATE SET
+  question = EXCLUDED.question,
+  reader_facing_hint = EXCLUDED.reader_facing_hint,
+  status = EXCLUDED.status,
+  importance = EXCLUDED.importance,
+  updated_at = now();
+
+-- -----------------------------------------------------------------------------
+-- planned_reveals (2–3 samples — planner-only truth, NOT canon facts)
+-- -----------------------------------------------------------------------------
+INSERT INTO public.planned_reveals (
+  id,
+  project_id,
+  outline_plan_id,
+  related_proposal_id,
+  title,
+  planning_truth,
+  reader_facing_hint,
+  forbidden_before_chapter,
+  status,
+  risk_level
+)
+VALUES
+  (
+    'a0000000-0000-4000-8000-000000000931',
+    'a0000000-0000-4000-8000-000000000101',
+    'a0000000-0000-4000-8000-000000000901',
+    NULL,
+    'Identitas dan hubungan Siska',
+    'Siska adalah mantan kekasih Arman yang masih memiliki ikatan rahasia dan kepentingan emosional; hubungan mereka disembunyikan dari Nadira sejak awal pernikahan.',
+    'Pembaca hanya melihat nama dan gelagat akrab — bukan kebenaran penuh.',
+    11,
+    'planned',
+    'high'
+  ),
+  (
+    'a0000000-0000-4000-8000-000000000932',
+    'a0000000-0000-4000-8000-000000000101',
+    'a0000000-0000-4000-8000-000000000901',
+    'a0000000-0000-4000-8000-000000000501',
+    'Masa lalu romantis Arman yang disembunyikan',
+    'Arman pernah memiliki hubungan serius dengan Siska yang berakhir tidak bersih; dokumen dan foto di laci adalah sisa jejak yang ia sembunyikan.',
+    'Foto lama dan tanggal yang tidak cocok — breadcrumb aman di Bab 6.',
+    11,
+    'planned',
+    'high'
+  ),
+  (
+    'a0000000-0000-4000-8000-000000000933',
+    'a0000000-0000-4000-8000-000000000101',
+    'a0000000-0000-4000-8000-000000000901',
+    NULL,
+    'Pengkhianatan penuh belum terbuka di 10 bab awal',
+    'Konfrontasi penuh dan pengakuan pengkhianatan ditunda hingga setelah Bab 10; arc awal hanya menahan ketegangan dan breadcrumb.',
+    'Rahasia ditahan — identitas Siska dan pengkhianatan penuh belum terbuka.',
+    11,
+    'armed',
+    'medium'
+  )
+ON CONFLICT (id) DO UPDATE SET
+  title = EXCLUDED.title,
+  planning_truth = EXCLUDED.planning_truth,
+  reader_facing_hint = EXCLUDED.reader_facing_hint,
+  forbidden_before_chapter = EXCLUDED.forbidden_before_chapter,
+  status = EXCLUDED.status,
+  risk_level = EXCLUDED.risk_level,
+  updated_at = now();
+
+-- -----------------------------------------------------------------------------
+-- projects — Sprint 4 workflow pointer (outline seeded; foundation lock unchanged)
+-- -----------------------------------------------------------------------------
+UPDATE public.projects
+SET
+  workflow_phase = 'outline',
   updated_at = now()
 WHERE id = 'a0000000-0000-4000-8000-000000000101';

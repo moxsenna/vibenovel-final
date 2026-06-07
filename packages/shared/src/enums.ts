@@ -263,6 +263,8 @@ export const WORKFLOW_PHASES = {
   concepts: "concepts",
   foundation: "foundation",
   foundation_locked: "foundation_locked",
+  outline: "outline",
+  outline_locked: "outline_locked",
 } as const;
 export type WorkflowPhase = (typeof WORKFLOW_PHASES)[keyof typeof WORKFLOW_PHASES];
 
@@ -332,6 +334,88 @@ export const STORY_CONCEPT_SOURCES = {
 } as const;
 export type StoryConceptSource =
   (typeof STORY_CONCEPT_SOURCES)[keyof typeof STORY_CONCEPT_SOURCES];
+
+// --- Sprint 4: outline planning (not prose — planner may know future; writer slice-only later) ---
+
+export const OUTLINE_PLAN_STATUSES = {
+  draft: "draft",
+  generated: "generated",
+  reviewing: "reviewing",
+  locked: "locked",
+} as const;
+export type OutlinePlanStatus =
+  (typeof OUTLINE_PLAN_STATUSES)[keyof typeof OUTLINE_PLAN_STATUSES];
+
+export const CHAPTER_OUTLINE_STATUSES = {
+  planned: "planned",
+  reviewing: "reviewing",
+  approved: "approved",
+  locked: "locked",
+} as const;
+export type ChapterOutlineStatus =
+  (typeof CHAPTER_OUTLINE_STATUSES)[keyof typeof CHAPTER_OUTLINE_STATUSES];
+
+export const CHAPTER_FUNCTIONS = {
+  setup: "setup",
+  conflict: "conflict",
+  escalation: "escalation",
+  emotional_turn: "emotional_turn",
+  mini_victory: "mini_victory",
+  reveal: "reveal",
+  cliffhanger: "cliffhanger",
+  payoff: "payoff",
+  transition: "transition",
+} as const;
+export type ChapterFunction = (typeof CHAPTER_FUNCTIONS)[keyof typeof CHAPTER_FUNCTIONS];
+
+export const CHAPTER_EMOTIONS = {
+  hurt: "hurt",
+  tense: "tense",
+  angry: "angry",
+  hopeful: "hopeful",
+  satisfying: "satisfying",
+  curious: "curious",
+  anxious: "anxious",
+  triumphant: "triumphant",
+} as const;
+export type ChapterEmotion = (typeof CHAPTER_EMOTIONS)[keyof typeof CHAPTER_EMOTIONS];
+
+export const OPEN_LOOP_STATUSES = {
+  opened: "opened",
+  developed: "developed",
+  paid_off: "paid_off",
+  dropped: "dropped",
+} as const;
+export type OpenLoopStatus = (typeof OPEN_LOOP_STATUSES)[keyof typeof OPEN_LOOP_STATUSES];
+
+export const PLANNED_REVEAL_STATUSES = {
+  planned: "planned",
+  armed: "armed",
+  revealed: "revealed",
+  delayed: "delayed",
+  cancelled: "cancelled",
+} as const;
+export type PlannedRevealStatus =
+  (typeof PLANNED_REVEAL_STATUSES)[keyof typeof PLANNED_REVEAL_STATUSES];
+
+export const REVEAL_RISK_LEVELS = {
+  low: "low",
+  medium: "medium",
+  high: "high",
+} as const;
+export type RevealRiskLevel = (typeof REVEAL_RISK_LEVELS)[keyof typeof REVEAL_RISK_LEVELS];
+
+export const RETENTION_MARKER_TYPES = {
+  hook: "hook",
+  mini_victory: "mini_victory",
+  open_loop: "open_loop",
+  cliffhanger: "cliffhanger",
+  emotional_payoff: "emotional_payoff",
+  reversal: "reversal",
+  secret_hint: "secret_hint",
+} as const;
+export type RetentionMarkerType =
+  (typeof RETENTION_MARKER_TYPES)[keyof typeof RETENTION_MARKER_TYPES];
 
 // --- Credit balance (display/seed only in Sprint 2) ---
 

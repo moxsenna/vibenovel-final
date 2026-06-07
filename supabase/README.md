@@ -27,6 +27,7 @@ supabase/
 | **2.3** ✅ | Core migration | `migrations/00001_sprint2_core.sql` — 10 tabel, enums, RLS, triggers |
 | **2.4** ✅ | Seed | `seed.sql` — demo "Istri yang Mereka Buang" dari mock Sprint 1 |
 | **3.1** ✅ | Intake & concepts migration | `migrations/00002_sprint3_intake_concepts.sql` — 4 tabel + `projects` columns |
+| **4.1** ✅ | Outline planning migration | `migrations/00003_sprint4_outline_planning.sql` — 4 tabel + `workflow_phase` extend |
 | **Apply local** | Setelah Supabase CLI + Docker | `supabase start` lalu `supabase db reset` |
 | **Apply remote** | Manual / CI terpisah | **Tidak** tanpa approval eksplisit user |
 
@@ -61,7 +62,19 @@ Membuat:
 
 Seed Task 3.1: 1 intake session, 3 messages, 4 signals, 3 concepts (selected = "Istri yang Mereka Buang").
 
-**Belum ada:** `auth.users` trigger otomatis on signup (Task 2.6), `audit_action` enum Sprint 3 (deferred 3.2/3.3), tabel Sprint 4+.
+### Migration `00003_sprint4_outline_planning.sql` (Task 4.1)
+
+Membuat:
+
+- **4 tabel:** `outline_plans`, `chapter_outlines`, `open_loops`, `planned_reveals`
+- **Enums** Sprint 4 selaras `@vibenovel/shared`
+- **Extend `workflow_phase`:** `outline`, `outline_locked`
+- **RLS** owner-only; tabel baru **bukan prose**; `planned_reveals.planning_truth` planner-only
+- **Unique:** satu `outline_plans` per project (MVP); satu `chapter_number` per plan
+
+Seed Task 4.1: 1 outline plan, 10 chapter outlines (parity `mockOutline`), 3 open loops, 3 planned reveals; `workflow_phase=outline`.
+
+**Belum ada:** `auth.users` trigger otomatis on signup (Task 2.6), `audit_action` enum Sprint 3 (deferred), prose/chapter tables (Sprint 5+).
 
 Urutan disarankan:
 
