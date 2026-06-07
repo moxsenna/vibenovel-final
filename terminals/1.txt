@@ -3,7 +3,7 @@ pid: 68296
 cwd: "D:\Coding\vibenovel-unified-blueprint"
 command: "Set-Location D:\\Coding\\vibenovel-unified-blueprint; npm run dev:api"
 started_at: 2026-06-07T19:49:21.825Z
-running_for_ms: 399997   
+running_for_ms: 610002   
 ---
 
 > vibenovel@0.1.0 dev:api
@@ -89,3 +89,20 @@ X [ERROR] projects select by id failed
 [wrangler:inf] PUT /api/projects/2f7f4939-cfac-4d4e-8fbd-1ccd13c31572/settings 400 Bad Request (65ms)
 [wrangler:inf] GET /api/projects/2f7f4939-cfac-4d4e-8fbd-1ccd13c31572/settings 200 OK (95ms)
 [wrangler:inf] GET /api/projects/a0000000-0000-4000-8000-000000000101/settings 404 Not Found (64ms)
+⎔ Reloading local server...
+⎔ Reloading local server...
+⎔ Reloading local server...
+⎔ Reloading local server...
+⎔ Reloading local server...
+[wrangler:inf] POST /api/projects 201 Created (462ms)
+[wrangler:inf] GET /api/projects/d0b7c4d6-baca-46ce-9f5a-db74f7e95962/foundation 401 Unauthorized (3ms)
+[wrangler:inf] GET /api/projects/d0b7c4d6-baca-46ce-9f5a-db74f7e95962/foundation 200 OK (202ms)
+[wrangler:inf] PUT /api/projects/d0b7c4d6-baca-46ce-9f5a-db74f7e95962/foundation 200 OK (126ms)
+[wrangler:inf] POST /api/projects/d0b7c4d6-baca-46ce-9f5a-db74f7e95962/characters 201 Created (130ms)
+[wrangler:inf] PATCH /api/projects/d0b7c4d6-baca-46ce-9f5a-db74f7e95962/characters/825c7c30-5d62-4841-9918-b8054aa65ba5 200 OK (146ms)
+[wrangler:inf] POST /api/projects/d0b7c4d6-baca-46ce-9f5a-db74f7e95962/facts 201 Created (128ms)
+[wrangler:inf] POST /api/projects/d0b7c4d6-baca-46ce-9f5a-db74f7e95962/facts 400 Bad Request (78ms)
+[wrangler:inf] POST /api/projects/d0b7c4d6-baca-46ce-9f5a-db74f7e95962/facts 400 Bad Request (80ms)
+[wrangler:inf] DELETE /api/projects/d0b7c4d6-baca-46ce-9f5a-db74f7e95962/facts/c54ec26f-fa34-402f-a24b-971a619cd99e 200 OK (116ms)
+[wrangler:inf] GET /api/projects/d0b7c4d6-baca-46ce-9f5a-db74f7e95962/facts 200 OK (92ms)
+[wrangler:inf] GET /api/projects/a0000000-0000-4000-8000-000000000101/foundation 404 Not Found (60ms)

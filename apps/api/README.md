@@ -1,6 +1,6 @@
 # apps/api — VibeNovel API (Sprint 2)
 
-Hono API on **Cloudflare Workers** — Supabase JWT auth, profile sync, `/api/me`, projects + settings persistence (Task 2.7–2.8).
+Hono API on **Cloudflare Workers** — Supabase JWT auth, profile sync, projects, settings, foundation/characters/facts (Task 2.6–2.9).
 
 ## Stack
 
@@ -27,12 +27,18 @@ apps/api/
       me.ts            # GET /api/me — profile + credit balance
       projects.ts      # CRUD /api/projects — owner-only
       project-settings.ts  # GET/PUT /api/projects/:id/settings
+      foundation.ts    # GET/PUT /api/projects/:id/foundation
+      characters.ts    # CRUD /api/projects/:id/characters
+      facts.ts         # CRUD /api/projects/:id/facts (soft deprecate)
       index.ts
     services/
       profile.ts       # getOrCreateProfileForAuthUser
       credit.ts        # read-only credit_balances
       project.ts       # project CRUD + default project_settings on create
       project-settings.ts  # settings read/upsert + validation
+      foundation.ts    # story_foundations bundle + upsert
+      character.ts     # characters manual CRUD
+      fact.ts          # facts manual CRUD + canon guardrails
       audit.ts         # append-only audit_logs (service role)
     lib/
       supabase.ts      # anon + service role clients
@@ -80,6 +86,16 @@ apps/api/
 | DELETE | `/api/projects/:id` | Bearer JWT | Soft archive (`is_active = false`) |
 | GET | `/api/projects/:id/settings` | Bearer JWT | Project settings (creates defaults if missing) |
 | PUT | `/api/projects/:id/settings` | Bearer JWT | Update settings (enum-validated upsert) |
+| GET | `/api/projects/:id/foundation` | Bearer JWT | Foundation + active characters + confirmed facts |
+| PUT | `/api/projects/:id/foundation` | Bearer JWT | Upsert story foundation fields |
+| GET | `/api/projects/:id/characters` | Bearer JWT | List characters (`?includeArchived=true` optional) |
+| POST | `/api/projects/:id/characters` | Bearer JWT | Create character (source: user only) |
+| PATCH | `/api/projects/:id/characters/:characterId` | Bearer JWT | Update character |
+| DELETE | `/api/projects/:id/characters/:characterId` | Bearer JWT | Soft archive (`status: archived`) |
+| GET | `/api/projects/:id/facts` | Bearer JWT | List facts (`?includeDeprecated=true` optional) |
+| POST | `/api/projects/:id/facts` | Bearer JWT | Create confirmed fact (user/system source only) |
+| PATCH | `/api/projects/:id/facts/:factId` | Bearer JWT | Update fact |
+| DELETE | `/api/projects/:id/facts/:factId` | Bearer JWT | Soft deprecate (`canon_status: deprecated`) |
 
 ### Auth approach (Task 2.6)
 
@@ -159,6 +175,31 @@ Accepted aliases: `qualityTier`, `defaultFormat`, `targetLengthBand`. Rejects ra
 
 Writes `audit_logs` action `settings_updated` with `changedFields`, compact `before_data` / `after_data`.
 
+### Foundation, characters, facts (Task 2.9)
+
+All endpoints require Bearer JWT. Ownership via `projects.owner_id = JWT userId`. Cross-user → `404`.
+
+**`GET /api/projects/:id/foundation`**
+
+```json
+{
+  "ok": true,
+  "data": {
+    "foundation": { "premise": "...", "readinessPercent": 82, "isLocked": false },
+    "characters": [{ "name": "Nadira", "role": "protagonist" }],
+    "facts": [{ "text": "...", "category": "identity", "canonStatus": "confirmed" }]
+  }
+}
+```
+
+Creates default foundation row if missing. Characters: active only. Facts: confirmed only.
+
+**`PUT /api/projects/:id/foundation`** — upsert premise, conflicts, readiness, lock. Rejects edits to locked core fields unless `isLocked: false`. Audit: `foundation_created` | `foundation_updated` | `foundation_locked`.
+
+**Characters** — manual CRUD; DELETE sets `status: archived`. POST source must be `user`. Audit: `character_created` | `character_updated`.
+
+**Facts** — canon confirmed only. POST rejects AI sources (`ai`, `ai_direct`, `openrouter`, `gemini`, etc.). DELETE sets `canon_status: deprecated` (no hard delete). Audit: `fact_created` | `fact_updated` | `fact_deprecated`.
+
 ### Response format
 
 Success: `{ "ok": true, "data": { ... } }`
@@ -183,13 +224,14 @@ npm run build:api
 | `APP_ENV` | Optional | Default `development` |
 | `ALLOWED_ORIGINS` | Optional | CSV; default localhost:5173–5175 |
 
-## Not in Task 2.8
+## Not in Task 2.9
 
 - `POST /api/auth/*` — use Supabase Auth client in browser instead
-- Story foundation / characters / facts CRUD (Task 2.9+)
+- Speech rules API (Task 2.10)
+- AI proposal acceptance workflow (Task 2.11)
 - OpenRouter / AI generation
 - Credit deduction / ledger
 - Cloudflare deploy
-- Frontend dashboard wired to real data
+- Frontend wired to real data
 
-See `docs/27-sprint-2-data-model-implementation-plan.md` Task 2.9+.
+See `docs/27-sprint-2-data-model-implementation-plan.md` Task 2.10+.

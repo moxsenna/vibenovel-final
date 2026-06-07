@@ -1,7 +1,10 @@
 import type {
+  Character,
   CreditBalance,
+  Fact,
   Project,
   ProjectSettings,
+  StoryFoundation,
   UserProfile,
 } from "@vibenovel/shared";
 
@@ -121,6 +124,113 @@ export function mapProjectSettingsResponse(row: ProjectSettingsRow): ProjectSett
     outputStylePreference: row.output_style_preference,
     mobileFormatPreference: base.defaultFormat,
     targetLengthPlan: base.targetLengthBand,
+  };
+}
+
+export interface FoundationRow {
+  id: string;
+  project_id: string;
+  premise: string;
+  main_conflict: string;
+  reader_promise: string;
+  tone: string | null;
+  genre: string | null;
+  target_reader: string | null;
+  story_secrets_preview: string | null;
+  style_tags: string[] | unknown;
+  readiness_percent: number;
+  readiness_status: string;
+  status: string;
+  is_locked: boolean;
+  locked_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export function mapFoundationRow(row: FoundationRow): StoryFoundation {
+  const styleTags = Array.isArray(row.style_tags)
+    ? (row.style_tags as string[])
+    : [];
+  return {
+    id: row.id,
+    projectId: row.project_id,
+    premise: row.premise,
+    mainConflict: row.main_conflict,
+    readerPromise: row.reader_promise,
+    tone: row.tone,
+    genre: row.genre,
+    targetReader: row.target_reader,
+    storySecretsPreview: row.story_secrets_preview,
+    styleTags,
+    readinessPercent: row.readiness_percent,
+    readinessStatus: row.readiness_status as StoryFoundation["readinessStatus"],
+    status: row.status as StoryFoundation["status"],
+    isLocked: row.is_locked,
+    lockedAt: row.locked_at,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
+export interface CharacterRow {
+  id: string;
+  project_id: string;
+  name: string;
+  role_label: string;
+  role: string;
+  description: string;
+  importance: string;
+  status: string;
+  source: string;
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export function mapCharacterRow(row: CharacterRow): Character {
+  return {
+    id: row.id,
+    projectId: row.project_id,
+    name: row.name,
+    roleLabel: row.role_label,
+    role: row.role as Character["role"],
+    description: row.description,
+    importance: row.importance as Character["importance"],
+    status: row.status as Character["status"],
+    source: row.source as Character["source"],
+    sortOrder: row.sort_order,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
+export interface FactRow {
+  id: string;
+  project_id: string;
+  text: string;
+  category: string;
+  importance: string;
+  canon_status: string;
+  is_locked: boolean;
+  source: string;
+  accepted_from_proposal_id: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export function mapFactRow(row: FactRow): Fact {
+  return {
+    id: row.id,
+    projectId: row.project_id,
+    text: row.text,
+    category: row.category as Fact["category"],
+    importance: row.importance as Fact["importance"],
+    canonStatus: row.canon_status as Fact["canonStatus"],
+    isLocked: row.is_locked,
+    source: row.source as Fact["source"],
+    acceptedFromProposalId: row.accepted_from_proposal_id,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
   };
 }
 
