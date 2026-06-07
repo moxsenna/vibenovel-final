@@ -14,7 +14,8 @@ Folder ini menyimpan **schema Postgres**, migrasi, seed dev, dan konfigurasi Sup
 supabase/
   config.toml          # Konfigurasi local Supabase CLI (bukan secret)
   migrations/          # SQL migrasi berurutan (Task 2.3+)
-  seed/                # Seed dev/demo (Task 2.4+)
+  seed.sql             # Seed dev/demo — dijalankan otomatis saat db reset (Task 2.4)
+  seed/                # Placeholder folder opsional
   README.md            # File ini
 ```
 
@@ -24,7 +25,7 @@ supabase/
 |---|---|---|
 | **2.2** ✅ | Setup + RLS draft | `config.toml`, `docs/28` |
 | **2.3** ✅ | Core migration | `migrations/00001_sprint2_core.sql` — 10 tabel, enums, RLS, triggers |
-| **2.4** | Seed | `seed/` atau script — demo project dari mock Sprint 1 |
+| **2.4** ✅ | Seed | `seed.sql` — demo "Istri yang Mereka Buang" dari mock Sprint 1 |
 | **Apply local** | Setelah Supabase CLI + Docker | `supabase start` lalu `supabase db reset` |
 | **Apply remote** | Manual / CI terpisah | **Tidak** tanpa approval eksplisit user |
 
@@ -38,7 +39,16 @@ Membuat:
 - **RLS** enabled semua tabel; kebijakan mengikuti `docs/28`
 - **Canon:** `facts` hanya `fact_source` enum (tanpa AI direct); `ai_proposals.status` default `proposed`
 
-**Belum ada:** seed data, `auth.users` trigger profil (Task 2.6), tabel Sprint 4+.
+### Seed `seed.sql` (Task 2.4)
+
+Jalankan otomatis setelah migration saat `supabase db reset`.
+
+- **User demo:** `a0000000-0000-4000-8000-000000000001` (`penulis@contoh.id`)
+- **Project demo:** `a0000000-0000-4000-8000-000000000101` (konsep `demo-project-001`)
+- 4 characters, 4 confirmed facts, 1 speech rule, 1 `ai_proposal` (proposed), credit 1250
+- Idempotent: `ON CONFLICT` — aman di-reset ulang
+
+**Belum ada:** `auth.users` trigger otomatis on signup (Task 2.6), tabel Sprint 4+.
 
 Urutan disarankan:
 
