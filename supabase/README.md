@@ -22,11 +22,23 @@ supabase/
 
 | Fase | Task | Apa yang dilakukan |
 |---|---|---|
-| **Sekarang (2.2)** | Setup + RLS draft | Folder siap, `config.toml` minimal, dokumen kebijakan — **tanpa** migration SQL final |
-| **2.3** | Core migration | `migrations/00001_sprint2_core.sql` — 9 tabel + `audit_logs`; enum selaras `@vibenovel/shared` |
+| **2.2** ✅ | Setup + RLS draft | `config.toml`, `docs/28` |
+| **2.3** ✅ | Core migration | `migrations/00001_sprint2_core.sql` — 10 tabel, enums, RLS, triggers |
 | **2.4** | Seed | `seed/` atau script — demo project dari mock Sprint 1 |
-| **Apply local** | Setelah approval user | `supabase start` + `supabase db reset` (hanya dev lokal) |
-| **Apply remote** | Manual / CI terpisah | **Tidak** di Task 2.2 atau 2.3 tanpa approval eksplisit user |
+| **Apply local** | Setelah Supabase CLI + Docker | `supabase start` lalu `supabase db reset` |
+| **Apply remote** | Manual / CI terpisah | **Tidak** tanpa approval eksplisit user |
+
+### Migration `00001_sprint2_core.sql` (Task 2.3)
+
+Membuat:
+
+- **10 tabel:** `profiles`, `projects`, `project_settings`, `story_foundations`, `characters`, `facts`, `relationship_speech_rules`, `ai_proposals`, `credit_balances`, `audit_logs`
+- **Enums** selaras `@vibenovel/shared` (+ `project_entry_path`, `character_importance`, `character_source`, `speech_rule_source`)
+- **Helper:** `set_updated_at()`, `is_project_owner(uuid)`
+- **RLS** enabled semua tabel; kebijakan mengikuti `docs/28`
+- **Canon:** `facts` hanya `fact_source` enum (tanpa AI direct); `ai_proposals.status` default `proposed`
+
+**Belum ada:** seed data, `auth.users` trigger profil (Task 2.6), tabel Sprint 4+.
 
 Urutan disarankan:
 
