@@ -13,6 +13,7 @@ import { registerCreditRoutes } from "./credits.js";
 import { registerIntakeRoutes } from "./intake.js";
 import { registerConceptRoutes } from "./concepts.js";
 import { registerOutlineRoutes } from "./outline.js";
+import { registerWriteRoutes } from "./write.js";
 
 export function registerRoutes(app: Hono<AppEnv>): void {
   registerHealthRoutes(app);
@@ -28,4 +29,5 @@ export function registerRoutes(app: Hono<AppEnv>): void {
   registerIntakeRoutes(app);
   registerConceptRoutes(app);
   registerOutlineRoutes(app);
+  registerWriteRoutes(app);
 }

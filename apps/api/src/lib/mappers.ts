@@ -1,5 +1,7 @@
 import type {
   AiProposal,
+  ChapterBeat,
+  ChapterBeatStatus,
   ChapterOutline,
   ChapterOutlineMarker,
   Character,
@@ -670,4 +672,66 @@ export function mapPlannedRevealPublic(row: PlannedRevealRow): PlannedRevealPubl
   const full = mapPlannedRevealRow(row);
   const { planningTruth: _omitted, ...rest } = full;
   return { ...rest, planningTruthRedacted: true };
+}
+
+/** Writer SELECT — planning_truth column never fetched. */
+export interface PlannedRevealSafeRow {
+  id: string;
+  project_id: string;
+  outline_plan_id: string;
+  planned_chapter_outline_id: string | null;
+  related_fact_id: string | null;
+  related_proposal_id: string | null;
+  title: string;
+  reader_facing_hint: string | null;
+  forbidden_before_chapter: number | null;
+  status: string;
+  risk_level: string;
+  metadata: JsonObject | unknown;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ChapterBeatRow {
+  id: string;
+  project_id: string;
+  chapter_outline_id: string;
+  writing_session_id: string | null;
+  beat_number: number;
+  title: string;
+  summary: string;
+  direction: string | null;
+  status: string;
+  emotional_shift: string | null;
+  must_include: string[];
+  must_not_include: string[];
+  word_target: number | null;
+  stop_condition: string | null;
+  sort_order: number;
+  metadata: JsonObject | unknown;
+  created_at: string;
+  updated_at: string;
+}
+
+export function mapChapterBeatRow(row: ChapterBeatRow): ChapterBeat {
+  return {
+    id: row.id,
+    projectId: row.project_id,
+    chapterOutlineId: row.chapter_outline_id,
+    writingSessionId: row.writing_session_id,
+    beatNumber: row.beat_number,
+    title: row.title,
+    summary: row.summary,
+    direction: row.direction,
+    status: row.status as ChapterBeatStatus,
+    emotionalShift: row.emotional_shift,
+    mustInclude: row.must_include ?? [],
+    mustNotInclude: row.must_not_include ?? [],
+    wordTarget: row.word_target,
+    stopCondition: row.stop_condition,
+    sortOrder: row.sort_order,
+    metadata: parseJsonObject(row.metadata),
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
 }

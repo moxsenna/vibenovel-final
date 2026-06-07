@@ -433,6 +433,59 @@ Returns `200` with `{ outlinePlan, chapters, checks, locked: true }`.
 
 **Audit:** No outline-specific `audit_logs` in Task 4.5 (`audit_action` extension deferred).
 
+### Context Packet Builder (Task 5.2)
+
+All endpoints require Bearer JWT. Ownership via `getOwnedProjectRow` — cross-user → `404`.
+
+**Not canon / not prose / not AI:** Context packet build is read-only against canon and outline tables. Persists `context_packet_logs` only. Does **not** write `facts`, `characters`, `speech_rules`, `story_foundations`, `chapter_outlines`, `chapter_prose_versions`, or call OpenRouter/AI.
+
+**Gate (409 `details.missing`):**
+
+| Missing key | Requirement |
+|---|---|
+| `outline_locked` | `projects.workflow_phase` is `outline_locked` or `writing` |
+| `outline_plan_locked` | `outline_plans.status = locked` |
+| `foundation_locked` | `story_foundations.is_locked = true` |
+
+**`POST /api/projects/:id/write/context-packet`**
+
+Body:
+
+```json
+{ "chapterOutlineId": "uuid", "beatId": "optional-uuid" }
+```
+
+- Builds `WriterContextPacket` **server-side** (does not use GET outline bundle as source).
+- `planned_reveals` SELECT excludes `planning_truth`.
+- Runs `assertWriterPacketSafe` before insert — unsafe packet → `500`, no log row.
+- Persists `context_packet_logs` (`writing_session_id` null in Task 5.2).
+- Returns **preview only** (not `packetJson`):
+
+```json
+{
+  "ok": true,
+  "data": {
+    "packetLogId": "...",
+    "preview": { "chapterNumber": 1, "chapterTitle": "...", "direction": "...", "packetLogId": "..." },
+    "safety": {
+      "planningTruthPresent": false,
+      "futureChapterSummaryPresent": false,
+      "packetHash": "...",
+      "builderVersion": "context_packet_v1_stub"
+    }
+  }
+}
+```
+
+**`GET /api/projects/:id/write/context-packet/:logId/preview`**
+
+- Owner-only; returns redacted `preview` from stored `packet_json`.
+- Does **not** return raw `packetJson` or `planningTruth`.
+
+**Writer boundary:** Packet is slice-only — current chapter outline, previous summaries `< N`, safe breadcrumbs from `reader_facing_hint`, forbidden reveals for future chapters. No full outline dump, no future chapter summaries, no raw `planning_truth`.
+
+**Deferred Task 5.2:** Writing session API, beat generate API, prose draft API, OpenRouter, AI generation.
+
 ### Auth approach (Task 2.6)
 
 - **No custom password auth on API.** Identity comes from Supabase Auth.
