@@ -174,8 +174,9 @@ Intake → concepts → foundation proposal → readiness → lock. Stub backend
 5. `docs/19-implementation-checklist.md`
 6. `docs/22-sprint-1-verification-report.md`
 7. `docs/29-sprint-2-verification-report.md`
-8. `docs/27-sprint-2-data-model-implementation-plan.md`
-9. Dokumen domain sesuai task.
+8. `docs/30-sprint-3-story-foundation-flow-implementation-plan.md`
+9. `docs/27-sprint-2-data-model-implementation-plan.md`
+10. Dokumen domain sesuai task.
 
 ---
 
