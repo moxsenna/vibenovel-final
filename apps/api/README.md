@@ -35,7 +35,7 @@ apps/api/
       credits.ts       # GET /api/credits/balance — read-only
       intake.ts        # GET/POST intake, messages, signals (Task 3.2)
       concepts.ts      # GET/POST/PATCH concepts, generate, select (Task 3.3)
-      outline.ts       # GET outline bundle, POST generate, chapter outlines (Task 4.2–4.3)
+      outline.ts       # GET outline bundle, POST generate, chapters, loops, reveals (Task 4.2–4.4)
       index.ts
     services/
       profile.ts       # getOrCreateProfileForAuthUser
@@ -54,6 +54,7 @@ apps/api/
       foundation-lock.ts      # lock workflow + safe canon promotion (Task 3.5)
       outline.ts       # outline bundle read + stub generate (Task 4.2)
       chapter-outline.ts    # chapter outline list/detail/PATCH (Task 4.3)
+      outline-tracking.ts   # open loop + planned reveal CRUD (Task 4.4)
       outline-snapshot.ts   # canon snapshot for planner (read-only)
       outline-generator.ts  # deterministic 10-chapter stub (Task 4.2)
       audit.ts         # append-only audit_logs (service role)
@@ -146,6 +147,14 @@ apps/api/
 | GET | `/api/projects/:id/outline/chapters` | Bearer JWT | List chapter outlines ordered by `chapter_number` (Task 4.3) |
 | GET | `/api/projects/:id/outline/chapters/:chapterId` | Bearer JWT | Chapter outline detail (Task 4.3) |
 | PATCH | `/api/projects/:id/outline/chapters/:chapterId` | Bearer JWT | Manual edit chapter outline fields (Task 4.3) |
+| GET | `/api/projects/:id/outline/open-loops` | Bearer JWT | List open loops (`?status=` optional) (Task 4.4) |
+| POST | `/api/projects/:id/outline/open-loops` | Bearer JWT | Create open loop (Task 4.4) |
+| PATCH | `/api/projects/:id/outline/open-loops/:loopId` | Bearer JWT | Update open loop (Task 4.4) |
+| DELETE | `/api/projects/:id/outline/open-loops/:loopId` | Bearer JWT | Soft drop (`status=dropped`) (Task 4.4) |
+| GET | `/api/projects/:id/outline/reveals` | Bearer JWT | List planned reveals — `planningTruth` redacted (Task 4.4) |
+| POST | `/api/projects/:id/outline/reveals` | Bearer JWT | Create planned reveal — response redacted (Task 4.4) |
+| PATCH | `/api/projects/:id/outline/reveals/:revealId` | Bearer JWT | Update planned reveal — response redacted (Task 4.4) |
+| DELETE | `/api/projects/:id/outline/reveals/:revealId` | Bearer JWT | Soft cancel (`status=cancelled`) (Task 4.4) |
 
 ### Intake routes (Task 3.2)
 
@@ -307,6 +316,52 @@ Validation: non-empty `title`/`summary` when provided; enum checks for `chapterF
 **Canon guardrails:** PATCH does not mutate `facts`, `characters`, `speech_rules`, `foundation`, `open_loops`, `planned_reveals`, or create prose.
 
 **Audit:** No `audit_logs` for chapter outline edits in Task 4.3 (`audit_action` extension deferred).
+
+### Open loop & planned reveal routes (Task 4.4)
+
+All tracking endpoints require Bearer JWT. Ownership via `getOwnedProjectRow` + resource `project_id` / `outline_plan_id` match — cross-user → `404`.
+
+**Not canon:** Open loops and planned reveals are planner-only tracking. No writes to `facts`, `characters`, `speech_rules`, `story_foundations`, or `ai_proposals`. No prose generation.
+
+**Locked plan guard:** When `outline_plans.status=locked`, POST/PATCH/DELETE for open loops and planned reveals → `409 CONFLICT`. GET still allowed.
+
+**`planningTruth` redaction policy:** Default GET list and all POST/PATCH/DELETE responses for reveals use `mapPlannedRevealPublic` — `planningTruth` is **never** returned. Each reveal includes `planningTruthRedacted: true`. List response also includes top-level `planningTruthRedacted: true`. Raw truth is accepted on POST/PATCH body only (planner input); no `includeTruth` query param in Task 4.4.
+
+**`GET /api/projects/:id/outline/open-loops`**
+
+Returns `{ ok: true, data: { openLoops: OpenLoop[] } }` ordered by `created_at` asc. If no outline plan → `200` with `openLoops: []`. Optional filter: `?status=opened|developed|paid_off|dropped`.
+
+**`POST /api/projects/:id/outline/open-loops`**
+
+Required: `question` (non-empty). Optional: `readerFacingHint`, `openedInChapterOutlineId`, `payoffChapterOutlineId`, `status`, `importance`, `metadata` (light JSON). Chapter refs must belong to same project and outline plan.
+
+**`PATCH /api/projects/:id/outline/open-loops/:loopId`**
+
+Allowed: `question`, `readerFacingHint`, `openedInChapterOutlineId`, `payoffChapterOutlineId`, `status`, `importance`, `metadata`. Rejects identity/prose fields.
+
+**`DELETE /api/projects/:id/outline/open-loops/:loopId`**
+
+Soft delete only — sets `status=dropped` (no hard delete).
+
+**`GET /api/projects/:id/outline/reveals`**
+
+Returns `{ ok: true, data: { reveals: PlannedRevealPublic[], planningTruthRedacted: true } }`. Optional filters: `?status=`, `?riskLevel=`. No `planningTruth` in response.
+
+**`POST /api/projects/:id/outline/reveals`**
+
+Required: `title`, `planningTruth` (stored but not returned). Optional: `readerFacingHint`, `plannedChapterOutlineId`, `relatedFactId`, `relatedProposalId`, `forbiddenBeforeChapter` (>0), `status`, `riskLevel`, `metadata`. Related fact/proposal must belong to same project.
+
+**`PATCH /api/projects/:id/outline/reveals/:revealId`**
+
+Same editable fields as POST (all optional on PATCH). Response redacted.
+
+**`DELETE /api/projects/:id/outline/reveals/:revealId`**
+
+Soft delete only — sets `status=cancelled`.
+
+**Canon guardrails:** Tracking CRUD does not mutate canon tables, create proposals, or expose raw `planningTruth` in default responses.
+
+**Audit:** No `audit_logs` for tracking edits in Task 4.4.
 
 ### Auth approach (Task 2.6)
 
