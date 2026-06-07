@@ -1,44 +1,103 @@
-# apps/api — Backend API (Placeholder)
+# apps/api — VibeNovel API (Sprint 2 Task 2.5)
 
-## Fungsi folder ini
+Hono API on **Cloudflare Workers** — health, env shell, CORS, auth guard shell. No CRUD or AI routes yet.
 
-Tempat **backend API VibeNovel** — route HTTP, auth boundary, orchestration workflow, dan integrasi ke database/AI engine.
+## Stack
 
-Rencana arsitektur (belum dibuat):
+- [Hono](https://hono.dev/) 4.x
+- TypeScript
+- Wrangler 3.x (local dev)
+- `@vibenovel/shared` for `JsonValue` types
+
+## Structure
 
 ```txt
-apps/api/src/index.ts          # entry Worker/API
-apps/api/src/routes/           # projects, story-bible, prose, publish, dll.
-apps/api/src/modules/          # story-state, planning, writing, validation
-apps/api/src/ai/               # model router, agents, prompts
+apps/api/
+  src/
+    index.ts           # Worker entry
+    env.ts             # Bindings + safe env flags
+    errors.ts          # AppError + global handlers
+    response.ts        # { ok, data } / { ok, error }
+    middleware/
+      cors.ts
+      auth.ts          # Bearer shell (full auth → Task 2.6)
+    routes/
+      health.ts
+      me.ts
+      index.ts
+    lib/
+      supabase.ts      # Client factory shell (no queries)
+  wrangler.toml
+  .dev.vars.example
 ```
 
-## Status saat ini
+## Local development
 
-**Belum diimplementasikan.** Folder ini hanya placeholder struktur monorepo.
+1. Copy env template (no secrets in git):
 
-Sprint 1 **tidak** membangun backend. Frontend di `apps/web` memakai typed mock data.
+   ```bash
+   cp apps/api/.dev.vars.example apps/api/.dev.vars
+   ```
 
-## Kapan akan dipakai
+2. Fill `.dev.vars` locally with Supabase local URLs/keys if needed.
 
-| Sprint | Cakupan |
-|---|---|
-| Sprint 2+ | Project persistence, CRUD dasar |
-| Sprint 3+ | Story foundation flow + intake |
-| Sprint 5+ | AI writing pipeline (Context Packet, Reveal Gate, Validator) |
-| Sprint 6+ | Chapter Delta, canon update |
+3. From repo root:
 
-Lihat `docs/17-roadmap-sprint-plan-mvp-to-full.md` dan `docs/13-api-routes-and-backend-workflow.md`.
+   ```bash
+   npm run dev:api
+   ```
 
-## Larangan untuk agent / developer
+   Default: http://127.0.0.1:8787
 
-Jangan membangun di Sprint 1:
+## Endpoints (Task 2.5)
 
-- route API production
-- Supabase client dengan service role
-- OpenRouter / AI generation asli
-- credit deduction, payment webhook
-- validator, Reveal Gate, Context Packet logic
-- fake endpoint yang pura-pura production-ready
+| Method | Path | Auth | Description |
+|---|---|---|---|
+| GET | `/health` | No | Service health + env presence flags |
+| GET | `/api/health` | No | Alias |
+| GET | `/api/me` | Bearer | Auth shell — 401 without token |
 
-Jika perlu eksperimen, buat boundary jelas dan jangan campur dengan UI Sprint 1.
+### Response format
+
+Success:
+
+```json
+{ "ok": true, "data": { ... } }
+```
+
+Error:
+
+```json
+{ "ok": false, "error": { "code": "UNAUTHORIZED", "message": "..." } }
+```
+
+`/health` never returns env **values** — only booleans like `hasSupabaseUrl`.
+
+## Scripts (root)
+
+```bash
+npm run dev:api
+npm run typecheck:api
+npm run build:api
+```
+
+## Environment variables
+
+| Variable | Required (2.5) | Notes |
+|---|---|---|
+| `SUPABASE_URL` | Optional | Flag only on /health |
+| `SUPABASE_ANON_KEY` | Optional | Never sent to browser from API |
+| `SUPABASE_SERVICE_ROLE_KEY` | Optional | Server only — Task 2.6+ data routes |
+| `APP_ENV` | Optional | Default `development` |
+| `ALLOWED_ORIGINS` | Optional | CSV; default localhost:5173–5175 |
+
+## Not in Task 2.5
+
+- Project / settings / foundation CRUD
+- Supabase query execution
+- OpenRouter / AI generation
+- Credit deduction
+- Cloudflare deploy
+- Frontend integration
+
+See `docs/27-sprint-2-data-model-implementation-plan.md` Task 2.6+.

@@ -1,0 +1,8 @@
+# Copy to `.dev.vars` for local `wrangler dev` — never commit `.dev.vars`
+# Variable names only; fill values locally.
+
+SUPABASE_URL=
+SUPABASE_ANON_KEY=
+SUPABASE_SERVICE_ROLE_KEY=
+APP_ENV=development
+ALLOWED_ORIGINS=http://localhost:5173,http://localhost:5174,http://localhost:5175
