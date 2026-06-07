@@ -35,7 +35,7 @@ apps/api/
       credits.ts       # GET /api/credits/balance — read-only
       intake.ts        # GET/POST intake, messages, signals (Task 3.2)
       concepts.ts      # GET/POST/PATCH concepts, generate, select (Task 3.3)
-      outline.ts       # GET outline bundle, POST generate stub (Task 4.2)
+      outline.ts       # GET outline bundle, POST generate, chapter outlines (Task 4.2–4.3)
       index.ts
     services/
       profile.ts       # getOrCreateProfileForAuthUser
@@ -53,6 +53,7 @@ apps/api/
       foundation-readiness.ts # server-side readiness calculator (Task 3.4)
       foundation-lock.ts      # lock workflow + safe canon promotion (Task 3.5)
       outline.ts       # outline bundle read + stub generate (Task 4.2)
+      chapter-outline.ts    # chapter outline list/detail/PATCH (Task 4.3)
       outline-snapshot.ts   # canon snapshot for planner (read-only)
       outline-generator.ts  # deterministic 10-chapter stub (Task 4.2)
       audit.ts         # append-only audit_logs (service role)
@@ -142,6 +143,9 @@ apps/api/
 | POST | `/api/projects/:id/foundation/lock` | Bearer JWT | Lock foundation + promote accepted safe proposals (Task 3.5) |
 | GET | `/api/projects/:id/outline` | Bearer JWT | Outline bundle: plan + chapters + loops + reveals (Task 4.2) |
 | POST | `/api/projects/:id/outline/generate` | Bearer JWT | Deterministic outline stub — requires foundation locked (Task 4.2) |
+| GET | `/api/projects/:id/outline/chapters` | Bearer JWT | List chapter outlines ordered by `chapter_number` (Task 4.3) |
+| GET | `/api/projects/:id/outline/chapters/:chapterId` | Bearer JWT | Chapter outline detail (Task 4.3) |
+| PATCH | `/api/projects/:id/outline/chapters/:chapterId` | Bearer JWT | Manual edit chapter outline fields (Task 4.3) |
 
 ### Intake routes (Task 3.2)
 
@@ -277,6 +281,32 @@ Stub output (default 10 chapters): parity baseline `apps/web/src/mocks/outline.t
 **Workflow:** On successful generate, if `projects.workflow_phase=foundation_locked`, sets `workflow_phase=outline`. Does not set `outline_locked` or unlock foundation.
 
 **Audit:** No outline-specific `audit_action` enum in Task 4.2. Workflow phase change may write existing `project_updated` audit when advancing from `foundation_locked`.
+
+### Chapter outline routes (Task 4.3)
+
+All chapter outline endpoints require Bearer JWT. Ownership via `getOwnedProjectRow` + chapter `project_id` / `outline_plan_id` match — cross-user → `404`.
+
+**Not prose:** PATCH accepts planning fields only (`title`, `summary`, `purpose`, `hook`, `endingHook`, `miniVictory`, markers). Rejects `chapterText`, `prose`, `body`, `planningTruth`, and outline identity fields (`chapterNumber`, `outlinePlanId`, `projectId`).
+
+**`GET /api/projects/:id/outline/chapters`**
+
+Returns `{ ok: true, data: { chapters: ChapterOutline[] } }` ordered by `chapter_number` asc. If no outline plan → `200` with `chapters: []`. Optional filters: `?status=`, `?chapterNumber=`.
+
+**`GET /api/projects/:id/outline/chapters/:chapterId`**
+
+Returns single `ChapterOutline` in camelCase. Does not include `planned_reveals.planning_truth` (chapter rows have no reveal truth).
+
+**`PATCH /api/projects/:id/outline/chapters/:chapterId`**
+
+Editable when `outline_plans.status` is not `locked`. If plan `locked` → `409 CONFLICT` (`Outline plan is locked; chapter outlines cannot be edited`). GET still allowed when locked.
+
+Allowed fields: `title`, `summary`, `purpose`, `chapterFunction`, `emotionalDirection`, `hook`, `endingHook`, `miniVictory`, `status`, `markers`, `metadata` (light JSON, max 4KB).
+
+Validation: non-empty `title`/`summary` when provided; enum checks for `chapterFunction`, `emotionalDirection`, `status`; `markers` max 20 items with valid `RetentionMarkerType`.
+
+**Canon guardrails:** PATCH does not mutate `facts`, `characters`, `speech_rules`, `foundation`, `open_loops`, `planned_reveals`, or create prose.
+
+**Audit:** No `audit_logs` for chapter outline edits in Task 4.3 (`audit_action` extension deferred).
 
 ### Auth approach (Task 2.6)
 
