@@ -989,6 +989,107 @@ ON CONFLICT (id) DO UPDATE SET
   updated_at = now();
 
 -- -----------------------------------------------------------------------------
+-- Sprint 5: chapter_writing_states — Bab 1 not_started (parity Write Room entry)
+-- -----------------------------------------------------------------------------
+INSERT INTO public.chapter_writing_states (
+  id,
+  project_id,
+  chapter_outline_id,
+  status,
+  word_count
+)
+VALUES (
+  'a0000000-0000-4000-8000-000000000940',
+  'a0000000-0000-4000-8000-000000000101',
+  'a0000000-0000-4000-8000-000000000911',
+  'not_started',
+  0
+)
+ON CONFLICT (chapter_outline_id) DO UPDATE SET
+  status = EXCLUDED.status,
+  word_count = EXCLUDED.word_count,
+  updated_at = now();
+
+-- -----------------------------------------------------------------------------
+-- Sprint 5: chapter_beats — Bab 1 parity apps/web/src/mocks/chapter.ts (5 beats)
+-- No prose versions; no context_packet_logs (runtime only).
+-- -----------------------------------------------------------------------------
+INSERT INTO public.chapter_beats (
+  id,
+  project_id,
+  chapter_outline_id,
+  beat_number,
+  title,
+  summary,
+  direction,
+  status,
+  sort_order
+)
+VALUES
+  (
+    'a0000000-0000-4000-8000-000000000941',
+    'a0000000-0000-4000-8000-000000000101',
+    'a0000000-0000-4000-8000-000000000911',
+    1,
+    'Makan malam dimulai',
+    'Nadira sibuk di dapur sambil berusaha tampak tenang, padahal malam ini ada makan malam keluarga.',
+    'Tunjukkan rutinitas Nadira yang hafal di luar kepala — dia tahu apa yang diharapkan keluarga, tapi jangan buat dia terlihat lemah total.',
+    'draft',
+    1
+  ),
+  (
+    'a0000000-0000-4000-8000-000000000942',
+    'a0000000-0000-4000-8000-000000000101',
+    'a0000000-0000-4000-8000-000000000911',
+    2,
+    'Keluarga datang',
+    'Tamu keluarga mulai berdatangan; suasana ramai tapi Nadira merasa seperti tamu di rumahnya sendiri.',
+    'Buat kontras antara keramaian dan kesendirian Nadira — dia sibuk melayani, tapi jarang dipanggil namanya.',
+    'empty',
+    2
+  ),
+  (
+    'a0000000-0000-4000-8000-000000000943',
+    'a0000000-0000-4000-8000-000000000101',
+    'a0000000-0000-4000-8000-000000000911',
+    3,
+    'Sindiran mertua',
+    'Bu Siti menyindir Nadira di depan tamu dengan kalimat yang terdengar sopan tapi menusuk.',
+    'Sindiran harus terasa halus di permukaan, tajam di bawah — pembaca ikut merasakan malu yang ditahan Nadira.',
+    'empty',
+    3
+  ),
+  (
+    'a0000000-0000-4000-8000-000000000944',
+    'a0000000-0000-4000-8000-000000000101',
+    'a0000000-0000-4000-8000-000000000911',
+    4,
+    'Arman diam',
+    'Sindiran makin tajam; Arman memilih diam dan mengalihkan topik.',
+    'Fokus pada keheningan Arman — bukan sekadar marah, tapi kecewa karena dia tidak berdiri di sisi Nadira.',
+    'empty',
+    4
+  ),
+  (
+    'a0000000-0000-4000-8000-000000000945',
+    'a0000000-0000-4000-8000-000000000101',
+    'a0000000-0000-4000-8000-000000000911',
+    5,
+    'Pesan di ponsel',
+    'Saat makan malam hampir selesai, ponsel Arman bergetar — Nadira melihat nama yang tidak dikenalnya.',
+    'Akhiri dengan hook kuat: nama Siska terlihat sekilas, Arman buru-buru mematikan layar. Rahasia belum terbuka penuh.',
+    'empty',
+    5
+  )
+ON CONFLICT (chapter_outline_id, beat_number) DO UPDATE SET
+  title = EXCLUDED.title,
+  summary = EXCLUDED.summary,
+  direction = EXCLUDED.direction,
+  status = EXCLUDED.status,
+  sort_order = EXCLUDED.sort_order,
+  updated_at = now();
+
+-- -----------------------------------------------------------------------------
 -- projects — Sprint 4 workflow pointer (outline seeded; foundation lock unchanged)
 -- -----------------------------------------------------------------------------
 UPDATE public.projects

@@ -265,6 +265,8 @@ export const WORKFLOW_PHASES = {
   foundation_locked: "foundation_locked",
   outline: "outline",
   outline_locked: "outline_locked",
+  /** Sprint 5 — user actively writing a chapter (optional routing; gate remains outline_locked). */
+  writing: "writing",
 } as const;
 export type WorkflowPhase = (typeof WORKFLOW_PHASES)[keyof typeof WORKFLOW_PHASES];
 
@@ -416,6 +418,51 @@ export const RETENTION_MARKER_TYPES = {
 } as const;
 export type RetentionMarkerType =
   (typeof RETENTION_MARKER_TYPES)[keyof typeof RETENTION_MARKER_TYPES];
+
+// --- Sprint 5: write room (draft prose — NOT canon until Sprint 6 summary) ---
+
+export const WRITING_SESSION_STATUSES = {
+  active: "active",
+  paused: "paused",
+  ready_for_summary: "ready_for_summary",
+  completed: "completed",
+  abandoned: "abandoned",
+} as const;
+export type WritingSessionStatus =
+  (typeof WRITING_SESSION_STATUSES)[keyof typeof WRITING_SESSION_STATUSES];
+
+export const CHAPTER_WRITING_STATUSES = {
+  not_started: "not_started",
+  drafting: "drafting",
+  ready_for_summary: "ready_for_summary",
+  summarized: "summarized",
+} as const;
+export type ChapterWritingStatus =
+  (typeof CHAPTER_WRITING_STATUSES)[keyof typeof CHAPTER_WRITING_STATUSES];
+
+export const CHAPTER_BEAT_STATUSES = {
+  empty: "empty",
+  draft: "draft",
+  done: "done",
+} as const;
+export type ChapterBeatStatus =
+  (typeof CHAPTER_BEAT_STATUSES)[keyof typeof CHAPTER_BEAT_STATUSES];
+
+export const CHAPTER_PROSE_SOURCES = {
+  user_edited: "user_edited",
+  stub_deterministic: "stub_deterministic",
+  /** Reserved for future AI generation — not approval for OpenRouter in Sprint 5. */
+  ai_generated: "ai_generated",
+} as const;
+export type ChapterProseSource =
+  (typeof CHAPTER_PROSE_SOURCES)[keyof typeof CHAPTER_PROSE_SOURCES];
+
+/** Context Packet builder version identifiers (string const — not a DB enum). */
+export const CONTEXT_PACKET_BUILDER_VERSIONS = {
+  v1_stub: "context_packet_v1_stub",
+} as const;
+export type ContextPacketBuilderVersion =
+  (typeof CONTEXT_PACKET_BUILDER_VERSIONS)[keyof typeof CONTEXT_PACKET_BUILDER_VERSIONS];
 
 // --- Credit balance (display/seed only in Sprint 2) ---
 

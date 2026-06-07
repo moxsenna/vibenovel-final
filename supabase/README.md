@@ -28,6 +28,7 @@ supabase/
 | **2.4** ✅ | Seed | `seed.sql` — demo "Istri yang Mereka Buang" dari mock Sprint 1 |
 | **3.1** ✅ | Intake & concepts migration | `migrations/00002_sprint3_intake_concepts.sql` — 4 tabel + `projects` columns |
 | **4.1** ✅ | Outline planning migration | `migrations/00003_sprint4_outline_planning.sql` — 4 tabel + `workflow_phase` extend |
+| **5.1** ✅ | Write room migration | `migrations/00004_sprint5_write_room.sql` — 5 tabel + `workflow_phase` extend |
 | **Apply local** | Setelah Supabase CLI + Docker | `supabase start` lalu `supabase db reset` |
 | **Apply remote** | Manual / CI terpisah | **Tidak** tanpa approval eksplisit user |
 
@@ -74,7 +75,19 @@ Membuat:
 
 Seed Task 4.1: 1 outline plan, 10 chapter outlines (parity `mockOutline`), 3 open loops, 3 planned reveals; `workflow_phase=outline`.
 
-**Belum ada:** `auth.users` trigger otomatis on signup (Task 2.6), `audit_action` enum Sprint 3 (deferred), prose/chapter tables (Sprint 5+).
+### Migration `00004_sprint5_write_room.sql` (Task 5.1)
+
+Membuat:
+
+- **5 tabel:** `writing_sessions`, `chapter_writing_states`, `chapter_beats`, `chapter_prose_versions`, `context_packet_logs`
+- **Enums** Sprint 5 selaras `@vibenovel/shared`
+- **Extend `workflow_phase`:** `writing`
+- **RLS** owner-only; draft prose **bukan canon**; `context_packet_logs.packet_json` safe-context audit only
+- **Partial unique:** satu session `active` per chapter outline; satu prose `is_current` per beat
+
+Seed Task 5.1: `chapter_writing_states` Bab 1 (`not_started`), 5 `chapter_beats` parity `mockChapterDraft`; no prose versions, no context packet logs.
+
+**Belum ada:** `auth.users` trigger otomatis on signup (Task 2.6), `audit_action` enum Sprint 3 (deferred), `chapter_generation_attempts`, `validation_reports`, Context Packet Builder API (Task 5.2+).
 
 Urutan disarankan:
 
@@ -112,7 +125,8 @@ Gunakan `.env` lokal (di-`.gitignore`). Contoh nama variabel boleh ada di docs; 
 - Jangan commit `.env`, service role key, JWT secret, atau OpenRouter key.
 - Jangan taruh service role di `apps/web` atau bundle browser.
 - Jangan edit migration yang sudah applied di shared environment tanpa strategi rollback.
-- Jangan buat tabel Sprint 4+ (chapters, prose_versions, credits_ledger) di migrasi Sprint 2.
+- Jangan buat tabel Sprint 4+ (legacy `chapters` entity, `credits_ledger`) di migrasi Sprint 2.
+- Sprint 5 `chapter_prose_versions` adalah **draft** — bukan canon `facts`.
 - Jangan INSERT AI output langsung ke `facts` — lihat canon rule di doc 28.
 
 ## Dokumen terkait

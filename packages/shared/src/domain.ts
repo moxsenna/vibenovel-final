@@ -5,10 +5,14 @@ import type {
   AiProposalType,
   ChapterEmotion,
   ChapterFunction,
+  ChapterBeatStatus,
   ChapterOutlineStatus,
+  ChapterProseSource,
+  ChapterWritingStatus,
   CharacterRole,
   CharacterSource,
   CharacterStatus,
+  ContextPacketBuilderVersion,
   CreditBalanceSource,
   DefaultLanguage,
   DetectedSignalStatus,
@@ -41,6 +45,7 @@ import type {
   UserRole,
   WorkflowPhase,
   WriterQualityMode,
+  WritingSessionStatus,
 } from "./enums.js";
 import type { ID, ISODateTime, JsonObject, Timestamps } from "./utils.js";
 
@@ -332,4 +337,213 @@ export interface PlannedReveal extends Timestamps {
   metadata: JsonObject;
 }
 
-// Sprint 5+: beat_contracts, prose_versions, chapter_deltas — deferred.
+// --- Sprint 5: write room (draft storage — NOT canon until Sprint 6 summary) ---
+
+/** Active or completed writing attempt for one chapter outline row. */
+export interface WritingSession extends Timestamps {
+  id: ID;
+  projectId: ID;
+  chapterOutlineId: ID;
+  status: WritingSessionStatus;
+  activeBeatId: ID | null;
+  startedAt: ISODateTime;
+  lastActivityAt: ISODateTime;
+  readyForSummaryAt: ISODateTime | null;
+  metadata: JsonObject;
+}
+
+/** Prose lifecycle metadata per chapter — separate from planning `chapter_outlines`. */
+export interface ChapterWritingState extends Timestamps {
+  id: ID;
+  projectId: ID;
+  chapterOutlineId: ID;
+  writingSessionId: ID | null;
+  status: ChapterWritingStatus;
+  wordCount: number;
+  lastSavedAt: ISODateTime | null;
+  metadata: JsonObject;
+}
+
+/** Scene/beat row for Write Room — beat contract lite fields. */
+export interface ChapterBeat extends Timestamps {
+  id: ID;
+  projectId: ID;
+  chapterOutlineId: ID;
+  writingSessionId: ID | null;
+  beatNumber: number;
+  title: string;
+  summary: string;
+  direction: string | null;
+  status: ChapterBeatStatus;
+  emotionalShift: string | null;
+  mustInclude: string[];
+  mustNotInclude: string[];
+  wordTarget: number | null;
+  stopCondition: string | null;
+  sortOrder: number;
+  metadata: JsonObject;
+}
+
+/**
+ * Draft prose version per beat — NOT canon.
+ * New facts discovered in prose must become proposals in Sprint 6+, not direct fact writes.
+ */
+export interface ChapterProseVersion {
+  id: ID;
+  projectId: ID;
+  chapterBeatId: ID;
+  versionNumber: number;
+  proseText: string;
+  wordCount: number;
+  source: ChapterProseSource;
+  isCurrent: boolean;
+  contextPacketLogId: ID | null;
+  metadata: JsonObject;
+  createdAt: ISODateTime;
+}
+
+/**
+ * Audit log of backend-built Context Packet snapshots.
+ * packetJson must be safe-only — must NOT contain planningTruth or full outline dump.
+ */
+export interface ContextPacketLog {
+  id: ID;
+  projectId: ID;
+  writingSessionId: ID | null;
+  chapterOutlineId: ID;
+  chapterBeatId: ID | null;
+  chapterNumber: number;
+  packetHash: string;
+  packetJson: JsonObject;
+  builderVersion: ContextPacketBuilderVersion | string;
+  createdAt: ISODateTime;
+}
+
+/** Redacted character entry safe for writer context. */
+export interface CharacterSafeSummary {
+  id: ID;
+  name: string;
+  roleLabel: string;
+  descriptionSummary: string;
+}
+
+/** Redacted speech rule entry safe for writer context. */
+export interface SpeechRuleSummary {
+  id: ID;
+  relationshipLabel: string;
+  ruleText: string;
+  examples: string[] | null;
+}
+
+/** Open loop safe summary — no future payoff spoiler detail. */
+export interface OpenLoopSafeSummary {
+  id: ID;
+  question: string;
+  readerFacingHint: string | null;
+  status: OpenLoopStatus;
+}
+
+/** Reveal safe summary — breadcrumb/hint only, never planningTruth. */
+export interface RevealSafeSummary {
+  id: ID;
+  title: string;
+  readerFacingHint: string | null;
+}
+
+/** Forbidden reveal entry for active chapter — explicit constraint, not usable lore. */
+export interface ForbiddenRevealEntry {
+  id: ID;
+  label: string;
+  forbiddenConcepts: string[];
+}
+
+/**
+ * Full writer Context Packet — slice-only, backend-built.
+ * Must NOT include full outline dump, future chapters, or planningTruth raw.
+ */
+export interface WriterContextPacket {
+  meta: {
+    projectId: ID;
+    chapterOutlineId: ID;
+    chapterNumber: number;
+    beatId?: ID;
+    beatNumber?: number;
+    builderVersion: ContextPacketBuilderVersion | string;
+    packetHash: string;
+    generatedAt: ISODateTime;
+    truncated?: boolean;
+  };
+  foundation: {
+    premiseSummary: string;
+    mainConflictSummary: string;
+    readerPromise: string;
+    tone: string | null;
+    storySecretsPreview: string | null;
+  };
+  concept: {
+    title: string;
+    shortPitch: string;
+    readerPromise: string | null;
+  };
+  canon: {
+    characters: CharacterSafeSummary[];
+    facts: string[];
+    speechRules: SpeechRuleSummary[];
+  };
+  currentChapter: {
+    title: string;
+    summary: string;
+    purpose: string | null;
+    chapterFunction: ChapterFunction;
+    emotionalDirection: ChapterEmotion | null;
+    endingHook: string | null;
+    miniVictory: string | null;
+    hook: string | null;
+    markers: ChapterOutlineMarker[];
+  };
+  continuity: {
+    previousChapterSummaries: string[];
+    openLoopsActive: OpenLoopSafeSummary[];
+    unresolvedThreadLabels: string[];
+  };
+  revealGate: {
+    allowedBreadcrumbs: string[];
+    allowedReveals: RevealSafeSummary[];
+    forbiddenReveals: ForbiddenRevealEntry[];
+    forbiddenConcepts: string[];
+  };
+  emotionalTarget: {
+    chapterEmotion: ChapterEmotion | null;
+    beatEmotionalShift: string | null;
+  };
+  hookTarget: {
+    chapterEndingHook: string | null;
+    beatStopCondition: string | null;
+  };
+  constraints: {
+    mustInclude: string[];
+    mustNotInclude: string[];
+    wordTarget: number | null;
+    mobileFormatRules: string[];
+  };
+}
+
+/**
+ * User-facing preview of Context Packet — plain-language direction only.
+ * Normal web API must return this, not raw packetJson or model metadata.
+ */
+export interface WriterContextPacketPreview {
+  chapterNumber: number;
+  chapterTitle: string;
+  beatNumber?: number;
+  beatTitle?: string;
+  direction: string | null;
+  emotionalTarget: string | null;
+  hookTarget: string | null;
+  mustInclude: string[];
+  mustNotInclude: string[];
+  storyCheckLabels: string[];
+  packetLogId: ID;
+}
+
+// Sprint 6+: chapter_deltas, validation_reports — deferred.
