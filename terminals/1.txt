@@ -3,7 +3,7 @@ pid: 68296
 cwd: "D:\Coding\vibenovel-unified-blueprint"
 command: "Set-Location D:\\Coding\\vibenovel-unified-blueprint; npm run dev:api"
 started_at: 2026-06-07T19:49:21.825Z
-running_for_ms: 999999   
+running_for_ms: 1435011  
 ---
 
 > vibenovel@0.1.0 dev:api
@@ -154,3 +154,29 @@ X [ERROR] Build failed with 1 error:
 [wrangler:inf] POST /api/projects/992ed8b7-bc88-47d0-a569-14ddb9305efb/proposals/8473fdbc-e970-4bba-bd94-35e2a6c94617/reject 200 OK (94ms)
 [wrangler:inf] POST /api/projects/992ed8b7-bc88-47d0-a569-14ddb9305efb/proposals/9ba85b08-d73a-4c71-9186-96d4c2c15835/merge 200 OK (113ms)
 [wrangler:inf] GET /api/projects/a0000000-0000-4000-8000-000000000101/proposals 404 Not Found (76ms)
+⎔ Reloading local server...
+⎔ Reloading local server...
+⎔ Reloading local server...
+⎔ Reloading local server...
+[wrangler:inf] GET /api/credits/balance 401 Unauthorized (13ms)
+[wrangler:inf] GET /api/credits/balance 200 OK (224ms)
+[wrangler:inf] GET /api/me 200 OK (139ms)
+[wrangler:inf] GET /api/projects 200 OK (295ms)
+[wrangler:inf] POST /api/projects 201 Created (212ms)
+[wrangler:inf] GET /api/projects/62220/settings 500 Internal Server Error (138ms)
+X [ERROR] projects select by id failed
+
+
+[wrangler:inf] PUT /api/projects/62220/settings 500 Internal Server Error (144ms)
+X [ERROR] projects select by id failed
+
+
+[wrangler:inf] GET /api/projects/62220/foundation 500 Internal Server Error (100ms)
+X [ERROR] projects select by id failed
+
+
+[wrangler:inf] GET /api/credits/balance 200 OK (81ms)
+[wrangler:inf] POST /api/projects 201 Created (165ms)
+[wrangler:inf] GET /api/projects/a77dbcae-b2c8-4ba3-a106-a6d331527b66/settings 200 OK (107ms)
+[wrangler:inf] PUT /api/projects/a77dbcae-b2c8-4ba3-a106-a6d331527b66/settings 200 OK (162ms)
+[wrangler:inf] GET /api/projects/a77dbcae-b2c8-4ba3-a106-a6d331527b66/foundation 200 OK (211ms)
