@@ -48,6 +48,8 @@ apps/api/
       ai-proposal.ts   # proposal queue CRUD + accept/reject/merge
       intake.ts        # intake sessions, messages, detected signals (stub extractor)
       concept.ts       # story_concepts list/generate/select (stub generator)
+      foundation-proposal.ts  # stub foundation proposal batch (Task 3.4)
+      foundation-readiness.ts # server-side readiness calculator (Task 3.4)
       audit.ts         # append-only audit_logs (service role)
     lib/
       supabase.ts      # anon + service role clients
@@ -129,6 +131,9 @@ apps/api/
 | GET | `/api/projects/:id/concepts/:conceptId` | Bearer JWT | Concept detail |
 | PATCH | `/api/projects/:id/concepts/:conceptId` | Bearer JWT | Update proposed concept only (`selected` → 409) |
 | POST | `/api/projects/:id/concepts/:conceptId/select` | Bearer JWT | Select concept → updates `projects.selected_concept_id`, `workflow_phase=foundation` |
+| POST | `/api/projects/:id/foundation/proposals/generate` | Bearer JWT | Stub foundation proposal batch from selected concept (`regenerate` optional) |
+| GET | `/api/projects/:id/foundation/proposals` | Bearer JWT | Foundation-flow proposals (`?includeResolved=true`) |
+| GET | `/api/projects/:id/foundation/readiness` | Bearer JWT | Server-side readiness score, checks, `canLock` (lock deferred 3.5) |
 
 ### Intake routes (Task 3.2)
 
@@ -153,6 +158,18 @@ All concept endpoints require Bearer JWT. Ownership via `getOwnedProjectRow` + c
 **Select:** Sets one `selected` concept, rejects others, updates `projects.selected_concept_id` and `workflow_phase=foundation`.
 
 **Audit:** No concept-specific `audit_logs` in Task 3.3.
+
+### Foundation proposal & readiness (Task 3.4)
+
+Requires **selected concept** before `POST .../foundation/proposals/generate`. Cross-user → `404`.
+
+**Generate:** Deterministic stub batch → `ai_proposals` (`foundation`, `character`, `fact`, `relationship_speech_rule`, `secret`, `style`). `source=system_seed`, `payload.generator=foundation_stub_batch`. Does **not** write `facts`, `characters`, `speech_rules`, or lock foundation.
+
+**Dedupe:** `regenerate=false` returns existing proposed stub batch; `regenerate=true` rejects old proposed foundation-flow proposals with note `regenerated`.
+
+**Readiness:** `GET .../foundation/readiness` computes score server-side, updates `story_foundations.readiness_percent` / `readiness_status` only (no canon copy from proposals). `canLock` requires score ≥75 + core checks — actual lock is Task 3.5.
+
+**Audit:** Batch generator does not write per-proposal audit (manual `POST /proposals` still audits via existing service).
 
 ### Auth approach (Task 2.6)
 
