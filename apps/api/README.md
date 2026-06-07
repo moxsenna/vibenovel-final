@@ -36,6 +36,7 @@ apps/api/
       intake.ts        # GET/POST intake, messages, signals (Task 3.2)
       concepts.ts      # GET/POST/PATCH concepts, generate, select (Task 3.3)
       outline.ts       # GET outline bundle, generate, chapters, loops, reveals, approve/lock (Task 4.2–4.5)
+      write.ts         # context packet, writing sessions, beats (Task 5.2–5.3)
       index.ts
     services/
       profile.ts       # getOrCreateProfileForAuthUser
@@ -58,6 +59,11 @@ apps/api/
       outline-lock.ts       # outline approve + lock workflow (Task 4.5)
       outline-snapshot.ts   # canon snapshot for planner (read-only)
       outline-generator.ts  # deterministic 10-chapter stub (Task 4.2)
+      write-snapshot.ts     # write room gate + context snapshot loader (Task 5.2)
+      context-packet-builder.ts  # safe context packet build (Task 5.2)
+      context-packet-safety.ts   # packet hash + safety asserts (Task 5.2)
+      write-session.ts    # writing session start/patch/ready-for-summary (Task 5.3)
+      chapter-beat.ts     # beat list/generate/patch stub (Task 5.3)
       audit.ts         # append-only audit_logs (service role)
     lib/
       supabase.ts      # anon + service role clients
@@ -484,7 +490,65 @@ Body:
 
 **Writer boundary:** Packet is slice-only — current chapter outline, previous summaries `< N`, safe breadcrumbs from `reader_facing_hint`, forbidden reveals for future chapters. No full outline dump, no future chapter summaries, no raw `planning_truth`.
 
-**Deferred Task 5.2:** Writing session API, beat generate API, prose draft API, OpenRouter, AI generation.
+### Writing Session & Chapter Beat API (Task 5.3)
+
+All endpoints require Bearer JWT. Ownership via `getOwnedProjectRow` + session/beat `project_id` match — cross-user → `404`.
+
+**Not canon / not prose / not AI:** Sessions and beats are write-room scaffolding only. Does **not** write `facts`, `characters`, `speech_rules`, `story_foundations`, `chapter_outlines`, or `chapter_prose_versions` (Task 5.3). No OpenRouter, no AI generation, no context packet auto-build on beat generate.
+
+**Gate (409 `details.missing`):** Same as Task 5.2 — `outline_locked` or `writing` workflow phase, locked outline plan, locked foundation.
+
+**`POST /api/projects/:id/write/sessions`**
+
+Body:
+
+```json
+{ "chapterOutlineId": "uuid", "activeBeatId": "optional-uuid" }
+```
+
+- Start or resume **active** session for `project_id` + `chapterOutlineId`.
+- Idempotent: existing active session → `200` with same session (no duplicate).
+- New session → `201`, upserts `chapter_writing_states` (`status=drafting`), optionally sets `projects.workflow_phase=writing` when previously `outline_locked`.
+- Does not create prose or mutate canon/outline content.
+
+Returns `{ session, writingState }`.
+
+**`GET /api/projects/:id/write/sessions/:sessionId`**
+
+Returns `{ session, writingState, chapterOutline, activeBeat, beatsCount }`. Chapter outline is safe summary only (no `planningTruth`, no context packet JSON, no prose versions).
+
+**`PATCH /api/projects/:id/write/sessions/:sessionId`**
+
+Allowed: `status` (`active` | `paused` | `abandoned`), `activeBeatId`, light `metadata`.
+
+Rejected: `ready_for_summary` (use dedicated endpoint), `projectId`, `chapterOutlineId`, `contextPacketJson`, `proseText`, `planningTruth`.
+
+**`POST /api/projects/:id/write/sessions/:sessionId/ready-for-summary`**
+
+- Requires ≥1 beat for the chapter.
+- Sets `writing_sessions.status=ready_for_summary`, `ready_for_summary_at=now()`, `chapter_writing_states.status=ready_for_summary`.
+- **Marker only** — no chapter summary, no canon update (Sprint 6 handoff).
+
+**`GET /api/projects/:id/write/sessions/:sessionId/beats`**
+
+Returns `{ beats: ChapterBeat[] }` ordered by `sort_order` / `beat_number`. Empty array `200` when no beats.
+
+**`POST /api/projects/:id/write/sessions/:sessionId/beats/generate`**
+
+Optional body: `{ "regenerate": false }`.
+
+- Deterministic stub generator (5 beats, parity Bab 1 seed/mock).
+- `regenerate=false` (default): returns existing beats for chapter if any.
+- `regenerate=true`: replaces beats only when no `chapter_prose_versions` exist for those beats; otherwise `409`.
+- Links `writing_session_id` on generated/linked beats. Does not auto-build context packet.
+
+**`PATCH /api/projects/:id/write/beats/:beatId`**
+
+Allowed: `title`, `summary`, `direction`, `status` (`empty` | `draft` | `done`), `emotionalShift`, `mustInclude`, `mustNotInclude`, `wordTarget`, `stopCondition`, `sortOrder`, light `metadata`.
+
+Rejected: `proseText`, `chapterText`, `body`, `planningTruth`, `contextPacketJson`, identity fields. Updates `writing_sessions.last_activity_at` when beat is linked to a session.
+
+**Deferred Task 5.3:** Prose draft API, WritePage integration, OpenRouter, AI generation, full validator, chapter summary/canon update.
 
 ### Auth approach (Task 2.6)
 

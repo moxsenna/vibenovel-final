@@ -2,9 +2,20 @@ import type { Hono } from "hono";
 import { authMiddleware } from "../middleware/auth.js";
 import { jsonSuccess } from "../response.js";
 import {
+  generateBeatsForSessionForOwner,
+  listBeatsForSessionForOwner,
+  patchChapterBeatForOwner,
+} from "../services/chapter-beat.js";
+import {
   buildContextPacketForOwner,
   getContextPacketPreviewForOwner,
 } from "../services/context-packet-builder.js";
+import {
+  getWritingSessionDetailForOwner,
+  markWritingSessionReadyForSummaryForOwner,
+  patchWritingSessionForOwner,
+  startOrResumeWritingSessionForOwner,
+} from "../services/write-session.js";
 import type { AppEnv } from "../types.js";
 
 export function registerWriteRoutes(app: Hono<AppEnv>): void {
@@ -22,5 +33,85 @@ export function registerWriteRoutes(app: Hono<AppEnv>): void {
     const logId = c.req.param("logId");
     const preview = await getContextPacketPreviewForOwner(c.env, ownerId, projectId, logId);
     return jsonSuccess(c, { preview });
+  });
+
+  app.post("/api/projects/:id/write/sessions", authMiddleware, async (c) => {
+    const ownerId = c.get("userId");
+    const projectId = c.req.param("id");
+    const body = await c.req.json().catch(() => ({}));
+    const result = await startOrResumeWritingSessionForOwner(c.env, ownerId, projectId, body);
+    const status = result.created ? 201 : 200;
+    return jsonSuccess(c, { session: result.session, writingState: result.writingState }, status);
+  });
+
+  app.get("/api/projects/:id/write/sessions/:sessionId", authMiddleware, async (c) => {
+    const ownerId = c.get("userId");
+    const projectId = c.req.param("id");
+    const sessionId = c.req.param("sessionId");
+    const detail = await getWritingSessionDetailForOwner(c.env, ownerId, projectId, sessionId);
+    return jsonSuccess(c, detail);
+  });
+
+  app.patch("/api/projects/:id/write/sessions/:sessionId", authMiddleware, async (c) => {
+    const ownerId = c.get("userId");
+    const projectId = c.req.param("id");
+    const sessionId = c.req.param("sessionId");
+    const body = await c.req.json().catch(() => ({}));
+    const session = await patchWritingSessionForOwner(c.env, ownerId, projectId, sessionId, body);
+    return jsonSuccess(c, { session });
+  });
+
+  app.post(
+    "/api/projects/:id/write/sessions/:sessionId/ready-for-summary",
+    authMiddleware,
+    async (c) => {
+      const ownerId = c.get("userId");
+      const projectId = c.req.param("id");
+      const sessionId = c.req.param("sessionId");
+      const result = await markWritingSessionReadyForSummaryForOwner(
+        c.env,
+        ownerId,
+        projectId,
+        sessionId,
+      );
+      return jsonSuccess(c, result);
+    },
+  );
+
+  app.get("/api/projects/:id/write/sessions/:sessionId/beats", authMiddleware, async (c) => {
+    const ownerId = c.get("userId");
+    const projectId = c.req.param("id");
+    const sessionId = c.req.param("sessionId");
+    const beats = await listBeatsForSessionForOwner(c.env, ownerId, projectId, sessionId);
+    return jsonSuccess(c, { beats });
+  });
+
+  app.post(
+    "/api/projects/:id/write/sessions/:sessionId/beats/generate",
+    authMiddleware,
+    async (c) => {
+      const ownerId = c.get("userId");
+      const projectId = c.req.param("id");
+      const sessionId = c.req.param("sessionId");
+      const body = await c.req.json().catch(() => ({}));
+      const result = await generateBeatsForSessionForOwner(
+        c.env,
+        ownerId,
+        projectId,
+        sessionId,
+        body,
+      );
+      const status = result.created ? 201 : 200;
+      return jsonSuccess(c, result, status);
+    },
+  );
+
+  app.patch("/api/projects/:id/write/beats/:beatId", authMiddleware, async (c) => {
+    const ownerId = c.get("userId");
+    const projectId = c.req.param("id");
+    const beatId = c.req.param("beatId");
+    const body = await c.req.json().catch(() => ({}));
+    const beat = await patchChapterBeatForOwner(c.env, ownerId, projectId, beatId, body);
+    return jsonSuccess(c, { beat });
   });
 }

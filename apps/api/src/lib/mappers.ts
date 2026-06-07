@@ -4,6 +4,8 @@ import type {
   ChapterBeatStatus,
   ChapterOutline,
   ChapterOutlineMarker,
+  ChapterWritingState,
+  ChapterWritingStatus,
   Character,
   CreditBalance,
   DetectedSignal,
@@ -20,6 +22,8 @@ import type {
   StoryConcept,
   StoryFoundation,
   UserProfile,
+  WritingSession,
+  WritingSessionStatus,
 } from "@vibenovel/shared";
 
 export interface ProfileRow {
@@ -730,6 +734,64 @@ export function mapChapterBeatRow(row: ChapterBeatRow): ChapterBeat {
     wordTarget: row.word_target,
     stopCondition: row.stop_condition,
     sortOrder: row.sort_order,
+    metadata: parseJsonObject(row.metadata),
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
+export interface WritingSessionRow {
+  id: string;
+  project_id: string;
+  chapter_outline_id: string;
+  status: string;
+  active_beat_id: string | null;
+  started_at: string;
+  last_activity_at: string;
+  ready_for_summary_at: string | null;
+  metadata: JsonObject | unknown;
+  created_at: string;
+  updated_at: string;
+}
+
+export function mapWritingSessionRow(row: WritingSessionRow): WritingSession {
+  return {
+    id: row.id,
+    projectId: row.project_id,
+    chapterOutlineId: row.chapter_outline_id,
+    status: row.status as WritingSessionStatus,
+    activeBeatId: row.active_beat_id,
+    startedAt: row.started_at,
+    lastActivityAt: row.last_activity_at,
+    readyForSummaryAt: row.ready_for_summary_at,
+    metadata: parseJsonObject(row.metadata),
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
+export interface ChapterWritingStateRow {
+  id: string;
+  project_id: string;
+  chapter_outline_id: string;
+  writing_session_id: string | null;
+  status: string;
+  word_count: number;
+  last_saved_at: string | null;
+  metadata: JsonObject | unknown;
+  created_at: string;
+  updated_at: string;
+}
+
+export function mapChapterWritingStateRow(row: ChapterWritingStateRow): ChapterWritingState {
+  return {
+    id: row.id,
+    projectId: row.project_id,
+    chapterOutlineId: row.chapter_outline_id,
+    writingSessionId: row.writing_session_id,
+    status: row.status as ChapterWritingStatus,
+    wordCount: row.word_count,
+    lastSavedAt: row.last_saved_at,
     metadata: parseJsonObject(row.metadata),
     createdAt: row.created_at,
     updatedAt: row.updated_at,

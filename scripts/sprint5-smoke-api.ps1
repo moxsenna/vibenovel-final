@@ -23,6 +23,8 @@ $StepNumber = 0
 $token = $null
 $projectId = $null
 $packetLogId = $null
+$sessionId = $null
+$beatId = $null
 $auth = @{}
 
 function Add-StepResult {
@@ -86,7 +88,7 @@ function Bootstrap-FoundationLocked {
   Invoke-Api -Method POST -Path "/api/projects/$ProjectId/foundation/lock" -Headers $auth -Body '{}' | Out-Null
 }
 
-Write-Host "`nVibeNovel Sprint 5 Context Packet API Smoke Test" -ForegroundColor Cyan
+Write-Host "`nVibeNovel Sprint 5 Write Room API Smoke Test" -ForegroundColor Cyan
 
 $anonKey = Resolve-SupabaseAnonKey
 if ([string]::IsNullOrWhiteSpace($TestEmail)) {
@@ -156,6 +158,53 @@ Invoke-ApiExpectFailure -Name "cross-user project 404" -Method POST -Headers $au
 
 $foundationPost = Invoke-Api -Path "/api/projects/$projectId/foundation" -Headers $auth
 Add-StepResult "canon counts unchanged" $(if ($foundationPost.data.facts.Count -eq $factsBefore -and $foundationPost.data.characters.Count -eq $charsBefore) { "PASS" } else { "FAIL" }) ""
+
+# --- Task 5.3: Writing session & beats ---
+Invoke-ApiExpectFailure -Name "POST session no token" -Method POST `
+  -Path "/api/projects/$projectId/write/sessions" `
+  -Body (@{ chapterOutlineId = $ch1 } | ConvertTo-Json)
+
+$session1 = Invoke-Api -Method POST -Path "/api/projects/$projectId/write/sessions" -Headers $auth `
+  -Body (@{ chapterOutlineId = $ch1 } | ConvertTo-Json)
+$sessionId = $session1.data.session.id
+Add-StepResult "POST writing session" $(if ($session1.data.session.status -eq "active") { "PASS" } else { "FAIL" }) "sessionId=$sessionId"
+
+$session2 = Invoke-Api -Method POST -Path "/api/projects/$projectId/write/sessions" -Headers $auth `
+  -Body (@{ chapterOutlineId = $ch1 } | ConvertTo-Json)
+Add-StepResult "POST session idempotent" $(if ($session2.data.session.id -eq $sessionId) { "PASS" } else { "FAIL" }) ""
+
+$sessionGet = Invoke-Api -Path "/api/projects/$projectId/write/sessions/$sessionId" -Headers $auth
+Add-StepResult "GET writing session" $(if ($sessionGet.data.session.id -eq $sessionId) { "PASS" } else { "FAIL" }) "beatsCount=$($sessionGet.data.beatsCount)"
+
+$beatsBefore = Invoke-Api -Path "/api/projects/$projectId/write/sessions/$sessionId/beats" -Headers $auth
+Add-StepResult "GET beats before generate" $(if ($beatsBefore.data.beats -is [array]) { "PASS" } else { "FAIL" }) "count=$($beatsBefore.data.beats.Count)"
+
+$genBeats = Invoke-Api -Method POST -Path "/api/projects/$projectId/write/sessions/$sessionId/beats/generate" -Headers $auth -Body '{}'
+Add-StepResult "POST beats/generate" $(if ($genBeats.data.beats.Count -eq 5) { "PASS" } else { "FAIL" }) "count=$($genBeats.data.beats.Count)"
+
+$genAgain = Invoke-Api -Method POST -Path "/api/projects/$projectId/write/sessions/$sessionId/beats/generate" -Headers $auth -Body '{}'
+Add-StepResult "POST beats/generate idempotent" $(if ($genAgain.data.created -eq $false) { "PASS" } else { "FAIL" }) ""
+
+$beatId = $genAgain.data.beats[0].id
+$patchBeat = Invoke-Api -Method PATCH -Path "/api/projects/$projectId/write/beats/$beatId" -Headers $auth `
+  -Body '{"status":"draft","direction":"Arahan uji smoke"}'
+Add-StepResult "PATCH beat status/direction" $(if ($patchBeat.data.beat.status -eq "draft") { "PASS" } else { "FAIL" }) ""
+
+Invoke-ApiExpectFailure -Name "PATCH beat rejects proseText" -Method PATCH -Headers $auth `
+  -Path "/api/projects/$projectId/write/beats/$beatId" -Body '{"proseText":"rahasia"}'
+
+$patchSession = Invoke-Api -Method PATCH -Path "/api/projects/$projectId/write/sessions/$sessionId" -Headers $auth `
+  -Body (@{ activeBeatId = $beatId } | ConvertTo-Json)
+Add-StepResult "PATCH session activeBeatId" $(if ($patchSession.data.session.activeBeatId -eq $beatId) { "PASS" } else { "FAIL" }) ""
+
+$ready = Invoke-Api -Method POST -Path "/api/projects/$projectId/write/sessions/$sessionId/ready-for-summary" -Headers $auth -Body '{}'
+Add-StepResult "POST ready-for-summary" $(if ($ready.data.session.status -eq "ready_for_summary") { "PASS" } else { "FAIL" }) ""
+
+$foundationFinal = Invoke-Api -Path "/api/projects/$projectId/foundation" -Headers $auth
+Add-StepResult "canon unchanged after session flow" $(if ($foundationFinal.data.facts.Count -eq $factsBefore -and $foundationFinal.data.characters.Count -eq $charsBefore) { "PASS" } else { "FAIL" }) ""
+
+Invoke-ApiExpectFailure -Name "cross-user session 404" -Method GET -Headers $authB `
+  -Path "/api/projects/$projectId/write/sessions/$sessionId"
 
 $fail = @($Results | Where-Object { $_.Result -eq "FAIL" }).Count
 Write-Host "`nSummary: $($Results.Count - $fail) PASS, $fail FAIL"
