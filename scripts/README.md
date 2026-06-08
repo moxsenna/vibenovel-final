@@ -24,7 +24,7 @@ Run all commands from **repo root**. Windows/PowerShell primary.
 | `smoke:web:publish` | `sprint7-smoke-web.ps1` | Web mock `/publish` + leak guards; `-- -IncludeApiMode` for API flow | Same |
 | `smoke:api:sprint7` | `sprint7-smoke-api.ps1` | Publish package generation/update/export safety (Task 7.5) | Same as API base |
 | `smoke:api:sprint8` | `sprint8-smoke-api.ps1` | AI prose beat generation safety (Task 8.4) | Same as API base; mock modes need AI env + restart `dev:api` |
-| `smoke:all:local` | `smoke-all-local.ps1` | Sprint 2/5/6/7 API + Sprint 3–7 web mock (9 phases) | All API + web prerequisites |
+| `smoke:all:local` | `smoke-all-local.ps1` | Sprint 2/5/6/7/8 API + Sprint 3–8 web mock (11 phases) | All API + web prerequisites |
 | `smoke:all:local:full` | `smoke-all-local.ps1 -IncludeApiMode` | Above + web API-mode on all web wrappers (incl. summary/publish) | + restart `dev:web` after `VITE_USE_MOCKS=false` |
 
 **Optional (not in package.json):** `scripts/sprint4-smoke-api.ps1` — Sprint 4 outline API (20 steps).
@@ -453,7 +453,7 @@ npm run test:e2e:sprint5 -w @vibenovel/web
 
 ### `smoke-all-local.ps1`
 
-Runs **nine phases** in sequence (collects failures; exits 1 if any phase FAIL):
+Runs **eleven phases** in sequence (collects failures; exits 1 if any phase FAIL):
 
 | Phase | Script | `smoke:all:local` | `smoke:all:local:full` |
 |---|---|---|---|
@@ -461,14 +461,16 @@ Runs **nine phases** in sequence (collects failures; exits 1 if any phase FAIL):
 | 2 | `sprint5-smoke-api.ps1` | API | API |
 | 3 | `sprint6-smoke-api.ps1` | API | API |
 | 4 | `sprint7-smoke-api.ps1` | API | API |
-| 5 | `sprint3-smoke-web.ps1` | mock | mock + `-IncludeApiMode` |
-| 6 | `sprint4-smoke-web.ps1` | mock | mock + `-IncludeApiMode` |
-| 7 | `sprint5-smoke-web.ps1` | mock | mock + `-IncludeApiMode` |
-| 8 | `sprint6-smoke-web.ps1` | mock | mock + `-IncludeApiMode` |
-| 9 | `sprint7-smoke-web.ps1` | mock | mock + `-IncludeApiMode` |
+| 5 | `sprint8-smoke-api.ps1` | API baseline (AI disabled OK) | API baseline |
+| 6 | `sprint3-smoke-web.ps1` | mock | mock + `-IncludeApiMode` |
+| 7 | `sprint4-smoke-web.ps1` | mock | mock + `-IncludeApiMode` |
+| 8 | `sprint5-smoke-web.ps1` | mock | mock + `-IncludeApiMode` |
+| 9 | `sprint6-smoke-web.ps1` | mock | mock + `-IncludeApiMode` |
+| 10 | `sprint7-smoke-web.ps1` | mock | mock + `-IncludeApiMode` |
+| 11 | `sprint8-smoke-web.ps1` | mock write AI | mock + `-IncludeApiMode` |
 
 ```bash
-# Mock web (default) — full Sprint 2/5/6/7 API + Sprint 3–7 web
+# Mock web (default) — full Sprint 2/5/6/7/8 API + Sprint 3–8 web
 npm run smoke:all:local
 
 # Full stack + web API-mode (summary/publish API flows included)
@@ -488,13 +490,13 @@ powershell -File scripts/smoke-all-local.ps1 -IncludeApiMode   # same as :full
 
 | Requirement | Notes |
 |---|---|
-| Docker Desktop + `supabase start` | API phases 1–4 |
+| Docker Desktop + `supabase start` | API phases 1–5 |
 | `supabase db reset` | Fresh schema/seed before long runs |
 | `npm run dev:api` → :8787 | API phases + API-mode web bootstrap |
 | `apps/api/.dev.vars` (gitignored) | From `supabase status` — never commit |
-| `npm run dev:web` → :5173 | Web phases 5–9 |
+| `npm run dev:web` → :5173 | Web phases 6–11 |
 | `npx playwright install chromium` | First run in `apps/web` |
-| `VITE_USE_MOCKS=true` in `apps/web/.env.local` | Default mock web (phases 5–9) |
+| `VITE_USE_MOCKS=true` in `apps/web/.env.local` | Default mock web (phases 6–11) |
 
 ### Prerequisites — `smoke:all:local:full` (API-mode web)
 
@@ -580,6 +582,37 @@ npm run smoke:web:write-ai -- -IncludeApiMode
 ```
 
 **WritePage AI requires API mode:** `VITE_USE_MOCKS=false`, Supabase login, restart `dev:web`. Mock/fallback hides real AI. **AI disabled by default** on API (`AI_GENERATION_ENABLED=false`) — disabled test runs without restart; success path needs mock provider env + credit seed (script seeds automatically in API mode).
+
+### Sprint 8 full verification (Task 8.6) — manual env switching
+
+`smoke:all:local` includes Sprint 8 **baseline only** (stable with `AI_GENERATION_ENABLED=false`). Full AI modes require restart `dev:api` between runs:
+
+```powershell
+# 1) Success — apps/api/.dev.vars (gitignored):
+#    AI_GENERATION_ENABLED=true
+#    AI_PROVIDER_MOCK=true
+#    AI_PROVIDER_MOCK_MODE=success
+#    restart dev:api, confirm GET /api/health shows aiGenerationEnabled=true
+
+npm run smoke:api:sprint8
+npm run smoke:web:write-ai -- -IncludeApiMode   # success E2E when AI enabled
+
+# 2) fail_provider — change AI_PROVIDER_MOCK_MODE=fail_provider, restart dev:api
+npm run smoke:api:sprint8 -- -MockMode fail_provider
+
+# 3) unsafe_output — change AI_PROVIDER_MOCK_MODE=unsafe_output, restart dev:api
+npm run smoke:api:sprint8 -- -MockMode unsafe_output
+
+# 4) Disabled path — AI_GENERATION_ENABLED=false, restart dev:api
+npm run smoke:web:write-ai -- -IncludeApiMode   # AI_DISABLED safe message E2E
+
+# 5) Restore safe default
+#    AI_GENERATION_ENABLED=false
+#    AI_PROVIDER_MOCK=true
+#    AI_PROVIDER_MOCK_MODE=success
+```
+
+Live OpenRouter is **not** required or tested. Never commit `.dev.vars` or print tokens in smoke output.
 
 ## Future scripts (not yet implemented)
 

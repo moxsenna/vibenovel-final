@@ -35,7 +35,7 @@ Sprint 5 closed with **zero blockers**. Items below are non-blocking unless mark
 
 | Item | Priority | Timing |
 |---|---|---|
-| `smoke:api` = Sprint 2 only (17 steps) — Sprint 5 separate (`smoke:api:sprint5`) | P1 | **Addressed Task 5.8** — aliases added; consolidation optional later |
+| `smoke:api` = Sprint 2 only (17 steps) — Sprint 5+ separate aliases | P1 | **Addressed Task 5.8/8.6** — `smoke:all:local` now 11 phases incl. Sprint 8 API baseline + write-AI web mock |
 | API-mode web E2E not in GitHub Actions | P1 | Before production or dedicated CI runner |
 | `sprint4-smoke-api.ps1` not wired to npm script | P2 | Nice-to-have alias `smoke:api:sprint4` |
 | `make-current` prose endpoint not in Sprint 5 smoke | P2 | Before Sprint 6 if version switching critical |
@@ -65,6 +65,8 @@ Sprint 5 closed with **zero blockers**. Items below are non-blocking unless mark
 | Item | Priority | Timing |
 |---|---|---|
 | Write Room prose beat AI button (Task 8.5) | P1 | **Addressed Sprint 8** — `Tulis Beat dengan AI` API mode only; rewrite/fix CTAs still disabled |
+| Sprint 8 full AI mock smoke (success/fail/unsafe) | P1 | **Addressed Task 8.6** — manual env restart; not in default `smoke:all:local` |
+| WritePage AI success API-mode E2E | P1 | **Addressed Task 8.6** — `smoke:web:write-ai -IncludeApiMode` with AI enabled |
 | Write Room rewrite/fix AI CTAs disabled | P2 | Post-MVP (Task 8.5 scope excluded) |
 | Open loop / reveal CRUD UI display-only on outline | P2 | Post-MVP |
 | Chapter selector Bab 2–10 read-only minimal | P2 | During Sprint 6+ |
@@ -173,7 +175,7 @@ Sprint 5 closed with **zero blockers**. Items below are non-blocking unless mark
 9. **No prose delete endpoint**; export audit via `publish_package_exported` ✅ (7.8.2).
 10. **Context Packet safety** — API/smoke only, not DB-enforced.
 11. **CI** — typecheck/build only; full smokes local-only — strategy in `docs/41` §5; **7.8.4–7.8.5**.
-12. **`smoke:all:local`** ✅ — includes Sprint 6/7 API + summary/publish web mock (**7.8.4**). **`smoke:all:local:full`** API-mode local/manual only (not CI).
+12. **`smoke:all:local`** ✅ — 11 phases: Sprint 2/5/6/7/8 API + Sprint 3–8 web mock (**7.8.4**, **8.6**). Full AI mock modes remain manual env restart. **`smoke:all:local:full`** API-mode local/manual only (not CI).
 13. **Seed GoTrue login quirk** — smokes use ephemeral signup.
 
 ---
@@ -186,7 +188,7 @@ Sprint 5 closed with **zero blockers**. Items below are non-blocking unless mark
 | **7.8.1** | Audit action enum + coverage map | ✅ Design complete (`docs/42`) |
 | **7.8.2** | Audit writers for canon/export P0 paths | ✅ Implemented (`00007`, P0+P1 writers) |
 | **7.8.3** | Transaction wrapper + P0 workflows | ✅ Implemented (`transaction.ts`, P0 hardening, sprint6 smoke assertions) |
-| **7.8.4** | `smoke:all:local` include Sprint 6/7 | ✅ Consolidated (`smoke-all-local.ps1` 9 phases; `:full` passes `-IncludeApiMode` to web) |
+| **7.8.4** | `smoke:all:local` include Sprint 6/7 | ✅ Extended **8.6** — `smoke-all-local.ps1` 11 phases; `:full` passes `-IncludeApiMode` to web |
 | **7.8.5** | CI E2E feasibility / optional nightly | Pending |
 | **7.8.6** | Hardening verification report (`docs/43`) | ✅ Closed |
 | **8.0** | AI/OpenRouter & credit-gated generation plan | ✅ [`docs/44`](44-sprint-8-ai-openrouter-credit-generation-implementation-plan.md) |

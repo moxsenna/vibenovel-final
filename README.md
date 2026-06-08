@@ -94,7 +94,7 @@ npm run smoke:web:publish
 # API smoke — Sprint 8 AI prose beat generation (Task 8.4)
 npm run smoke:api:sprint8
 
-# Full local suite — Sprint 2/5/6/7 API + Sprint 3–7 web mock (9 phases)
+# Full local suite — Sprint 2/5/6/7/8 API + Sprint 3–8 web mock (11 phases)
 npm run smoke:all:local
 
 # Full local + web API-mode E2E incl. summary/publish (VITE_USE_MOCKS=false + restart dev:web)
@@ -358,7 +358,7 @@ Belum ada (sengaja — defer setelah hardening / Sprint 8):
 | 7.8.4 Smoke orchestration | ✅ | `smoke:all:local` 9 phases |
 | 7.8.6 Hardening verification report | ✅ | `docs/43` |
 
-**Task berikutnya (disarankan):** **Task 8.6** — Safety smoke consolidation / verification report (`docs/44`).
+**Task berikutnya (disarankan):** **Task 8.7** — Sprint 8 verification report (`docs/45`).
 
 ---
 
@@ -374,7 +374,7 @@ Belum ada (sengaja — defer setelah hardening / Sprint 8):
 | 8.3 Credit debit/refund service | ✅ | `ai-credit-policy`, `credit-ledger` — internal only |
 | 8.4 Prose beat generation API | ✅ | `POST /ai/generate-prose` + orchestration |
 | 8.5 WritePage AI button | ✅ | `Tulis Beat dengan AI` → `POST /ai/generate-prose` (API mode only) |
-| 8.6 Safety smoke tests | ✅ (script) | `sprint8-smoke-api.ps1` — mock modes need env restart |
+| 8.6 Safety + verification | ✅ | API mock success/fail/unsafe + WritePage AI E2E success/disabled |
 | 8.7 Verification report | Pending | `docs/45` |
 
 Sprint 8 MVP: **prose beat generation** first; summary/delta AI deferred. AI **disabled by default** until env enabled.

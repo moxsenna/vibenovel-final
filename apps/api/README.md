@@ -217,7 +217,17 @@ Rejects `projectId`, `ownerId`, `userId`, `model`, `provider`, `creditCost`, `pa
 | `prose-generation-prompt.ts` | Safe prompt from context packet log |
 | `prose-draft.ts` | `saveAiGeneratedProseVersionForOwner` (internal only) |
 
-**Local smoke (no OpenRouter):** set `AI_GENERATION_ENABLED=true`, `AI_PROVIDER_MOCK=true` in `apps/api/.dev.vars`, restart `dev:api`, then `npm run smoke:api:sprint8 -- -MockMode success`. Optional failure modes: `AI_PROVIDER_MOCK_MODE=fail_provider` or `unsafe_output` + matching `-MockMode`.
+**Local smoke (no OpenRouter):** Task 8.6 verification matrix:
+
+| Mode | `.dev.vars` | Command |
+|---|---|---|
+| Baseline (default) | `AI_GENERATION_ENABLED=false` | `npm run smoke:api:sprint8` |
+| Mock success | `AI_GENERATION_ENABLED=true`, `AI_PROVIDER_MOCK=true`, `AI_PROVIDER_MOCK_MODE=success` + restart `dev:api` | `npm run smoke:api:sprint8` |
+| Mock fail | `AI_PROVIDER_MOCK_MODE=fail_provider` + restart | `npm run smoke:api:sprint8 -- -MockMode fail_provider` |
+| Mock unsafe | `AI_PROVIDER_MOCK_MODE=unsafe_output` + restart | `npm run smoke:api:sprint8 -- -MockMode unsafe_output` |
+| WritePage AI E2E | API AI enabled + `VITE_USE_MOCKS=false` + restart `dev:web` | `npm run smoke:web:write-ai -- -IncludeApiMode` |
+
+Restore `AI_GENERATION_ENABLED=false` after manual runs. Live OpenRouter not tested in smoke.
 
 **Audit ordering:** `*_started` / preflight before writes; `*_applied` only after success; `*_failed` after validation or write failure. No payload leak (`audit-snapshot.ts`).
 

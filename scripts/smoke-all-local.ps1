@@ -8,11 +8,13 @@
     2. sprint5-smoke-api.ps1   (Write Room safety)
     3. sprint6-smoke-api.ps1   (Summary/delta/approval safety)
     4. sprint7-smoke-api.ps1   (Publish package safety)
-    5. sprint3-smoke-web.ps1   (mock)
-    6. sprint4-smoke-web.ps1   (mock outline)
-    7. sprint5-smoke-web.ps1   (mock write)
-    8. sprint6-smoke-web.ps1   (mock summary)
-    9. sprint7-smoke-web.ps1   (mock publish)
+    5. sprint8-smoke-api.ps1   (AI prose baseline — AI disabled default OK)
+    6. sprint3-smoke-web.ps1   (mock)
+    7. sprint4-smoke-web.ps1   (mock outline)
+    8. sprint5-smoke-web.ps1   (mock write)
+    9. sprint6-smoke-web.ps1   (mock summary)
+   10. sprint7-smoke-web.ps1   (mock publish)
+   11. sprint8-smoke-web.ps1   (mock write AI)
 
   Full (smoke:all:local:full, -IncludeApiMode):
     Same API smokes; web scripts 5–9 run with -IncludeApiMode (mock + API-mode).
@@ -149,14 +151,16 @@ $ApiSuites = @(
   @{ Phase = 2; Name = "API Sprint 5 (write room safety)"; Script = "sprint5-smoke-api.ps1" }
   @{ Phase = 3; Name = "API Sprint 6 (summary safety)"; Script = "sprint6-smoke-api.ps1" }
   @{ Phase = 4; Name = "API Sprint 7 (publish safety)"; Script = "sprint7-smoke-api.ps1" }
+  @{ Phase = 5; Name = "API Sprint 8 (AI prose baseline)"; Script = "sprint8-smoke-api.ps1" }
 )
 
 $WebSuites = @(
-  @{ Phase = 5; Name = "Web Sprint 3 (intake/foundation)"; Script = "sprint3-smoke-web.ps1" }
-  @{ Phase = 6; Name = "Web Sprint 4 (outline)"; Script = "sprint4-smoke-web.ps1" }
-  @{ Phase = 7; Name = "Web Sprint 5 (write)"; Script = "sprint5-smoke-web.ps1" }
-  @{ Phase = 8; Name = "Web Sprint 6 (summary)"; Script = "sprint6-smoke-web.ps1" }
-  @{ Phase = 9; Name = "Web Sprint 7 (publish)"; Script = "sprint7-smoke-web.ps1" }
+  @{ Phase = 6; Name = "Web Sprint 3 (intake/foundation)"; Script = "sprint3-smoke-web.ps1" }
+  @{ Phase = 7; Name = "Web Sprint 4 (outline)"; Script = "sprint4-smoke-web.ps1" }
+  @{ Phase = 8; Name = "Web Sprint 5 (write)"; Script = "sprint5-smoke-web.ps1" }
+  @{ Phase = 9; Name = "Web Sprint 6 (summary)"; Script = "sprint6-smoke-web.ps1" }
+  @{ Phase = 10; Name = "Web Sprint 7 (publish)"; Script = "sprint7-smoke-web.ps1" }
+  @{ Phase = 11; Name = "Web Sprint 8 (write AI mock)"; Script = "sprint8-smoke-web.ps1" }
 )
 
 Write-Host ""
@@ -165,7 +169,7 @@ Write-Host "Mode:     $(if ($IncludeApiMode) { 'API + web mock + web API-mode' }
 Write-Host "API URL:  $ApiBaseUrl"
 Write-Host "Web URL:  $WebBaseUrl"
 Write-Host "Repo:     $RepoRoot"
-Write-Host "Phases:   $(if ($SkipApi -and $SkipWeb) { 'none (both skipped)' } elseif ($SkipApi) { 'web only (5-9)' } elseif ($SkipWeb) { 'API only (1-4)' } else { '1-9 (full suite)' })"
+Write-Host "Phases:   $(if ($SkipApi -and $SkipWeb) { 'none (both skipped)' } elseif ($SkipApi) { 'web only (6-11)' } elseif ($SkipWeb) { 'API only (1-5)' } else { '1-11 (full suite)' })"
 
 if ($IncludeApiMode) {
   Write-Host ""
