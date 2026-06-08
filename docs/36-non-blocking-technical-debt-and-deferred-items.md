@@ -199,13 +199,14 @@ Sprint 5 closed with **zero blockers**. Items below are non-blocking unless mark
 | **8.5** | WritePage AI button | ✅ `Tulis Beat dengan AI`, `smoke:web:write-ai` |
 | **8.6** | Safety + verification | ✅ Full mock matrix + E2E (Task 8.6) |
 | **8.7** | Verification report | ✅ [`docs/45`](45-sprint-8-verification-report.md) |
-| **8.8** | Live OpenRouter staging verification plan | ✅ Plan complete [`docs/46`](46-live-openrouter-staging-verification-plan.md) — **not executed** |
+| **8.8** | Live OpenRouter staging verification plan | ✅ [`docs/46`](46-live-openrouter-staging-verification-plan.md) |
+| **8.9** | Live OpenRouter staging smoke execution | ✅ [`docs/47`](47-live-openrouter-staging-smoke-report.md) — **NO-GO** (no local API key; 0 live calls) |
 
-**Sprint 8:** **Closed** (`docs/45`). MVP prose beat generation verified with mock provider. Production AI **not** until Task 8.9 live staging smoke Go. **AI disabled by default** (`AI_GENERATION_ENABLED=false`).
+**Sprint 8:** **Closed** (`docs/45`). MVP prose beat generation verified with mock provider. Production AI **not** until Task 8.9b re-run achieves **Go**. **AI disabled by default** (`AI_GENERATION_ENABLED=false`).
 
-**Sprint 8 smoke note:** `smoke:api:sprint8` baseline (AI disabled) in `smoke:all:local`. Full success/fail/unsafe modes require manual env restart — see `scripts/README.md` § Sprint 8 full verification. Live OpenRouter manual checklist: [`docs/46`](46-live-openrouter-staging-verification-plan.md) §6–§11.
+**Sprint 8 smoke note:** `smoke:api:sprint8` baseline (AI disabled) in `smoke:all:local`. Full success/fail/unsafe modes require manual env restart — see `scripts/README.md` § Sprint 8 full verification. Live OpenRouter: [`docs/46`](46-live-openrouter-staging-verification-plan.md) plan; [`docs/47`](47-live-openrouter-staging-smoke-report.md) execution (blocked).
 
-**Remaining AI debt (non-blocking):** live OpenRouter **execution** (Task 8.9), rewrite/publish AI, credit UI/topup, true RPC credit mutation, CI E2E, `estimated_cost_usd` population on success.
+**Remaining AI debt (non-blocking):** live OpenRouter **Go** (Task 8.9b re-run with local key), rewrite/publish AI, credit UI/topup, true RPC credit mutation, CI E2E, `estimated_cost_usd` population, `AI_TIMEOUT_MS` wiring.
 
 ---
 
@@ -219,5 +220,6 @@ Sprint 5 closed with **zero blockers**. Items below are non-blocking unless mark
 - [`docs/44-sprint-8-ai-openrouter-credit-generation-implementation-plan.md`](44-sprint-8-ai-openrouter-credit-generation-implementation-plan.md)
 - [`docs/45-sprint-8-verification-report.md`](45-sprint-8-verification-report.md)
 - [`docs/46-live-openrouter-staging-verification-plan.md`](46-live-openrouter-staging-verification-plan.md)
+- [`docs/47-live-openrouter-staging-smoke-report.md`](47-live-openrouter-staging-smoke-report.md)
 - [`scripts/README.md`](../scripts/README.md)
 - [`docs/17-roadmap-sprint-plan-mvp-to-full.md`](17-roadmap-sprint-plan-mvp-to-full.md)

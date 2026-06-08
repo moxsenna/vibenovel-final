@@ -43,7 +43,7 @@ Sprint 8 **siap ditutup**. MVP prose beat generation end-to-end (API + WritePage
 | Publish copy AI | Sprint 9+ |
 | Summary / delta AI extraction | Sprint 9+ (butuh validator kuat) |
 | Topup / payment / credit purchase UI | Out of scope |
-| Live OpenRouter production test | Task 8.8 plan ✅ [`docs/46`](46-live-openrouter-staging-verification-plan.md); execution Task 8.9 |
+| Live OpenRouter production test | Task 8.9 executed — **NO-GO** [`docs/47`](47-live-openrouter-staging-smoke-report.md); re-run Task 8.9b |
 | True Postgres RPC untuk credit+attempt | Before production deploy |
 | CI API-mode E2E | Deferred (7.8.5) |
 | Remote deploy / remote migration push | Not done |
@@ -303,11 +303,15 @@ No secret values committed to repository.
 
 **Plan complete:** [`docs/46-live-openrouter-staging-verification-plan.md`](46-live-openrouter-staging-verification-plan.md) (8 Juni 2026). Docs-only — live OpenRouter **not** tested in 8.8.
 
-### Task 8.9 — Live OpenRouter Staging Smoke Execution (next)
+### Task 8.9 — Live OpenRouter Staging Smoke Execution ✅
 
-Jalankan manual checklist di `docs/46` §6–§11; dokumentasikan hasil dan Go/No-Go.
+**Report:** [`docs/47-live-openrouter-staging-smoke-report.md`](47-live-openrouter-staging-smoke-report.md) — **NO-GO** (no local `OPENROUTER_API_KEY`; 0 live provider calls). Mock regression PASS; rollback PASS.
 
-Alternatif (lower priority): Sprint 9 planning for AI rewrite / publish copy / credit UI — **after** 8.9 Go.
+### Task 8.9b — Live OpenRouter Staging Smoke Re-run (next)
+
+Operator sets `OPENROUTER_API_KEY` in gitignored `.dev.vars`; re-run `docs/46` §6 live sections; update Go/No-Go.
+
+Alternatif (lower priority): Sprint 9 planning for AI rewrite / publish copy / credit UI — **after** live Go.
 
 ---
 
@@ -317,5 +321,6 @@ Alternatif (lower priority): Sprint 9 planning for AI rewrite / publish copy / c
 - [`docs/43-pre-ai-hardening-verification-report.md`](43-pre-ai-hardening-verification-report.md)
 - [`docs/36-non-blocking-technical-debt-and-deferred-items.md`](36-non-blocking-technical-debt-and-deferred-items.md)
 - [`docs/46-live-openrouter-staging-verification-plan.md`](46-live-openrouter-staging-verification-plan.md)
+- [`docs/47-live-openrouter-staging-smoke-report.md`](47-live-openrouter-staging-smoke-report.md)
 - [`apps/api/README.md`](../apps/api/README.md)
 - [`scripts/README.md`](../scripts/README.md)
