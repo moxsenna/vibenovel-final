@@ -2,6 +2,11 @@ import type { Hono } from "hono";
 import { authMiddleware } from "../middleware/auth.js";
 import { jsonSuccess } from "../response.js";
 import {
+  extractChapterDeltaForOwner,
+  getChapterDeltaForOwner,
+  getSummaryLinkedProposalsForOwner,
+} from "../services/chapter-delta.js";
+import {
   generateChapterSummaryForOwner,
   getSummaryByChapterForOwner,
   getSummaryDetailForOwner,
@@ -59,5 +64,46 @@ export function registerSummaryRoutes(app: Hono<AppEnv>): void {
 
     const detail = await getSummaryDetailForOwner(c.env, ownerId, projectId, summaryId);
     return jsonSuccess(c, detail);
+  });
+
+  app.post(
+    "/api/projects/:id/summary/:summaryId/delta/extract",
+    authMiddleware,
+    async (c) => {
+      const ownerId = c.get("userId");
+      const projectId = c.req.param("id");
+      const summaryId = c.req.param("summaryId");
+      const body = await c.req.json().catch(() => ({}));
+      const result = await extractChapterDeltaForOwner(
+        c.env,
+        ownerId,
+        projectId,
+        summaryId,
+        body,
+      );
+      const status = result.created ? 201 : 200;
+      return jsonSuccess(c, result, status);
+    },
+  );
+
+  app.get("/api/projects/:id/summary/:summaryId/delta", authMiddleware, async (c) => {
+    const ownerId = c.get("userId");
+    const projectId = c.req.param("id");
+    const summaryId = c.req.param("summaryId");
+    const result = await getChapterDeltaForOwner(c.env, ownerId, projectId, summaryId);
+    return jsonSuccess(c, result);
+  });
+
+  app.get("/api/projects/:id/summary/:summaryId/proposals", authMiddleware, async (c) => {
+    const ownerId = c.get("userId");
+    const projectId = c.req.param("id");
+    const summaryId = c.req.param("summaryId");
+    const result = await getSummaryLinkedProposalsForOwner(
+      c.env,
+      ownerId,
+      projectId,
+      summaryId,
+    );
+    return jsonSuccess(c, result);
   });
 }

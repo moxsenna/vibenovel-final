@@ -2,6 +2,8 @@ import type {
   AiProposal,
   ChapterBeat,
   ChapterBeatStatus,
+  ChapterDelta,
+  ChapterDeltaStatus,
   ChapterProseSource,
   ChapterProseVersion,
   ChapterOutline,
@@ -10,6 +12,8 @@ import type {
   ChapterSummaryItem,
   ChapterSummaryItemSeverity,
   ChapterSummaryItemType,
+  ChapterSummaryProposal,
+  ChapterSummaryProposalStatus,
   ChapterSummaryStatus,
   ChapterWritingState,
   ChapterWritingStatus,
@@ -919,6 +923,120 @@ export function mapChapterSummaryItemRow(row: ChapterSummaryItemRow): ChapterSum
     sortOrder: row.sort_order,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
+  };
+}
+
+export interface ChapterDeltaRow {
+  id: string;
+  project_id: string;
+  chapter_summary_id: string;
+  chapter_outline_id: string;
+  status: string;
+  delta_json: JsonObject | unknown;
+  safety_flags: JsonObject | unknown;
+  extractor_version: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export function mapChapterDeltaRow(row: ChapterDeltaRow): ChapterDelta {
+  return {
+    id: row.id,
+    projectId: row.project_id,
+    chapterSummaryId: row.chapter_summary_id,
+    chapterOutlineId: row.chapter_outline_id,
+    status: row.status as ChapterDeltaStatus,
+    deltaJson: parseJsonObject(row.delta_json),
+    safetyFlags: parseJsonObject(row.safety_flags) as SummarySafetyFlags,
+    extractorVersion: row.extractor_version,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
+export interface ChapterSummaryProposalRow {
+  id: string;
+  project_id: string;
+  chapter_summary_id: string;
+  ai_proposal_id: string;
+  status: string;
+  metadata: JsonObject | unknown;
+  created_at: string;
+  updated_at: string;
+}
+
+export function mapChapterSummaryProposalRow(
+  row: ChapterSummaryProposalRow,
+): ChapterSummaryProposal {
+  return {
+    id: row.id,
+    projectId: row.project_id,
+    chapterSummaryId: row.chapter_summary_id,
+    aiProposalId: row.ai_proposal_id,
+    status: row.status as ChapterSummaryProposalStatus,
+    metadata: parseJsonObject(row.metadata),
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
+/** Safe linked proposal excerpt for summary delta GET endpoints. */
+export interface LinkedProposalSummary {
+  linkId: string;
+  linkStatus: ChapterSummaryProposalStatus;
+  proposalId: string;
+  type: string;
+  status: string;
+  riskLevel: string;
+  title: string;
+  summary: string | null;
+  payloadExcerpt: JsonObject;
+  source: string;
+  metadata: JsonObject;
+}
+
+export function mapLinkedProposalSummary(
+  link: ChapterSummaryProposalRow,
+  proposal: AiProposalRow,
+): LinkedProposalSummary {
+  const payload =
+    proposal.payload !== null && typeof proposal.payload === "object" && !Array.isArray(proposal.payload)
+      ? (proposal.payload as JsonObject)
+      : {};
+
+  const safeExcerpt: JsonObject = {};
+  const allowedKeys = [
+    "summaryId",
+    "chapterOutlineId",
+    "chapterNumber",
+    "reason",
+    "proposedFactText",
+    "category",
+    "changeSummary",
+    "suggestedStatus",
+    "targetEntityType",
+    "targetEntityId",
+  ];
+  for (const key of allowedKeys) {
+    if (key in payload) safeExcerpt[key] = payload[key];
+  }
+
+  const summary =
+    (typeof payload.summary === "string" ? payload.summary : null) ??
+    (typeof payload.reason === "string" ? payload.reason : null);
+
+  return {
+    linkId: link.id,
+    linkStatus: link.status as ChapterSummaryProposalStatus,
+    proposalId: proposal.id,
+    type: proposal.proposal_type,
+    status: proposal.status,
+    riskLevel: proposal.risk_level,
+    title: proposal.title,
+    summary,
+    payloadExcerpt: safeExcerpt,
+    source: proposal.source,
+    metadata: parseJsonObject(link.metadata),
   };
 }
 

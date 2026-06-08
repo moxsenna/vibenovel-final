@@ -650,7 +650,42 @@ Returns `{ summary, items }` — owner-only, no prose text.
 
 Returns current summary for chapter or `{ summary: null, items: [] }`.
 
-**Deferred Task 6.2:** delta extraction, `ai_proposals` enqueue, summary approval, SummaryPage integration, canon promotion.
+### Chapter Delta + Proposal Extraction API (Task 6.3)
+
+Extends summary route group. All endpoints require Bearer JWT. Ownership via `getOwnedProjectRow` + row `project_id` match — cross-user → `404`.
+
+**Delta + proposals — not canon:** `chapter_deltas` and linked `ai_proposals` are review queue artifacts only. Does **not** mutate `facts`, `characters`, `speech_rules`, `open_loops`, `planned_reveals`, or accept proposals. Does **not** approve summary. No OpenRouter, no AI generation.
+
+**Gate (409) for `POST .../summary/:summaryId/delta/extract`:**
+
+| Requirement | `details.missing` |
+|---|---|
+| Summary status `generated` or `reviewing` | `summary_not_extractable` |
+| Summary not `approved` | `summary_approved` |
+| ≥1 summary item | `summary_no_items` |
+| `regenerate=true` with existing linked proposals | `linked_proposals_exist` |
+
+**`POST /api/projects/:id/summary/:summaryId/delta/extract`**
+
+Body: `{ "regenerate": false }`
+
+- Deterministic stub extractor (`chapter_delta_v1_stub`) from summary + items.
+- Creates `chapter_deltas` row (1:1 per summary) + `ai_proposals` (`status=proposed`, `source=chapter_delta_stub`) + `chapter_summary_proposals` (`status=linked`).
+- Candidate types: `new_fact_candidate` → `fact`; `character_change` → `character_update`; `relationship_change` → `relationship_update`; open loop items → `open_loop_update`; `reveal_candidate` → `reveal_status_update`.
+- Max 5 proposals per extraction. Skips synopsis/emotional_outcome/ending_hook items.
+- `regenerate=false` + delta exists → returns existing (`created=false`, `200`).
+- `regenerate=true` + linked proposals exist → `409` (no supersede in Task 6.3).
+- Returns `{ delta, proposals, created }` — no `proseText`, no `planningTruth`, no `packet_json`.
+
+**`GET /api/projects/:id/summary/:summaryId/delta`**
+
+Returns `{ delta }` — safe `deltaJson` only, owner-only.
+
+**`GET /api/projects/:id/summary/:summaryId/proposals`**
+
+Returns `{ proposals }` — linked proposal excerpts (`linkId`, `type`, `status`, `riskLevel`, `title`, safe `payloadExcerpt`). No auto-promotion.
+
+**Deferred Task 6.3:** summary approval, proposal promotion/canon accept, SummaryPage integration, delta regenerate with proposal supersede.
 
 Local smoke: `npm run smoke:api:sprint6` (`scripts/sprint6-smoke-api.ps1`).
 

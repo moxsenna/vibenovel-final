@@ -67,3 +67,35 @@ export function assertSummaryResponseSafe(serializedJson: string): void {
     }
   }
 }
+
+const DELTA_FORBIDDEN_PATTERNS = [
+  ...SUMMARY_OUTPUT_FORBIDDEN_PATTERNS,
+  /prose_text/i,
+  /proseText/i,
+  /\bprovider\b/i,
+  /\bmodel\b/i,
+  /\btoken\b/i,
+];
+
+export function assertDeltaJsonSafe(deltaJson: unknown): void {
+  const serialized = JSON.stringify(deltaJson);
+  for (const pattern of DELTA_FORBIDDEN_PATTERNS) {
+    if (pattern.test(serialized)) {
+      throw AppError.internal("Generated delta failed safety check");
+    }
+  }
+}
+
+export function assertProposalPayloadSafe(payload: Record<string, unknown>): void {
+  const serialized = JSON.stringify(payload);
+  for (const pattern of DELTA_FORBIDDEN_PATTERNS) {
+    if (pattern.test(serialized)) {
+      throw AppError.internal("Proposal payload failed safety check");
+    }
+  }
+  for (const key of ["prose_text", "proseText", "packet_json", "packetJson", "full_prompt"]) {
+    if (key in payload) {
+      throw AppError.internal("Proposal payload failed safety check");
+    }
+  }
+}

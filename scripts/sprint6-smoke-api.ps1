@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-  Sprint 6 Chapter Summary API smoke test (Task 6.2).
+  Sprint 6 Chapter Summary + Delta API smoke test (Task 6.2 + 6.3).
 
 .DESCRIPTION
   Run from repo root:
@@ -205,12 +205,70 @@ Add-StepResult "no ai_proposals created" $(if ($proposalsAfter -eq $proposalsBef
 $sessionAfter = Invoke-Api -Path "/api/projects/$projectId/write/sessions/$sessionId" -Headers $auth
 Add-StepResult "not summarized yet" $(if ($sessionAfter.data.writingState.status -eq "ready_for_summary") { "PASS" } else { "FAIL" }) ""
 
+$currentSummaryId = $genV2.data.summary.id
+$proposalsBeforeDelta = $proposalsAfter
+
+Invoke-ApiExpectFailure -Name "POST delta extract no token" -Method POST `
+  -Path "/api/projects/$projectId/summary/$currentSummaryId/delta/extract" `
+  -Body '{}'
+
+Invoke-ApiExpectFailure -Name "extract before summary exists" -Method POST -Headers $auth `
+  -Path "/api/projects/$projectId/summary/00000000-0000-4000-8000-000000009999/delta/extract" `
+  -Body '{}'
+
+$extract = Invoke-Api -Method POST -Path "/api/projects/$projectId/summary/$currentSummaryId/delta/extract" -Headers $auth -Body '{}'
+$deltaId = $extract.data.delta.id
+$linkedCount = $extract.data.proposals.Count
+Add-StepResult "POST delta extract" $(if ($extract.data.created -eq $true -and $deltaId) { "PASS" } else { "FAIL" }) "deltaId=$deltaId"
+Add-StepResult "proposals created from delta" $(if ($linkedCount -ge 1 -and $linkedCount -le 5) { "PASS" } else { "FAIL" }) "count=$linkedCount"
+
+$extractJson = ($extract | ConvertTo-Json -Depth 20)
+Add-StepResult "delta/proposal leak guard" $(if (Test-JsonNoLeakMarkers $extractJson) { "PASS" } else { "FAIL" }) ""
+
+$deltaGet = Invoke-Api -Path "/api/projects/$projectId/summary/$currentSummaryId/delta" -Headers $auth
+Add-StepResult "GET summary delta" $(if ($deltaGet.data.delta.id -eq $deltaId) { "PASS" } else { "FAIL" }) ""
+
+$deltaGetJson = ($deltaGet | ConvertTo-Json -Depth 20)
+Add-StepResult "GET delta leak guard" $(if (Test-JsonNoLeakMarkers $deltaGetJson) { "PASS" } else { "FAIL" }) ""
+
+$propGet = Invoke-Api -Path "/api/projects/$projectId/summary/$currentSummaryId/proposals" -Headers $auth
+Add-StepResult "GET summary proposals" $(if ($propGet.data.proposals.Count -ge 1) { "PASS" } else { "FAIL" }) ""
+
+$extractAgain = Invoke-Api -Method POST -Path "/api/projects/$projectId/summary/$currentSummaryId/delta/extract" -Headers $auth -Body '{}'
+Add-StepResult "delta extract idempotent" $(if (
+    $extractAgain.data.created -eq $false -and $extractAgain.data.delta.id -eq $deltaId
+  ) { "PASS" } else { "FAIL" }) ""
+
+$allProposed = $true
+foreach ($p in $propGet.data.proposals) {
+  if ($p.status -ne "proposed") { $allProposed = $false }
+}
+Add-StepResult "proposals remain proposed" $(if ($allProposed) { "PASS" } else { "FAIL" }) ""
+
+$propResDelta = Invoke-Api -Path "/api/projects/$projectId/proposals?includeResolved=true" -Headers $auth
+$proposalsAfterDelta = if ($propResDelta.data -is [array]) { $propResDelta.data.Count } else { 0 }
+Add-StepResult "delta proposals added" $(if ($proposalsAfterDelta -gt $proposalsBeforeDelta) { "PASS" } else { "FAIL" }) "before=$proposalsBeforeDelta after=$proposalsAfterDelta"
+
+$foundationDelta = Invoke-Api -Path "/api/projects/$projectId/foundation" -Headers $auth
+$loopsDelta = (Invoke-Api -Path "/api/projects/$projectId/outline/open-loops" -Headers $auth).data.openLoops.Count
+$revealsDelta = (Invoke-Api -Path "/api/projects/$projectId/outline/reveals" -Headers $auth).data.reveals.Count
+Add-StepResult "no canon mutation after delta" $(if (
+    $foundationDelta.data.facts.Count -eq $factsBefore -and
+    $foundationDelta.data.characters.Count -eq $charsBefore -and
+    $loopsDelta -eq $loopsBefore -and
+    $revealsDelta -eq $revealsBefore
+  ) { "PASS" } else { "FAIL" }) ""
+
 $signupB = Invoke-RestMethod -Uri "$SupabaseUrl/auth/v1/signup" -Method POST `
   -Headers @{ apikey = $anonKey; Authorization = "Bearer $anonKey" } -ContentType "application/json" `
   -Body (@{ email = "s6b-$(Get-Random)@example.com"; password = $TestPassword } | ConvertTo-Json)
 $authB = @{ Authorization = "Bearer $($signupB.access_token)" }
 Invoke-ApiExpectFailure -Name "cross-user summary 404" -Method GET -Headers $authB `
   -Path "/api/projects/$projectId/summary/$summaryId"
+Invoke-ApiExpectFailure -Name "cross-user delta 404" -Method GET -Headers $authB `
+  -Path "/api/projects/$projectId/summary/$currentSummaryId/delta"
+Invoke-ApiExpectFailure -Name "cross-user proposals 404" -Method GET -Headers $authB `
+  -Path "/api/projects/$projectId/summary/$currentSummaryId/proposals"
 
 $fail = @($Results | Where-Object { $_.Result -eq "FAIL" }).Count
 Write-Host "`nSummary: $($Results.Count - $fail) PASS, $fail FAIL"
