@@ -315,7 +315,18 @@ if ($IncludeApiMode) {
       $ok = [bool]$health.data.ok
     }
     $apiHealthy = $ok
-    Add-StepResult "API health check" $(if ($ok) { "PASS" } else { "FAIL" }) "ok=$ok"
+    $aiGenFlag = $null
+    $aiMockFlag = $null
+    if ($health.data -and $health.data.env) {
+      $aiGenFlag = $health.data.env.aiGenerationEnabled
+      $aiMockFlag = $health.data.env.aiProviderMock
+    }
+    $healthDetail = if ($null -ne $aiGenFlag) {
+      "ok=$ok aiGenerationEnabled=$aiGenFlag aiProviderMock=$aiMockFlag"
+    } else {
+      "ok=$ok"
+    }
+    Add-StepResult "API health check" $(if ($ok) { "PASS" } else { "FAIL" }) $healthDetail
   } catch {
     Add-StepResult "API health check" "FAIL" $_.Exception.Message
   }

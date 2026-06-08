@@ -371,7 +371,7 @@ Belum ada (sengaja — defer setelah hardening / Sprint 8):
 | 9.1 Cost estimation | ✅ | `model-cost-map.ts`, `estimated_cost_usd` on success |
 | 9.2 Credit UI minimal | ✅ | WritePage saldo/biaya kredit, `smoke:web:credit-ui` |
 | 9.3 Prose rewrite API | ✅ | `POST /ai/rewrite-prose`, `smoke:api:sprint9` |
-| 9.4 WritePage rewrite UI | ✅ | `POST /ai/rewrite-prose` UI, `smoke:web:rewrite` |
+| 9.4 WritePage rewrite UI | ✅ | `POST /ai/rewrite-prose` UI, `smoke:web:rewrite` (API-mode E2E verified 9.4b) |
 | 9.5 Publish copy AI API | ⏳ | `POST /ai/improve-publish-copy` |
 | 9.6 PublishPage AI UI | ⏳ | Improve copy + apply |
 | 9.7 Safety regression | ⏳ | Sprint 9 smokes |

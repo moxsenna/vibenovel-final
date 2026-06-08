@@ -86,9 +86,22 @@ Wire WritePage to `POST /api/projects/:id/ai/rewrite-prose` with mode picker, cr
 - Mobile uses shared `rewriteMode` from hook (default `improve_emotion`) with compact button.
 - API-mode rewrite E2E deferred to `-IncludeApiMode` (same pattern as Sprint 8 write-ai).
 
+## Addendum (Task 9.4b — 2026-06-08)
+
+API-mode rewrite E2E verified — see `.agent-logs/sprint-9/task-9.4b-write-page-rewrite-api-mode-e2e.md`.
+
+| Check | Result |
+|---|---|
+| `smoke:web:rewrite -- -IncludeApiMode` (AI enabled) | PASS — rewrite success + credit notice |
+| `smoke:web:rewrite -- -IncludeApiMode` (AI disabled) | PASS — safe `AI generation belum aktif` |
+| Web + API regressions | PASS |
+| Env restored `AI_GENERATION_ENABLED=false` | PASS |
+
+**Task 9.4 approval:** implementation + API-mode E2E complete.
+
 ## Limitations
 
-- API-mode rewrite success E2E not executed in this session (env switch not applied).
+- ~~API-mode rewrite success E2E not executed in this session (env switch not applied).~~ **Resolved Task 9.4b.**
 - No topup/payment; insufficient balance disables client-side only until server `402`.
 - Custom instruction max 500 chars enforced in UI; server also validates.
 - `WriterEditorPanel` shows status text only — main controls remain in assistant panel.
