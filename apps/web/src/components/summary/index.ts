@@ -7,3 +7,5 @@ export { SummaryPageHeader } from "./SummaryPageHeader";
 export { SummarySectionCard } from "./SummarySectionCard";
 export { SummaryStoryCheckNotes } from "./SummaryStoryCheckNotes";
 export { SummarySynopsisCard } from "./SummarySynopsisCard";
+export { SummaryWorkflowActions } from "./SummaryWorkflowActions";
+export { SummaryProposalReviewPanel } from "./SummaryProposalReviewPanel";

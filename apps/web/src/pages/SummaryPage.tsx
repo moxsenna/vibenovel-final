@@ -5,28 +5,65 @@ import {
   SummaryMiniVictoryBanner,
   SummaryOpenLoopsSection,
   SummaryPageHeader,
+  SummaryProposalReviewPanel,
   SummarySectionCard,
   SummaryStoryCheckNotes,
   SummarySynopsisCard,
+  SummaryWorkflowActions,
 } from "@/components/summary";
-import { mockChapterSummary } from "@/mocks/summary";
+import { IntegrationNotice } from "@/components/common/IntegrationNotice";
+import { useSummaryData } from "@/hooks/useSummaryData";
 
 /**
- * Ringkasan Bab — Sprint 1 Task 1.12
- * Source: stitch-reference/ringkasan_bab_drama_consistent
- * Content: Bab 1 Makan Malam yang Dingin
- * Wrapped by AppShell via router layout.
+ * Ringkasan Bab — Sprint 1 layout + Sprint 6 API integration (Task 6.5)
+ * Mock fallback when VITE_USE_MOCKS=true or API unavailable.
  */
 export function SummaryPage() {
-  const summary = mockChapterSummary;
+  const {
+    summary,
+    loading,
+    generating,
+    extracting,
+    approving,
+    notice,
+    workflowNotice,
+    actionError,
+    apiMode,
+    hasSummary,
+    readyForSummary,
+    isApproved,
+    hasDelta,
+    proposals,
+    actionProposalId,
+    generateSummaryAction,
+    extractDeltaAction,
+    approveSummaryAction,
+    acceptProposal,
+    rejectProposal,
+  } = useSummaryData();
+
   const { pageCopy } = summary;
   const chapterLabel = `Bab ${summary.chapterNumber}: ${summary.chapterTitle}`;
   const statusLabel =
     summary.status === "ready_for_review" ? pageCopy.statusReady : pageCopy.statusDraft;
 
+  if (loading) {
+    return (
+      <div className="flex flex-1 items-center justify-center p-lg">
+        <p className="font-body-md text-body-md text-muted-text">Memuat ringkasan bab…</p>
+      </div>
+    );
+  }
+
+  const showEmptySynopsis = apiMode && !hasSummary && !summary.synopsis.trim();
+
   return (
     <>
       <div className="mx-auto flex w-full max-w-editor flex-col gap-lg pb-32">
+        <IntegrationNotice message={notice} />
+        <IntegrationNotice message={workflowNotice} />
+        <IntegrationNotice message={actionError} />
+
         <SummaryPageHeader
           badgeLabel={pageCopy.badgeLabel}
           title={pageCopy.title}
@@ -35,9 +72,30 @@ export function SummaryPage() {
           statusLabel={statusLabel}
         />
 
-        <SummarySynopsisCard synopsis={summary.synopsis} />
+        {apiMode ? (
+          <SummaryWorkflowActions
+            hasSummary={hasSummary}
+            readyForSummary={readyForSummary}
+            isApproved={isApproved}
+            hasDelta={hasDelta}
+            generating={generating}
+            extracting={extracting}
+            onGenerate={() => void generateSummaryAction()}
+            onExtract={() => void extractDeltaAction()}
+          />
+        ) : null}
 
-        <SummaryMiniVictoryBanner items={summary.miniVictories} />
+        {showEmptySynopsis ? (
+          <p className="rounded-lg border border-border bg-surface-soft px-4 py-3 font-body-sm text-body-sm text-muted-text">
+            Belum ada ringkasan bab untuk bab ini.
+          </p>
+        ) : (
+          <SummarySynopsisCard synopsis={summary.synopsis || "Ringkasan belum tersedia."} />
+        )}
+
+        {summary.miniVictories.length > 0 ? (
+          <SummaryMiniVictoryBanner items={summary.miniVictories} />
+        ) : null}
 
         <div className="grid grid-cols-1 gap-lg md:grid-cols-2">
           <SummarySectionCard title="Fakta Baru" icon="menu_book">
@@ -82,6 +140,24 @@ export function SummaryPage() {
           >
             <SummaryStoryCheckNotes notes={summary.storyCheckNotes} />
           </SummarySectionCard>
+
+          {apiMode && hasSummary ? (
+            <SummarySectionCard
+              title="Usulan Perubahan Canon"
+              icon="fact_check"
+              iconClassName="text-primary"
+              className="md:col-span-2"
+            >
+              <SummaryProposalReviewPanel
+                proposals={proposals}
+                isApproved={isApproved}
+                actionProposalId={actionProposalId}
+                actionError={actionError}
+                onAccept={(id) => void acceptProposal(id)}
+                onReject={(id) => void rejectProposal(id)}
+              />
+            </SummarySectionCard>
+          ) : null}
         </div>
       </div>
 
@@ -90,6 +166,17 @@ export function SummaryPage() {
         backToWriteCta={pageCopy.backToWriteCta}
         publishRoute={summary.publishRoute}
         writeRoute={summary.writeRoute}
+        onApprove={apiMode && hasSummary && !isApproved ? () => void approveSummaryAction() : undefined}
+        approveDisabled={!hasSummary || isApproved}
+        approving={approving}
+        approveHint={
+          apiMode && isApproved
+            ? "Ringkasan disetujui. Tinjau usulan canon di atas sebelum publish."
+            : apiMode && hasSummary
+              ? "Menyetujui ringkasan tidak otomatis memasukkan semua usulan ke canon."
+              : null
+        }
+        showPublishLink={!apiMode || isApproved}
       />
     </>
   );

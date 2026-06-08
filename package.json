@@ -25,6 +25,7 @@
     "smoke:web": "powershell -ExecutionPolicy Bypass -File scripts/sprint3-smoke-web.ps1",
     "smoke:web:outline": "powershell -ExecutionPolicy Bypass -File scripts/sprint4-smoke-web.ps1",
     "smoke:web:write": "powershell -ExecutionPolicy Bypass -File scripts/sprint5-smoke-web.ps1",
+    "smoke:web:summary": "powershell -ExecutionPolicy Bypass -File scripts/sprint6-smoke-web.ps1",
     "smoke:all:local": "powershell -ExecutionPolicy Bypass -File scripts/smoke-all-local.ps1",
     "smoke:all:local:full": "powershell -ExecutionPolicy Bypass -File scripts/smoke-all-local.ps1 -IncludeApiMode"
   },

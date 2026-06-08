@@ -14,6 +14,7 @@ import { createServiceRoleClient } from "../lib/supabase.js";
 import { AppError } from "../errors.js";
 import { writeAuditLog } from "./audit.js";
 import { DELTA_PROPOSAL_SOURCE, type ProposalDraft } from "./chapter-delta-extractor.js";
+import { getOwnedProjectRow } from "./project.js";
 import { assertProposalPayloadSafe } from "./summary-safety.js";
 
 const PROPOSAL_SELECT =
@@ -147,6 +148,58 @@ export async function fetchLinkedProposalsForSummary(
     .map((link) =>
       mapLinkedProposalSummary(link, proposalMap.get(link.ai_proposal_id)!),
     );
+}
+
+export interface OwnedLinkedProposal {
+  link: ChapterSummaryProposalRow;
+  proposal: AiProposalRow;
+}
+
+export async function getOwnedLinkedProposal(
+  bindings: AppBindings,
+  ownerId: string,
+  projectId: string,
+  summaryId: string,
+  proposalId: string,
+): Promise<OwnedLinkedProposal> {
+  await getOwnedProjectRow(bindings, ownerId, projectId);
+  const admin = createServiceRoleClient(bindings);
+
+  const { data: link, error: linkError } = await admin
+    .from("chapter_summary_proposals")
+    .select(LINK_SELECT)
+    .eq("project_id", projectId)
+    .eq("chapter_summary_id", summaryId)
+    .eq("ai_proposal_id", proposalId)
+    .maybeSingle();
+
+  if (linkError) {
+    console.error("chapter_summary_proposals select by link failed");
+    throw AppError.internal("Failed to load linked proposal");
+  }
+  if (!link) {
+    throw AppError.notFound("Linked proposal not found");
+  }
+
+  const { data: proposal, error: proposalError } = await admin
+    .from("ai_proposals")
+    .select(PROPOSAL_SELECT)
+    .eq("id", proposalId)
+    .eq("project_id", projectId)
+    .maybeSingle();
+
+  if (proposalError) {
+    console.error("ai_proposals select for linked review failed");
+    throw AppError.internal("Failed to load proposal");
+  }
+  if (!proposal) {
+    throw AppError.notFound("Linked proposal not found");
+  }
+
+  return {
+    link: link as ChapterSummaryProposalRow,
+    proposal: proposal as AiProposalRow,
+  };
 }
 
 export async function countLinkedProposals(

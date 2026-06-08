@@ -11,7 +11,8 @@
     "test:e2e": "playwright test",
     "test:e2e:sprint3": "playwright test e2e/sprint3-flow.spec.ts",
     "test:e2e:sprint4": "playwright test e2e/sprint4-outline-flow.spec.ts",
-    "test:e2e:sprint5": "playwright test e2e/sprint5-write-flow.spec.ts"
+    "test:e2e:sprint5": "playwright test e2e/sprint5-write-flow.spec.ts",
+    "test:e2e:sprint6": "playwright test e2e/sprint6-summary-flow.spec.ts"
   },
   "dependencies": {
     "@vibenovel/shared": "*",

@@ -6,6 +6,11 @@ export interface SummaryActionFooterProps {
   backToWriteCta: string;
   publishRoute: string;
   writeRoute: string;
+  onApprove?: () => void;
+  approveDisabled?: boolean;
+  approving?: boolean;
+  approveHint?: string | null;
+  showPublishLink?: boolean;
 }
 
 export function SummaryActionFooter({
@@ -13,10 +18,22 @@ export function SummaryActionFooter({
   backToWriteCta,
   publishRoute,
   writeRoute,
+  onApprove,
+  approveDisabled = false,
+  approving = false,
+  approveHint,
+  showPublishLink = true,
 }: SummaryActionFooterProps) {
+  const primaryLabel = approving ? "Menyetujui…" : approveCta;
+
   return (
     <footer className="fixed bottom-0 left-0 z-50 flex w-full justify-center border-t border-border bg-surface/90 px-md py-4 shadow-[0_-4px_24px_rgba(31,41,51,0.05)] backdrop-blur-md md:left-64 md:w-[calc(100%-16rem)]">
       <div className="flex w-full max-w-editor flex-col-reverse items-center justify-end gap-4 md:flex-row">
+        {approveHint ? (
+          <p className="w-full text-center font-body-sm text-body-sm text-muted-text md:mr-auto md:w-auto md:text-left">
+            {approveHint}
+          </p>
+        ) : null}
         <Link to={writeRoute} className="w-full md:w-auto">
           <Button
             variant="ghost"
@@ -25,15 +42,27 @@ export function SummaryActionFooter({
             {backToWriteCta}
           </Button>
         </Link>
-        <Link to={publishRoute} className="w-full md:w-auto">
+        {onApprove ? (
           <Button
             variant="primary"
             className="h-12 w-full justify-center rounded-xl px-8 shadow-[0_4px_12px_rgba(130,56,80,0.2)] md:w-auto"
-            rightIcon={<Icon name="arrow_forward" size={18} />}
+            rightIcon={<Icon name="check" size={18} />}
+            disabled={approveDisabled || approving}
+            onClick={onApprove}
           >
-            {approveCta}
+            {primaryLabel}
           </Button>
-        </Link>
+        ) : showPublishLink ? (
+          <Link to={publishRoute} className="w-full md:w-auto">
+            <Button
+              variant="primary"
+              className="h-12 w-full justify-center rounded-xl px-8 shadow-[0_4px_12px_rgba(130,56,80,0.2)] md:w-auto"
+              rightIcon={<Icon name="arrow_forward" size={18} />}
+            >
+              {approveCta}
+            </Button>
+          </Link>
+        ) : null}
       </div>
     </footer>
   );

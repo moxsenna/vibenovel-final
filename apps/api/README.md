@@ -687,6 +687,39 @@ Returns `{ proposals }` — linked proposal excerpts (`linkId`, `type`, `status`
 
 **Deferred Task 6.3:** summary approval, proposal promotion/canon accept, SummaryPage integration, delta regenerate with proposal supersede.
 
+### Summary Approval + Proposal Promotion API (Task 6.4)
+
+Extends summary route group. All endpoints require Bearer JWT. Ownership via `getOwnedProjectRow` + linked row `project_id` match — cross-user → `404`.
+
+**Summary approval ≠ canon promotion:** Approving summary marks lifecycle only (`chapter_summaries.approved`, `chapter_writing_states.summarized`, `writing_sessions.completed`). Does **not** accept proposals or mutate `facts`/`characters`/etc.
+
+**`POST /api/projects/:id/summary/:summaryId/approve`**
+
+- Gate: summary `generated` or `reviewing`, ≥1 item. Already `approved` → idempotent `200` (`alreadyApproved=true`).
+- Allows approval without delta/proposals (returns `warnings` array).
+- Does not accept proposals or promote canon.
+
+**`POST /api/projects/:id/summary/:summaryId/proposals/:proposalId/accept`**
+
+- Gate: summary `approved`, proposal `proposed`, link `linked`.
+- Body (optional): `{ "confirmHighRisk": true }` — **required** for `reveal_status_update`.
+- Promotes canon by type, then sets `ai_proposals.status=accepted` + `chapter_summary_proposals.status=accepted`.
+- Order: validate → promote canon → mark accepted (no DB transaction — documented limitation).
+- `fact` → creates `facts` row (`source=accepted_proposal`, `canon_status=confirmed`); duplicate exact text returns existing.
+- `character_update` → appends safe note to `characters.description` when `targetEntityId` + `changeSummary` present; else `409 unsupported_promotion`.
+- `relationship_update` → creates `relationship_speech_rules` only when full payload present; else `409`.
+- `open_loop_update` → creates `open_loops` or updates status `paid_off` when `targetEntityId` provided.
+- `reveal_status_update` → updates `planned_reveals.status` only with `confirmHighRisk=true` + `targetEntityId`; else `409`.
+- Returns `{ proposal, promoted, alreadyAccepted }`.
+
+**`POST /api/projects/:id/summary/:summaryId/proposals/:proposalId/reject`**
+
+- Body (optional): `{ "reason": "..." }`.
+- Sets `ai_proposals.status=rejected` + `chapter_summary_proposals.status=rejected`. No canon mutation.
+- Accepted proposal → `409 cannot_reject_accepted`. Already rejected → idempotent `200`.
+
+**Deferred Task 6.4:** SummaryPage integration, publish package, merge endpoint, multi-table transactions.
+
 Local smoke: `npm run smoke:api:sprint6` (`scripts/sprint6-smoke-api.ps1`).
 
 ### Safety smoke tests (Task 5.6)

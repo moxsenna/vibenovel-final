@@ -258,11 +258,16 @@ async function fetchActiveSessionForChapter(
     .select(SESSION_SELECT)
     .eq("project_id", projectId)
     .eq("chapter_outline_id", chapterOutlineId)
-    .eq("status", WRITING_SESSION_STATUSES.active)
+    .in("status", [
+      WRITING_SESSION_STATUSES.active,
+      WRITING_SESSION_STATUSES.ready_for_summary,
+    ])
+    .order("last_activity_at", { ascending: false })
+    .limit(1)
     .maybeSingle();
 
   if (error) {
-    console.error("writing_sessions select active failed");
+    console.error("writing_sessions select resumable failed");
     throw AppError.internal("Failed to load writing session");
   }
   return data as WritingSessionRow | null;

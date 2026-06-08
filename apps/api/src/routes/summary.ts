@@ -6,12 +6,17 @@ import {
   getChapterDeltaForOwner,
   getSummaryLinkedProposalsForOwner,
 } from "../services/chapter-delta.js";
+import { approveChapterSummaryForOwner } from "../services/chapter-summary-approval.js";
 import {
   generateChapterSummaryForOwner,
   getSummaryByChapterForOwner,
   getSummaryDetailForOwner,
   listSummariesForOwner,
 } from "../services/chapter-summary.js";
+import {
+  acceptLinkedProposalForOwner,
+  rejectLinkedProposalForOwner,
+} from "../services/summary-proposal-review.js";
 import type { AppEnv } from "../types.js";
 
 export function registerSummaryRoutes(app: Hono<AppEnv>): void {
@@ -106,4 +111,59 @@ export function registerSummaryRoutes(app: Hono<AppEnv>): void {
     );
     return jsonSuccess(c, result);
   });
+
+  app.post("/api/projects/:id/summary/:summaryId/approve", authMiddleware, async (c) => {
+    const ownerId = c.get("userId");
+    const projectId = c.req.param("id");
+    const summaryId = c.req.param("summaryId");
+    const result = await approveChapterSummaryForOwner(
+      c.env,
+      ownerId,
+      projectId,
+      summaryId,
+    );
+    return jsonSuccess(c, result);
+  });
+
+  app.post(
+    "/api/projects/:id/summary/:summaryId/proposals/:proposalId/accept",
+    authMiddleware,
+    async (c) => {
+      const ownerId = c.get("userId");
+      const projectId = c.req.param("id");
+      const summaryId = c.req.param("summaryId");
+      const proposalId = c.req.param("proposalId");
+      const body = await c.req.json().catch(() => ({}));
+      const result = await acceptLinkedProposalForOwner(
+        c.env,
+        ownerId,
+        projectId,
+        summaryId,
+        proposalId,
+        body,
+      );
+      return jsonSuccess(c, result);
+    },
+  );
+
+  app.post(
+    "/api/projects/:id/summary/:summaryId/proposals/:proposalId/reject",
+    authMiddleware,
+    async (c) => {
+      const ownerId = c.get("userId");
+      const projectId = c.req.param("id");
+      const summaryId = c.req.param("summaryId");
+      const proposalId = c.req.param("proposalId");
+      const body = await c.req.json().catch(() => ({}));
+      const result = await rejectLinkedProposalForOwner(
+        c.env,
+        ownerId,
+        projectId,
+        summaryId,
+        proposalId,
+        body,
+      );
+      return jsonSuccess(c, result);
+    },
+  );
 }

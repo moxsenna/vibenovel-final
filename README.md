@@ -11,7 +11,7 @@ VibeNovel adalah **AI Serial Fiction Production OS** — bukan chatbot novel bia
 ```txt
 vibenovel-unified-blueprint/
 ├── apps/
-│   ├── web/          ✅ Frontend React — Sprint 1 UI + API integration (Task 2.13, 3.6, 4.6, 5.5)
+│   ├── web/          ✅ Frontend React — Sprint 1 UI + API integration (Task 2.13, 3.6, 4.6, 5.5, 6.5)
 │   └── api/          ✅ Backend API — Hono/Cloudflare Worker (Task 2.5–5.4)
 ├── packages/
 │   ├── core/         ⏳ Placeholder — story/AI engine (Sprint 4–6+)
@@ -25,12 +25,12 @@ vibenovel-unified-blueprint/
 
 | Folder | Status | Keterangan |
 |---|---|---|
-| `apps/web` | **Sprint 5 complete** | UI parity Stitch; foundation + outline + Write Room API integration |
+| `apps/web` | **Sprint 6 Task 6.5** | UI parity Stitch; foundation + outline + Write Room + Summary page API integration |
 | `apps/api` | **Sprint 5 complete** | Sprint 2–5 APIs + outline planning + write room + Context Packet |
 | `packages/shared` | **Implemented (Task 2.1, 4.1, 5.1)** | Domain types, enums, write room + context packet contracts |
 | `packages/core` | Placeholder | Engine AI/story — nanti |
 | `supabase` | **Migration + seed (Task 5.1)** | 23 tabel (+ write room), RLS, demo seed — `supabase db reset` verified |
-| `scripts` | **Smoke scripts (2.15, 3.8, 4.7–4.8, 5.6)** | `smoke:api`, `smoke:web`, `smoke:web:outline`, `smoke:web:write` — see `scripts/README.md` |
+| `scripts` | **Smoke scripts (2.15, 3.8, 4.7–4.8, 5.6, 6.5)** | `smoke:api`, `smoke:web`, `smoke:web:outline`, `smoke:web:write`, `smoke:web:summary` — see `scripts/README.md` |
 | `docs` | Dokumentasi | Sumber arsitektur & sprint plan |
 | `stitch-reference` | Referensi desain | HTML + screen.png per halaman |
 
@@ -47,7 +47,7 @@ npm run dev:web    # frontend → http://localhost:5173
 npm run dev:api    # API lokal → http://127.0.0.1:8787
 ```
 
-**Web + API integration (Task 2.13, 3.6, 4.6, 5.5):** salin `apps/web/.env.example` → `apps/web/.env.local`. Default `VITE_USE_MOCKS=true` (UI tetap mock). Set `VITE_USE_MOCKS=false` + login Supabase untuk API mode: dashboard/settings/foundation (2.13), intake/concepts/foundation flow (3.6), outline cerita generate/edit/approve/lock (4.6), serta ruang tulis session/beats/prose/context preview (5.5).
+**Web + API integration (Task 2.13, 3.6, 4.6, 5.5, 6.5):** salin `apps/web/.env.example` → `apps/web/.env.local`. Default `VITE_USE_MOCKS=true` (UI tetap mock). Set `VITE_USE_MOCKS=false` + login Supabase untuk API mode: dashboard/settings/foundation (2.13), intake/concepts/foundation flow (3.6), outline cerita generate/edit/approve/lock (4.6), ruang tulis session/beats/prose/context preview (5.5), serta ringkasan bab generate/delta/approve/proposal review (6.5).
 
 ### Perintah root
 
@@ -81,6 +81,7 @@ npm run smoke:api:sprint5
 npm run smoke:web
 npm run smoke:web:outline
 npm run smoke:web:write
+npm run smoke:web:summary
 
 # Full local suite (API base + sprint5 + web mock — no API-mode web)
 npm run smoke:all:local

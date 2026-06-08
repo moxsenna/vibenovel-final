@@ -234,7 +234,33 @@ export function extractChapterDeltaStub(
   for (const item of items) {
     if (!EXTRACTABLE_ITEM_TYPES.has(item.item_type)) continue;
     const draft = buildProposalDraft(summary, item);
-    if (draft) proposalDrafts.push(draft);
+    if (draft) {
+      proposalDrafts.push(draft);
+      if (
+        draft.proposalType === AI_PROPOSAL_TYPES.fact &&
+        draft.riskLevel === AI_PROPOSAL_RISK_LEVELS.high &&
+        proposalDrafts.length < MAX_DELTA_PROPOSALS
+      ) {
+        const factText = extractFactText(item.body);
+        proposalDrafts.push({
+          proposalType: AI_PROPOSAL_TYPES.reveal_status_update,
+          title: "Kandidat reveal (high risk)",
+          riskLevel: AI_PROPOSAL_RISK_LEVELS.high,
+          payload: {
+            summaryId: summary.id,
+            chapterOutlineId: summary.chapter_outline_id,
+            chapterNumber: summary.chapter_number,
+            changeSummary: truncate(factText, 500),
+            suggestedStatus: "revealed",
+            reason: "Kandidat reveal dari ringkasan bab — tinjau manual",
+            sourceItemType: item.item_type,
+            sourceItemId: item.id,
+          },
+          sourceItemType: item.item_type,
+          sourceItemId: item.id,
+        });
+      }
+    }
     if (proposalDrafts.length >= MAX_DELTA_PROPOSALS) break;
   }
 

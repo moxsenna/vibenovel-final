@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-  Sprint 6 Chapter Summary + Delta API smoke test (Task 6.2 + 6.3).
+  Sprint 6 Summary/Delta/Approval API smoke test (Task 6.2–6.4).
 
 .DESCRIPTION
   Run from repo root:
@@ -152,6 +152,9 @@ Invoke-ApiExpectFailure -Name "generate before ready_for_summary" -Method POST -
   -Path "/api/projects/$projectId/summary/generate" `
   -Body (@{ chapterOutlineId = $ch1 } | ConvertTo-Json)
 
+Invoke-Api -Method PATCH -Path "/api/projects/$projectId/write/beats/$beatId" -Headers $auth `
+  -Body '{"mustInclude":["rahasia identitas keluarga tersembunyi di balik dapur"]}' | Out-Null
+
 Invoke-Api -Method POST -Path "/api/projects/$projectId/write/beats/$beatId/prose" -Headers $auth `
   -Body '{"proseText":"Nadira memangkas sayuran di dapur dengan irama yang sudah hafal di luar kepala."}' | Out-Null
 
@@ -269,6 +272,74 @@ Invoke-ApiExpectFailure -Name "cross-user delta 404" -Method GET -Headers $authB
   -Path "/api/projects/$projectId/summary/$currentSummaryId/delta"
 Invoke-ApiExpectFailure -Name "cross-user proposals 404" -Method GET -Headers $authB `
   -Path "/api/projects/$projectId/summary/$currentSummaryId/proposals"
+
+$factProposal = $propGet.data.proposals | Where-Object { $_.type -eq "fact" } | Select-Object -First 1
+$revealProposal = $propGet.data.proposals | Where-Object { $_.type -eq "reveal_status_update" } | Select-Object -First 1
+
+Invoke-ApiExpectFailure -Name "POST approve no token" -Method POST `
+  -Path "/api/projects/$projectId/summary/$currentSummaryId/approve" -Body '{}'
+
+if ($factProposal) {
+  Invoke-ApiExpectFailure -Name "accept before approve" -Method POST -Headers $auth `
+    -Path "/api/projects/$projectId/summary/$currentSummaryId/proposals/$($factProposal.proposalId)/accept" -Body '{}'
+}
+
+$factsBeforeApprove = (Invoke-Api -Path "/api/projects/$projectId/foundation" -Headers $auth).data.facts.Count
+
+$approve = Invoke-Api -Method POST -Path "/api/projects/$projectId/summary/$currentSummaryId/approve" -Headers $auth -Body '{}'
+Add-StepResult "POST approve summary" $(if ($approve.data.summary.status -eq "approved") { "PASS" } else { "FAIL" }) ""
+
+$factsAfterApprove = (Invoke-Api -Path "/api/projects/$projectId/foundation" -Headers $auth).data.facts.Count
+Add-StepResult "approve no canon mutation" $(if ($factsAfterApprove -eq $factsBeforeApprove) { "PASS" } else { "FAIL" }) ""
+
+$approveJson = ($approve | ConvertTo-Json -Depth 20)
+Add-StepResult "approve response leak guard" $(if (Test-JsonNoLeakMarkers $approveJson) { "PASS" } else { "FAIL" }) ""
+
+if ($revealProposal) {
+  Invoke-ApiExpectFailure -Name "reveal accept without confirm" -Method POST -Headers $auth `
+    -Path "/api/projects/$projectId/summary/$currentSummaryId/proposals/$($revealProposal.proposalId)/accept" -Body '{}'
+  Invoke-Api -Method POST -Path "/api/projects/$projectId/summary/$currentSummaryId/proposals/$($revealProposal.proposalId)/reject" -Headers $auth `
+    -Body '{"reason":"smoke skip reveal"}' | Out-Null
+  Add-StepResult "reject linked proposal" "PASS" "reveal"
+} elseif ($factProposal) {
+  Invoke-Api -Method POST -Path "/api/projects/$projectId/summary/$currentSummaryId/proposals/$($factProposal.proposalId)/reject" -Headers $auth `
+    -Body '{"reason":"smoke reject path"}' | Out-Null
+  Add-StepResult "reject linked proposal" "PASS" "fact"
+  $genV3 = Invoke-Api -Method POST -Path "/api/projects/$projectId/summary/generate" -Headers $auth `
+    -Body (@{ chapterOutlineId = $ch1; regenerate = $true } | ConvertTo-Json)
+  $currentSummaryId = $genV3.data.summary.id
+  Invoke-Api -Method POST -Path "/api/projects/$projectId/summary/$currentSummaryId/delta/extract" -Headers $auth -Body '{}' | Out-Null
+  Invoke-Api -Method POST -Path "/api/projects/$projectId/summary/$currentSummaryId/approve" -Headers $auth -Body '{}' | Out-Null
+  $propGet = Invoke-Api -Path "/api/projects/$projectId/summary/$currentSummaryId/proposals" -Headers $auth
+  $factProposal = $propGet.data.proposals | Where-Object { $_.type -eq "fact" -and $_.status -eq "proposed" } | Select-Object -First 1
+}
+
+if ($factProposal -and $factProposal.status -eq "proposed") {
+  $acceptFact = Invoke-Api -Method POST -Path "/api/projects/$projectId/summary/$currentSummaryId/proposals/$($factProposal.proposalId)/accept" -Headers $auth -Body '{}'
+  Add-StepResult "accept fact proposal" $(if ($acceptFact.data.promoted.entityType -eq "fact") { "PASS" } else { "FAIL" }) ""
+
+  $factsAfterAccept = (Invoke-Api -Path "/api/projects/$projectId/foundation" -Headers $auth).data.facts.Count
+  Add-StepResult "fact creates confirmed canon" $(if ($factsAfterAccept -gt $factsBeforeApprove) { "PASS" } else { "FAIL" }) "before=$factsBeforeApprove after=$factsAfterAccept"
+
+  $acceptAgain = Invoke-Api -Method POST -Path "/api/projects/$projectId/summary/$currentSummaryId/proposals/$($factProposal.proposalId)/accept" -Headers $auth -Body '{}'
+  Add-StepResult "accept idempotent" $(if ($acceptAgain.data.alreadyAccepted -eq $true) { "PASS" } else { "FAIL" }) ""
+
+  Invoke-ApiExpectFailure -Name "reject accepted proposal" -Method POST -Headers $auth `
+    -Path "/api/projects/$projectId/summary/$currentSummaryId/proposals/$($factProposal.proposalId)/reject" -Body '{}'
+} else {
+  Add-StepResult "accept fact proposal" "FAIL" "no proposed fact"
+  Add-StepResult "fact creates confirmed canon" "FAIL" "skipped"
+  Add-StepResult "accept idempotent" "FAIL" "skipped"
+  Invoke-ApiExpectFailure -Name "reject accepted proposal" -Method POST -Headers $auth `
+    -Path "/api/projects/$projectId/summary/$currentSummaryId/proposals/00000000-0000-4000-8000-000000000099/reject" -Body '{}'
+}
+
+Invoke-ApiExpectFailure -Name "cross-user approve 404" -Method POST -Headers $authB `
+  -Path "/api/projects/$projectId/summary/$currentSummaryId/approve" -Body '{}'
+if ($factProposal) {
+  Invoke-ApiExpectFailure -Name "cross-user accept 404" -Method POST -Headers $authB `
+    -Path "/api/projects/$projectId/summary/$currentSummaryId/proposals/$($factProposal.proposalId)/accept" -Body '{}'
+}
 
 $fail = @($Results | Where-Object { $_.Result -eq "FAIL" }).Count
 Write-Host "`nSummary: $($Results.Count - $fail) PASS, $fail FAIL"
