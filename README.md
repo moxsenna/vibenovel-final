@@ -354,7 +354,7 @@ Belum ada (sengaja — defer setelah hardening / Sprint 8):
 | 7.8.4 Smoke orchestration | ✅ | `smoke:all:local` 9 phases |
 | 7.8.6 Hardening verification report | ✅ | `docs/43` |
 
-**Task berikutnya (disarankan):** **Task 8.4** — Prose Beat Generation API (`docs/44` §14).
+**Task berikutnya (disarankan):** **Task 8.5** — WritePage AI button (`docs/44` §14).
 
 ---
 
@@ -368,9 +368,9 @@ Belum ada (sengaja — defer setelah hardening / Sprint 8):
 | 8.1 Data model + credit ledger | ✅ | Migration `00008` + shared types + audit enum extend |
 | 8.2 Model router + OpenRouter shell | ✅ | `model-router`, `openrouter-client`, `mock-ai-provider` — disabled by default |
 | 8.3 Credit debit/refund service | ✅ | `ai-credit-policy`, `credit-ledger` — internal only |
-| 8.4 Prose beat generation API | Pending | `POST /ai/generate-prose` |
+| 8.4 Prose beat generation API | ✅ | `POST /ai/generate-prose` + orchestration |
 | 8.5 WritePage AI button | Pending | Credit cost + loading states |
-| 8.6 Safety smoke tests | Pending | `sprint8-smoke-api.ps1` |
+| 8.6 Safety smoke tests | ✅ (script) | `sprint8-smoke-api.ps1` — mock modes need env restart |
 | 8.7 Verification report | Pending | `docs/45` |
 
 Sprint 8 MVP: **prose beat generation** first; summary/delta AI deferred. AI **disabled by default** until env enabled.

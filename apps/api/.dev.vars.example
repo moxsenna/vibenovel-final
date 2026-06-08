@@ -7,9 +7,10 @@ SUPABASE_SERVICE_ROLE_KEY=your-local-service-role-key
 APP_ENV=development
 ALLOWED_ORIGINS=http://localhost:5173,http://localhost:5174,http://localhost:5175
 
-# Sprint 8 AI generation (Task 8.1+ — names only; never commit values)
+# Sprint 8 AI generation (Task 8.4 — names only; never commit values)
+# Default: AI disabled. For local sprint8 smoke set both true and restart dev:api.
 # AI_GENERATION_ENABLED=false
-# AI_PROVIDER_MOCK=false
+# AI_PROVIDER_MOCK=true
 # AI_PROVIDER_MOCK_MODE=success
 # OPENROUTER_API_KEY=
 # OPENROUTER_BASE_URL=https://openrouter.ai/api/v1

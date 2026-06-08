@@ -441,6 +441,128 @@ export async function getProseVersionForOwner(
   return mapChapterProseVersionRow(row);
 }
 
+export interface SaveAiGeneratedProseInput {
+  proseText: string;
+  contextPacketLogId: string;
+}
+
+/** Internal path for AI generation — source fixed to ai_generated; not exposed via public POST body. */
+export async function saveAiGeneratedProseVersionForOwner(
+  bindings: AppBindings,
+  ownerId: string,
+  projectId: string,
+  beatId: string,
+  input: SaveAiGeneratedProseInput,
+): Promise<SaveProseDraftResult> {
+  const proseText = assertNonEmptyProseText(input.proseText);
+  if (typeof input.contextPacketLogId !== "string" || !input.contextPacketLogId.trim()) {
+    throw AppError.badRequest("contextPacketLogId is required for AI prose");
+  }
+
+  await assertProseWriteGates(bindings, ownerId, projectId);
+  const beatRow = await getOwnedBeatRow(bindings, ownerId, projectId, beatId);
+  const session = await requireWritableSessionForChapter(
+    bindings,
+    projectId,
+    beatRow.chapter_outline_id,
+  );
+
+  await validateContextPacketLogId(
+    bindings,
+    projectId,
+    beatRow.chapter_outline_id,
+    beatId,
+    input.contextPacketLogId.trim(),
+  );
+
+  const admin = createServiceRoleClient(bindings);
+  const wordCount = countWords(proseText);
+
+  const { data: maxRow, error: maxError } = await admin
+    .from("chapter_prose_versions")
+    .select("version_number")
+    .eq("chapter_beat_id", beatId)
+    .order("version_number", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (maxError) {
+    console.error("chapter_prose_versions max version lookup failed");
+    throw AppError.internal("Failed to save AI prose");
+  }
+
+  const nextVersion =
+    maxRow !== null ? ((maxRow as { version_number: number }).version_number + 1) : 1;
+
+  const { error: clearError } = await admin
+    .from("chapter_prose_versions")
+    .update({ is_current: false })
+    .eq("chapter_beat_id", beatId)
+    .eq("project_id", projectId)
+    .eq("is_current", true);
+
+  if (clearError) {
+    console.error("chapter_prose_versions clear current failed");
+    throw AppError.internal("Failed to save AI prose");
+  }
+
+  const { data: inserted, error: insertError } = await admin
+    .from("chapter_prose_versions")
+    .insert({
+      project_id: projectId,
+      chapter_beat_id: beatId,
+      version_number: nextVersion,
+      prose_text: proseText,
+      word_count: wordCount,
+      source: CHAPTER_PROSE_SOURCES.ai_generated,
+      is_current: true,
+      context_packet_log_id: input.contextPacketLogId.trim(),
+      metadata: {},
+    })
+    .select(PROSE_SELECT)
+    .single();
+
+  if (insertError || !inserted) {
+    console.error("chapter_prose_versions AI insert failed");
+    throw AppError.internal("Failed to save AI prose");
+  }
+
+  const newBeatStatus = resolveBeatStatusAfterSave(beatRow.status);
+  if (newBeatStatus !== beatRow.status) {
+    const { error: beatError } = await admin
+      .from("chapter_beats")
+      .update({ status: newBeatStatus })
+      .eq("id", beatId)
+      .eq("project_id", projectId);
+
+    if (beatError) {
+      console.error("chapter_beats status update after AI prose failed");
+      throw AppError.internal("Failed to update beat status");
+    }
+  }
+
+  const chapterWordCount = await computeChapterWordCount(
+    bindings,
+    projectId,
+    beatRow.chapter_outline_id,
+  );
+
+  await updateChapterWritingState(
+    bindings,
+    projectId,
+    beatRow.chapter_outline_id,
+    session.id,
+    chapterWordCount,
+  );
+
+  await touchSessionActivity(bindings, projectId, session.id);
+
+  return {
+    version: mapChapterProseVersionRow(inserted as ChapterProseVersionRow),
+    chapterWordCount,
+  };
+}
+
 export async function saveProseDraftForOwner(
   bindings: AppBindings,
   ownerId: string,

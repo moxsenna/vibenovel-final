@@ -305,7 +305,7 @@ export function buildPreviewFromPacket(
   };
 }
 
-function parsePacketJson(value: unknown): WriterContextPacket {
+export function parsePacketJson(value: unknown): WriterContextPacket {
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     throw AppError.internal("Stored context packet is invalid");
   }

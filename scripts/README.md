@@ -22,6 +22,7 @@ Run all commands from **repo root**. Windows/PowerShell primary.
 | `smoke:web:summary` | `sprint6-smoke-web.ps1` | Web mock `/summary` + leak guards; `-- -IncludeApiMode` for API flow | Same |
 | `smoke:web:publish` | `sprint7-smoke-web.ps1` | Web mock `/publish` + leak guards; `-- -IncludeApiMode` for API flow | Same |
 | `smoke:api:sprint7` | `sprint7-smoke-api.ps1` | Publish package generation/update/export safety (Task 7.5) | Same as API base |
+| `smoke:api:sprint8` | `sprint8-smoke-api.ps1` | AI prose beat generation safety (Task 8.4) | Same as API base; mock modes need AI env + restart `dev:api` |
 | `smoke:all:local` | `smoke-all-local.ps1` | Sprint 2/5/6/7 API + Sprint 3–7 web mock (9 phases) | All API + web prerequisites |
 | `smoke:all:local:full` | `smoke-all-local.ps1 -IncludeApiMode` | Above + web API-mode on all web wrappers (incl. summary/publish) | + restart `dev:web` after `VITE_USE_MOCKS=false` |
 
@@ -508,6 +509,55 @@ All mock prerequisites, plus:
 **CI note:** `smoke:all:local:full` remains **local/manual only** — not in GitHub Actions (see `docs/41` §5).
 
 Expect **~5–15 minutes** depending on API bootstrap and API-mode web runs. Requires `dev:api` and `dev:web` running before start.
+
+## Sprint 8 AI prose generation API smoke (Task 8.4)
+
+### `sprint8-smoke-api.ps1`
+
+Windows-first PowerShell smoke for **`POST /api/projects/:id/ai/generate-prose`**.
+
+### Prerequisites
+
+Same as API base smokes (`supabase start`, `db reset`, `dev:api`, `apps/api/.dev.vars`).
+
+**Baseline (always runs):** default `AI_GENERATION_ENABLED=false` → `503 AI_DISABLED`, no-token `401`, client `model` rejected when AI enabled.
+
+**Mock modes (optional):** append to `apps/api/.dev.vars` (never commit):
+
+```txt
+AI_GENERATION_ENABLED=true
+AI_PROVIDER_MOCK=true
+AI_PROVIDER_MOCK_MODE=success
+```
+
+Restart `dev:api` after changing `.dev.vars`. OpenRouter key **not** required when mock is on.
+
+### Run from repo root
+
+```bash
+# Baseline — AI disabled default
+npm run smoke:api:sprint8
+
+# Mock success path (after env + restart)
+npm run smoke:api:sprint8 -- -MockMode success
+
+# Failure modes — set AI_PROVIDER_MOCK_MODE and restart dev:api first
+npm run smoke:api:sprint8 -- -MockMode fail_provider
+npm run smoke:api:sprint8 -- -MockMode unsafe_output
+```
+
+### What is tested
+
+| Area | Coverage |
+|---|---|
+| Gate | `AI_DISABLED` when env off; auth required |
+| Credit | `INSUFFICIENT_CREDIT` (402) before provider; single debit on success; refund on fail/unsafe |
+| Generation | `generation_attempt` succeeded; `chapter_prose_versions.source=ai_generated` |
+| Idempotency | Same key replay — no double debit |
+| Safety | No `packet_json`/`planningTruth`/prompt in response or audit metadata |
+| Canon | No facts/characters/proposals mutation |
+
+Credit seeding uses local service role via `supabase status -o env` — script does not print keys.
 
 ## Future scripts (not yet implemented)
 

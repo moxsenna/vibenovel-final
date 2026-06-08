@@ -128,7 +128,7 @@ Cloudflare Worker + `@supabase/supabase-js` cannot wrap arbitrary multi-table wr
 
 ## AI model router shell (Task 8.2)
 
-**Status:** Internal services only — **no public `/api/projects/:id/ai/*` routes yet** (Task 8.4). **No credit mutation** (Task 8.3). **AI disabled by default.**
+**Status:** `POST /api/projects/:id/ai/generate-prose` (Task 8.4). Credit debit/refund internal via `credit-ledger.ts`. **AI disabled by default** (`AI_GENERATION_ENABLED=false`).
 
 ```txt
 (future) route → ai-generation-service → model-router → openrouter-client | mock-ai-provider
@@ -161,7 +161,7 @@ Cloudflare Worker + `@supabase/supabase-js` cannot wrap arbitrary multi-table wr
 
 ## Credit ledger service (Task 8.3)
 
-**Status:** Internal services only — **no public credit mutation endpoint**. **No AI route yet** (Task 8.4).
+**Status:** Internal services — debited/refunded by Task 8.4 `generate-prose` orchestration. **No public credit mutation endpoint** (read-only `GET /api/credits/balance`).
 
 | Service | Role |
 |---|---|
@@ -180,6 +180,44 @@ Cloudflare Worker + `@supabase/supabase-js` cannot wrap arbitrary multi-table wr
 **No balance auto-create:** Missing `credit_balances` row → `INSUFFICIENT_CREDIT` on debit.
 
 **MVP credit costs:** prose_beat 5/10/20, prose_rewrite 3/6/12, publish_copy 3/6/12 (hemat/seimbang/terbaik). `summary_delta` disabled.
+
+## AI prose beat generation (Task 8.4)
+
+**Route:** `POST /api/projects/:id/ai/generate-prose` (auth required)
+
+**Gate:** `AI_GENERATION_ENABLED=true` required; otherwise `503 AI_DISABLED`. Active/paused writing session + write-room gates via existing helpers.
+
+**Request body:**
+
+```json
+{
+  "chapterOutlineId": "uuid",
+  "beatId": "uuid",
+  "writingSessionId": "optional uuid",
+  "qualityMode": "hemat|seimbang|terbaik",
+  "idempotencyKey": "string (max 120, safe chars)",
+  "instruction": "optional max 500"
+}
+```
+
+Rejects `projectId`, `ownerId`, `userId`, `model`, `provider`, `creditCost`, `packet_json`, `prompt` from body.
+
+**Orchestration:** context packet build + log → prompt hash (no raw prompt stored) → `generation_attempt` → debit → `generateWithModelRouter` → `chapter_prose_versions` with `source=ai_generated` → mark attempt succeeded. Refund on provider/safety/persist failure.
+
+**Idempotency:** Same `idempotencyKey` + succeeded attempt returns existing prose version without new debit. In-progress → `409 GENERATION_IN_PROGRESS`. Failed same key → `422 GENERATION_FAILED` (new key required).
+
+**Response (safe):** `version`, `generationAttempt` summary, `creditBalance`, `creditCost`, `idempotentReplay`. No `packet_json`, raw prompt, or `planningTruth`.
+
+**Services:**
+
+| Service | Role |
+|---|---|
+| `prose-beat-generation.ts` | Route orchestration |
+| `generation-attempt.ts` | Attempt lifecycle + audits |
+| `prose-generation-prompt.ts` | Safe prompt from context packet log |
+| `prose-draft.ts` | `saveAiGeneratedProseVersionForOwner` (internal only) |
+
+**Local smoke (no OpenRouter):** set `AI_GENERATION_ENABLED=true`, `AI_PROVIDER_MOCK=true` in `apps/api/.dev.vars`, restart `dev:api`, then `npm run smoke:api:sprint8 -- -MockMode success`. Optional failure modes: `AI_PROVIDER_MOCK_MODE=fail_provider` or `unsafe_output` + matching `-MockMode`.
 
 **Audit ordering:** `*_started` / preflight before writes; `*_applied` only after success; `*_failed` after validation or write failure. No payload leak (`audit-snapshot.ts`).
 

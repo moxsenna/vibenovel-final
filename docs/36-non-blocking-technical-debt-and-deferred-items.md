@@ -192,8 +192,11 @@ Sprint 5 closed with **zero blockers**. Items below are non-blocking unless mark
 | **8.1** | `generation_attempts` + `credit_ledger` migration | ✅ `00008` + shared types |
 | **8.2** | Model router + OpenRouter shell + mock provider | ✅ Internal services only; no AI route yet |
 | **8.3** | Credit debit/refund service | ✅ `credit-ledger.ts` + `ai-credit-policy.ts`; no public route |
+| **8.4** | Prose beat generation API | ✅ `POST /ai/generate-prose`, `generation-attempt.ts`, `sprint8-smoke-api.ps1` |
 
-**Sprint 8 gate:** Plan approved (`docs/44`). Production AI **not** until 8.4+ with env enabled + smokes PASS.
+**Sprint 8 gate:** Plan approved (`docs/44`). Production AI **not** until env enabled + smokes PASS. **AI disabled by default** (`AI_GENERATION_ENABLED=false`). Local mock smoke: `AI_PROVIDER_MOCK=true` — OpenRouter not required.
+
+**Sprint 8 smoke note:** `smoke:api:sprint8` baseline (AI disabled) runs without restart. Mock success/failure modes require `AI_GENERATION_ENABLED=true` + `AI_PROVIDER_MOCK=true` (+ optional `AI_PROVIDER_MOCK_MODE`) and **restart `dev:api`**.
 
 ---
 

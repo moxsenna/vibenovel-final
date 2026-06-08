@@ -23,6 +23,7 @@
     "smoke:api:sprint5": "powershell -ExecutionPolicy Bypass -File scripts/sprint5-smoke-api.ps1",
     "smoke:api:sprint6": "powershell -ExecutionPolicy Bypass -File scripts/sprint6-smoke-api.ps1",
     "smoke:api:sprint7": "powershell -ExecutionPolicy Bypass -File scripts/sprint7-smoke-api.ps1",
+    "smoke:api:sprint8": "powershell -ExecutionPolicy Bypass -File scripts/sprint8-smoke-api.ps1",
     "smoke:web": "powershell -ExecutionPolicy Bypass -File scripts/sprint3-smoke-web.ps1",
     "smoke:web:outline": "powershell -ExecutionPolicy Bypass -File scripts/sprint4-smoke-web.ps1",
     "smoke:web:write": "powershell -ExecutionPolicy Bypass -File scripts/sprint5-smoke-web.ps1",
