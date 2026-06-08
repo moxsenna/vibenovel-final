@@ -374,10 +374,10 @@ Belum ada (sengaja — defer setelah hardening / Sprint 8):
 | 9.4 WritePage rewrite UI | ✅ | `POST /ai/rewrite-prose` UI, `smoke:web:rewrite` (API-mode E2E verified 9.4b) |
 | 9.5 Publish copy AI API | ✅ | `POST /ai/improve-publish-copy`, suggestion-first, `smoke:api:sprint9` |
 | 9.6 PublishPage AI UI | ✅ | Perbaiki Copy dengan AI, apply via PATCH, `smoke:web:publish-ai` |
-| 9.7 Safety regression | ⏳ | Sprint 9 smokes |
+| 9.7 Safety regression | ✅ | Full API/web smoke matrix; mock modes; API-mode E2E |
 | 9.8 Verification report | ⏳ | `docs/49` |
 
-**Task berikutnya (disarankan):** **Task 9.7** — Sprint 9 safety regression (full smoke matrix).
+**Task berikutnya (disarankan):** **Task 9.8** — Sprint 9 verification report (`docs/49`).
 
 **Rewrite UI (Task 9.4):** Tersedia di mode API pada WritePage — mode perbaikan (emosi/pacing/dialog/panjang/custom), biaya rewrite 3/6/12 kredit (hemat/seimbang/terbaik), hasil disimpan sebagai versi prose baru. Mock/fallback tidak memalsukan rewrite. Top up belum tersedia.
 

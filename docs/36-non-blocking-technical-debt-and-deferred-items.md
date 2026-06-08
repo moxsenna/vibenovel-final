@@ -221,6 +221,8 @@ Sprint 5 closed with **zero blockers**. Items below are non-blocking unless mark
 
 **Addressed Task 9.6:** PublishPage AI UI — panel **Perbaiki Copy dengan AI**; suggestions displayed; user **Terapkan** via existing `PATCH .../publish/:packageId/fields`; mock/fallback no fake AI; `smoke:web:publish-ai` / `smoke:web:sprint9`.
 
+**Addressed Task 9.7:** Sprint 9 safety regression — full API baseline (Sprint 2/5/6/7/8/9), Sprint 8/9 mock modes (success/fail_provider/unsafe_output), web mock matrix, API-mode write/rewrite/publish AI success + disabled E2E; `smoke:all:local` 11/11 PASS; env restored safe default.
+
 ---
 
 ## Related documents

@@ -619,6 +619,61 @@ npm run smoke:web:write-ai -- -IncludeApiMode   # AI_DISABLED safe message E2E
 
 Live OpenRouter is **not** required or tested. Never commit `.dev.vars` or print tokens in smoke output.
 
+## Sprint 9 full safety regression (Task 9.7) — manual env switching
+
+`smoke:all:local` includes Sprint 8 API **baseline only** and Web Sprint 3–8 mock — **not** Sprint 9 web/API scripts. Task 9.7 runs Sprint 9 smokes separately. Full AI modes require restart `dev:api` between runs (same pattern as Sprint 8.6):
+
+```powershell
+# 1) API baseline — safe default (no restart)
+npm run smoke:api
+npm run smoke:api:sprint5
+npm run smoke:api:sprint6
+npm run smoke:api:sprint7
+npm run smoke:api:sprint8
+npm run smoke:api:sprint9
+
+# 2) Mock success — apps/api/.dev.vars (gitignored):
+#    AI_GENERATION_ENABLED=true, AI_PROVIDER_MOCK=true, AI_PROVIDER_MOCK_MODE=success
+#    restart dev:api
+npm run smoke:api:sprint8 -- -MockMode success
+npm run smoke:api:sprint9 -- -MockMode success
+
+# 3) fail_provider — AI_PROVIDER_MOCK_MODE=fail_provider, restart dev:api
+npm run smoke:api:sprint8 -- -MockMode fail_provider
+npm run smoke:api:sprint9 -- -MockMode fail_provider
+
+# 4) unsafe_output — AI_PROVIDER_MOCK_MODE=unsafe_output, restart dev:api
+npm run smoke:api:sprint8 -- -MockMode unsafe_output
+npm run smoke:api:sprint9 -- -MockMode unsafe_output
+
+# 5) Web mock — VITE_USE_MOCKS=true, restart dev:web
+npm run smoke:web
+npm run smoke:web:write
+npm run smoke:web:write-ai
+npm run smoke:web:credit-ui
+npm run smoke:web:rewrite
+npm run smoke:web:publish
+npm run smoke:web:publish-ai
+npm run smoke:web:sprint9
+
+# 6) API-mode success — VITE_USE_MOCKS=false, AI enabled + mock success, restart dev:api + dev:web
+npm run smoke:web:write-ai -- -IncludeApiMode
+npm run smoke:web:rewrite -- -IncludeApiMode
+npm run smoke:web:publish-ai -- -IncludeApiMode
+npm run smoke:web:sprint9 -- -IncludeApiMode
+
+# 7) API-mode disabled — AI_GENERATION_ENABLED=false, restart dev:api
+npm run smoke:web:write-ai -- -IncludeApiMode
+npm run smoke:web:rewrite -- -IncludeApiMode
+npm run smoke:web:publish-ai -- -IncludeApiMode
+
+# 8) Orchestrator + restore safe default
+#    AI_GENERATION_ENABLED=false, VITE_USE_MOCKS=true, restart dev:api + dev:web
+npm run smoke:all:local
+```
+
+`smoke:all:local:full` (`-IncludeApiMode`) does not include Sprint 9 web scripts; use explicit Sprint 9 commands above.
+
 ## Future scripts (not yet implemented)
 
 ```txt
