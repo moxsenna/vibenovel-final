@@ -1,11 +1,12 @@
 # 44 — Sprint 8: AI/OpenRouter & Credit-Gated Generation Implementation Plan
 
-**Status:** Planning only — no migration, no API, no OpenRouter calls  
+**Status:** Closed — implemented and verified (Task 8.7)  
 **Date:** 8 Juni 2026  
 **Repo:** `vibenovel-unified-blueprint`  
-**Prerequisite:** [`docs/43-pre-ai-hardening-verification-report.md`](43-pre-ai-hardening-verification-report.md)
+**Prerequisite:** [`docs/43-pre-ai-hardening-verification-report.md`](43-pre-ai-hardening-verification-report.md)  
+**Verification:** [`docs/45-sprint-8-verification-report.md`](45-sprint-8-verification-report.md)
 
-Dokumen ini adalah **rencana Sprint 8** sebelum coding. Agent dan developer wajib membaca ini sebelum menulis migration `00008`, model router, credit ledger, atau mengaktifkan AI generation.
+Dokumen ini adalah **rencana Sprint 8** yang telah diimplementasikan (Task 8.1–8.6). Gunakan sebagai referensi arsitektur; status penutupan resmi ada di `docs/45`.
 
 **Work log:** `.agent-logs/sprint-8/task-8.0-ai-openrouter-credit-generation-plan.md`
 
@@ -502,7 +503,7 @@ Update `smoke-all-local.ps1` phase 10 optional after 8.6.
 | **8.4** | Prose beat generation API | `POST /ai/generate-prose`, orchestration, safety, persist `ai_generated` |
 | **8.5** | WritePage integration | Generate button, credit display, loading/error states |
 | **8.6** | Safety + regression tests | `sprint8-smoke-api.ps1`, update smoke index |
-| **8.7** | Verification report | `docs/45-sprint-8-verification-report.md` |
+| **8.7** | Verification report | `docs/45-sprint-8-verification-report.md` ✅ |
 
 **Optional stretch:** `rewrite-prose` (8.4b), `improve-publish-copy` (8.5b) — after 8.4 core PASS.
 

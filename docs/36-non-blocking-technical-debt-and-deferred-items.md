@@ -107,7 +107,7 @@ Sprint 5 closed with **zero blockers**. Items below are non-blocking unless mark
 |---|---|---|
 | Draft prose is not canon | By design | Until Sprint 6 approval |
 | `ai_generated` prose source reserved (400) | By design | Before AI generation |
-| No beat-level AI generation | P1 | Before AI/OpenRouter |
+| No beat-level AI generation | P1 | **Addressed Sprint 8** — `POST /ai/generate-prose` + WritePage button |
 | `regenerate=true` beats blocked when prose exists | P2 | Documented guard |
 
 ### Context Packet limitations
@@ -196,10 +196,15 @@ Sprint 5 closed with **zero blockers**. Items below are non-blocking unless mark
 | **8.2** | Model router + OpenRouter shell + mock provider | ✅ Internal services only; no AI route yet |
 | **8.3** | Credit debit/refund service | ✅ `credit-ledger.ts` + `ai-credit-policy.ts`; no public route |
 | **8.4** | Prose beat generation API | ✅ `POST /ai/generate-prose`, `generation-attempt.ts`, `sprint8-smoke-api.ps1` |
+| **8.5** | WritePage AI button | ✅ `Tulis Beat dengan AI`, `smoke:web:write-ai` |
+| **8.6** | Safety + verification | ✅ Full mock matrix + E2E (Task 8.6) |
+| **8.7** | Verification report | ✅ [`docs/45`](45-sprint-8-verification-report.md) |
 
-**Sprint 8 gate:** Plan approved (`docs/44`). Production AI **not** until env enabled + smokes PASS. **AI disabled by default** (`AI_GENERATION_ENABLED=false`). Local mock smoke: `AI_PROVIDER_MOCK=true` — OpenRouter not required.
+**Sprint 8:** **Closed** (`docs/45`). MVP prose beat generation verified with mock provider. Production AI **not** until Task 8.8 staging plan + env enabled. **AI disabled by default** (`AI_GENERATION_ENABLED=false`).
 
-**Sprint 8 smoke note:** `smoke:api:sprint8` baseline (AI disabled) runs without restart. Mock success/failure modes require `AI_GENERATION_ENABLED=true` + `AI_PROVIDER_MOCK=true` (+ optional `AI_PROVIDER_MOCK_MODE`) and **restart `dev:api`**.
+**Sprint 8 smoke note:** `smoke:api:sprint8` baseline (AI disabled) in `smoke:all:local`. Full success/fail/unsafe modes require manual env restart — see `scripts/README.md` § Sprint 8 full verification.
+
+**Remaining AI debt (non-blocking):** live OpenRouter (Task 8.8), rewrite/publish AI, credit UI/topup, true RPC credit mutation, CI E2E.
 
 ---
 
@@ -211,5 +216,6 @@ Sprint 5 closed with **zero blockers**. Items below are non-blocking unless mark
 - [`docs/42-audit-action-enum-and-coverage-plan.md`](42-audit-action-enum-and-coverage-plan.md)
 - [`docs/43-pre-ai-hardening-verification-report.md`](43-pre-ai-hardening-verification-report.md)
 - [`docs/44-sprint-8-ai-openrouter-credit-generation-implementation-plan.md`](44-sprint-8-ai-openrouter-credit-generation-implementation-plan.md)
+- [`docs/45-sprint-8-verification-report.md`](45-sprint-8-verification-report.md)
 - [`scripts/README.md`](../scripts/README.md)
 - [`docs/17-roadmap-sprint-plan-mvp-to-full.md`](17-roadmap-sprint-plan-mvp-to-full.md)
