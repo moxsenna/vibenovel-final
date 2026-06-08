@@ -358,7 +358,7 @@ Belum ada (sengaja — defer setelah hardening / Sprint 8):
 | 7.8.4 Smoke orchestration | ✅ | `smoke:all:local` 9 phases |
 | 7.8.6 Hardening verification report | ✅ | `docs/43` |
 
-**Task berikutnya (disarankan):** **Task 8.9b** — Live OpenRouter Staging Smoke Re-run (set `OPENROUTER_API_KEY` lokal, jalankan `docs/46` §6 live).
+**Task berikutnya (disarankan):** **Sprint 9 planning** — AI rewrite / publish copy / credit UI (live OpenRouter staging **GO** — `docs/47`).
 
 ---
 
@@ -378,9 +378,10 @@ Belum ada (sengaja — defer setelah hardening / Sprint 8):
 | 8.6 Safety + verification | ✅ | API mock success/fail/unsafe + WritePage AI E2E success/disabled |
 | 8.7 Verification report | ✅ | `docs/45` |
 | 8.8 Live OpenRouter staging plan | ✅ | `docs/46` |
-| 8.9 Live OpenRouter staging smoke | ✅ | `docs/47` — **NO-GO** (no local API key; 0 live calls) |
+| 8.9 Live OpenRouter staging smoke | ✅ | `docs/47` — Task 8.9 NO-GO (no key) |
+| 8.9b Live OpenRouter with local key | ✅ | `docs/47` — **GO** (`google/gemini-2.5-flash`) |
 
-Sprint 8 MVP: **prose beat generation** dengan mock provider. Live OpenRouter **belum terverifikasi** (`docs/47` NO-GO). AI **disabled by default** (`AI_GENERATION_ENABLED=false`).
+Sprint 8 MVP: **prose beat generation** verified mock + **live OpenRouter staging GO** (`docs/47`). AI **disabled by default** (`AI_GENERATION_ENABLED=false`).
 
 ---
 

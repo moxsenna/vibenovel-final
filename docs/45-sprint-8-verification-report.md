@@ -43,7 +43,7 @@ Sprint 8 **siap ditutup**. MVP prose beat generation end-to-end (API + WritePage
 | Publish copy AI | Sprint 9+ |
 | Summary / delta AI extraction | Sprint 9+ (butuh validator kuat) |
 | Topup / payment / credit purchase UI | Out of scope |
-| Live OpenRouter production test | Task 8.9 executed — **NO-GO** [`docs/47`](47-live-openrouter-staging-smoke-report.md); re-run Task 8.9b |
+| Live OpenRouter production test | Task 8.9b **GO** [`docs/47`](47-live-openrouter-staging-smoke-report.md); production deploy still separate |
 | True Postgres RPC untuk credit+attempt | Before production deploy |
 | CI API-mode E2E | Deferred (7.8.5) |
 | Remote deploy / remote migration push | Not done |
@@ -303,15 +303,15 @@ No secret values committed to repository.
 
 **Plan complete:** [`docs/46-live-openrouter-staging-verification-plan.md`](46-live-openrouter-staging-verification-plan.md) (8 Juni 2026). Docs-only — live OpenRouter **not** tested in 8.8.
 
-### Task 8.9 — Live OpenRouter Staging Smoke Execution ✅
+### Task 8.9 / 8.9b — Live OpenRouter Staging Smoke ✅
 
-**Report:** [`docs/47-live-openrouter-staging-smoke-report.md`](47-live-openrouter-staging-smoke-report.md) — **NO-GO** (no local `OPENROUTER_API_KEY`; 0 live provider calls). Mock regression PASS; rollback PASS.
+**Report:** [`docs/47-live-openrouter-staging-smoke-report.md`](47-live-openrouter-staging-smoke-report.md)  
+- Task 8.9: NO-GO (no local key)  
+- Task 8.9b: **GO** — live success + idempotency + debit; model `google/gemini-2.5-flash`
 
-### Task 8.9b — Live OpenRouter Staging Smoke Re-run (next)
+### Recommended next — Sprint 9 AI expansion planning
 
-Operator sets `OPENROUTER_API_KEY` in gitignored `.dev.vars`; re-run `docs/46` §6 live sections; update Go/No-Go.
-
-Alternatif (lower priority): Sprint 9 planning for AI rewrite / publish copy / credit UI — **after** live Go.
+Rewrite / publish copy / credit UI — **after** staging Go (achieved 8.9b).
 
 ---
 

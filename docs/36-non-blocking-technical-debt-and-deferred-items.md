@@ -200,13 +200,14 @@ Sprint 5 closed with **zero blockers**. Items below are non-blocking unless mark
 | **8.6** | Safety + verification | ✅ Full mock matrix + E2E (Task 8.6) |
 | **8.7** | Verification report | ✅ [`docs/45`](45-sprint-8-verification-report.md) |
 | **8.8** | Live OpenRouter staging verification plan | ✅ [`docs/46`](46-live-openrouter-staging-verification-plan.md) |
-| **8.9** | Live OpenRouter staging smoke execution | ✅ [`docs/47`](47-live-openrouter-staging-smoke-report.md) — **NO-GO** (no local API key; 0 live calls) |
+| **8.9** | Live OpenRouter staging smoke execution | ✅ [`docs/47`](47-live-openrouter-staging-smoke-report.md) — Task 8.9 NO-GO (no key) |
+| **8.9b** | Live OpenRouter staging with local key | ✅ [`docs/47`](47-live-openrouter-staging-smoke-report.md) — **GO** |
 
-**Sprint 8:** **Closed** (`docs/45`). MVP prose beat generation verified with mock provider. Production AI **not** until Task 8.9b re-run achieves **Go**. **AI disabled by default** (`AI_GENERATION_ENABLED=false`).
+**Sprint 8:** **Closed** (`docs/45`). MVP prose beat generation verified mock + live OpenRouter staging **GO** (Task 8.9b). **AI disabled by default** (`AI_GENERATION_ENABLED=false`).
 
-**Sprint 8 smoke note:** `smoke:api:sprint8` baseline (AI disabled) in `smoke:all:local`. Full success/fail/unsafe modes require manual env restart — see `scripts/README.md` § Sprint 8 full verification. Live OpenRouter: [`docs/46`](46-live-openrouter-staging-verification-plan.md) plan; [`docs/47`](47-live-openrouter-staging-smoke-report.md) execution (blocked).
+**Sprint 8 smoke note:** `smoke:api:sprint8` baseline (AI disabled) in `smoke:all:local`. Live OpenRouter verified: [`docs/47`](47-live-openrouter-staging-smoke-report.md) — model `google/gemini-2.5-flash` (hemat).
 
-**Remaining AI debt (non-blocking):** live OpenRouter **Go** (Task 8.9b re-run with local key), rewrite/publish AI, credit UI/topup, true RPC credit mutation, CI E2E, `estimated_cost_usd` population, `AI_TIMEOUT_MS` wiring.
+**Remaining AI debt (non-blocking):** rewrite/publish AI, credit UI/topup, true RPC credit mutation, CI E2E, `estimated_cost_usd` population, `AI_TIMEOUT_MS` wiring, production Worker secret rollout.
 
 ---
 
