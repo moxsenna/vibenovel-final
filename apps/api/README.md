@@ -73,6 +73,8 @@ apps/api/
       model-router.ts         # model allowlist + provider boundary (Task 8.2)
       openrouter-client.ts    # OpenRouter shell — Worker-only (Task 8.2)
       mock-ai-provider.ts     # deterministic mock for local smoke (Task 8.2)
+      ai-credit-policy.ts     # fixed generation credit costs (Task 8.3)
+      credit-ledger.ts        # debit/refund + idempotent ledger (Task 8.3)
     lib/
       supabase.ts      # anon + service role clients
       mappers.ts
@@ -156,6 +158,28 @@ Cloudflare Worker + `@supabase/supabase-js` cannot wrap arbitrary multi-table wr
 `/health` exposes safe flags: `aiGenerationEnabled`, `aiProviderMock`, `hasOpenRouterApiKey` (booleans only).
 
 **Security:** OpenRouter key never in frontend. Raw prompt never logged or stored. Client cannot pass arbitrary `model`. Provider errors mapped to `AI_*` codes without raw body.
+
+## Credit ledger service (Task 8.3)
+
+**Status:** Internal services only — **no public credit mutation endpoint**. **No AI route yet** (Task 8.4).
+
+| Service | Role |
+|---|---|
+| `ai-credit-policy.ts` | Fixed `getCreditCostForGeneration` — client cannot override cost |
+| `credit-ledger.ts` | `debitCreditsForAttempt`, `refundCreditsForAttempt`, idempotency |
+| `credit.ts` | `preflightCreditBalance` (402 `INSUFFICIENT_CREDIT`) |
+
+**Debit flow:** idempotency check (`attempt_id` + `reason` + `direction`) → ledger insert → `credit_balances` update → `credit_debited` audit.
+
+**Refund flow:** idempotent replay → requires prior `generation_debit` → ledger refund row → balance restore → `credit_refunded` audit.
+
+**Idempotency:** No migration — query existing `credit_ledger` by `user_id`, `attempt_id`, `reason`, `direction`. Replay returns existing row without second balance change.
+
+**Transaction-like limitation:** Worker + PostgREST cannot use true `BEGIN/COMMIT`. Uses `TransactionPlan` — ledger insert with balance update compensation on failure. **True Postgres RPC recommended before production.**
+
+**No balance auto-create:** Missing `credit_balances` row → `INSUFFICIENT_CREDIT` on debit.
+
+**MVP credit costs:** prose_beat 5/10/20, prose_rewrite 3/6/12, publish_copy 3/6/12 (hemat/seimbang/terbaik). `summary_delta` disabled.
 
 **Audit ordering:** `*_started` / preflight before writes; `*_applied` only after success; `*_failed` after validation or write failure. No payload leak (`audit-snapshot.ts`).
 

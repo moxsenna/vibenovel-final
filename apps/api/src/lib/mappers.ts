@@ -24,6 +24,8 @@ import type {
   PublishSafetyFlags,
   Character,
   CreditBalance,
+  CreditLedgerDirection,
+  CreditLedgerEntry,
   DetectedSignal,
   Fact,
   IntakeMessage,
@@ -64,6 +66,19 @@ export interface CreditBalanceRow {
   reset_at: string | null;
   source: string;
   updated_at: string;
+}
+
+export interface CreditLedgerRow {
+  id: string;
+  user_id: string;
+  project_id: string | null;
+  attempt_id: string | null;
+  amount: number;
+  direction: string;
+  reason: string;
+  balance_after: number;
+  metadata: JsonObject | null;
+  created_at: string;
 }
 
 export function mapProfileRow(row: ProfileRow): UserProfile {
@@ -394,6 +409,21 @@ export function mapCreditBalanceRow(row: CreditBalanceRow): CreditBalance {
     resetAt: row.reset_at,
     source: row.source as CreditBalance["source"],
     updatedAt: row.updated_at,
+  };
+}
+
+export function mapCreditLedgerRow(row: CreditLedgerRow): CreditLedgerEntry {
+  return {
+    id: row.id,
+    userId: row.user_id,
+    projectId: row.project_id,
+    attemptId: row.attempt_id,
+    amount: row.amount,
+    direction: row.direction as CreditLedgerDirection,
+    reason: row.reason,
+    balanceAfter: row.balance_after,
+    metadata: parseJsonObject(row.metadata),
+    createdAt: row.created_at,
   };
 }
 

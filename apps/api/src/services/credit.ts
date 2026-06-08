@@ -26,3 +26,24 @@ export async function getCreditBalanceForUser(
   if (!data) return null;
   return mapCreditBalanceRow(data as CreditBalanceRow);
 }
+
+/** Preflight before debit — no row or low balance → 402 INSUFFICIENT_CREDIT. */
+export async function preflightCreditBalance(
+  bindings: AppBindings,
+  userId: string,
+  cost: number,
+): Promise<CreditBalance> {
+  if (!Number.isInteger(cost) || cost <= 0) {
+    throw AppError.badRequest("Credit cost must be a positive integer");
+  }
+
+  const balance = await getCreditBalanceForUser(bindings, userId);
+  if (!balance || balance.balance < cost) {
+    throw new AppError(
+      "INSUFFICIENT_CREDIT",
+      "Insufficient credit balance",
+      402,
+    );
+  }
+  return balance;
+}

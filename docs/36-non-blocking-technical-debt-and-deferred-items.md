@@ -129,7 +129,7 @@ Sprint 5 closed with **zero blockers**. Items below are non-blocking unless mark
 |---|---|---|
 | No OpenRouter / model router | P0 | **Addressed 8.2** — shell + mock; live endpoint Task 8.4 |
 | No `chapter_generation_attempts` table | P1 | **Addressed 8.1** — `generation_attempts` table; service logic Task 8.3+ |
-| No credit deduction on generation | P1 | Sprint 8 — schema ✅ 8.1; debit/refund service Task 8.3 |
+| No credit deduction on generation | P1 | Sprint 8 — service ✅ 8.3; wired to AI endpoint Task 8.4 |
 | No Instruction Compliance Validator production | P1 | Sprint 6+ |
 | Possible false positives: `model`/`token`/`provider` substring in fictional prose | P2 | Refine markers before AI |
 
@@ -191,6 +191,7 @@ Sprint 5 closed with **zero blockers**. Items below are non-blocking unless mark
 | **8.0** | AI/OpenRouter & credit-gated generation plan | ✅ [`docs/44`](44-sprint-8-ai-openrouter-credit-generation-implementation-plan.md) |
 | **8.1** | `generation_attempts` + `credit_ledger` migration | ✅ `00008` + shared types |
 | **8.2** | Model router + OpenRouter shell + mock provider | ✅ Internal services only; no AI route yet |
+| **8.3** | Credit debit/refund service | ✅ `credit-ledger.ts` + `ai-credit-policy.ts`; no public route |
 
 **Sprint 8 gate:** Plan approved (`docs/44`). Production AI **not** until 8.4+ with env enabled + smokes PASS.
 

@@ -53,7 +53,7 @@ Create model router abstraction, OpenRouter client shell, mock provider for loca
 | `npm run build:api` | PASS |
 | `npm run smoke:api` | PASS — 17/17 |
 | `npm run smoke:api:sprint5` | PASS — 49/49 |
-| `npm run smoke:api:sprint6` | PASS — 59/59 (truncated in console) |
+| `npm run smoke:api:sprint6` | PASS — **catatan:** laporan awal salah tulis 59/59; script aktual **68/68** (7.8.3 hardening intact) |
 | `npm run smoke:api:sprint7` | PASS — 53/53 |
 | `npm run smoke:all:local` | tidak dijalankan — not required |
 
