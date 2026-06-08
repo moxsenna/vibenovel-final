@@ -213,6 +213,8 @@ Sprint 5 closed with **zero blockers**. Items below are non-blocking unless mark
 
 **Addressed Task 9.2:** WritePage credit UI minimal (saldo/biaya kredit read-only; no topup; server authoritative billing).
 
+**Addressed Task 9.3:** Prose rewrite API (`POST /ai/rewrite-prose`) — draft-only new prose version; `source=ai_generated` + metadata `generationType=prose_rewrite`; no WritePage rewrite UI yet.
+
 ---
 
 ## Related documents

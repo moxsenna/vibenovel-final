@@ -240,6 +240,52 @@ Rejects `projectId`, `ownerId`, `userId`, `model`, `provider`, `creditCost`, `pa
 
 Restore `AI_GENERATION_ENABLED=false` after manual runs. Live OpenRouter not tested in smoke.
 
+## AI prose rewrite (Task 9.3)
+
+**Route:** `POST /api/projects/:id/ai/rewrite-prose` (auth required)
+
+**Gate:** Same as generate-prose — `AI_GENERATION_ENABLED=true`, active/paused writing session, write-room gates. **Draft-only** — output is a new `chapter_prose_versions` row; no canon mutation.
+
+**Request body:**
+
+```json
+{
+  "proseVersionId": "optional uuid",
+  "beatId": "optional uuid (uses current prose if proseVersionId omitted)",
+  "writingSessionId": "uuid (required)",
+  "rewriteMode": "improve_emotion|tighten_pacing|natural_dialogue|shorter|longer|custom",
+  "qualityMode": "optional hemat|seimbang|terbaik (default seimbang)",
+  "instruction": "optional max 500 (required when rewriteMode=custom)",
+  "idempotencyKey": "string"
+}
+```
+
+Requires `proseVersionId` or `beatId`. Rejects `prompt`, `rawPrompt`, `packet_json`, `planningTruth`, `model`, `provider`, `creditCost`, etc.
+
+**Rewrite modes:** Internal prompt mapping preserves facts — improve emotion, tighten pacing, natural dialogue, shorter, longer, or custom (bounded instruction).
+
+**Credit:** `prose_rewrite` fixed costs — hemat 3 / seimbang 6 / terbaik 12. Debit before provider; refund on provider failure, unsafe output, or persist failure.
+
+**Persistence:** `source=ai_generated` (no migration); `metadata.generationType=prose_rewrite`, `rewriteMode`, `sourceProseVersionId`, `generationAttemptId`. Source prose version unchanged; new version becomes current.
+
+**Idempotency:** Same as generate-prose — succeeded replay returns existing result without second debit/version. Failed same key → `422 GENERATION_FAILED` (use new key).
+
+**Response (safe):** `proseVersion`, `generationAttempt` (includes `estimatedCostUsd` when available), `creditBalance`, `rewriteMode`, `idempotentReplay`. No raw prompt, packet, or provider body.
+
+**Services:** `prose-rewrite-generation.ts`, `prose-rewrite-prompt.ts`, `saveAiRewrittenProseVersionForOwner` in `prose-draft.ts`.
+
+**No UI yet** — WritePage rewrite buttons remain disabled (Task 9.4).
+
+**Local smoke:**
+
+| Mode | Command |
+|---|---|
+| Baseline (AI disabled) | `npm run smoke:api:sprint9` |
+| Mock success | restart `dev:api` with AI+mock → `npm run smoke:api:sprint9 -- -MockMode success` |
+| Mock fail / unsafe | `-MockMode fail_provider` / `unsafe_output` |
+
+Live OpenRouter rewrite not tested in smoke.
+
 **Audit ordering:** `*_started` / preflight before writes; `*_applied` only after success; `*_failed` after validation or write failure. No payload leak (`audit-snapshot.ts`).
 
 **Remaining limitations (no schema redesign):**

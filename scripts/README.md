@@ -25,6 +25,7 @@ Run all commands from **repo root**. Windows/PowerShell primary.
 | `smoke:web:publish` | `sprint7-smoke-web.ps1` | Web mock `/publish` + leak guards; `-- -IncludeApiMode` for API flow | Same |
 | `smoke:api:sprint7` | `sprint7-smoke-api.ps1` | Publish package generation/update/export safety (Task 7.5) | Same as API base |
 | `smoke:api:sprint8` | `sprint8-smoke-api.ps1` | AI prose beat generation safety (Task 8.4) | Same as API base; mock modes need AI env + restart `dev:api` |
+| `smoke:api:sprint9` | `sprint9-smoke-api.ps1` | AI prose rewrite safety (Task 9.3) | Same as sprint8 mock env pattern |
 | `smoke:all:local` | `smoke-all-local.ps1` | Sprint 2/5/6/7/8 API + Sprint 3–8 web mock (11 phases) | All API + web prerequisites |
 | `smoke:all:local:full` | `smoke-all-local.ps1 -IncludeApiMode` | Above + web API-mode on all web wrappers (incl. summary/publish) | + restart `dev:web` after `VITE_USE_MOCKS=false` |
 

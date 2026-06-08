@@ -1,6 +1,6 @@
 # 48 — Sprint 9: AI Rewrite, Publish Copy & Credit UI Implementation Plan
 
-**Status:** In progress — Tasks 9.1–9.2 complete; Tasks 9.3–9.8 pending  
+**Status:** In progress — Tasks 9.1–9.3 complete; Tasks 9.4–9.8 pending  
 **Date:** 8 Juni 2026  
 **Repo:** `vibenovel-unified-blueprint`  
 **Prerequisite:** [`docs/45-sprint-8-verification-report.md`](45-sprint-8-verification-report.md), [`docs/47-live-openrouter-staging-smoke-report.md`](47-live-openrouter-staging-smoke-report.md) (live OpenRouter staging **GO**)

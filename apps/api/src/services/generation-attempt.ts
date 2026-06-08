@@ -2,7 +2,6 @@ import {
   AUDIT_ACTIONS,
   AUDIT_ENTITY_TYPES,
   GENERATION_STATUSES,
-  GENERATION_TYPES,
   type GenerationStatus,
   type GenerationType,
   type GenerationAttempt,
@@ -54,6 +53,7 @@ export interface GenerationAttemptSafeSummary {
   promptHash: string | null;
   inputTokens: number | null;
   outputTokens: number | null;
+  estimatedCostUsd: number | null;
   outputEntityType: string | null;
   outputEntityId: string | null;
   errorCode: string | null;
@@ -68,12 +68,14 @@ export interface CreateGenerationAttemptInput {
   chapterOutlineId: string;
   beatId: string;
   writingSessionId: string | null;
+  generationType: GenerationType;
   idempotencyKey: string;
   creditCost: number;
   promptHash: string;
   contextPacketLogId: string;
   qualityMode: WriterQualityMode;
   correlationId?: string;
+  metadata?: Record<string, unknown>;
 }
 
 export function mapGenerationAttemptRow(row: GenerationAttemptRow): GenerationAttempt {
@@ -119,6 +121,7 @@ export function toGenerationAttemptSafeSummary(
     promptHash: attempt.promptHash,
     inputTokens: attempt.inputTokens,
     outputTokens: attempt.outputTokens,
+    estimatedCostUsd: attempt.estimatedCostUsd,
     outputEntityType: attempt.outputEntityType,
     outputEntityId: attempt.outputEntityId,
     errorCode: attempt.errorCode,
@@ -183,6 +186,7 @@ export async function createGenerationAttempt(
   const metadata = sanitizeAuditMetadata({
     qualityMode: input.qualityMode,
     correlationId,
+    ...(input.metadata ?? {}),
   });
 
   const { data, error } = await admin
@@ -193,7 +197,7 @@ export async function createGenerationAttempt(
       chapter_outline_id: input.chapterOutlineId,
       beat_id: input.beatId,
       writing_session_id: input.writingSessionId,
-      generation_type: GENERATION_TYPES.prose_beat,
+      generation_type: input.generationType,
       status: GENERATION_STATUSES.pending,
       idempotency_key: input.idempotencyKey,
       prompt_hash: input.promptHash,
@@ -375,6 +379,9 @@ export async function writeAiOutputPersistedAudit(
     versionId: string;
     beatId: string;
     correlationId?: string;
+    generationType?: GenerationType;
+    sourceProseVersionId?: string;
+    rewriteMode?: string;
   },
 ): Promise<void> {
   await writeAuditLog(bindings, {
@@ -388,6 +395,11 @@ export async function writeAiOutputPersistedAudit(
       versionId: input.versionId,
       beatId: input.beatId,
       source: "ai_generated",
+      ...(input.generationType ? { generationType: input.generationType } : {}),
+      ...(input.sourceProseVersionId
+        ? { sourceProseVersionId: input.sourceProseVersionId }
+        : {}),
+      ...(input.rewriteMode ? { rewriteMode: input.rewriteMode } : {}),
       correlationId: input.correlationId,
     }),
   });
