@@ -235,7 +235,7 @@ Sprint 5 closed with **zero blockers**. Items below are non-blocking unless mark
 | CI API-mode E2E (write/rewrite/publish AI) | P1 | Before production |
 | Live rewrite / publish copy spot check (`google/gemini-2.5-flash`) | P2 | Optional manual (`-LiveSpotCheck`) |
 | Publish **Terapkan Semua** dedicated E2E | P2 | Nice-to-have |
-| Topup / payment / admin credit dashboard | P2 | Sprint 10+ |
+| Topup / payment / admin credit dashboard | P2 | **Sprint 10** — plan [`docs/50`](50-sprint-10-production-readiness-mayar-monetization-plan.md) Task 10.0 ✅ |
 | True DB RPC credit + attempt atomicity | P1 | Before production deploy |
 | Summary / delta AI | P2 | After validator mature |
 | Foundation / concept / outline AI | P2 | Post-MVP |
