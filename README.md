@@ -30,7 +30,7 @@ vibenovel-unified-blueprint/
 | `packages/shared` | **Implemented (Task 2.1, 4.1, 5.1, 6.1)** | Domain types, enums, write room + summary/delta contracts |
 | `packages/core` | Placeholder | Engine AI/story — nanti |
 | `supabase` | **Migration + seed (Task 6.1)** | 27 tabel (+ summary/delta), RLS, demo seed — `supabase db reset` verified |
-| `scripts` | **Smoke scripts (through 6.6)** | `smoke:api`, `smoke:api:sprint5`, `smoke:api:sprint6`, `smoke:web:summary` — see `scripts/README.md` |
+| `scripts` | **Smoke scripts (through 7.5)** | `smoke:api`, `smoke:api:sprint5/6/7`, `smoke:web:summary`, `smoke:web:publish` — see `scripts/README.md` |
 | `docs` | Dokumentasi | Sumber arsitektur & sprint plan |
 | `stitch-reference` | Referensi desain | HTML + screen.png per halaman |
 
@@ -80,11 +80,15 @@ npm run smoke:api:sprint5
 # API smoke — Sprint 6 summary/delta/approval safety (Task 6.6)
 npm run smoke:api:sprint6
 
+# API smoke — Sprint 7 publish package safety (Task 7.5)
+npm run smoke:api:sprint7
+
 # Web E2E smoke (Playwright — dev:web required; mock mode default)
 npm run smoke:web
 npm run smoke:web:outline
 npm run smoke:web:write
 npm run smoke:web:summary
+npm run smoke:web:publish
 
 # Full local suite (API base + sprint5 + web mock — no API-mode web)
 npm run smoke:all:local
@@ -108,10 +112,12 @@ supabase db reset
 npm run smoke:api
 npm run smoke:api:sprint5
 npm run smoke:api:sprint6
+npm run smoke:api:sprint7
 npm run smoke:web
 npm run smoke:web:outline
 npm run smoke:web:write
 npm run smoke:web:summary
+npm run smoke:web:publish
 ```
 
 Optional full browser API-mode: `npm run smoke:all:local:full` (or per-page `-- -IncludeApiMode`).

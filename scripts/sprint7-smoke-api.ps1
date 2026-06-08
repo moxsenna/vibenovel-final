@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-  Sprint 7 Publish Package API safety smoke (Task 7.2–7.3).
+  Sprint 7 Publish Package API safety smoke (Task 7.2–7.5).
 
 .DESCRIPTION
   Run from repo root:
@@ -71,12 +71,21 @@ function Invoke-ApiExpectFailure {
   }
 }
 
+function Get-SpeechRulesCount {
+  param([string]$ProjectId)
+  $res = Invoke-Api -Path "/api/projects/$ProjectId/speech-rules" -Headers $auth
+  if ($res.data -is [array]) { return $res.data.Count }
+  if ($null -ne $res.data.rules) { return $res.data.rules.Count }
+  return 0
+}
+
 function Test-PublishJsonNoLeakMarkers {
   param([string]$JsonText)
   $patterns = @(
     'packetJson', 'packet_json', '"planningTruth"\s*:', 'planning_truth',
     'full_prompt', 'openrouter', '"proseText"\s*:', '"prose_text"\s*:',
-    '"delta_json"\s*:', 'deltaJson', '"payload"\s*:'
+    '"delta_json"\s*:', 'deltaJson', '"payload"\s*:',
+    '"provider"\s*:', '"model"\s*:', '"token"\s*:'
   )
   foreach ($p in $patterns) {
     if ($JsonText -match $p) { return $false }
@@ -139,6 +148,10 @@ $ch2 = ($chapters.data.chapters | Where-Object { $_.chapterNumber -eq 2 } | Sele
 $foundationBefore = Invoke-Api -Path "/api/projects/$projectId/foundation" -Headers $auth
 $factsBefore = $foundationBefore.data.facts.Count
 $charsBefore = $foundationBefore.data.characters.Count
+$speechBefore = Get-SpeechRulesCount -ProjectId $projectId
+$openLoopsBefore = (Invoke-Api -Path "/api/projects/$projectId/outline/open-loops" -Headers $auth).data.openLoops.Count
+$revealsBefore = (Invoke-Api -Path "/api/projects/$projectId/outline/reveals" -Headers $auth).data.reveals.Count
+
 
 
 $session = Invoke-Api -Method POST -Path "/api/projects/$projectId/write/sessions" -Headers $auth `
@@ -169,11 +182,16 @@ Add-StepResult "POST approve summary" $(if ($approve.data.summary.status -eq "ap
 
 $propResBeforePublish = Invoke-Api -Path "/api/projects/$projectId/proposals?includeResolved=true" -Headers $auth
 $proposalsBeforePublish = if ($propResBeforePublish.data -is [array]) { $propResBeforePublish.data.Count } else { 0 }
+$summariesBeforePublish = (Invoke-Api -Path "/api/projects/$projectId/summary" -Headers $auth).data.summaries.Count
 
 $pubGen = Invoke-Api -Method POST -Path "/api/projects/$projectId/publish/generate" -Headers $auth `
   -Body (@{ chapterOutlineId = $ch1Id; chapterSummaryId = $summaryId } | ConvertTo-Json)
 $packageId = $pubGen.data.publishPackage.id
-Add-StepResult "POST publish generate" $(if ($pubGen.data.created -eq $true -and $packageId) { "PASS" } else { "FAIL" }) "id=$packageId"
+Add-StepResult "POST publish generate" $(if ($pubGen.data.created -eq $true -and $packageId) { "PASS" } else { "FAIL" }) "id=$packageId created=201"
+Add-StepResult "generate after approved+summarized" $(if (
+    $pubGen.data.publishPackage.status -in @("draft", "ready") -and
+    $pubGen.data.publishPackage.chapterSummaryId -eq $summaryId
+  ) { "PASS" } else { "FAIL" }) "status=$($pubGen.data.publishPackage.status)"
 Add-StepResult "package has copy fields" $(if (
     $pubGen.data.publishPackage.displayTitle -and
     $pubGen.data.publishPackage.teaser -and
@@ -220,10 +238,18 @@ Add-StepResult "regenerate supersedes previous" $(if (
 $foundationAfter = Invoke-Api -Path "/api/projects/$projectId/foundation" -Headers $auth
 $propResAfter = Invoke-Api -Path "/api/projects/$projectId/proposals?includeResolved=true" -Headers $auth
 $proposalsAfter = if ($propResAfter.data -is [array]) { $propResAfter.data.Count } else { 0 }
+$speechAfter = Get-SpeechRulesCount -ProjectId $projectId
+$openLoopsAfter = (Invoke-Api -Path "/api/projects/$projectId/outline/open-loops" -Headers $auth).data.openLoops.Count
+$revealsAfter = (Invoke-Api -Path "/api/projects/$projectId/outline/reveals" -Headers $auth).data.reveals.Count
+$summariesAfter = (Invoke-Api -Path "/api/projects/$projectId/summary" -Headers $auth).data.summaries.Count
 Add-StepResult "no canon mutation" $(if (
     $foundationAfter.data.facts.Count -eq $factsBefore -and
-    $foundationAfter.data.characters.Count -eq $charsBefore
-  ) { "PASS" } else { "FAIL" }) ""
+    $foundationAfter.data.characters.Count -eq $charsBefore -and
+    $speechAfter -eq $speechBefore -and
+    $openLoopsAfter -eq $openLoopsBefore -and
+    $revealsAfter -eq $revealsBefore
+  ) { "PASS" } else { "FAIL" }) "facts/chars/speech/openLoops/reveals"
+Add-StepResult "summaries unchanged by publish" $(if ($summariesAfter -eq $summariesBeforePublish) { "PASS" } else { "FAIL" }) "before=$summariesBeforePublish after=$summariesAfter"
 Add-StepResult "no ai_proposals from publish" $(if ($proposalsAfter -eq $proposalsBeforePublish) { "PASS" } else { "FAIL" }) "before=$proposalsBeforePublish after=$proposalsAfter"
 
 $nextTeaser = $pubV2.data.publishPackage.nextChapterTeaser
@@ -255,9 +281,18 @@ Invoke-ApiExpectFailure -Name "PATCH fields rejects packet_json" -Method PATCH -
 Invoke-ApiExpectFailure -Name "PATCH fields rejects prose_text" -Method PATCH -Headers $auth `
   -Path "/api/projects/$projectId/publish/$packageV2Id/fields" `
   -Body '{"caption":"prose_text full dump"}'
-Invoke-ApiExpectFailure -Name "PATCH fields rejects overclaim" -Method PATCH -Headers $auth `
+Invoke-ApiExpectFailure -Name "PATCH fields rejects overclaim dijamin viral" -Method PATCH -Headers $auth `
   -Path "/api/projects/$projectId/publish/$packageV2Id/fields" `
   -Body '{"caption":"dijamin viral di KBM"}'
+Invoke-ApiExpectFailure -Name "PATCH fields rejects overclaim pasti viral" -Method PATCH -Headers $auth `
+  -Path "/api/projects/$projectId/publish/$packageV2Id/fields" `
+  -Body '{"teaser":"pasti viral di platform"}'
+Invoke-ApiExpectFailure -Name "PATCH fields rejects overclaim dijamin unlock" -Method PATCH -Headers $auth `
+  -Path "/api/projects/$projectId/publish/$packageV2Id/fields" `
+  -Body '{"caption":"dijamin unlock bab berikutnya"}'
+Invoke-ApiExpectFailure -Name "PATCH fields rejects overclaim pasti banyak pembaca" -Method PATCH -Headers $auth `
+  -Path "/api/projects/$projectId/publish/$packageV2Id/fields" `
+  -Body '{"readerQuestion":"pasti banyak pembaca lanjut"}'
 
 $checklistItems = @(
   @{ id = "chk_teaser"; checked = $true },
@@ -285,6 +320,17 @@ Invoke-ApiExpectFailure -Name "PATCH checklist rejects unknown id" -Method PATCH
   -Path "/api/projects/$projectId/publish/$packageV2Id/checklist" `
   -Body (@{ items = $badChecklist } | ConvertTo-Json -Depth 5)
 
+$dupChecklist = @(
+  @{ id = "chk_teaser"; checked = $true },
+  @{ id = "chk_teaser"; checked = $false },
+  @{ id = "chk_caption"; checked = $true },
+  @{ id = "chk_tags"; checked = $true },
+  @{ id = "chk_question"; checked = $true }
+)
+Invoke-ApiExpectFailure -Name "PATCH checklist rejects duplicate id" -Method PATCH -Headers $auth `
+  -Path "/api/projects/$projectId/publish/$packageV2Id/checklist" `
+  -Body (@{ items = $dupChecklist } | ConvertTo-Json -Depth 5)
+
 $factsBeforeExport = (Invoke-Api -Path "/api/projects/$projectId/foundation" -Headers $auth).data.facts.Count
 $exported = Invoke-Api -Method POST -Path "/api/projects/$projectId/publish/$packageV2Id/mark-exported" -Headers $auth `
   -Body '{"exportTarget":"kbm_manual_copy","note":"smoke manual copy"}'
@@ -297,6 +343,14 @@ Add-StepResult "mark-exported no canon mutation" $(if ($factsAfterExport -eq $fa
 
 $exportedJson = ($exported | ConvertTo-Json -Depth 20)
 Add-StepResult "mark-exported response leak guard" $(if (Test-PublishJsonNoLeakMarkers $exportedJson) { "PASS" } else { "FAIL" }) ""
+
+$exportMeta = $exported.data.publishPackage.metadata
+$manualMarker = $false
+if ($exportMeta -is [pscustomobject]) {
+  $manualMarker = ($exportMeta.exportTarget -eq "kbm_manual_copy") -or ($exportMeta.exportedMarker -eq $true)
+}
+Add-StepResult "mark-exported manual marker only" $(if ($manualMarker) { "PASS" } else { "FAIL" }) "exportTarget=kbm_manual_copy"
+Add-StepResult "mark-exported no external URL" $(if ($exportedJson -notmatch 'https?://[^"]*kbm') { "PASS" } else { "FAIL" }) ""
 
 Invoke-ApiExpectFailure -Name "exported package fields locked" -Method PATCH -Headers $auth `
   -Path "/api/projects/$projectId/publish/$packageV2Id/fields" `
@@ -338,6 +392,11 @@ Invoke-ApiExpectFailure -Name "cross-user PATCH checklist 404" -Method PATCH -He
   -Body (@{ items = $checklistItems } | ConvertTo-Json -Depth 5)
 Invoke-ApiExpectFailure -Name "cross-user mark-exported 404" -Method POST -Headers $authB `
   -Path "/api/projects/$projectId/publish/$packageV3Id/mark-exported" -Body '{}'
+
+$publishRoutesPath = Join-Path $RepoRoot "apps\api\src\routes\publish.ts"
+$publishRoutesText = Get-Content $publishRoutesPath -Raw
+$hasKbmAutopost = $publishRoutesText -match 'autopost|platform\.post|fetch\(|https?://'
+Add-StepResult "no KBM autopost route in publish API" $(if (-not $hasKbmAutopost) { "PASS" } else { "FAIL" }) "publish.ts static check"
 
 $fail = @($Results | Where-Object { $_.Result -eq "FAIL" }).Count
 Write-Host "`nSummary: $($Results.Count - $fail) PASS, $fail FAIL"

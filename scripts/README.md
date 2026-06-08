@@ -20,6 +20,8 @@ Run all commands from **repo root**. Windows/PowerShell primary.
 | `smoke:web:outline` | `sprint4-smoke-web.ps1` | Web mock `/outline`; add `-- -IncludeApiMode` for API | `dev:web`; API mode + `VITE_USE_MOCKS=false` |
 | `smoke:web:write` | `sprint5-smoke-web.ps1` | Web mock `/write`; add `-- -IncludeApiMode` for API | Same |
 | `smoke:web:summary` | `sprint6-smoke-web.ps1` | Web mock `/summary` + leak guards; `-- -IncludeApiMode` for API flow | Same |
+| `smoke:web:publish` | `sprint7-smoke-web.ps1` | Web mock `/publish` + leak guards; `-- -IncludeApiMode` for API flow | Same |
+| `smoke:api:sprint7` | `sprint7-smoke-api.ps1` | Publish package generation/update/export safety (Task 7.5) | Same as API base |
 | `smoke:all:local` | `smoke-all-local.ps1` | API base + sprint5 + web mock (no API-mode web) | All API + web prerequisites |
 | `smoke:all:local:full` | `smoke-all-local.ps1 -IncludeApiMode` | Above + web API-mode E2E | + restart `dev:web` after `VITE_USE_MOCKS=false` |
 
