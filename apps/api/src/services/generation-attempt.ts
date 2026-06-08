@@ -246,6 +246,13 @@ export async function markGenerationAttemptRunning(
   });
 }
 
+export interface GenerationAttemptCostEstimateMetadata {
+  costEstimateApproximate?: boolean;
+  costEstimateReason?: string;
+  costModel?: string;
+  mockProvider?: boolean;
+}
+
 export async function markGenerationAttemptSucceeded(
   bindings: AppBindings,
   input: {
@@ -258,18 +265,29 @@ export async function markGenerationAttemptSucceeded(
     outputTokens?: number;
     outputEntityId: string;
     correlationId?: string;
+    estimatedCostUsd?: number | null;
+    costEstimateMetadata?: GenerationAttemptCostEstimateMetadata;
   },
 ): Promise<GenerationAttempt> {
+  const existing = await getGenerationAttemptById(bindings, input.attemptId);
+  const mergedMetadata = sanitizeAuditMetadata({
+    ...(existing?.metadata ?? {}),
+    ...(input.costEstimateMetadata ?? {}),
+  });
+
   const attempt = await updateGenerationAttemptStatus(bindings, input.attemptId, {
     status: GENERATION_STATUSES.succeeded,
     provider: input.provider,
     model: input.model,
     input_tokens: input.inputTokens ?? null,
     output_tokens: input.outputTokens ?? null,
+    estimated_cost_usd:
+      typeof input.estimatedCostUsd === "number" ? input.estimatedCostUsd : null,
     output_entity_type: "chapter_prose_version",
     output_entity_id: input.outputEntityId,
     error_code: null,
     error_message_safe: null,
+    metadata: mergedMetadata,
   });
 
   await writeAuditLog(bindings, {

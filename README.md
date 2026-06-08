@@ -368,7 +368,7 @@ Belum ada (sengaja — defer setelah hardening / Sprint 8):
 | Task | Status | Deliverable |
 |---|---|---|
 | 9.0 Implementation plan | ✅ | `docs/48` |
-| 9.1 Cost estimation | ⏳ | `estimated_cost_usd` population |
+| 9.1 Cost estimation | ✅ | `model-cost-map.ts`, `estimated_cost_usd` on success |
 | 9.2 Credit UI minimal | ⏳ | WritePage balance/cost |
 | 9.3 Prose rewrite API | ⏳ | `POST /ai/rewrite-prose` |
 | 9.4 WritePage rewrite UI | ⏳ | Perbaiki Teks buttons |
@@ -377,7 +377,7 @@ Belum ada (sengaja — defer setelah hardening / Sprint 8):
 | 9.7 Safety regression | ⏳ | Sprint 9 smokes |
 | 9.8 Verification report | ⏳ | `docs/49` |
 
-**Task berikutnya (disarankan):** **Task 9.1** — AI cost estimation + generation attempt cost metadata.
+**Task berikutnya (disarankan):** **Task 9.2** — Credit UI minimal (WritePage balance/cost display).
 
 ---
 

@@ -20,6 +20,7 @@ import {
 import { getCreditCostForGeneration } from "./ai-credit-policy.js";
 import { buildContextPacketForOwner } from "./context-packet-builder.js";
 import { getOwnedBeatRow } from "./chapter-beat.js";
+import { calculateEstimatedCostUsd } from "./model-cost-map.js";
 import { generateWithModelRouter } from "./model-router.js";
 import { getOwnedProjectRow } from "./project.js";
 import { saveAiGeneratedProseVersionForOwner } from "./prose-draft.js";
@@ -34,6 +35,7 @@ import {
   markGenerationAttemptSucceeded,
   toGenerationAttemptSafeSummary,
   writeAiOutputPersistedAudit,
+  type GenerationAttemptCostEstimateMetadata,
   type GenerationAttemptSafeSummary,
 } from "./generation-attempt.js";
 import { generateCorrelationId } from "./audit-snapshot.js";
@@ -482,6 +484,30 @@ export async function generateProseBeatForOwner(
     throw err;
   }
 
+  let estimatedCostUsd: number | null = null;
+  let costEstimateMetadata: GenerationAttemptCostEstimateMetadata = {};
+
+  if (providerResult.provider === "mock") {
+    estimatedCostUsd = 0;
+    costEstimateMetadata = {
+      costEstimateApproximate: true,
+      mockProvider: true,
+      costModel: providerResult.model,
+    };
+  } else {
+    const costResult = calculateEstimatedCostUsd({
+      model: providerResult.model,
+      inputTokens: providerResult.inputTokens,
+      outputTokens: providerResult.outputTokens,
+    });
+    estimatedCostUsd = costResult.estimatedCostUsd;
+    costEstimateMetadata = {
+      costEstimateApproximate: costResult.approximate,
+      ...(costResult.reason ? { costEstimateReason: costResult.reason } : {}),
+      ...(costResult.costModel ? { costModel: costResult.costModel } : {}),
+    };
+  }
+
   attempt = await markGenerationAttemptSucceeded(bindings, {
     attemptId: attempt.id,
     userId: ownerId,
@@ -492,6 +518,8 @@ export async function generateProseBeatForOwner(
     outputTokens: providerResult.outputTokens,
     outputEntityId: saved.version.id,
     correlationId,
+    estimatedCostUsd,
+    costEstimateMetadata,
   });
 
   await writeAiOutputPersistedAudit(bindings, {

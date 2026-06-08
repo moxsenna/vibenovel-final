@@ -204,6 +204,16 @@ Rejects `projectId`, `ownerId`, `userId`, `model`, `provider`, `creditCost`, `pa
 
 **Orchestration:** context packet build + log → prompt hash (no raw prompt stored) → `generation_attempt` → debit → `generateWithModelRouter` → `chapter_prose_versions` with `source=ai_generated` → mark attempt succeeded. Refund on provider/safety/persist failure.
 
+**Cost observability (Task 9.1):** On success, `generation_attempts.estimated_cost_usd` is populated when token counts and an allowlisted model cost entry exist. **Internal only** — user billing remains fixed `credit_cost` from `ai-credit-policy`. See `model-cost-map.ts`.
+
+| Provider | `estimated_cost_usd` | Attempt metadata |
+|---|---|---|
+| `mock` | `0` | `costEstimateApproximate: true`, `mockProvider: true` |
+| `openrouter` + known model + tokens | computed USD (approximate) | `costEstimateApproximate: true`, `costModel` |
+| unknown model / missing tokens | `null` | `costEstimateReason`: `model_not_in_cost_map` or `missing_tokens` |
+
+**Pricing source:** Verified manually from OpenRouter model pages at implementation time (not fetched at runtime). Current map includes `google/gemini-2.5-flash` ($0.30/M input, $2.50/M output per [OpenRouter model page](https://openrouter.ai/google/gemini-2.5-flash), verified 2026-06-08). Re-verify when allowlist changes. Pricing table is **not** stored in DB metadata or exposed to frontend.
+
 **Idempotency:** Same `idempotencyKey` + succeeded attempt returns existing prose version without new debit. In-progress → `409 GENERATION_IN_PROGRESS`. Failed same key → `422 GENERATION_FAILED` (new key required).
 
 **Response (safe):** `version`, `generationAttempt` summary, `creditBalance`, `creditCost`, `idempotentReplay`. No `packet_json`, raw prompt, or `planningTruth`.
@@ -214,6 +224,7 @@ Rejects `projectId`, `ownerId`, `userId`, `model`, `provider`, `creditCost`, `pa
 |---|---|
 | `prose-beat-generation.ts` | Route orchestration |
 | `generation-attempt.ts` | Attempt lifecycle + audits |
+| `model-cost-map.ts` | Internal allowlist-only USD cost estimation (Task 9.1) |
 | `prose-generation-prompt.ts` | Safe prompt from context packet log |
 | `prose-draft.ts` | `saveAiGeneratedProseVersionForOwner` (internal only) |
 

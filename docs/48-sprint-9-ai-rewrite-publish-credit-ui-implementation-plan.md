@@ -1,6 +1,6 @@
 # 48 — Sprint 9: AI Rewrite, Publish Copy & Credit UI Implementation Plan
 
-**Status:** Plan complete (Task 9.0 — docs only)  
+**Status:** In progress — Task 9.1 complete (cost estimation); Tasks 9.2–9.8 pending  
 **Date:** 8 Juni 2026  
 **Repo:** `vibenovel-unified-blueprint`  
 **Prerequisite:** [`docs/45-sprint-8-verification-report.md`](45-sprint-8-verification-report.md), [`docs/47-live-openrouter-staging-smoke-report.md`](47-live-openrouter-staging-smoke-report.md) (live OpenRouter staging **GO**)
@@ -53,7 +53,7 @@ Memperluas AI **setelah** live OpenRouter staging GO (`docs/47`), dengan batas c
 
 | Gap | Evidence |
 |---|---|
-| `estimated_cost_usd` selalu `null` | `docs/47` §8 — tokens tersimpan, cost tidak dihitung |
+| ~~`estimated_cost_usd` selalu `null`~~ | **Addressed Task 9.1** — populated when tokens + allowlisted model cost map |
 | No prose rewrite API/UI | `WriterAssistantPanel` — **Perbaiki Teks** buttons `disabled` |
 | No publish copy AI | `PublishPage` / `usePublishData` — tidak ada AI improve |
 | No credit balance widget di WritePage | Saldo hanya di notice sukses + Settings mock/API |

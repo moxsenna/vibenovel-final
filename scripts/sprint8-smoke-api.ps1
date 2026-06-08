@@ -202,6 +202,33 @@ function Test-AuditPayloadSafe {
   return $true
 }
 
+function Test-AttemptMetadataSafe {
+  param([string]$JsonText)
+  $forbidden = @(
+    'packet_json', 'packetJson', 'planningTruth', 'planning_truth',
+    'full_prompt', 'prompt_text', 'promptText', 'prose_text', 'proseText',
+    'inputUsdPer1M', 'outputUsdPer1M', 'MODEL_COST_MAP', 'pricingSource',
+    'OPENROUTER_API_KEY', 'api_key', 'apiKey', 'service_role'
+  )
+  foreach ($f in $forbidden) {
+    if ($JsonText -match $f) { return $false }
+  }
+  return $true
+}
+
+function Get-GenerationAttemptRow {
+  param([string]$AttemptId)
+  $srk = Resolve-ServiceRoleKey
+  $headers = @{
+    apikey        = $srk
+    Authorization = "Bearer $srk"
+  }
+  $uri = ('{0}/rest/v1/generation_attempts?id=eq.{1}&select=id,provider,model,input_tokens,output_tokens,estimated_cost_usd,metadata&limit=1' -f $SupabaseUrl, $AttemptId)
+  $rows = @(Invoke-RestMethod -Uri $uri -Method GET -Headers $headers -ErrorAction Stop)
+  if ($rows.Count -lt 1) { return $null }
+  return $rows[0]
+}
+
 function Get-AuditLogsByAction {
   param([string]$ProjectId, [string]$Action, [hashtable]$AuthHeaders, [string]$AnonKey)
   $headers = @{
@@ -489,6 +516,34 @@ if ($resolvedMockMode -eq "skip_mock" -or -not $aiEnabled -or -not $aiMock) {
       $canonOk = Test-CanonUnchanged -ProjectId $projectId -FactsBefore $factsBefore -CharsBefore $charsBefore `
         -SpeechBefore $speechBefore -OpenLoopsBefore $openLoopsBefore -RevealsBefore $revealsBefore -ProposalsBefore $proposalsBefore
       Add-StepResult "no canon mutation" $(if ($canonOk) { "PASS" } else { "FAIL" }) "facts=$factsBefore proposals=$proposalsBefore"
+
+      try {
+        $attemptRow = Get-GenerationAttemptRow -AttemptId $genRes.data.generationAttempt.id
+        if (-not $attemptRow) {
+          Add-StepResult "estimated_cost_usd mock" "FAIL" "attempt row not found"
+          Add-StepResult "attempt metadata leak guard" "NOT RUN" "no attempt row"
+        } else {
+          $provider = [string]$attemptRow.provider
+          $estCost = $attemptRow.estimated_cost_usd
+          $metaJson = ($attemptRow.metadata | ConvertTo-Json -Depth 8 -Compress)
+          $metaSafe = Test-AttemptMetadataSafe $metaJson
+          if ($provider -eq "mock") {
+            $mockCostOk = ($null -ne $estCost) -and ([decimal]$estCost -eq 0)
+            $approxOk = ($attemptRow.metadata.costEstimateApproximate -eq $true)
+            Add-StepResult "estimated_cost_usd mock" $(if ($mockCostOk -and $approxOk) { "PASS" } else { "FAIL" }) "cost=$estCost approximate=$($attemptRow.metadata.costEstimateApproximate)"
+          } elseif ($provider -eq "openrouter" -and $attemptRow.model -eq "google/gemini-2.5-flash" -and $attemptRow.input_tokens -and $attemptRow.output_tokens) {
+            $liveCostOk = ($null -ne $estCost) -and ([decimal]$estCost -gt 0)
+            Add-StepResult "estimated_cost_usd live" $(if ($liveCostOk) { "PASS" } else { "FAIL" }) "cost=$estCost model=$($attemptRow.model)"
+          } else {
+            Add-StepResult "estimated_cost_usd mock" "SKIP" "provider=$provider (not mock success path)"
+            Add-StepResult "estimated_cost_usd live" "SKIP" "provider=$provider model=$($attemptRow.model)"
+          }
+          Add-StepResult "attempt metadata leak guard" $(if ($metaSafe) { "PASS" } else { "FAIL" }) "no pricing table dump"
+        }
+      } catch {
+        Add-StepResult "estimated_cost_usd mock" "FAIL" $_.Exception.Message.Substring(0, [Math]::Min(80, $_.Exception.Message.Length))
+        Add-StepResult "attempt metadata leak guard" "NOT RUN" "lookup failed"
+      }
     } catch {
       Add-StepResult "generate prose 200/201" "FAIL" $_.Exception.Message.Substring(0, [Math]::Min(100, $_.Exception.Message.Length))
       Add-StepResult "credit debited once" "NOT RUN" "generation failed"

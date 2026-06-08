@@ -207,7 +207,9 @@ Sprint 5 closed with **zero blockers**. Items below are non-blocking unless mark
 
 **Sprint 8 smoke note:** `smoke:api:sprint8` baseline (AI disabled) in `smoke:all:local`. Live OpenRouter verified: [`docs/47`](47-live-openrouter-staging-smoke-report.md) — model `google/gemini-2.5-flash` (hemat).
 
-**Remaining AI debt (non-blocking):** rewrite/publish AI, credit UI/topup, true RPC credit mutation, CI E2E, `estimated_cost_usd` population, `AI_TIMEOUT_MS` wiring, production Worker secret rollout.
+**Remaining AI debt (non-blocking):** rewrite/publish AI, credit UI/topup, true RPC credit mutation, CI E2E, `AI_TIMEOUT_MS` wiring, production Worker secret rollout.
+
+**Addressed Task 9.1:** `estimated_cost_usd` population via `model-cost-map.ts` (internal observability only; fixed `credit_cost` billing unchanged).
 
 ---
 
