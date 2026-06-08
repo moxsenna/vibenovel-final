@@ -64,7 +64,8 @@ Sprint 5 closed with **zero blockers**. Items below are non-blocking unless mark
 
 | Item | Priority | Timing |
 |---|---|---|
-| Write Room AI assistant CTAs disabled | P1 | Before AI/OpenRouter |
+| Write Room prose beat AI button (Task 8.5) | P1 | **Addressed Sprint 8** — `Tulis Beat dengan AI` API mode only; rewrite/fix CTAs still disabled |
+| Write Room rewrite/fix AI CTAs disabled | P2 | Post-MVP (Task 8.5 scope excluded) |
 | Open loop / reveal CRUD UI display-only on outline | P2 | Post-MVP |
 | Chapter selector Bab 2–10 read-only minimal | P2 | During Sprint 6+ |
 | No prose delete endpoint / UI | P2 | Nice-to-have |

@@ -34,6 +34,12 @@ export function WritePage() {
     buildSafeContext,
     contextPreview,
     finishChapter,
+    aiGenerating,
+    aiError,
+    aiNotice,
+    creditCostLabel,
+    onGenerateAi,
+    aiUnavailableReason,
   } = useWriteRoomData();
 
   const activeBeat = draft.beats.find((beat) => beat.id === activeBeatId) ?? draft.beats[0];
@@ -71,6 +77,18 @@ export function WritePage() {
     saving,
     onFinish: () => void finishChapter(),
     finishing: markingReady,
+    onGenerateAi: onGenerateAi ? () => void onGenerateAi() : undefined,
+    aiGenerating,
+    creditCostLabel,
+  };
+
+  const assistantProps = {
+    onGenerateAi: onGenerateAi ? () => void onGenerateAi() : undefined,
+    aiGenerating,
+    aiError,
+    aiNotice,
+    creditCostLabel,
+    aiUnavailableReason,
   };
 
   return (
@@ -121,6 +139,7 @@ export function WritePage() {
           contextPreview={contextPreview}
           onBuildContext={editable ? () => void buildSafeContext() : undefined}
           buildingContext={buildingContext}
+          {...assistantProps}
         />
       </div>
     </div>

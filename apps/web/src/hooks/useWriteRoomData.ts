@@ -1,13 +1,23 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import type { ChapterBeat, ChapterOutline } from "@vibenovel/shared";
+import type { ChapterBeat, ChapterOutline, CreditBalance, WriterQualityMode } from "@vibenovel/shared";
+import { WRITER_QUALITY_MODES } from "@vibenovel/shared";
 import { useAuth } from "@/context/AuthContext";
 import { ApiClientError } from "@/lib/api";
 import { shouldUseMocks } from "@/lib/env";
 import { resolveProjectIdForRoute } from "@/lib/project-context";
 import { ROUTES } from "@/routes/paths";
 import { mockChapterDraft } from "@/mocks/chapter";
+import {
+  buildBeatProseIdempotencyKey,
+  formatProseBeatCreditCostLabel,
+  generateBeatProse,
+  mapAiGenerationErrorCode,
+  normalizeQualityMode,
+} from "@/services/ai";
+import { fetchCreditBalance } from "@/services/credits";
 import { fetchOutlineBundle } from "@/services/outline";
+import { fetchProjectSettings } from "@/services/settings";
 import {
   buildContextPacket,
   fetchBeatProseVersions,
@@ -103,6 +113,12 @@ export interface UseWriteRoomDataResult {
   buildSafeContext: () => Promise<void>;
   contextPreview: SafeContextPreview | null;
   finishChapter: () => Promise<void>;
+  aiGenerating: boolean;
+  aiError: string | null;
+  aiNotice: string | null;
+  creditCostLabel: string;
+  onGenerateAi?: () => Promise<void>;
+  aiUnavailableReason: string | null;
 }
 
 export function useWriteRoomData(): UseWriteRoomDataResult {
@@ -136,6 +152,11 @@ export function useWriteRoomData(): UseWriteRoomDataResult {
   const [needsGenerateBeats, setNeedsGenerateBeats] = useState(false);
   const [packetLogId, setPacketLogId] = useState<string | null>(null);
   const [contextPreview, setContextPreview] = useState<SafeContextPreview | null>(null);
+  const [aiGenerating, setAiGenerating] = useState(false);
+  const [aiError, setAiError] = useState<string | null>(null);
+  const [aiNotice, setAiNotice] = useState<string | null>(null);
+  const [qualityMode, setQualityMode] = useState<WriterQualityMode>(WRITER_QUALITY_MODES.seimbang);
+  const [, setCreditBalance] = useState<CreditBalance | null>(null);
 
   const applyMock = useCallback((message: string | null) => {
     setDraft(mockChapterDraft);
@@ -148,6 +169,10 @@ export function useWriteRoomData(): UseWriteRoomDataResult {
     setNeedsGenerateBeats(false);
     setContextPreview(null);
     setPacketLogId(null);
+    setAiGenerating(false);
+    setAiError(null);
+    setAiNotice(null);
+    setCreditBalance(null);
   }, []);
 
   const rebuildDraft = useCallback(
@@ -200,6 +225,21 @@ export function useWriteRoomData(): UseWriteRoomDataResult {
       }
 
       setProjectId(resolvedId);
+
+      try {
+        const settings = await fetchProjectSettings(resolvedId, token);
+        setQualityMode(normalizeQualityMode(settings.qualityMode));
+      } catch {
+        setQualityMode(WRITER_QUALITY_MODES.seimbang);
+      }
+
+      try {
+        const balance = await fetchCreditBalance(token);
+        setCreditBalance(balance);
+      } catch {
+        setCreditBalance(null);
+      }
+
       const bundle = await fetchOutlineBundle(resolvedId, token);
       if (!isOutlineLocked(bundle)) {
         applyMock("Outline perlu dikunci dulu sebelum menulis. Menampilkan mock Sprint 1.");
@@ -314,6 +354,8 @@ export function useWriteRoomData(): UseWriteRoomDataResult {
     async (beatId: string) => {
       setActiveBeatId(beatId);
       setErrorNotice(null);
+      setAiError(null);
+      setAiNotice(null);
 
       if (source !== "api" || !projectId || !sessionId || !token) {
         const beat = draft.beats.find((b) => b.id === beatId);
@@ -492,6 +534,86 @@ export function useWriteRoomData(): UseWriteRoomDataResult {
     }
   }, [activeBeatId, apiMode, chapterOutlineId, projectId, token]);
 
+  const generateAiForActiveBeat = useCallback(async () => {
+    if (
+      aiGenerating ||
+      source !== "api" ||
+      !apiMode ||
+      !token ||
+      !projectId ||
+      !sessionId ||
+      !chapterOutlineId ||
+      !activeBeatId ||
+      needsGenerateBeats
+    ) {
+      return;
+    }
+
+    setAiGenerating(true);
+    setAiError(null);
+    setAiNotice(null);
+
+    const idempotencyKey = buildBeatProseIdempotencyKey(activeBeatId);
+
+    try {
+      const result = await generateBeatProse(projectId, token, {
+        chapterOutlineId,
+        beatId: activeBeatId,
+        writingSessionId: sessionId,
+        qualityMode,
+        idempotencyKey,
+      });
+
+      const text = result.version.proseText;
+      setProseText(text);
+      setProseByBeatId((prev) => ({ ...prev, [activeBeatId]: text }));
+      setWordCount(result.version.wordCount);
+      setLastSavedAt(result.version.createdAt ?? new Date().toISOString());
+
+      if (result.creditBalance) {
+        setCreditBalance(result.creditBalance);
+      }
+
+      setApiBeats((prev) =>
+        prev.map((beat) =>
+          beat.id === activeBeatId
+            ? {
+                ...beat,
+                status: beat.status === "empty" ? "draft" : beat.status,
+              }
+            : beat,
+        ),
+      );
+
+      const cost = result.creditCost ?? result.generationAttempt.creditCost;
+      const balanceNote =
+        result.creditBalance?.balance != null
+          ? ` Sisa kredit: ${result.creditBalance.balance}.`
+          : " Kredit berhasil dipotong.";
+      const replayNote = result.idempotentReplay ? " (hasil permintaan sebelumnya)" : "";
+      setAiNotice(`Narasi AI berhasil dibuat. Biaya: ${cost} kredit.${balanceNote}${replayNote}`);
+    } catch (error) {
+      if (error instanceof ApiClientError) {
+        setAiError(mapAiGenerationErrorCode(error.code));
+      } else {
+        setAiError("Gagal menghasilkan narasi AI.");
+      }
+    } finally {
+      setAiGenerating(false);
+    }
+  }, [
+    activeBeatId,
+    aiGenerating,
+    apiMode,
+    chapterOutlineId,
+    needsGenerateBeats,
+    projectId,
+    qualityMode,
+    sessionId,
+    source,
+    token,
+  ]);
+
   const finishChapter = useCallback(async () => {
     if (source === "api" && projectId && sessionId && token) {
       setMarkingReady(true);
@@ -520,6 +642,21 @@ export function useWriteRoomData(): UseWriteRoomDataResult {
     draft.beats.find((beat) => beat.id === activeBeatId) ?? draft.beats[0];
 
   const editable = source === "api" && Boolean(activeBeat);
+  const creditCostLabel = formatProseBeatCreditCostLabel(qualityMode);
+  const aiCanGenerate =
+    source === "api" &&
+    Boolean(activeBeatId) &&
+    Boolean(sessionId) &&
+    Boolean(chapterOutlineId) &&
+    !needsGenerateBeats;
+  const aiUnavailableReason =
+    source === "mock"
+      ? "Generasi AI hanya tersedia dalam mode API (bukan mock)."
+      : source === "api-fallback"
+        ? "Generasi AI tidak tersedia saat fallback mock aktif."
+        : needsGenerateBeats
+          ? "Buat daftar adegan terlebih dahulu."
+          : null;
 
   return useMemo(
     () => ({
@@ -550,17 +687,30 @@ export function useWriteRoomData(): UseWriteRoomDataResult {
       buildSafeContext,
       contextPreview,
       finishChapter,
+      aiGenerating,
+      aiError,
+      aiNotice,
+      creditCostLabel,
+      onGenerateAi: aiCanGenerate ? generateAiForActiveBeat : undefined,
+      aiUnavailableReason,
     }),
     [
       activeBeatId,
+      aiCanGenerate,
+      aiError,
+      aiGenerating,
+      aiNotice,
+      aiUnavailableReason,
       apiMode,
       buildSafeContext,
       buildingContext,
       contextPreview,
+      creditCostLabel,
       draft,
       editable,
       errorNotice,
       finishChapter,
+      generateAiForActiveBeat,
       generateBeats,
       generatingBeats,
       loading,

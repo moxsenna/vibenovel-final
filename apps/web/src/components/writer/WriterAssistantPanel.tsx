@@ -7,6 +7,12 @@ export interface WriterAssistantPanelProps {
   contextPreview?: SafeContextPreview | null;
   onBuildContext?: () => void;
   buildingContext?: boolean;
+  onGenerateAi?: () => void;
+  aiGenerating?: boolean;
+  aiError?: string | null;
+  aiNotice?: string | null;
+  creditCostLabel?: string | null;
+  aiUnavailableReason?: string | null;
 }
 
 export function WriterAssistantPanel({
@@ -14,6 +20,12 @@ export function WriterAssistantPanel({
   contextPreview = null,
   onBuildContext,
   buildingContext = false,
+  onGenerateAi,
+  aiGenerating = false,
+  aiError = null,
+  aiNotice = null,
+  creditCostLabel = null,
+  aiUnavailableReason = null,
 }: WriterAssistantPanelProps) {
   const { pageCopy, storyChecks } = draft;
 
@@ -98,11 +110,28 @@ export function WriterAssistantPanel({
           <Button
             variant="primary"
             className="w-full rounded-xl py-3.5 shadow-md shadow-primary/20"
-            leftIcon={<Icon name="edit_document" size={20} />}
-            disabled
+            leftIcon={<Icon name="auto_awesome" size={20} />}
+            disabled={!onGenerateAi || aiGenerating}
+            onClick={onGenerateAi}
           >
-            {pageCopy.writeSceneAction}
+            {aiGenerating ? "Menghasilkan narasi…" : "Tulis Beat dengan AI"}
           </Button>
+          {creditCostLabel ? (
+            <p className="font-body-sm text-body-sm text-muted-text">{creditCostLabel}</p>
+          ) : null}
+          {aiNotice ? (
+            <p className="rounded-xl border border-success-soft bg-success-soft/40 px-3 py-2 font-body-sm text-body-sm text-on-surface">
+              {aiNotice}
+            </p>
+          ) : null}
+          {aiError ? (
+            <p className="rounded-xl border border-warning/30 bg-warning-soft px-3 py-2 font-body-sm text-body-sm text-on-surface">
+              {aiError}
+            </p>
+          ) : null}
+          {aiUnavailableReason && !onGenerateAi ? (
+            <p className="font-body-sm text-body-sm text-muted-text">{aiUnavailableReason}</p>
+          ) : null}
         </div>
 
         <div className="h-px w-full bg-border/50" />

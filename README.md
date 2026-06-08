@@ -87,8 +87,12 @@ npm run smoke:api:sprint7
 npm run smoke:web
 npm run smoke:web:outline
 npm run smoke:web:write
+npm run smoke:web:write-ai    # WritePage AI button (Task 8.5; API mode: VITE_USE_MOCKS=false)
 npm run smoke:web:summary
 npm run smoke:web:publish
+
+# API smoke — Sprint 8 AI prose beat generation (Task 8.4)
+npm run smoke:api:sprint8
 
 # Full local suite — Sprint 2/5/6/7 API + Sprint 3–7 web mock (9 phases)
 npm run smoke:all:local
@@ -354,7 +358,7 @@ Belum ada (sengaja — defer setelah hardening / Sprint 8):
 | 7.8.4 Smoke orchestration | ✅ | `smoke:all:local` 9 phases |
 | 7.8.6 Hardening verification report | ✅ | `docs/43` |
 
-**Task berikutnya (disarankan):** **Task 8.5** — WritePage AI button (`docs/44` §14).
+**Task berikutnya (disarankan):** **Task 8.6** — Safety smoke consolidation / verification report (`docs/44`).
 
 ---
 
@@ -369,7 +373,7 @@ Belum ada (sengaja — defer setelah hardening / Sprint 8):
 | 8.2 Model router + OpenRouter shell | ✅ | `model-router`, `openrouter-client`, `mock-ai-provider` — disabled by default |
 | 8.3 Credit debit/refund service | ✅ | `ai-credit-policy`, `credit-ledger` — internal only |
 | 8.4 Prose beat generation API | ✅ | `POST /ai/generate-prose` + orchestration |
-| 8.5 WritePage AI button | Pending | Credit cost + loading states |
+| 8.5 WritePage AI button | ✅ | `Tulis Beat dengan AI` → `POST /ai/generate-prose` (API mode only) |
 | 8.6 Safety smoke tests | ✅ (script) | `sprint8-smoke-api.ps1` — mock modes need env restart |
 | 8.7 Verification report | Pending | `docs/45` |
 

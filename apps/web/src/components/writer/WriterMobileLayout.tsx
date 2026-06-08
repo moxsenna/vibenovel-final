@@ -16,6 +16,9 @@ export interface WriterMobileLayoutProps {
   saving?: boolean;
   onFinish?: () => void;
   finishing?: boolean;
+  onGenerateAi?: () => void;
+  aiGenerating?: boolean;
+  creditCostLabel?: string | null;
 }
 
 export function WriterMobileLayout({
@@ -30,6 +33,9 @@ export function WriterMobileLayout({
   saving = false,
   onFinish,
   finishing = false,
+  onGenerateAi,
+  aiGenerating = false,
+  creditCostLabel = null,
 }: WriterMobileLayoutProps) {
   const { pageCopy } = draft;
   const displayProse = proseText ?? activeBeat.prose;
@@ -145,6 +151,7 @@ export function WriterMobileLayout({
 
         <p className="font-body-sm text-body-sm text-muted-text">
           {draft.wordCount} kata · {draft.lastSavedLabel}
+          {creditCostLabel && onGenerateAi ? ` · ${creditCostLabel}` : ""}
         </p>
       </main>
 
@@ -164,11 +171,13 @@ export function WriterMobileLayout({
           <Button
             variant="ghost"
             pill
-            disabled
+            disabled={!onGenerateAi || aiGenerating}
+            onClick={onGenerateAi}
             className="min-h-[44px] gap-1.5 px-4 text-on-surface-variant"
-            leftIcon={<Icon name="auto_fix_high" size={20} />}
+            leftIcon={<Icon name="auto_awesome" size={20} />}
+            aria-label="Tulis Beat dengan AI"
           >
-            {pageCopy.mobileFixAction}
+            {aiGenerating ? "…" : onGenerateAi ? "AI" : pageCopy.mobileFixAction}
           </Button>
           <Button
             variant="ghost"

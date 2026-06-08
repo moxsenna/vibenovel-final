@@ -19,6 +19,7 @@ Run all commands from **repo root**. Windows/PowerShell primary.
 | `smoke:web` | `sprint3-smoke-web.ps1` | Web mock (intake/concepts/foundation) | `dev:web`, Playwright chromium |
 | `smoke:web:outline` | `sprint4-smoke-web.ps1` | Web mock `/outline`; add `-- -IncludeApiMode` for API | `dev:web`; API mode + `VITE_USE_MOCKS=false` |
 | `smoke:web:write` | `sprint5-smoke-web.ps1` | Web mock `/write`; add `-- -IncludeApiMode` for API | Same |
+| `smoke:web:write-ai` | `sprint8-smoke-web.ps1` | WritePage AI button mock + optional API (`-- -IncludeApiMode`) | Same; AI success needs `AI_GENERATION_ENABLED=true` + mock provider |
 | `smoke:web:summary` | `sprint6-smoke-web.ps1` | Web mock `/summary` + leak guards; `-- -IncludeApiMode` for API flow | Same |
 | `smoke:web:publish` | `sprint7-smoke-web.ps1` | Web mock `/publish` + leak guards; `-- -IncludeApiMode` for API flow | Same |
 | `smoke:api:sprint7` | `sprint7-smoke-api.ps1` | Publish package generation/update/export safety (Task 7.5) | Same as API base |
@@ -558,6 +559,27 @@ npm run smoke:api:sprint8 -- -MockMode unsafe_output
 | Canon | No facts/characters/proposals mutation |
 
 Credit seeding uses local service role via `supabase status -o env` — script does not print keys.
+
+## Sprint 8 WritePage AI button web smoke (Task 8.5)
+
+### `sprint8-smoke-web.ps1`
+
+Playwright smoke for **Tulis Beat dengan AI** on `/write`.
+
+### Run from repo root
+
+```bash
+# Mock mode — AI button disabled, no fake generation
+npm run smoke:web:write-ai
+
+# API mode — bootstrap + AI disabled safe message (default API env)
+npm run smoke:web:write-ai -- -IncludeApiMode
+
+# API mode + AI mock success — restart dev:api first:
+#   AI_GENERATION_ENABLED=true, AI_PROVIDER_MOCK=true, AI_PROVIDER_MOCK_MODE=success
+```
+
+**WritePage AI requires API mode:** `VITE_USE_MOCKS=false`, Supabase login, restart `dev:web`. Mock/fallback hides real AI. **AI disabled by default** on API (`AI_GENERATION_ENABLED=false`) — disabled test runs without restart; success path needs mock provider env + credit seed (script seeds automatically in API mode).
 
 ## Future scripts (not yet implemented)
 
