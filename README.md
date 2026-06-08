@@ -27,9 +27,9 @@ vibenovel-unified-blueprint/
 |---|---|---|
 | `apps/web` | **Sprint 7 complete** | UI parity Stitch; foundation + outline + Write Room + Summary + Publish page API integration |
 | `apps/api` | **Sprint 7 complete** | Sprint 2–7 APIs + write room + summary/delta + publish package |
-| `packages/shared` | **Implemented (Task 2.1, 4.1, 5.1, 6.1, 7.1)** | Domain types, enums, write room + summary/delta + publish contracts |
+| `packages/shared` | **Implemented (Task 2.1–7.1, 8.1)** | Domain types, enums, write room + summary/delta + publish + AI generation contracts |
 | `packages/core` | Placeholder | Engine AI/story — nanti |
-| `supabase` | **Migration + seed (Task 7.1)** | 28 tabel (+ publish_packages), RLS, demo seed — `supabase db reset` verified |
+| `supabase` | **Migration + seed (Task 8.1)** | 30 tabel (+ generation_attempts, credit_ledger), RLS, demo seed — `supabase db reset` verified |
 | `scripts` | **Smoke scripts (through 7.5)** | `smoke:api`, `smoke:api:sprint5/6/7`, `smoke:web:summary`, `smoke:web:publish` — see `scripts/README.md` |
 | `docs` | Dokumentasi | Sumber arsitektur & sprint plan |
 | `stitch-reference` | Referensi desain | HTML + screen.png per halaman |
@@ -354,18 +354,18 @@ Belum ada (sengaja — defer setelah hardening / Sprint 8):
 | 7.8.4 Smoke orchestration | ✅ | `smoke:all:local` 9 phases |
 | 7.8.6 Hardening verification report | ✅ | `docs/43` |
 
-**Task berikutnya (disarankan):** **Task 8.1** — AI Generation Data Model + Credit Ledger (`docs/44` §16).
+**Task berikutnya (disarankan):** **Task 8.2** — Model Router + OpenRouter Shell (`docs/44` §14).
 
 ---
 
-## Sprint 8 — AI/OpenRouter & Credit-Gated Generation (plan) 📋
+## Sprint 8 — AI/OpenRouter & Credit-Gated Generation (in progress) 🚧
 
 **Rencana:** [`docs/44-sprint-8-ai-openrouter-credit-generation-implementation-plan.md`](docs/44-sprint-8-ai-openrouter-credit-generation-implementation-plan.md)
 
 | Task | Status | Deliverable |
 |---|---|---|
 | 8.0 Implementation plan | ✅ | `docs/44` |
-| 8.1 Data model + credit ledger | Pending | Migration `00008` + shared types |
+| 8.1 Data model + credit ledger | ✅ | Migration `00008` + shared types + audit enum extend |
 | 8.2 Model router + OpenRouter shell | Pending | Disabled by default |
 | 8.3 Credit debit/refund service | Pending | Idempotent ledger |
 | 8.4 Prose beat generation API | Pending | `POST /ai/generate-prose` |

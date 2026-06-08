@@ -31,6 +31,7 @@ supabase/
 | **5.1** ✅ | Write room migration | `migrations/00004_sprint5_write_room.sql` — 5 tabel + `workflow_phase` extend |
 | **6.1** ✅ | Chapter summary & delta migration | `migrations/00005_sprint6_chapter_summary_delta.sql` — 4 tabel + enum extend |
 | **7.1** ✅ | Publish package migration | `migrations/00006_sprint7_publish_package.sql` — 1 tabel + enum |
+| **8.1** ✅ | AI generation + credit ledger | `migrations/00008_sprint8_ai_generation_credit.sql` — 2 tabel + 3 enums + audit extend |
 | **Apply local** | Setelah Supabase CLI + Docker | `supabase start` lalu `supabase db reset` |
 | **Apply remote** | Manual / CI terpisah | **Tidak** tanpa approval eksplisit user |
 
@@ -116,7 +117,20 @@ Membuat:
 
 Seed Task 7.1: **no** `publish_packages` — runtime generation di Task 7.2+ setelah summary approved.
 
-**Belum ada:** `auth.users` trigger otomatis on signup (Task 2.6), `audit_action` enum Sprint 3 (deferred), `chapter_generation_attempts`, `validation_reports`, Publish Package Generation API (Task 7.2+).
+### Migration `00008_sprint8_ai_generation_credit.sql` (Task 8.1)
+
+Membuat:
+
+- **2 tabel:** `generation_attempts`, `credit_ledger`
+- **3 enum baru:** `generation_type`, `generation_status`, `credit_ledger_direction` selaras `@vibenovel/shared`
+- **Audit extend:** `generation_attempt_*`, `credit_debited`, `credit_refunded`, `ai_output_persisted`; entity `generation_attempt`, `credit_ledger_entry`
+- **RLS:** owner read attempts; ledger SELECT own rows only — no authenticated INSERT/UPDATE/DELETE on ledger
+- **Unique:** `(user_id, idempotency_key)` on `generation_attempts`
+- **Append-only:** `credit_ledger` — no `updated_at`, no update trigger
+
+Seed Task 8.1: **no** `generation_attempts` / `credit_ledger` rows — runtime in Task 8.3+.
+
+**Belum ada:** RPC debit/refund, OpenRouter client, AI endpoints (Task 8.2+), `auth.users` trigger otomatis on signup (Task 2.6), `validation_reports`.
 
 Urutan disarankan:
 

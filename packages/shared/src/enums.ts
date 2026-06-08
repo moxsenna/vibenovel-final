@@ -630,6 +630,12 @@ export const AUDIT_ACTIONS = {
   publish_checklist_updated: "publish_checklist_updated",
   publish_package_exported: "publish_package_exported",
   publish_package_regenerated: "publish_package_regenerated",
+  generation_attempt_created: "generation_attempt_created",
+  generation_attempt_succeeded: "generation_attempt_succeeded",
+  generation_attempt_failed: "generation_attempt_failed",
+  credit_debited: "credit_debited",
+  credit_refunded: "credit_refunded",
+  ai_output_persisted: "ai_output_persisted",
 } as const;
 export type AuditAction = (typeof AUDIT_ACTIONS)[keyof typeof AUDIT_ACTIONS];
 
@@ -659,8 +665,39 @@ export const AUDIT_ENTITY_TYPES = {
   chapter_delta: "chapter_delta",
   chapter_summary_proposal: "chapter_summary_proposal",
   publish_package: "publish_package",
+  generation_attempt: "generation_attempt",
+  credit_ledger_entry: "credit_ledger_entry",
 } as const;
 export type AuditEntityType = (typeof AUDIT_ENTITY_TYPES)[keyof typeof AUDIT_ENTITY_TYPES];
+
+// --- Sprint 8: AI generation attempts + credit ledger (schema only in 8.1) ---
+
+export const GENERATION_TYPES = {
+  prose_beat: "prose_beat",
+  prose_rewrite: "prose_rewrite",
+  publish_copy: "publish_copy",
+  /** Reserved — summary/delta AI deferred beyond Sprint 8 MVP */
+  summary_delta: "summary_delta",
+} as const;
+export type GenerationType = (typeof GENERATION_TYPES)[keyof typeof GENERATION_TYPES];
+
+export const GENERATION_STATUSES = {
+  pending: "pending",
+  running: "running",
+  succeeded: "succeeded",
+  failed: "failed",
+  cancelled: "cancelled",
+} as const;
+export type GenerationStatus = (typeof GENERATION_STATUSES)[keyof typeof GENERATION_STATUSES];
+
+/** Append-only ledger direction — amount is always positive magnitude. */
+export const CREDIT_LEDGER_DIRECTIONS = {
+  debit: "debit",
+  credit: "credit",
+  refund: "refund",
+} as const;
+export type CreditLedgerDirection =
+  (typeof CREDIT_LEDGER_DIRECTIONS)[keyof typeof CREDIT_LEDGER_DIRECTIONS];
 
 // --- Credit balance (display/seed only in Sprint 2) ---
 

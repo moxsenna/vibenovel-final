@@ -23,6 +23,9 @@ import type {
   CharacterStatus,
   ContextPacketBuilderVersion,
   CreditBalanceSource,
+  CreditLedgerDirection,
+  GenerationStatus,
+  GenerationType,
   DefaultLanguage,
   DetectedSignalStatus,
   DetectedSignalType,
@@ -207,6 +210,53 @@ export interface CreditBalance {
   resetAt: string | null;
   source: CreditBalanceSource;
   updatedAt: ISODateTime;
+}
+
+/**
+ * One idempotent AI generation lifecycle row.
+ * promptHash only — never raw prompt. metadata must not contain packet_json,
+ * planningTruth, raw prompt, provider secret, or raw prose.
+ */
+export interface GenerationAttempt extends Timestamps {
+  id: ID;
+  projectId: ID;
+  userId: ID;
+  chapterOutlineId: ID | null;
+  beatId: ID | null;
+  writingSessionId: ID | null;
+  generationType: GenerationType;
+  status: GenerationStatus;
+  idempotencyKey: string;
+  provider: string | null;
+  model: string | null;
+  promptHash: string | null;
+  contextPacketLogId: ID | null;
+  inputTokens: number | null;
+  outputTokens: number | null;
+  estimatedCostUsd: number | null;
+  creditCost: number;
+  errorCode: string | null;
+  errorMessageSafe: string | null;
+  outputEntityType: string | null;
+  outputEntityId: ID | null;
+  metadata: JsonObject;
+}
+
+/**
+ * Append-only credit mutation trail — amount always positive; direction sets semantics.
+ * metadata must not store raw prompt, provider secret, or prose.
+ */
+export interface CreditLedgerEntry {
+  id: ID;
+  userId: ID;
+  projectId: ID | null;
+  attemptId: ID | null;
+  amount: number;
+  direction: CreditLedgerDirection;
+  reason: string;
+  balanceAfter: number;
+  metadata: JsonObject;
+  createdAt: ISODateTime;
 }
 
 // --- Sprint 3: intake & concepts (not canon — no direct writes to facts) ---
