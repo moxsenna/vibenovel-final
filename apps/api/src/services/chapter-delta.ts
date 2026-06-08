@@ -18,6 +18,7 @@ import {
   countLinkedProposals,
   createLinkedProposals,
   fetchLinkedProposalsForSummary,
+  preflightLinkedProposalDrafts,
 } from "./summary-proposal-linker.js";
 
 const SUMMARY_SELECT =
@@ -166,7 +167,13 @@ export async function extractChapterDeltaForOwner(
   }
 
   const extracted = extractChapterDeltaStub(summary, items);
+  preflightLinkedProposalDrafts(extracted.proposalDrafts);
+
   const admin = createServiceRoleClient(bindings);
+  const correlationId = generateCorrelationId();
+  const proposalTypes = [...new Set(extracted.proposalDrafts.map((d) => d.proposalType))];
+  const highRiskCount = extracted.proposalDrafts.filter((d) => d.riskLevel === "high").length;
+  const isNewDelta = !existingDelta;
 
   let deltaRow: ChapterDeltaRow;
 
@@ -211,18 +218,22 @@ export async function extractChapterDeltaForOwner(
     deltaRow = data as ChapterDeltaRow;
   }
 
-  const correlationId = generateCorrelationId();
-  const proposalTypes = [...new Set(extracted.proposalDrafts.map((d) => d.proposalType))];
-  const highRiskCount = extracted.proposalDrafts.filter((d) => d.riskLevel === "high").length;
-
-  const proposals = await createLinkedProposals(
-    bindings,
-    ownerId,
-    projectId,
-    summaryId,
-    extracted.proposalDrafts,
-    correlationId,
-  );
+  let proposals: LinkedProposalSummary[];
+  try {
+    proposals = await createLinkedProposals(
+      bindings,
+      ownerId,
+      projectId,
+      summaryId,
+      extracted.proposalDrafts,
+      correlationId,
+    );
+  } catch (err) {
+    if (isNewDelta) {
+      await admin.from("chapter_deltas").delete().eq("id", deltaRow.id).eq("project_id", projectId);
+    }
+    throw err;
+  }
 
   await writeAuditLog(bindings, {
     userId: ownerId,

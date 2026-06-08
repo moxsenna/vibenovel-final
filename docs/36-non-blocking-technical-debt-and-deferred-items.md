@@ -45,6 +45,8 @@ Sprint 5 closed with **zero blockers**. Items below are non-blocking unless mark
 
 | Item | Priority | Timing |
 |---|---|---|
+| **P0 transaction-like hardening** (foundation lock, delta+link, accept+canon) | P1 | ✅ **7.8.3** — `transaction.ts` + compensation; not true RPC |
+| True Postgres RPC/`BEGIN` for P0 workflows | P1 | Before production deploy |
 | Outline lock: plan + chapters + workflow_phase not in single transaction | P1 | Before production deploy |
 | Prose save: version flip + word count + session touch not atomic | P1 | During Sprint 6 if summary ties to prose state |
 | Context packet build + log insert (single insert today; acceptable MVP) | P2 | Before high-concurrency production |
@@ -162,7 +164,7 @@ Sprint 5 closed with **zero blockers**. Items below are non-blocking unless mark
 1. **`smoke:api`** remains Sprint 2 regression — add **`smoke:api:sprint5`**, **`smoke:api:sprint6`**, **`smoke:api:sprint7`** for Write Room, summary, and publish safety.
 2. **API-mode web E2E** not in GitHub Actions — local `-IncludeApiMode` for write/summary/publish smokes.
 3. **Audit logs P0/P1** — foundation lock, delta, canon promotion, publish export/update, summary approve ✅ (**7.8.2**). Outline/write/intake P2 writers still pending.
-4. **No DB transaction wrapper** for multi-step prose/outline/summary/publish — **P1**; matrix in `docs/41` §4; implement **7.8.3**.
+4. **P0 transaction-like hardening** ✅ (**7.8.3**) — validate-all-before-write + compensation on foundation lock, delta+link, accept+canon. **True DB RPC** still **P1** before production; outline/prose/publish paths unchanged.
 5. **Publish package API + UI + smoke complete Sprint 7** — no auto-post KBM; manual copy + `mark-exported` marker only (`docs/40`).
 6. **No UI regenerate publish package** — API supports regenerate; chapter picker Bab 1 default only.
 7. **High-risk reveal `confirmHighRisk` UI** not in web — API requires manual confirm; accept disabled in UI.
@@ -182,7 +184,7 @@ Sprint 5 closed with **zero blockers**. Items below are non-blocking unless mark
 | **7.8** | Hardening plan document | ✅ Plan complete (`docs/41`) |
 | **7.8.1** | Audit action enum + coverage map | ✅ Design complete (`docs/42`) |
 | **7.8.2** | Audit writers for canon/export P0 paths | ✅ Implemented (`00007`, P0+P1 writers) |
-| **7.8.3** | Transaction wrapper + P0 workflows | Pending |
+| **7.8.3** | Transaction wrapper + P0 workflows | ✅ Implemented (`transaction.ts`, P0 hardening, sprint6 smoke assertions) |
 | **7.8.4** | `smoke:all:local` include Sprint 6/7 | Pending |
 | **7.8.5** | CI E2E feasibility / optional nightly | Pending |
 | **7.8.6** | Hardening verification report (`docs/43`) | Pending |

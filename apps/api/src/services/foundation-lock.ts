@@ -34,6 +34,7 @@ import { createServiceRoleClient } from "../lib/supabase.js";
 import { AppError } from "../errors.js";
 import { writeAuditLog } from "./audit.js";
 import { generateCorrelationId, snapshotFoundationLock } from "./audit-snapshot.js";
+import { classifyTransactionFailure } from "./transaction.js";
 import { listCharactersForOwner } from "./character.js";
 import { listFactsForOwner } from "./fact.js";
 import {
@@ -1040,6 +1041,15 @@ export async function lockFoundationForOwner(
 
     if (phaseError) {
       console.error("projects workflow_phase lock update failed");
+      await admin
+        .from("story_foundations")
+        .update({
+          is_locked: false,
+          locked_at: null,
+          status: foundation?.status ?? FOUNDATION_STATUSES.draft,
+        })
+        .eq("id", afterFoundation.id)
+        .eq("project_id", projectId);
       throw AppError.internal("Failed to update project workflow phase");
     }
 
@@ -1084,7 +1094,7 @@ export async function lockFoundationForOwner(
       },
     });
   } catch (err) {
-    const errorCode = err instanceof AppError ? err.code : "internal_error";
+    const errorCode = classifyTransactionFailure(err);
     await writeAuditLog(bindings, {
       userId: ownerId,
       projectId,

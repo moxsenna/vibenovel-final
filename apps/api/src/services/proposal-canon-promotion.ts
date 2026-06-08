@@ -72,6 +72,131 @@ function resolveCategory(payload: JsonObject): string {
   return FACT_CATEGORIES.event;
 }
 
+/** Validate promotion inputs without canon writes (validate-all-before-write). */
+export function preflightPromotionToCanon(
+  proposal: AiProposalRow,
+  options: { confirmHighRisk?: boolean } = {},
+): void {
+  const payload = parsePayload(proposal);
+  assertProposalPayloadSafe(payload);
+
+  switch (proposal.proposal_type) {
+    case AI_PROPOSAL_TYPES.fact:
+      resolveFactText(payload, proposal.title);
+      resolveCategory(payload);
+      return;
+    case AI_PROPOSAL_TYPES.character_update: {
+      const characterId = payload.targetEntityId;
+      const changeSummary = payload.changeSummary;
+      if (typeof characterId !== "string" || !characterId.trim()) {
+        throw AppError.conflict("Character update promotion requires targetEntityId", {
+          missing: ["unsupported_promotion"],
+        });
+      }
+      if (typeof changeSummary !== "string" || changeSummary.trim().length < 8) {
+        throw AppError.conflict("Character update promotion requires safe changeSummary", {
+          missing: ["unsupported_promotion"],
+        });
+      }
+      return;
+    }
+    case AI_PROPOSAL_TYPES.relationship_update: {
+      const relationshipLabel = payload.relationshipLabel;
+      const characterAId = payload.characterAId;
+      const characterBId = payload.characterBId;
+      const ruleText = payload.ruleText ?? payload.changeSummary;
+      if (
+        typeof relationshipLabel !== "string" ||
+        typeof characterAId !== "string" ||
+        typeof characterBId !== "string" ||
+        typeof ruleText !== "string" ||
+        !relationshipLabel.trim() ||
+        !characterAId.trim() ||
+        !characterBId.trim() ||
+        ruleText.trim().length < 8
+      ) {
+        throw AppError.conflict("Relationship update promotion is not supported for this payload", {
+          missing: ["unsupported_promotion"],
+        });
+      }
+      return;
+    }
+    case AI_PROPOSAL_TYPES.open_loop_update: {
+      const suggestedStatus =
+        typeof payload.suggestedStatus === "string" ? payload.suggestedStatus : "opened";
+      const changeSummary =
+        typeof payload.changeSummary === "string" ? payload.changeSummary.trim() : "";
+      const targetEntityId =
+        typeof payload.targetEntityId === "string" ? payload.targetEntityId.trim() : "";
+      if (suggestedStatus === "paid_off" && !targetEntityId) {
+        throw AppError.conflict("Open loop payoff requires targetEntityId", {
+          missing: ["target_required"],
+        });
+      }
+      if (suggestedStatus !== "paid_off" && changeSummary.length < 8) {
+        throw AppError.badRequest("Open loop promotion requires safe changeSummary text");
+      }
+      return;
+    }
+    case AI_PROPOSAL_TYPES.reveal_status_update: {
+      if (!options.confirmHighRisk) {
+        throw AppError.conflict("High-risk reveal promotion requires confirmHighRisk=true", {
+          missing: ["high_risk_manual_review_required"],
+        });
+      }
+      const targetEntityId =
+        typeof payload.targetEntityId === "string" ? payload.targetEntityId.trim() : "";
+      if (!targetEntityId) {
+        throw AppError.conflict("Reveal promotion requires targetEntityId", {
+          missing: ["target_required"],
+        });
+      }
+      return;
+    }
+    default:
+      throw AppError.conflict(`Proposal type "${proposal.proposal_type}" cannot be promoted`, {
+        missing: ["unsupported_promotion"],
+      });
+  }
+}
+
+/** Best-effort rollback when promotion succeeded but accept status update failed. */
+export async function compensateCanonPromotion(
+  bindings: AppBindings,
+  projectId: string,
+  promoted: PromotedEntity,
+): Promise<void> {
+  if (!promoted.created) return;
+
+  const admin = createServiceRoleClient(bindings);
+
+  switch (promoted.entityType) {
+    case "fact":
+      await admin
+        .from("facts")
+        .update({ canon_status: FACT_CANON_STATUSES.deprecated })
+        .eq("id", promoted.entityId)
+        .eq("project_id", projectId);
+      return;
+    case "relationship_speech_rule":
+      await admin
+        .from("relationship_speech_rules")
+        .update({ status: SPEECH_RULE_STATUSES.deprecated })
+        .eq("id", promoted.entityId)
+        .eq("project_id", projectId);
+      return;
+    case "open_loop":
+      await admin
+        .from("open_loops")
+        .update({ status: OPEN_LOOP_STATUSES.dropped })
+        .eq("id", promoted.entityId)
+        .eq("project_id", projectId);
+      return;
+    default:
+      return;
+  }
+}
+
 async function promoteFact(
   bindings: AppBindings,
   projectId: string,
@@ -421,6 +546,8 @@ export async function promoteProposalToCanon(
   proposal: AiProposalRow,
   options: { confirmHighRisk?: boolean } = {},
 ): Promise<PromotedEntity> {
+  preflightPromotionToCanon(proposal, options);
+
   switch (proposal.proposal_type) {
     case AI_PROPOSAL_TYPES.fact:
       return promoteFact(bindings, projectId, proposal);

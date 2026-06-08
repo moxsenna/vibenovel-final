@@ -16,12 +16,38 @@ import { writeAuditLog } from "./audit.js";
 import { DELTA_PROPOSAL_SOURCE, type ProposalDraft } from "./chapter-delta-extractor.js";
 import { getOwnedProjectRow } from "./project.js";
 import { assertProposalPayloadSafe } from "./summary-safety.js";
+import { runWithCompensation } from "./transaction.js";
 
 const PROPOSAL_SELECT =
   "id, project_id, proposal_type, status, risk_level, source, title, payload, review_note, reviewed_at, reviewed_by, merged_into_id, result_fact_id, result_character_id, created_at, updated_at";
 
 const LINK_SELECT =
   "id, project_id, chapter_summary_id, ai_proposal_id, status, metadata, created_at, updated_at";
+
+/** Validate all proposal drafts before any DB writes. */
+export function preflightLinkedProposalDrafts(drafts: ProposalDraft[]): void {
+  for (const draft of drafts) {
+    assertProposalPayloadSafe(draft.payload);
+  }
+}
+
+async function compensatePartialLinkedProposals(
+  admin: ReturnType<typeof createServiceRoleClient>,
+  projectId: string,
+  linkIds: string[],
+  proposalIds: string[],
+): Promise<void> {
+  if (linkIds.length > 0) {
+    await admin
+      .from("chapter_summary_proposals")
+      .delete()
+      .eq("project_id", projectId)
+      .in("id", linkIds);
+  }
+  if (proposalIds.length > 0) {
+    await admin.from("ai_proposals").delete().eq("project_id", projectId).in("id", proposalIds);
+  }
+}
 
 export async function createLinkedProposals(
   bindings: AppBindings,
@@ -33,102 +59,122 @@ export async function createLinkedProposals(
 ): Promise<LinkedProposalSummary[]> {
   if (drafts.length === 0) return [];
 
+  preflightLinkedProposalDrafts(drafts);
+
   const admin = createServiceRoleClient(bindings);
-  const results: LinkedProposalSummary[] = [];
   const batchCorrelationId = correlationId ?? crypto.randomUUID();
-  const linkedProposalIds: string[] = [];
-  const linkedTypes: string[] = [];
+  const createdLinkIds: string[] = [];
+  const createdProposalIds: string[] = [];
 
-  for (const draft of drafts) {
-    assertProposalPayloadSafe(draft.payload);
+  return runWithCompensation(
+    async () => {
+      const results: LinkedProposalSummary[] = [];
+      const linkedProposalIds: string[] = [];
+      const linkedTypes: string[] = [];
 
-    const { data: proposalRow, error: proposalError } = await admin
-      .from("ai_proposals")
-      .insert({
-        project_id: projectId,
-        proposal_type: draft.proposalType,
-        status: AI_PROPOSAL_STATUSES.proposed,
-        risk_level: draft.riskLevel,
-        source: DELTA_PROPOSAL_SOURCE,
-        title: draft.title,
-        payload: draft.payload,
-      })
-      .select(PROPOSAL_SELECT)
-      .single();
+      for (const draft of drafts) {
+        const { data: proposalRow, error: proposalError } = await admin
+          .from("ai_proposals")
+          .insert({
+            project_id: projectId,
+            proposal_type: draft.proposalType,
+            status: AI_PROPOSAL_STATUSES.proposed,
+            risk_level: draft.riskLevel,
+            source: DELTA_PROPOSAL_SOURCE,
+            title: draft.title,
+            payload: draft.payload,
+          })
+          .select(PROPOSAL_SELECT)
+          .single();
 
-    if (proposalError || !proposalRow) {
-      console.error("ai_proposals insert from delta failed");
-      throw AppError.internal("Failed to create proposal from delta");
-    }
+        if (proposalError || !proposalRow) {
+          console.error("ai_proposals insert from delta failed");
+          throw AppError.internal("Failed to create proposal from delta");
+        }
 
-    const proposal = proposalRow as AiProposalRow;
+        const proposal = proposalRow as AiProposalRow;
+        createdProposalIds.push(proposal.id);
 
-    const linkMetadata: JsonObject = {
-      itemType: draft.sourceItemType,
-      sourceItemId: draft.sourceItemId,
-      extractor: "chapter_delta_v1_stub",
-    };
+        const linkMetadata: JsonObject = {
+          itemType: draft.sourceItemType,
+          sourceItemId: draft.sourceItemId,
+          extractor: "chapter_delta_v1_stub",
+        };
 
-    const { data: linkRow, error: linkError } = await admin
-      .from("chapter_summary_proposals")
-      .insert({
-        project_id: projectId,
-        chapter_summary_id: summaryId,
-        ai_proposal_id: proposal.id,
-        status: CHAPTER_SUMMARY_PROPOSAL_STATUSES.linked,
-        metadata: linkMetadata,
-      })
-      .select(LINK_SELECT)
-      .single();
+        const { data: linkRow, error: linkError } = await admin
+          .from("chapter_summary_proposals")
+          .insert({
+            project_id: projectId,
+            chapter_summary_id: summaryId,
+            ai_proposal_id: proposal.id,
+            status: CHAPTER_SUMMARY_PROPOSAL_STATUSES.linked,
+            metadata: linkMetadata,
+          })
+          .select(LINK_SELECT)
+          .single();
 
-    if (linkError || !linkRow) {
-      console.error("chapter_summary_proposals insert failed");
-      throw AppError.internal("Failed to link proposal to summary");
-    }
+        if (linkError || !linkRow) {
+          console.error("chapter_summary_proposals insert failed");
+          throw AppError.internal("Failed to link proposal to summary");
+        }
 
-    await writeAuditLog(bindings, {
-      userId: ownerId,
-      projectId,
-      action: "ai_proposal_created",
-      entityType: "ai_proposal",
-      entityId: proposal.id,
-      metadata: {
-        proposalType: proposal.proposal_type,
-        riskLevel: proposal.risk_level,
-        source: proposal.source,
-        chapterSummaryId: summaryId,
-        fromDeltaExtraction: true,
-        correlationId: batchCorrelationId,
+        createdLinkIds.push((linkRow as ChapterSummaryProposalRow).id);
+
+        await writeAuditLog(bindings, {
+          userId: ownerId,
+          projectId,
+          action: "ai_proposal_created",
+          entityType: "ai_proposal",
+          entityId: proposal.id,
+          metadata: {
+            proposalType: proposal.proposal_type,
+            riskLevel: proposal.risk_level,
+            source: proposal.source,
+            chapterSummaryId: summaryId,
+            fromDeltaExtraction: true,
+            correlationId: batchCorrelationId,
+          },
+        });
+
+        linkedProposalIds.push(proposal.id);
+        linkedTypes.push(proposal.proposal_type);
+
+        results.push(
+          mapLinkedProposalSummary(linkRow as ChapterSummaryProposalRow, proposal),
+        );
+      }
+
+      if (results.length > 0) {
+        await writeAuditLog(bindings, {
+          userId: ownerId,
+          projectId,
+          action: "summary_proposal_linked",
+          entityType: "chapter_summary",
+          entityId: summaryId,
+          metadata: {
+            correlationId: batchCorrelationId,
+            task: "delta_extract",
+            summaryId,
+            proposalCount: results.length,
+            proposalIds: linkedProposalIds,
+            proposalTypes: [...new Set(linkedTypes)],
+          },
+        });
+      }
+
+      return results;
+    },
+    [
+      async () => {
+        await compensatePartialLinkedProposals(
+          admin,
+          projectId,
+          [...createdLinkIds],
+          [...createdProposalIds],
+        );
       },
-    });
-
-    linkedProposalIds.push(proposal.id);
-    linkedTypes.push(proposal.proposal_type);
-
-    results.push(
-      mapLinkedProposalSummary(linkRow as ChapterSummaryProposalRow, proposal),
-    );
-  }
-
-  if (results.length > 0) {
-    await writeAuditLog(bindings, {
-      userId: ownerId,
-      projectId,
-      action: "summary_proposal_linked",
-      entityType: "chapter_summary",
-      entityId: summaryId,
-      metadata: {
-        correlationId: batchCorrelationId,
-        task: "delta_extract",
-        summaryId,
-        proposalCount: results.length,
-        proposalIds: linkedProposalIds,
-        proposalTypes: [...new Set(linkedTypes)],
-      },
-    });
-  }
-
-  return results;
+    ],
+  );
 }
 
 export async function fetchLinkedProposalsForSummary(

@@ -16,9 +16,12 @@ import { writeAuditLog } from "./audit.js";
 import { generateCorrelationId, snapshotCanonPromotion } from "./audit-snapshot.js";
 import { getOwnedProjectRow } from "./project.js";
 import {
+  compensateCanonPromotion,
+  preflightPromotionToCanon,
   promoteProposalToCanon,
   type PromotedEntity,
 } from "./proposal-canon-promotion.js";
+import { classifyTransactionFailure } from "./transaction.js";
 import { getOwnedLinkedProposal } from "./summary-proposal-linker.js";
 
 const PROPOSAL_SELECT =
@@ -110,11 +113,12 @@ export async function acceptLinkedProposalForOwner(
   let promoted: PromotedEntity;
 
   try {
+    preflightPromotionToCanon(proposal, { confirmHighRisk });
     promoted = await promoteProposalToCanon(bindings, projectId, proposal, {
       confirmHighRisk,
     });
   } catch (err) {
-    const errorCode = err instanceof AppError ? err.code : "internal_error";
+    const errorCode = classifyTransactionFailure(err);
     await writeAuditLog(bindings, {
       userId: ownerId,
       projectId,
@@ -156,47 +160,74 @@ export async function acceptLinkedProposalForOwner(
   const admin = createServiceRoleClient(bindings);
   const now = new Date().toISOString();
 
-  const proposalUpdates: Record<string, unknown> = {
-    status: AI_PROPOSAL_STATUSES.accepted,
-    reviewed_at: now,
-    reviewed_by: ownerId,
-  };
-  if (promoted.entityType === "fact") {
-    proposalUpdates.result_fact_id = promoted.entityId;
+  let acceptedProposal: AiProposalRow;
+  let acceptedLink: ChapterSummaryProposalRow;
+
+  try {
+    const proposalUpdates: Record<string, unknown> = {
+      status: AI_PROPOSAL_STATUSES.accepted,
+      reviewed_at: now,
+      reviewed_by: ownerId,
+    };
+    if (promoted.entityType === "fact") {
+      proposalUpdates.result_fact_id = promoted.entityId;
+    }
+    if (promoted.entityType === "character") {
+      proposalUpdates.result_character_id = promoted.entityId;
+    }
+
+    const { data: proposalData, error: proposalError } = await admin
+      .from("ai_proposals")
+      .update(proposalUpdates)
+      .eq("id", proposalId)
+      .eq("project_id", projectId)
+      .eq("status", AI_PROPOSAL_STATUSES.proposed)
+      .select(PROPOSAL_SELECT)
+      .single();
+
+    if (proposalError || !proposalData) {
+      console.error("ai_proposals accept from summary failed");
+      throw AppError.internal("Failed to accept linked proposal");
+    }
+
+    const { data: linkData, error: linkError } = await admin
+      .from("chapter_summary_proposals")
+      .update({ status: CHAPTER_SUMMARY_PROPOSAL_STATUSES.accepted })
+      .eq("id", link.id)
+      .eq("project_id", projectId)
+      .eq("status", CHAPTER_SUMMARY_PROPOSAL_STATUSES.linked)
+      .select(LINK_SELECT)
+      .single();
+
+    if (linkError || !linkData) {
+      console.error("chapter_summary_proposals accept failed");
+      throw AppError.internal("Failed to accept linked proposal");
+    }
+
+    acceptedProposal = proposalData as AiProposalRow;
+    acceptedLink = linkData as ChapterSummaryProposalRow;
+  } catch (err) {
+    await compensateCanonPromotion(bindings, projectId, promoted);
+    await writeAuditLog(bindings, {
+      userId: ownerId,
+      projectId,
+      action: "canon_promotion_failed",
+      entityType: "ai_proposal",
+      entityId: proposalId,
+      metadata: {
+        correlationId,
+        task: "summary_proposal_accept",
+        proposalId,
+        proposalType: proposal.proposal_type,
+        chapterSummaryId: summaryId,
+        errorCode: classifyTransactionFailure(err),
+        failureStage: "accept_status_update",
+      },
+    });
+    throw err;
   }
-  if (promoted.entityType === "character") {
-    proposalUpdates.result_character_id = promoted.entityId;
-  }
 
-  const { data: acceptedProposal, error: proposalError } = await admin
-    .from("ai_proposals")
-    .update(proposalUpdates)
-    .eq("id", proposalId)
-    .eq("project_id", projectId)
-    .eq("status", AI_PROPOSAL_STATUSES.proposed)
-    .select(PROPOSAL_SELECT)
-    .single();
-
-  if (proposalError || !acceptedProposal) {
-    console.error("ai_proposals accept from summary failed");
-    throw AppError.internal("Failed to accept linked proposal");
-  }
-
-  const { data: acceptedLink, error: linkError } = await admin
-    .from("chapter_summary_proposals")
-    .update({ status: CHAPTER_SUMMARY_PROPOSAL_STATUSES.accepted })
-    .eq("id", link.id)
-    .eq("project_id", projectId)
-    .eq("status", CHAPTER_SUMMARY_PROPOSAL_STATUSES.linked)
-    .select(LINK_SELECT)
-    .single();
-
-  if (linkError || !acceptedLink) {
-    console.error("chapter_summary_proposals accept failed");
-    throw AppError.internal("Failed to accept linked proposal");
-  }
-
-  const proposalRow = acceptedProposal as AiProposalRow;
+  const proposalRow = acceptedProposal;
   await writeAuditLog(bindings, {
     userId: ownerId,
     projectId,

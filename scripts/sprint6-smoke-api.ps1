@@ -134,6 +134,32 @@ function Assert-AuditActionExists {
   }
 }
 
+function Test-LinkedProposalStatus {
+  param(
+    [string]$SummaryId,
+    [string]$ProposalId,
+    [string]$ExpectedStatus,
+    [string]$ExpectedLinkStatus
+  )
+  $prop = Invoke-Api -Path "/api/projects/$projectId/summary/$SummaryId/proposals" -Headers $auth
+  $match = $prop.data.proposals | Where-Object { $_.proposalId -eq $ProposalId } | Select-Object -First 1
+  if (-not $match) { return $false }
+  return ($match.status -eq $ExpectedStatus -and $match.linkStatus -eq $ExpectedLinkStatus)
+}
+
+function Assert-ProposalStatus {
+  param(
+    [string]$Name,
+    [string]$SummaryId,
+    [string]$ProposalId,
+    [string]$ExpectedStatus,
+    [string]$ExpectedLinkStatus
+  )
+  $ok = Test-LinkedProposalStatus -SummaryId $SummaryId -ProposalId $ProposalId `
+    -ExpectedStatus $ExpectedStatus -ExpectedLinkStatus $ExpectedLinkStatus
+  Add-StepResult $Name $(if ($ok) { "PASS" } else { "FAIL" }) "expect=$ExpectedStatus/$ExpectedLinkStatus"
+}
+
 function Get-SpeechRulesCount {
   param([string]$ProjectId)
   $res = Invoke-Api -Path "/api/projects/$ProjectId/speech-rules" -Headers $auth
@@ -374,6 +400,9 @@ Invoke-ApiExpectFailure -Name "POST approve no token" -Method POST `
 if ($factProposal) {
   Invoke-ApiExpectFailure -Name "accept before approve" -Method POST -Headers $auth `
     -Path "/api/projects/$projectId/summary/$currentSummaryId/proposals/$($factProposal.proposalId)/accept" -Body '{}'
+  Assert-ProposalStatus -Name "accept before approve stays proposed" `
+    -SummaryId $currentSummaryId -ProposalId $factProposal.proposalId `
+    -ExpectedStatus "proposed" -ExpectedLinkStatus "linked"
 }
 
 $factsBeforeApprove = (Invoke-Api -Path "/api/projects/$projectId/foundation" -Headers $auth).data.facts.Count
@@ -396,6 +425,17 @@ foreach ($p in $propAfterApprove.data.proposals) {
 }
 Add-StepResult "approve no auto-accept proposals" $(if ($stillProposedAfterApprove) { "PASS" } else { "FAIL" }) ""
 
+$relProposal = $propAfterApprove.data.proposals | Where-Object {
+  $_.type -eq "relationship_update" -and $_.status -eq "proposed"
+} | Select-Object -First 1
+if ($relProposal) {
+  Invoke-ApiExpectFailure -Name "relationship accept unsupported" -Method POST -Headers $auth `
+    -Path "/api/projects/$projectId/summary/$currentSummaryId/proposals/$($relProposal.proposalId)/accept" -Body '{}'
+  Assert-ProposalStatus -Name "unsupported promotion stays proposed" `
+    -SummaryId $currentSummaryId -ProposalId $relProposal.proposalId `
+    -ExpectedStatus "proposed" -ExpectedLinkStatus "linked"
+}
+
 $sessionPostApprove = Invoke-Api -Path "/api/projects/$projectId/write/sessions/$sessionId" -Headers $auth
 Add-StepResult "session completed after approve" $(if ($sessionPostApprove.data.session.status -eq "completed") { "PASS" } else { "FAIL" }) ""
 Add-StepResult "writing state summarized" $(if ($sessionPostApprove.data.writingState.status -eq "summarized") { "PASS" } else { "FAIL" }) ""
@@ -409,6 +449,11 @@ Assert-AuditActionExists -Name "audit chapter_summary_approved" -ProjectId $proj
 if ($revealProposal) {
   Invoke-ApiExpectFailure -Name "reveal accept without confirm" -Method POST -Headers $auth `
     -Path "/api/projects/$projectId/summary/$currentSummaryId/proposals/$($revealProposal.proposalId)/accept" -Body '{}'
+  Assert-ProposalStatus -Name "reveal accept stays proposed" `
+    -SummaryId $currentSummaryId -ProposalId $revealProposal.proposalId `
+    -ExpectedStatus "proposed" -ExpectedLinkStatus "linked"
+  Assert-AuditActionExists -Name "audit canon_promotion_failed reveal" -ProjectId $projectId `
+    -Action "canon_promotion_failed" -AuthHeaders $auth -AnonKey $anonKey
   $factsBeforeReject = (Invoke-Api -Path "/api/projects/$projectId/foundation" -Headers $auth).data.facts.Count
   Invoke-Api -Method POST -Path "/api/projects/$projectId/summary/$currentSummaryId/proposals/$($revealProposal.proposalId)/reject" -Headers $auth `
     -Body '{"reason":"smoke skip reveal"}' | Out-Null
@@ -448,6 +493,9 @@ if ($factProposal -and $factProposal.status -eq "proposed") {
 
   Invoke-ApiExpectFailure -Name "reject accepted proposal" -Method POST -Headers $auth `
     -Path "/api/projects/$projectId/summary/$currentSummaryId/proposals/$($factProposal.proposalId)/reject" -Body '{}'
+  Assert-ProposalStatus -Name "reject accepted status unchanged" `
+    -SummaryId $currentSummaryId -ProposalId $factProposal.proposalId `
+    -ExpectedStatus "accepted" -ExpectedLinkStatus "accepted"
 } else {
   Add-StepResult "accept fact proposal" "FAIL" "no proposed fact"
   Add-StepResult "fact creates confirmed canon" "FAIL" "skipped"

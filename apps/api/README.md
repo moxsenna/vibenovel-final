@@ -67,6 +67,7 @@ apps/api/
       prose-draft.ts      # prose version save/list/make-current (Task 5.4)
       audit.ts         # append-only audit_logs (service role)
       audit-snapshot.ts   # compact snapshots + metadata sanitizer (Task 7.8.2)
+      transaction.ts   # compensation runner + failure classification (Task 7.8.3)
     lib/
       supabase.ts      # anon + service role clients
       mappers.ts
@@ -99,6 +100,33 @@ Migration `00007_audit_enum_extension.sql` extends `audit_action` / `audit_entit
 **Deferred (P2):** intake/concept/outline/write-room audit writers — enum ready, writers not yet added.
 
 See [`docs/42-audit-action-enum-and-coverage-plan.md`](../docs/42-audit-action-enum-and-coverage-plan.md).
+
+## Transaction strategy (Task 7.8.3)
+
+**Chosen approach: Option B — transaction-like service hardening** (not true Postgres `BEGIN/COMMIT` via PostgREST).
+
+Cloudflare Worker + `@supabase/supabase-js` cannot wrap arbitrary multi-table writes in a single DB transaction without Supabase RPC/stored procedures. Task 7.8.3 adds `services/transaction.ts` (`runWithCompensation`, `TransactionPlan`, `classifyTransactionFailure`) and hardens P0 workflows:
+
+| Workflow | Pattern |
+|---|---|
+| Foundation lock | Validate-all-before-write → promote canon → lock foundation row → update `workflow_phase`; on phase failure **unlock** foundation (compensation); `foundation_lock_failed` on any write failure |
+| Delta extract + link | Preflight proposal drafts → write delta → batch insert proposals/links with compensation delete on partial failure; **delete new delta** if linking fails |
+| Proposal accept + canon | Preflight promotion → promote canon → `canon_promotion_applied` → update `accepted` status; on status failure **compensate** newly created canon entities + `canon_promotion_failed` |
+
+**Invariants enforced:**
+
+- `ai_proposals.status = accepted` only after canon promotion succeeds (or idempotent re-read).
+- `story_foundations.is_locked = true` only after promotions + lock row update succeed.
+- Delta extract does not return success if proposal/link enqueue fails (new delta rolled back).
+
+**Audit ordering:** `*_started` / preflight before writes; `*_applied` only after success; `*_failed` after validation or write failure. No payload leak (`audit-snapshot.ts`).
+
+**Remaining limitations (no schema redesign):**
+
+- Mid-promotion partial canon during foundation lock (characters/facts/rules) is not fully rolled back — only lock flag compensation on phase failure.
+- Delta **regenerate** path may leave updated delta without proposals if linking fails after update (documented; prefer delete compensation only for new inserts).
+- Character/reveal **updates** (non-create) cannot be compensated on accept status failure.
+- True atomic RPC deferred to pre-production (`docs/41` §4, `docs/36`).
 
 ## Local development
 
@@ -268,7 +296,7 @@ Lock does **not** write `ai_proposal_accepted` audit (accept is separate). Write
 
 **On success:** Sets `story_foundations.is_locked=true`, `status=locked`, `locked_at`, updates readiness; sets `projects.workflow_phase=foundation_locked`. Returns `{ foundation, readiness, promoted: { characters, facts, speechRules } }`.
 
-**Limitation:** No DB transaction wrapper — all accepted proposals validated before writes; partial failure may leave promoted canon without lock if lock update fails (rare).
+**Limitation (7.8.3):** Transaction-like hardening only — validate-all-before-write, ordered writes, phase-failure unlock compensation. Mid-promotion partial canon without lock remains possible if lock row update fails after promotions (rare); `foundation_lock_failed` audit emitted.
 
 ### Outline routes (Task 4.2)
 
@@ -731,7 +759,7 @@ Extends summary route group. All endpoints require Bearer JWT. Ownership via `ge
 - Gate: summary `approved`, proposal `proposed`, link `linked`.
 - Body (optional): `{ "confirmHighRisk": true }` — **required** for `reveal_status_update`.
 - Promotes canon by type, then sets `ai_proposals.status=accepted` + `chapter_summary_proposals.status=accepted`.
-- Order: validate → promote canon → mark accepted (no DB transaction — documented limitation).
+- Order: preflight → promote canon → `canon_promotion_applied` → mark accepted; on status failure compensate newly created canon + `canon_promotion_failed` (transaction-like, not DB RPC).
 - `fact` → creates `facts` row (`source=accepted_proposal`, `canon_status=confirmed`); duplicate exact text returns existing.
 - `character_update` → appends safe note to `characters.description` when `targetEntityId` + `changeSummary` present; else `409 unsupported_promotion`.
 - `relationship_update` → creates `relationship_speech_rules` only when full payload present; else `409`.
