@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-  Sprint 6 Summary/Delta/Approval API smoke test (Task 6.2–6.4).
+  Sprint 6 Summary/Delta/Approval API safety & regression smoke (Task 6.2–6.6).
 
 .DESCRIPTION
   Run from repo root:
@@ -75,12 +75,33 @@ function Test-JsonNoLeakMarkers {
   param([string]$JsonText)
   $patterns = @(
     'packetJson', 'packet_json', '"planningTruth"\s*:', 'planning_truth',
-    'full_prompt', 'openrouter', '"proseText"\s*:', '"prose_text"\s*:'
+    'full_prompt', 'openrouter', '"proseText"\s*:', '"prose_text"\s*:',
+    '"provider"\s*:', '"model"\s*:', '"token"\s*:'
   )
   foreach ($p in $patterns) {
     if ($JsonText -match $p) { return $false }
   }
   return $true
+}
+
+function Test-ProposalResponseSafe {
+  param([string]$JsonText)
+  $forbidden = @(
+    'prose_text', 'proseText', 'packet_json', 'packetJson', 'planningTruth',
+    'planning_truth', 'full_prompt', 'openrouter'
+  )
+  foreach ($f in $forbidden) {
+    if ($JsonText -match $f) { return $false }
+  }
+  return $true
+}
+
+function Get-SpeechRulesCount {
+  param([string]$ProjectId)
+  $res = Invoke-Api -Path "/api/projects/$ProjectId/speech-rules" -Headers $auth
+  if ($res.data -is [array]) { return $res.data.Count }
+  if ($null -ne $res.data.rules) { return $res.data.rules.Count }
+  return 0
 }
 
 function Bootstrap-FoundationLocked {
@@ -136,6 +157,7 @@ $ch1 = ($chapters.data.chapters | Where-Object { $_.chapterNumber -eq 1 } | Sele
 $foundationBefore = Invoke-Api -Path "/api/projects/$projectId/foundation" -Headers $auth
 $factsBefore = $foundationBefore.data.facts.Count
 $charsBefore = $foundationBefore.data.characters.Count
+$speechBefore = Get-SpeechRulesCount -ProjectId $projectId
 $loopsBefore = (Invoke-Api -Path "/api/projects/$projectId/outline/open-loops" -Headers $auth).data.openLoops.Count
 $revealsBefore = (Invoke-Api -Path "/api/projects/$projectId/outline/reveals" -Headers $auth).data.reveals.Count
 $propResBefore = Invoke-Api -Path "/api/projects/$projectId/proposals?includeResolved=true" -Headers $auth
@@ -171,9 +193,13 @@ Add-StepResult "summary response leak guard" $(if (Test-JsonNoLeakMarkers $genJs
 
 $list = Invoke-Api -Path "/api/projects/$projectId/summary" -Headers $auth
 Add-StepResult "GET summary list" $(if ($list.data.summaries.Count -ge 1) { "PASS" } else { "FAIL" }) ""
+$listJson = ($list | ConvertTo-Json -Depth 20)
+Add-StepResult "GET summary list leak guard" $(if (Test-JsonNoLeakMarkers $listJson) { "PASS" } else { "FAIL" }) ""
 
 $detail = Invoke-Api -Path "/api/projects/$projectId/summary/$summaryId" -Headers $auth
 Add-StepResult "GET summary detail" $(if ($detail.data.summary.id -eq $summaryId) { "PASS" } else { "FAIL" }) ""
+$detailJson = ($detail | ConvertTo-Json -Depth 20)
+Add-StepResult "GET summary detail leak guard" $(if (Test-JsonNoLeakMarkers $detailJson) { "PASS" } else { "FAIL" }) ""
 
 $byChapter = Invoke-Api -Path "/api/projects/$projectId/summary/by-chapter/$ch1" -Headers $auth
 Add-StepResult "GET summary by chapter" $(if ($byChapter.data.summary.id -eq $summaryId) { "PASS" } else { "FAIL" }) ""
@@ -190,15 +216,20 @@ Add-StepResult "regenerate=true new version" $(if (
     $genV2.data.created -eq $true -and $genV2.data.summary.summaryVersion -eq 2 -and $genV2.data.summary.isCurrent -eq $true
   ) { "PASS" } else { "FAIL" }) "v=$($genV2.data.summary.summaryVersion)"
 
+$v1Detail = Invoke-Api -Path "/api/projects/$projectId/summary/$summaryId" -Headers $auth
+Add-StepResult "regenerate supersedes previous" $(if ($v1Detail.data.summary.isCurrent -eq $false) { "PASS" } else { "FAIL" }) "v1 current=$($v1Detail.data.summary.isCurrent)"
+
 $foundationAfter = Invoke-Api -Path "/api/projects/$projectId/foundation" -Headers $auth
 $loopsAfter = (Invoke-Api -Path "/api/projects/$projectId/outline/open-loops" -Headers $auth).data.openLoops.Count
 $revealsAfter = (Invoke-Api -Path "/api/projects/$projectId/outline/reveals" -Headers $auth).data.reveals.Count
 $propResAfter = Invoke-Api -Path "/api/projects/$projectId/proposals?includeResolved=true" -Headers $auth
 $proposalsAfter = if ($propResAfter.data -is [array]) { $propResAfter.data.Count } else { 0 }
 
+$speechAfter = Get-SpeechRulesCount -ProjectId $projectId
 Add-StepResult "no canon mutation" $(if (
     $foundationAfter.data.facts.Count -eq $factsBefore -and
     $foundationAfter.data.characters.Count -eq $charsBefore -and
+    $speechAfter -eq $speechBefore -and
     $loopsAfter -eq $loopsBefore -and
     $revealsAfter -eq $revealsBefore
   ) { "PASS" } else { "FAIL" }) ""
@@ -236,6 +267,20 @@ Add-StepResult "GET delta leak guard" $(if (Test-JsonNoLeakMarkers $deltaGetJson
 
 $propGet = Invoke-Api -Path "/api/projects/$projectId/summary/$currentSummaryId/proposals" -Headers $auth
 Add-StepResult "GET summary proposals" $(if ($propGet.data.proposals.Count -ge 1) { "PASS" } else { "FAIL" }) ""
+$propGetJson = ($propGet | ConvertTo-Json -Depth 20)
+Add-StepResult "proposals response safe excerpt" $(if (Test-ProposalResponseSafe $propGetJson) { "PASS" } else { "FAIL" }) ""
+
+$allLinked = $true
+$noneAcceptedOnExtract = $true
+foreach ($p in $propGet.data.proposals) {
+  if ($p.linkStatus -ne "linked") { $allLinked = $false }
+  if ($p.status -ne "proposed" -or $p.linkStatus -eq "accepted") { $noneAcceptedOnExtract = $false }
+}
+Add-StepResult "proposals linked not accepted" $(if ($allLinked -and $noneAcceptedOnExtract) { "PASS" } else { "FAIL" }) ""
+
+Invoke-ApiExpectFailure -Name "delta regenerate blocked" -Method POST -Headers $auth `
+  -Path "/api/projects/$projectId/summary/$currentSummaryId/delta/extract" `
+  -Body '{"regenerate":true}'
 
 $extractAgain = Invoke-Api -Method POST -Path "/api/projects/$projectId/summary/$currentSummaryId/delta/extract" -Headers $auth -Body '{}'
 Add-StepResult "delta extract idempotent" $(if (
@@ -255,9 +300,11 @@ Add-StepResult "delta proposals added" $(if ($proposalsAfterDelta -gt $proposals
 $foundationDelta = Invoke-Api -Path "/api/projects/$projectId/foundation" -Headers $auth
 $loopsDelta = (Invoke-Api -Path "/api/projects/$projectId/outline/open-loops" -Headers $auth).data.openLoops.Count
 $revealsDelta = (Invoke-Api -Path "/api/projects/$projectId/outline/reveals" -Headers $auth).data.reveals.Count
+$speechDelta = Get-SpeechRulesCount -ProjectId $projectId
 Add-StepResult "no canon mutation after delta" $(if (
     $foundationDelta.data.facts.Count -eq $factsBefore -and
     $foundationDelta.data.characters.Count -eq $charsBefore -and
+    $speechDelta -eq $speechBefore -and
     $loopsDelta -eq $loopsBefore -and
     $revealsDelta -eq $revealsBefore
   ) { "PASS" } else { "FAIL" }) ""
@@ -266,6 +313,8 @@ $signupB = Invoke-RestMethod -Uri "$SupabaseUrl/auth/v1/signup" -Method POST `
   -Headers @{ apikey = $anonKey; Authorization = "Bearer $anonKey" } -ContentType "application/json" `
   -Body (@{ email = "s6b-$(Get-Random)@example.com"; password = $TestPassword } | ConvertTo-Json)
 $authB = @{ Authorization = "Bearer $($signupB.access_token)" }
+Invoke-ApiExpectFailure -Name "cross-user summary list 404" -Method GET -Headers $authB `
+  -Path "/api/projects/$projectId/summary"
 Invoke-ApiExpectFailure -Name "cross-user summary 404" -Method GET -Headers $authB `
   -Path "/api/projects/$projectId/summary/$summaryId"
 Invoke-ApiExpectFailure -Name "cross-user delta 404" -Method GET -Headers $authB `
@@ -295,12 +344,31 @@ Add-StepResult "approve no canon mutation" $(if ($factsAfterApprove -eq $factsBe
 $approveJson = ($approve | ConvertTo-Json -Depth 20)
 Add-StepResult "approve response leak guard" $(if (Test-JsonNoLeakMarkers $approveJson) { "PASS" } else { "FAIL" }) ""
 
+Add-StepResult "approve proposalCounts no accept" $(if ($approve.data.proposalCounts.accepted -eq 0) { "PASS" } else { "FAIL" }) "accepted=$($approve.data.proposalCounts.accepted)"
+
+$propAfterApprove = Invoke-Api -Path "/api/projects/$projectId/summary/$currentSummaryId/proposals" -Headers $auth
+$stillProposedAfterApprove = $true
+foreach ($p in $propAfterApprove.data.proposals) {
+  if ($p.status -ne "proposed") { $stillProposedAfterApprove = $false }
+}
+Add-StepResult "approve no auto-accept proposals" $(if ($stillProposedAfterApprove) { "PASS" } else { "FAIL" }) ""
+
+$sessionPostApprove = Invoke-Api -Path "/api/projects/$projectId/write/sessions/$sessionId" -Headers $auth
+Add-StepResult "session completed after approve" $(if ($sessionPostApprove.data.session.status -eq "completed") { "PASS" } else { "FAIL" }) ""
+Add-StepResult "writing state summarized" $(if ($sessionPostApprove.data.writingState.status -eq "summarized") { "PASS" } else { "FAIL" }) ""
+
+$approveAgain = Invoke-Api -Method POST -Path "/api/projects/$projectId/summary/$currentSummaryId/approve" -Headers $auth -Body '{}'
+Add-StepResult "approve idempotent" $(if ($approveAgain.data.alreadyApproved -eq $true) { "PASS" } else { "FAIL" }) ""
+
 if ($revealProposal) {
   Invoke-ApiExpectFailure -Name "reveal accept without confirm" -Method POST -Headers $auth `
     -Path "/api/projects/$projectId/summary/$currentSummaryId/proposals/$($revealProposal.proposalId)/accept" -Body '{}'
+  $factsBeforeReject = (Invoke-Api -Path "/api/projects/$projectId/foundation" -Headers $auth).data.facts.Count
   Invoke-Api -Method POST -Path "/api/projects/$projectId/summary/$currentSummaryId/proposals/$($revealProposal.proposalId)/reject" -Headers $auth `
     -Body '{"reason":"smoke skip reveal"}' | Out-Null
+  $factsAfterReject = (Invoke-Api -Path "/api/projects/$projectId/foundation" -Headers $auth).data.facts.Count
   Add-StepResult "reject linked proposal" "PASS" "reveal"
+  Add-StepResult "reject no canon mutation" $(if ($factsAfterReject -eq $factsBeforeReject) { "PASS" } else { "FAIL" }) ""
 } elseif ($factProposal) {
   Invoke-Api -Method POST -Path "/api/projects/$projectId/summary/$currentSummaryId/proposals/$($factProposal.proposalId)/reject" -Headers $auth `
     -Body '{"reason":"smoke reject path"}' | Out-Null
@@ -317,6 +385,9 @@ if ($revealProposal) {
 if ($factProposal -and $factProposal.status -eq "proposed") {
   $acceptFact = Invoke-Api -Method POST -Path "/api/projects/$projectId/summary/$currentSummaryId/proposals/$($factProposal.proposalId)/accept" -Headers $auth -Body '{}'
   Add-StepResult "accept fact proposal" $(if ($acceptFact.data.promoted.entityType -eq "fact") { "PASS" } else { "FAIL" }) ""
+  $acceptJson = ($acceptFact | ConvertTo-Json -Depth 20)
+  Add-StepResult "accept response leak guard" $(if (Test-JsonNoLeakMarkers $acceptJson) { "PASS" } else { "FAIL" }) ""
+  Add-StepResult "accept link status" $(if ($acceptFact.data.proposal.linkStatus -eq "accepted") { "PASS" } else { "FAIL" }) ""
 
   $factsAfterAccept = (Invoke-Api -Path "/api/projects/$projectId/foundation" -Headers $auth).data.facts.Count
   Add-StepResult "fact creates confirmed canon" $(if ($factsAfterAccept -gt $factsBeforeApprove) { "PASS" } else { "FAIL" }) "before=$factsBeforeApprove after=$factsAfterAccept"
@@ -339,6 +410,10 @@ Invoke-ApiExpectFailure -Name "cross-user approve 404" -Method POST -Headers $au
 if ($factProposal) {
   Invoke-ApiExpectFailure -Name "cross-user accept 404" -Method POST -Headers $authB `
     -Path "/api/projects/$projectId/summary/$currentSummaryId/proposals/$($factProposal.proposalId)/accept" -Body '{}'
+}
+if ($revealProposal) {
+  Invoke-ApiExpectFailure -Name "cross-user reject 404" -Method POST -Headers $authB `
+    -Path "/api/projects/$projectId/summary/$currentSummaryId/proposals/$($revealProposal.proposalId)/reject" -Body '{}'
 }
 
 $fail = @($Results | Where-Object { $_.Result -eq "FAIL" }).Count

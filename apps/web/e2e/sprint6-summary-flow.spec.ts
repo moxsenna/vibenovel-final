@@ -18,6 +18,16 @@ const DOM_LEAK_PATTERNS = [
   /"proseText"\s*:/i,
   /openrouter/i,
   /full_prompt/i,
+  /"provider"\s*:/i,
+  /"model"\s*:/i,
+  /"token"\s*:/i,
+];
+
+const FORBIDDEN_OVERCLAIM_PATTERNS = [
+  /semua perubahan sudah diterapkan/i,
+  /canon sudah diperbarui/i,
+  /fakta sudah masuk canon setelah ringkasan/i,
+  /semua usulan otomatis/i,
 ];
 
 async function assertNoSummaryLeaksInDom(page: Page) {
@@ -30,6 +40,14 @@ async function assertNoSummaryLeaksInDom(page: Page) {
   }
 
   expect(bodyText.toLowerCase()).not.toContain("planningtruthredacted");
+}
+
+async function assertNoCanonOverclaim(page: Page) {
+  const bodyText = await page.locator("body").innerText();
+  for (const pattern of FORBIDDEN_OVERCLAIM_PATTERNS) {
+    expect(bodyText).not.toMatch(pattern);
+  }
+  expect(bodyText).toMatch(/tidak otomatis memasukkan/i);
 }
 
 async function assertSummaryPageNotBlank(page: Page, markers: string[]) {
@@ -94,6 +112,7 @@ test.describe("Sprint 6 web smoke — summary API mode", () => {
 
     await expect(page.getByRole("heading", { name: "Ringkasan Bab" })).toBeVisible();
     await assertNoSummaryLeaksInDom(page);
+    await assertNoCanonOverclaim(page);
 
     const extractBtn = page.getByRole("button", { name: /Ekstrak Perubahan Cerita/i });
     await expect(extractBtn).toBeVisible({ timeout: 20_000 });
@@ -102,6 +121,12 @@ test.describe("Sprint 6 web smoke — summary API mode", () => {
 
     await expect(page.getByText("Usulan Perubahan Canon")).toBeVisible({ timeout: 20_000 });
     await assertNoSummaryLeaksInDom(page);
+
+    const manualConfirmBadges = page.getByText("Butuh konfirmasi manual");
+    if ((await manualConfirmBadges.count()) > 0) {
+      const revealCard = manualConfirmBadges.first().locator("xpath=ancestor::article[1]");
+      await expect(revealCard.getByRole("button", { name: "Terima" })).toBeDisabled();
+    }
 
     const approveBtn = page.getByRole("button", { name: /Setujui Ringkasan Bab/i });
     await expect(approveBtn).toBeVisible();
@@ -113,29 +138,41 @@ test.describe("Sprint 6 web smoke — summary API mode", () => {
     await expect(page.getByText(/Disetujui|Bab Disetujui/i).first()).toBeVisible({
       timeout: 20_000,
     });
+    await expect(page.getByText("Usulan Perubahan Canon")).toBeVisible();
+    await assertNoCanonOverclaim(page);
 
-    const acceptButtons = page.getByRole("button", { name: "Terima" });
-    const acceptCount = await acceptButtons.count();
-    if (acceptCount > 0) {
-      const firstAccept = acceptButtons.first();
-      const disabled = await firstAccept.isDisabled();
-      if (!disabled) {
-        await firstAccept.click();
+    const factCard = page
+      .locator("article")
+      .filter({ hasText: "Usulan Fakta" })
+      .filter({ has: page.getByRole("button", { name: "Terima" }) })
+      .first();
+    if ((await factCard.count()) > 0) {
+      const factAccept = factCard.getByRole("button", { name: "Terima" });
+      if (!(await factAccept.isDisabled())) {
+        await factAccept.click();
         await expect(page.getByText(/Memproses/i)).toBeHidden({ timeout: 30_000 });
+        await expect(factCard.getByText("accepted", { exact: false })).toBeVisible({
+          timeout: 15_000,
+        });
       }
     }
 
-    const rejectButtons = page.getByRole("button", { name: "Tolak" });
-    if ((await rejectButtons.count()) > 0) {
-      const rejectBtn = rejectButtons.first();
-      if (!(await rejectBtn.isDisabled())) {
-        await rejectBtn.click();
-        await expect(page.getByText(/Memproses/i)).toBeHidden({ timeout: 30_000 });
+    const rejectTargets = page
+      .locator("article")
+      .filter({ has: page.getByRole("button", { name: "Tolak" }) });
+    if ((await rejectTargets.count()) > 0) {
+      for (let i = 0; i < (await rejectTargets.count()); i++) {
+        const card = rejectTargets.nth(i);
+        const rejectBtn = card.getByRole("button", { name: "Tolak" });
+        if (!(await rejectBtn.isDisabled())) {
+          await rejectBtn.click();
+          await expect(page.getByText(/Memproses/i)).toBeHidden({ timeout: 30_000 });
+          break;
+        }
       }
     }
 
     await assertNoSummaryLeaksInDom(page);
-
     await expect(page.getByText("Usulan Perubahan Canon")).toBeVisible();
   });
 });

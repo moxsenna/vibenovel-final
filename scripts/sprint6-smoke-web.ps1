@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-  Sprint 6 web E2E smoke test for Summary page (/summary).
+  Sprint 6 web E2E safety smoke for Summary page (/summary) — Task 6.6.
 
 .DESCRIPTION
   Runs Playwright browser checks for summary page mock mode (default) and

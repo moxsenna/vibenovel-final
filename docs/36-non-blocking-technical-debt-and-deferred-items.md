@@ -135,12 +135,12 @@ Sprint 5 closed with **zero blockers**. Items below are non-blocking unless mark
 
 ## E. Important Current Items (quick reference)
 
-1. **`smoke:api`** remains Sprint 2 regression — use **`smoke:api:sprint5`** for Write Room safety (Task 5.8).
-2. **API-mode write E2E** not in GitHub Actions — local `npm run smoke:web:write -- -IncludeApiMode`.
-3. **No audit logs** for outline/write operations.
-4. **No DB transaction wrapper** for multi-step prose/outline workflows.
-5. **SummaryPage still mock** — no chapter summary canon.
-6. **No `chapter_summaries` table** yet.
+1. **`smoke:api`** remains Sprint 2 regression — use **`smoke:api:sprint5`** (Write Room) and **`smoke:api:sprint6`** (summary/delta/approval safety, Task 6.6).
+2. **API-mode web E2E** not in GitHub Actions — local `npm run smoke:web:write -- -IncludeApiMode` and `npm run smoke:web:summary -- -IncludeApiMode`.
+3. **No audit logs** for outline/write/summary operations (summary approve uses `project_updated` metadata).
+4. **No DB transaction wrapper** for multi-step prose/outline/summary workflows.
+5. **Publish package deferred Sprint 7** — SummaryPage API mode covers summary/delta/proposal review only.
+6. **High-risk reveal `confirmHighRisk` UI** not in web — API requires manual confirm; accept disabled in UI.
 7. **Prose leakage markers** may false-positive on rare fictional text containing `model`/`token`/`provider`.
 8. **No prose delete endpoint**.
 9. **Context Packet safety** — API/smoke only, not DB-enforced.

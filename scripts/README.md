@@ -15,11 +15,11 @@ Run all commands from **repo root**. Windows/PowerShell primary.
 | `smoke:api` | `sprint2-smoke-api.ps1` | API Sprint 2 regression (17 steps) | Docker, `supabase start`, `dev:api`, `apps/api/.dev.vars` |
 | `smoke:api:base` | same as `smoke:api` | Alias — unchanged semantics for CI/docs | Same |
 | `smoke:api:sprint5` | `sprint5-smoke-api.ps1` | Write Room + leak guards (49 steps) | Same as API base |
-| `smoke:api:sprint6` | `sprint6-smoke-api.ps1` | Summary/delta/approval API (43 steps) | Same as API base |
+| `smoke:api:sprint6` | `sprint6-smoke-api.ps1` | Sprint 6 summary/delta/approval safety (Task 6.6) | Same as API base |
 | `smoke:web` | `sprint3-smoke-web.ps1` | Web mock (intake/concepts/foundation) | `dev:web`, Playwright chromium |
 | `smoke:web:outline` | `sprint4-smoke-web.ps1` | Web mock `/outline`; add `-- -IncludeApiMode` for API | `dev:web`; API mode + `VITE_USE_MOCKS=false` |
 | `smoke:web:write` | `sprint5-smoke-web.ps1` | Web mock `/write`; add `-- -IncludeApiMode` for API | Same |
-| `smoke:web:summary` | `sprint6-smoke-web.ps1` | Web mock `/summary`; add `-- -IncludeApiMode` for API | Same |
+| `smoke:web:summary` | `sprint6-smoke-web.ps1` | Web mock `/summary` + leak guards; `-- -IncludeApiMode` for API flow | Same |
 | `smoke:all:local` | `smoke-all-local.ps1` | API base + sprint5 + web mock (no API-mode web) | All API + web prerequisites |
 | `smoke:all:local:full` | `smoke-all-local.ps1 -IncludeApiMode` | Above + web API-mode E2E | + restart `dev:web` after `VITE_USE_MOCKS=false` |
 
