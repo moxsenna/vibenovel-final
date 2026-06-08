@@ -1,6 +1,12 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
-import type { ChapterOutline, PublishPackage as ApiPublishPackage } from "@vibenovel/shared";
+import type {
+  ChapterOutline,
+  CreditBalance,
+  PublishPackage as ApiPublishPackage,
+  WriterQualityMode,
+} from "@vibenovel/shared";
+import { WRITER_QUALITY_MODES } from "@vibenovel/shared";
 import { useAuth } from "@/context/AuthContext";
 import { ApiClientError } from "@/lib/api";
 import { shouldUseMocks } from "@/lib/env";
@@ -11,6 +17,19 @@ import {
 } from "@/lib/publish-mappers";
 import { resolveProjectIdForRoute } from "@/lib/project-context";
 import { mockPublishPackage } from "@/mocks/publishPackage";
+import {
+  buildPublishCopyIdempotencyKey,
+  formatPublishCopyCreditCostLabel,
+  formatQualityModeLabel,
+  getPublishCopyCreditCost,
+  improvePublishCopy,
+  mapAiPublishCopyErrorCode,
+  normalizeQualityMode,
+  PUBLISH_COPY_AI_FIELDS,
+  type PublishCopyAiField,
+  type PublishCopySuggestions,
+} from "@/services/ai";
+import { fetchCreditBalance } from "@/services/credits";
 import { fetchOutlineBundle } from "@/services/outline";
 import {
   generatePublishPackage,
@@ -18,7 +37,9 @@ import {
   markPublishPackageExported,
   updatePublishChecklist,
   updatePublishPackageFields,
+  type PublishFieldPatch,
 } from "@/services/publish";
+import { fetchProjectSettings } from "@/services/settings";
 import { getSummaryByChapter } from "@/services/summary";
 import type { PublishPackage } from "@/types";
 
@@ -92,6 +113,30 @@ function emptyPublishShell(
   };
 }
 
+const DEFAULT_AI_FIELDS: PublishCopyAiField[] = [
+  PUBLISH_COPY_AI_FIELDS.teaser,
+  PUBLISH_COPY_AI_FIELDS.caption,
+];
+
+function aiFieldToEditableKey(field: PublishCopyAiField): PublishEditableFieldKey {
+  return field;
+}
+
+function mapPublishCopyAiError(error: unknown): string {
+  if (error instanceof ApiClientError) {
+    if (error.status === 409) {
+      const missing = Array.isArray((error.details as { missing?: string[] })?.missing)
+        ? (error.details as { missing: string[] }).missing
+        : [];
+      if (missing.includes("exported_package_locked")) {
+        return "Paket sudah ditandai exported dan tidak bisa diperbaiki.";
+      }
+    }
+    return mapAiPublishCopyErrorCode(error.code, error.message);
+  }
+  return "Gagal membuat saran copy AI.";
+}
+
 export interface UsePublishDataResult {
   pkg: PublishPackage;
   source: PublishDataSource;
@@ -109,10 +154,33 @@ export interface UsePublishDataResult {
   isReadonly: boolean;
   summaryApproved: boolean;
   genre: string | null;
+  publishCopyAiLoading: boolean;
+  publishCopyAiError: string | null;
+  publishCopyAiNotice: string | null;
+  publishCopySuggestions: PublishCopySuggestions | null;
+  selectedAiFields: PublishCopyAiField[];
+  publishCopyInstruction: string;
+  applyingSuggestionField: PublishCopyAiField | null;
+  applyingAllSuggestions: boolean;
+  publishCopyCreditCostLabel: string | null;
+  publishCopyQualityModeLabel: string | null;
+  publishCopyCreditBalance: number | null;
+  publishCopyCreditLoading: boolean;
+  publishCopyCreditError: string | null;
+  publishCopyInsufficientCredit: boolean;
+  publishCopyRemainingAfterImprove: number | null;
+  publishCopyAiUnavailableReason: string | null;
+  setSelectedAiFields: (fields: PublishCopyAiField[]) => void;
+  setPublishCopyInstruction: (text: string) => void;
   generatePackageAction: () => Promise<void>;
   saveFieldAction: (field: PublishEditableFieldKey, value: string) => Promise<void>;
   toggleChecklistItem: (itemId: string) => Promise<void>;
   markExportedAction: () => Promise<void>;
+  improvePublishCopyWithAi: () => Promise<void>;
+  publishCopyAiCanRun: boolean;
+  applyPublishCopySuggestion: (field: PublishCopyAiField) => Promise<void>;
+  applyAllPublishCopySuggestions: () => Promise<void>;
+  dismissPublishCopySuggestion: (field: PublishCopyAiField) => void;
 }
 
 export function usePublishData(): UsePublishDataResult {
@@ -139,11 +207,40 @@ export function usePublishData(): UsePublishDataResult {
   const [apiPkg, setApiPkg] = useState<ApiPublishPackage | null>(null);
   const [summaryApproved, setSummaryApproved] = useState(false);
   const [summaryId, setSummaryId] = useState<string | null>(null);
+  const [qualityMode, setQualityMode] = useState<WriterQualityMode>(WRITER_QUALITY_MODES.seimbang);
+  const [creditBalance, setCreditBalance] = useState<CreditBalance | null>(null);
+  const [creditLoading, setCreditLoading] = useState(false);
+  const [creditError, setCreditError] = useState<string | null>(null);
+  const [publishCopyAiLoading, setPublishCopyAiLoading] = useState(false);
+  const [publishCopyAiError, setPublishCopyAiError] = useState<string | null>(null);
+  const [publishCopyAiNotice, setPublishCopyAiNotice] = useState<string | null>(null);
+  const [publishCopySuggestions, setPublishCopySuggestions] =
+    useState<PublishCopySuggestions | null>(null);
+  const [selectedAiFields, setSelectedAiFields] =
+    useState<PublishCopyAiField[]>(DEFAULT_AI_FIELDS);
+  const [publishCopyInstruction, setPublishCopyInstruction] = useState("");
+  const [applyingSuggestionField, setApplyingSuggestionField] =
+    useState<PublishCopyAiField | null>(null);
+  const [applyingAllSuggestions, setApplyingAllSuggestions] = useState(false);
 
   const isExported = apiPkg?.status === "exported";
   const isReadonly = !apiMode || source !== "api" || isExported;
   const hasPackage = Boolean(packageId);
   const genre = apiPkg?.genre ?? null;
+
+  const resetPublishCopyAiState = useCallback(() => {
+    setPublishCopyAiLoading(false);
+    setPublishCopyAiError(null);
+    setPublishCopyAiNotice(null);
+    setPublishCopySuggestions(null);
+    setSelectedAiFields(DEFAULT_AI_FIELDS);
+    setPublishCopyInstruction("");
+    setApplyingSuggestionField(null);
+    setApplyingAllSuggestions(false);
+    setCreditBalance(null);
+    setCreditLoading(false);
+    setCreditError(null);
+  }, []);
 
   const applyMock = useCallback((message: string | null) => {
     setPkg(mockPublishPackage);
@@ -153,7 +250,8 @@ export function usePublishData(): UsePublishDataResult {
     setPackageId(null);
     setSummaryApproved(false);
     setSummaryId(null);
-  }, []);
+    resetPublishCopyAiState();
+  }, [resetPublishCopyAiState]);
 
   const applyApiPackage = useCallback(
     (row: ApiPublishPackage) => {
@@ -166,6 +264,31 @@ export function usePublishData(): UsePublishDataResult {
     },
     [routeProjectId],
   );
+
+  const refreshCreditBalance = useCallback(async () => {
+    if (!apiMode || !token) return;
+    setCreditLoading(true);
+    setCreditError(null);
+    try {
+      const balance = await fetchCreditBalance(token);
+      setCreditBalance(balance);
+    } catch {
+      setCreditBalance(null);
+      setCreditError("Saldo belum bisa dimuat; server tetap memvalidasi saat klik.");
+    } finally {
+      setCreditLoading(false);
+    }
+  }, [apiMode, token]);
+
+  const loadQualityMode = useCallback(async () => {
+    if (!apiMode || !token || !projectId) return;
+    try {
+      const settings = await fetchProjectSettings(projectId, token);
+      setQualityMode(normalizeQualityMode(settings.qualityMode));
+    } catch {
+      setQualityMode(WRITER_QUALITY_MODES.seimbang);
+    }
+  }, [apiMode, projectId, token]);
 
   const loadPublishRoom = useCallback(async () => {
     if (!apiMode || !token) return;
@@ -223,6 +346,7 @@ export function usePublishData(): UsePublishDataResult {
     if (!apiMode) {
       setPkg(mockPublishPackage);
       setSource("mock");
+      resetPublishCopyAiState();
       setNotice(
         useMocks
           ? null
@@ -232,7 +356,13 @@ export function usePublishData(): UsePublishDataResult {
     }
 
     void loadPublishRoom();
-  }, [apiMode, authLoading, loadPublishRoom, useMocks]);
+  }, [apiMode, authLoading, loadPublishRoom, resetPublishCopyAiState, useMocks]);
+
+  useEffect(() => {
+    if (!apiMode || !token || !projectId) return;
+    void refreshCreditBalance();
+    void loadQualityMode();
+  }, [apiMode, loadQualityMode, projectId, refreshCreditBalance, token]);
 
   const generatePackageAction = useCallback(async () => {
     if (!apiMode || !token || !projectId || !chapterOutlineId) return;
@@ -305,6 +435,182 @@ export function usePublishData(): UsePublishDataResult {
     [apiMode, apiPkg, applyApiPackage, isExported, packageId, projectId, token],
   );
 
+  const dismissPublishCopySuggestion = useCallback((field: PublishCopyAiField) => {
+    setPublishCopySuggestions((prev) => {
+      if (!prev) return null;
+      const next = { ...prev };
+      delete next[field];
+      return Object.keys(next).length > 0 ? next : null;
+    });
+  }, []);
+
+  const improvePublishCopyWithAi = useCallback(async () => {
+    if (
+      !apiMode ||
+      !token ||
+      !projectId ||
+      !packageId ||
+      source !== "api" ||
+      isExported ||
+      publishCopyAiLoading
+    ) {
+      return;
+    }
+
+    if (selectedAiFields.length === 0) {
+      setPublishCopyAiError("Pilih minimal satu field untuk diperbaiki.");
+      return;
+    }
+
+    const copyCost = getPublishCopyCreditCost(qualityMode);
+    if (creditBalance != null && creditBalance.balance < copyCost) {
+      setPublishCopyAiError("Kredit tidak cukup.");
+      return;
+    }
+
+    setPublishCopyAiLoading(true);
+    setPublishCopyAiError(null);
+    setPublishCopyAiNotice(null);
+
+    const idempotencyKey = buildPublishCopyIdempotencyKey(packageId);
+    const instruction = publishCopyInstruction.trim();
+
+    try {
+      const result = await improvePublishCopy(projectId, token, {
+        packageId,
+        fields: selectedAiFields,
+        qualityMode,
+        idempotencyKey,
+        ...(instruction ? { instruction } : {}),
+      });
+
+      setPublishCopySuggestions(result.suggestions);
+
+      if (result.creditBalance) {
+        setCreditBalance(result.creditBalance);
+      } else {
+        await refreshCreditBalance();
+      }
+
+      const cost = result.generationAttempt.creditCost;
+      const remaining =
+        result.creditBalance?.balance ??
+        (creditBalance != null ? Math.max(0, creditBalance.balance - cost) : null);
+      const balanceNote = remaining != null ? ` Sisa: ${remaining}.` : "";
+      const replayNote = result.idempotentReplay ? " (hasil permintaan sebelumnya)" : "";
+      setPublishCopyAiNotice(
+        `Saran copy siap ditinjau. Terpotong ${cost} kredit.${balanceNote}${replayNote}`,
+      );
+    } catch (error) {
+      setPublishCopyAiError(mapPublishCopyAiError(error));
+    } finally {
+      setPublishCopyAiLoading(false);
+    }
+  }, [
+    apiMode,
+    creditBalance,
+    isExported,
+    packageId,
+    projectId,
+    publishCopyAiLoading,
+    publishCopyInstruction,
+    qualityMode,
+    refreshCreditBalance,
+    selectedAiFields,
+    source,
+    token,
+  ]);
+
+  const applyPublishCopySuggestion = useCallback(
+    async (field: PublishCopyAiField) => {
+      if (
+        !apiMode ||
+        !token ||
+        !projectId ||
+        !packageId ||
+        isExported ||
+        !publishCopySuggestions?.[field]
+      ) {
+        return;
+      }
+
+      const value = publishCopySuggestions[field];
+      if (!value?.trim()) return;
+
+      setApplyingSuggestionField(field);
+      setPublishCopyAiError(null);
+
+      try {
+        const patch = uiFieldToApiPatch(aiFieldToEditableKey(field), value);
+        const result = await updatePublishPackageFields(projectId, packageId, patch, token);
+        applyApiPackage(result.publishPackage);
+        dismissPublishCopySuggestion(field);
+        setPublishCopyAiNotice(`Field ${field} berhasil diterapkan ke paket publish.`);
+      } catch (error) {
+        setPublishCopyAiError(userFacingError(error));
+      } finally {
+        setApplyingSuggestionField(null);
+      }
+    },
+    [
+      apiMode,
+      applyApiPackage,
+      dismissPublishCopySuggestion,
+      isExported,
+      packageId,
+      projectId,
+      publishCopySuggestions,
+      token,
+    ],
+  );
+
+  const applyAllPublishCopySuggestions = useCallback(async () => {
+    if (
+      !apiMode ||
+      !token ||
+      !projectId ||
+      !packageId ||
+      isExported ||
+      !publishCopySuggestions
+    ) {
+      return;
+    }
+
+    const patch: PublishFieldPatch = {};
+    for (const [field, value] of Object.entries(publishCopySuggestions) as [
+      PublishCopyAiField,
+      string,
+    ][]) {
+      if (value?.trim()) {
+        Object.assign(patch, uiFieldToApiPatch(aiFieldToEditableKey(field), value));
+      }
+    }
+
+    if (Object.keys(patch).length === 0) return;
+
+    setApplyingAllSuggestions(true);
+    setPublishCopyAiError(null);
+
+    try {
+      const result = await updatePublishPackageFields(projectId, packageId, patch, token);
+      applyApiPackage(result.publishPackage);
+      setPublishCopySuggestions(null);
+      setPublishCopyAiNotice("Semua saran copy berhasil diterapkan ke paket publish.");
+    } catch (error) {
+      setPublishCopyAiError(userFacingError(error));
+    } finally {
+      setApplyingAllSuggestions(false);
+    }
+  }, [
+    apiMode,
+    applyApiPackage,
+    isExported,
+    packageId,
+    projectId,
+    publishCopySuggestions,
+    token,
+  ]);
+
   const markExportedAction = useCallback(async () => {
     if (!apiMode || !token || !projectId || !packageId) return;
 
@@ -325,6 +631,48 @@ export function usePublishData(): UsePublishDataResult {
     }
   }, [apiMode, applyApiPackage, packageId, projectId, token]);
 
+  const publishCopyCost = getPublishCopyCreditCost(qualityMode);
+  const knownBalance = creditBalance?.balance ?? null;
+  const publishCopyInsufficientCredit =
+    knownBalance != null && knownBalance < publishCopyCost;
+  const publishCopyRemainingAfterImprove =
+    knownBalance != null ? Math.max(0, knownBalance - publishCopyCost) : null;
+
+  const publishCopyAiCanRun =
+    apiMode &&
+    source === "api" &&
+    hasPackage &&
+    !isExported &&
+    selectedAiFields.length > 0 &&
+    !publishCopyAiLoading &&
+    !publishCopyInsufficientCredit;
+
+  const publishCopyAiUnavailableReason = useMemo(() => {
+    if (!apiMode || source !== "api") {
+      return "Perbaiki copy dengan AI hanya tersedia dalam mode API.";
+    }
+    if (!hasPackage) {
+      return "Buat paket publish terlebih dahulu.";
+    }
+    if (isExported) {
+      return null;
+    }
+    if (selectedAiFields.length === 0) {
+      return "Pilih minimal satu field untuk diperbaiki.";
+    }
+    if (publishCopyInsufficientCredit) {
+      return "Kredit tidak cukup untuk membuat saran copy.";
+    }
+    return null;
+  }, [
+    apiMode,
+    hasPackage,
+    isExported,
+    publishCopyInsufficientCredit,
+    selectedAiFields.length,
+    source,
+  ]);
+
   return {
     pkg,
     source,
@@ -342,9 +690,32 @@ export function usePublishData(): UsePublishDataResult {
     isReadonly,
     summaryApproved,
     genre,
+    publishCopyAiLoading,
+    publishCopyAiError,
+    publishCopyAiNotice,
+    publishCopySuggestions,
+    selectedAiFields,
+    publishCopyInstruction,
+    applyingSuggestionField,
+    applyingAllSuggestions,
+    publishCopyCreditCostLabel: formatPublishCopyCreditCostLabel(qualityMode),
+    publishCopyQualityModeLabel: formatQualityModeLabel(qualityMode),
+    publishCopyCreditBalance: knownBalance,
+    publishCopyCreditLoading: creditLoading,
+    publishCopyCreditError: creditError,
+    publishCopyInsufficientCredit,
+    publishCopyRemainingAfterImprove,
+    publishCopyAiUnavailableReason,
+    setSelectedAiFields,
+    setPublishCopyInstruction,
     generatePackageAction,
     saveFieldAction,
     toggleChecklistItem,
     markExportedAction,
+    improvePublishCopyWithAi,
+    publishCopyAiCanRun,
+    applyPublishCopySuggestion,
+    applyAllPublishCopySuggestions,
+    dismissPublishCopySuggestion,
   };
 }

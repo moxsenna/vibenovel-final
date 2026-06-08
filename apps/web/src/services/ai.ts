@@ -49,6 +49,12 @@ const PROSE_REWRITE_CREDIT_COSTS: Record<WriterQualityMode, number> = {
   [WRITER_QUALITY_MODES.terbaik]: 12,
 };
 
+const PUBLISH_COPY_CREDIT_COSTS: Record<WriterQualityMode, number> = {
+  [WRITER_QUALITY_MODES.hemat]: 3,
+  [WRITER_QUALITY_MODES.seimbang]: 6,
+  [WRITER_QUALITY_MODES.terbaik]: 12,
+};
+
 const QUALITY_SET = new Set<string>(Object.values(WRITER_QUALITY_MODES));
 
 export function normalizeQualityMode(value: string | null | undefined): WriterQualityMode {
@@ -64,6 +70,10 @@ export function getProseBeatCreditCost(qualityMode: WriterQualityMode): number {
 
 export function getProseRewriteCreditCost(qualityMode: WriterQualityMode): number {
   return PROSE_REWRITE_CREDIT_COSTS[qualityMode] ?? PROSE_REWRITE_CREDIT_COSTS.seimbang;
+}
+
+export function getPublishCopyCreditCost(qualityMode: WriterQualityMode): number {
+  return PUBLISH_COPY_CREDIT_COSTS[qualityMode] ?? PUBLISH_COPY_CREDIT_COSTS.seimbang;
 }
 
 export function formatQualityModeLabel(qualityMode: WriterQualityMode): string {
@@ -85,6 +95,15 @@ export function formatProseBeatActionCostLabel(qualityMode: WriterQualityMode): 
 export function formatProseRewriteActionCostLabel(qualityMode: WriterQualityMode): string {
   const cost = getProseRewriteCreditCost(qualityMode);
   return `Biaya rewrite: ${cost} kredit`;
+}
+
+export function formatPublishCopyCreditCostLabel(qualityMode: WriterQualityMode): string {
+  const cost = getPublishCopyCreditCost(qualityMode);
+  return `Biaya: ${cost} kredit`;
+}
+
+export function formatPublishCopyTierCostsLabel(): string {
+  return "Biaya: 3/6/12 kredit (hemat/seimbang/terbaik)";
 }
 
 export const PROSE_REWRITE_MODES = {
@@ -134,6 +153,39 @@ export function buildRewriteProseIdempotencyKey(beatId: string): string {
   return `rewrite-${beatId}-${Date.now()}-${suffix}`;
 }
 
+export function buildPublishCopyIdempotencyKey(packageId: string): string {
+  const suffix = Math.random().toString(36).slice(2, 10);
+  return `pubcopy-${packageId}-${Date.now()}-${suffix}`;
+}
+
+export const PUBLISH_COPY_AI_FIELDS = {
+  teaser: "teaser",
+  caption: "caption",
+  readerQuestion: "readerQuestion",
+  shortSynopsis: "shortSynopsis",
+  nextChapterTeaser: "nextChapterTeaser",
+} as const;
+
+export type PublishCopyAiField =
+  (typeof PUBLISH_COPY_AI_FIELDS)[keyof typeof PUBLISH_COPY_AI_FIELDS];
+
+export type PublishCopySuggestions = Partial<Record<PublishCopyAiField, string>>;
+
+export interface ImprovePublishCopyInput {
+  packageId: string;
+  fields: PublishCopyAiField[];
+  qualityMode?: WriterQualityMode;
+  instruction?: string;
+  idempotencyKey: string;
+}
+
+export interface ImprovePublishCopyResponse {
+  suggestions: PublishCopySuggestions;
+  generationAttempt: GenerationAttemptSummary;
+  creditBalance: CreditBalance | null;
+  idempotentReplay: boolean;
+}
+
 export interface RewriteBeatProseInput {
   proseVersionId?: string;
   beatId?: string;
@@ -176,6 +228,21 @@ export function mapAiGenerationErrorCode(code: string): string {
   }
 }
 
+export function mapAiPublishCopyErrorCode(code: string, fallbackMessage?: string): string {
+  switch (code) {
+    case "AI_OUTPUT_UNSAFE":
+      return "Saran copy ditolak oleh pemeriksaan keamanan.";
+    case "GENERATION_IN_PROGRESS":
+      return "Permintaan copy AI masih berjalan.";
+    case "GENERATION_FAILED":
+      return "Permintaan copy AI sebelumnya gagal. Coba lagi dengan permintaan baru.";
+    case "BAD_REQUEST":
+      return fallbackMessage?.trim() || "Permintaan copy AI tidak valid.";
+    default:
+      return mapAiGenerationErrorCode(code);
+  }
+}
+
 export function mapAiRewriteErrorCode(code: string, fallbackMessage?: string): string {
   switch (code) {
     case "NO_PROSE_TO_REWRITE":
@@ -211,6 +278,17 @@ export async function rewriteBeatProse(
 ): Promise<RewriteBeatProseResponse> {
   return apiRequest<RewriteBeatProseResponse>(
     `/api/projects/${projectId}/ai/rewrite-prose`,
+    { method: "POST", body: input, token },
+  );
+}
+
+export async function improvePublishCopy(
+  projectId: string,
+  token: string | null | undefined,
+  input: ImprovePublishCopyInput,
+): Promise<ImprovePublishCopyResponse> {
+  return apiRequest<ImprovePublishCopyResponse>(
+    `/api/projects/${projectId}/ai/improve-publish-copy`,
     { method: "POST", body: input, token },
   );
 }

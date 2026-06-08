@@ -32,6 +32,7 @@
     "smoke:web:credit-ui": "powershell -ExecutionPolicy Bypass -File scripts/sprint9-smoke-web.ps1",
     "smoke:web:rewrite": "powershell -ExecutionPolicy Bypass -File scripts/sprint9-smoke-web.ps1",
     "smoke:web:sprint9": "powershell -ExecutionPolicy Bypass -File scripts/sprint9-smoke-web.ps1",
+    "smoke:web:publish-ai": "powershell -ExecutionPolicy Bypass -File scripts/sprint9-smoke-web.ps1 -PublishAiOnly",
     "smoke:web:summary": "powershell -ExecutionPolicy Bypass -File scripts/sprint6-smoke-web.ps1",
     "smoke:web:publish": "powershell -ExecutionPolicy Bypass -File scripts/sprint7-smoke-web.ps1",
     "smoke:all:local": "powershell -ExecutionPolicy Bypass -File scripts/smoke-all-local.ps1",

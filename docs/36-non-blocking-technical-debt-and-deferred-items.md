@@ -207,7 +207,7 @@ Sprint 5 closed with **zero blockers**. Items below are non-blocking unless mark
 
 **Sprint 8 smoke note:** `smoke:api:sprint8` baseline (AI disabled) in `smoke:all:local`. Live OpenRouter verified: [`docs/47`](47-live-openrouter-staging-smoke-report.md) — model `google/gemini-2.5-flash` (hemat).
 
-**Remaining AI debt (non-blocking):** PublishPage AI UI (apply copy), topup/payment, true RPC credit mutation, CI E2E, `AI_TIMEOUT_MS` wiring, production Worker secret rollout.
+**Remaining AI debt (non-blocking):** topup/payment, true RPC credit mutation, CI E2E, `AI_TIMEOUT_MS` wiring, production Worker secret rollout.
 
 **Addressed Task 9.1:** `estimated_cost_usd` population via `model-cost-map.ts` (internal observability only; fixed `credit_cost` billing unchanged).
 
@@ -217,7 +217,9 @@ Sprint 5 closed with **zero blockers**. Items below are non-blocking unless mark
 
 **Addressed Task 9.4:** WritePage rewrite UI — mode picker + `Perbaiki Teks` calls rewrite API; biaya 3/6/12 kredit; mock/fallback tidak fake rewrite; `smoke:web:rewrite` / `smoke:web:sprint9`.
 
-**Addressed Task 9.5:** Publish copy AI API (`POST /ai/improve-publish-copy`) — suggestion-first (no `publish_packages` mutation); suggestions in `generation_attempt.metadata.suggestions`; biaya 3/6/12 kredit; overclaim guard; `smoke:api:sprint9` publish-copy block. User apply via PATCH — Task 9.6 UI pending.
+**Addressed Task 9.5:** Publish copy AI API (`POST /ai/improve-publish-copy`) — suggestion-first (no `publish_packages` mutation); suggestions in `generation_attempt.metadata.suggestions`; biaya 3/6/12 kredit; overclaim guard; `smoke:api:sprint9` publish-copy block.
+
+**Addressed Task 9.6:** PublishPage AI UI — panel **Perbaiki Copy dengan AI**; suggestions displayed; user **Terapkan** via existing `PATCH .../publish/:packageId/fields`; mock/fallback no fake AI; `smoke:web:publish-ai` / `smoke:web:sprint9`.
 
 ---
 

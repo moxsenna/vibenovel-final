@@ -1,5 +1,6 @@
 import {
   PublishActionSection,
+  PublishAiCopyPanel,
   PublishChecklistPanel,
   PublishEditableField,
   PublishIntegrationNotice,
@@ -32,10 +33,32 @@ export function PublishPage() {
     notice,
     workflowNotice,
     actionError,
+    publishCopyAiLoading,
+    publishCopyAiError,
+    publishCopyAiNotice,
+    publishCopySuggestions,
+    selectedAiFields,
+    publishCopyInstruction,
+    applyingSuggestionField,
+    applyingAllSuggestions,
+    publishCopyCreditCostLabel,
+    publishCopyQualityModeLabel,
+    publishCopyCreditBalance,
+    publishCopyCreditLoading,
+    publishCopyCreditError,
+    publishCopyInsufficientCredit,
+    publishCopyRemainingAfterImprove,
+    publishCopyAiUnavailableReason,
+    setSelectedAiFields,
+    setPublishCopyInstruction,
     generatePackageAction,
     saveFieldAction,
     toggleChecklistItem,
     markExportedAction,
+    improvePublishCopyWithAi,
+    applyPublishCopySuggestion,
+    applyAllPublishCopySuggestions,
+    dismissPublishCopySuggestion,
   } = usePublishData();
 
   const { pageCopy } = pkg;
@@ -76,6 +99,46 @@ export function PublishPage() {
       {showPackageContent ? (
         <div className="grid grid-cols-1 gap-lg lg:grid-cols-12 lg:items-start">
           <div className="flex flex-col gap-md lg:col-span-7">
+            <PublishAiCopyPanel
+              apiMode={apiMode}
+              hasPackage={hasPackage}
+              isExported={isExported}
+              publishCopyAiLoading={publishCopyAiLoading}
+              publishCopyAiError={publishCopyAiError}
+              publishCopyAiNotice={publishCopyAiNotice}
+              suggestions={publishCopySuggestions}
+              selectedAiFields={selectedAiFields}
+              publishCopyInstruction={publishCopyInstruction}
+              onSelectedAiFieldsChange={setSelectedAiFields}
+              onPublishCopyInstructionChange={setPublishCopyInstruction}
+              onImprovePublishCopy={
+                apiMode && hasPackage && !isExported
+                  ? () => void improvePublishCopyWithAi()
+                  : undefined
+              }
+              onApplySuggestion={
+                apiMode && hasPackage && !isExported
+                  ? (field) => void applyPublishCopySuggestion(field)
+                  : undefined
+              }
+              onApplyAllSuggestions={
+                apiMode && hasPackage && !isExported
+                  ? () => void applyAllPublishCopySuggestions()
+                  : undefined
+              }
+              onDismissSuggestion={dismissPublishCopySuggestion}
+              applyingSuggestionField={applyingSuggestionField}
+              applyingAllSuggestions={applyingAllSuggestions}
+              creditCostLabel={publishCopyCreditCostLabel}
+              qualityModeLabel={publishCopyQualityModeLabel}
+              creditBalance={publishCopyCreditBalance}
+              creditLoading={publishCopyCreditLoading}
+              creditError={publishCopyCreditError}
+              insufficientCredit={publishCopyInsufficientCredit}
+              remainingAfterImprove={publishCopyRemainingAfterImprove}
+              unavailableReason={publishCopyAiUnavailableReason}
+            />
+
             <PublishEditableField
               fieldKey="displayTitle"
               label={pageCopy.titleLabel}

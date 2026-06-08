@@ -1,13 +1,15 @@
 <#
 .SYNOPSIS
-  Sprint 9 web E2E smoke — credit UI + rewrite flow (Tasks 9.2 + 9.4).
+  Sprint 9 web E2E smoke — credit UI + rewrite + publish copy AI (Tasks 9.2 + 9.4 + 9.6).
 
 .DESCRIPTION
   Run from repo root:
     npm run smoke:web:credit-ui
     npm run smoke:web:rewrite
     npm run smoke:web:sprint9
+    npm run smoke:web:publish-ai
     npm run smoke:web:rewrite -- -IncludeApiMode
+    npm run smoke:web:publish-ai -- -IncludeApiMode
 
   Prerequisites (mock mode):
     - npm install (includes @playwright/test)
@@ -20,9 +22,9 @@
     - apps/web/.env.local with VITE_USE_MOCKS=false + Supabase + VITE_API_URL
     - Restart dev:web after changing .env.local
 
-  Rewrite success path (optional):
+  Rewrite / publish copy AI success path (optional):
     - Restart dev:api with AI_GENERATION_ENABLED=true and AI_PROVIDER_MOCK=true
-    - Script probes API; sets SMOKE_AI_ENABLED for Playwright success test
+    - Script probes API; sets SMOKE_AI_ENABLED for Playwright success tests
 #>
 [CmdletBinding()]
 param(
@@ -32,6 +34,7 @@ param(
   [string]$SupabaseAnonKey = "",
   [switch]$IncludeApiMode,
   [switch]$SkipMockMode,
+  [switch]$PublishAiOnly,
   [string]$TestEmail = "",
   [string]$TestPassword = "VibeNovel-Local-Smoke-Test!"
 )
@@ -46,7 +49,8 @@ $StepNumber = 0
 
 function Write-SmokeHeader {
   Write-Host ""
-  Write-Host "VibeNovel Sprint 9 Web Smoke (Credit UI + Rewrite)" -ForegroundColor Cyan
+  $title = if ($PublishAiOnly) { "Publish Copy AI" } else { "Credit UI + Rewrite + Publish AI" }
+  Write-Host "VibeNovel Sprint 9 Web Smoke ($title)" -ForegroundColor Cyan
   Write-Host "Web:      $WebBaseUrl"
   Write-Host "API:      $ApiBaseUrl"
   Write-Host "Mode:     $(if ($IncludeApiMode) { 'mock + API' } elseif ($SkipMockMode) { 'API only' } else { 'mock only' })"
@@ -235,6 +239,37 @@ function Bootstrap-OutlineLocked {
   }
 }
 
+function Bootstrap-ApprovedSummary {
+  param(
+    [string]$ProjectId,
+    [hashtable]$AuthHeaders
+  )
+  $chapters = Invoke-ApiRequest -Path "/api/projects/$ProjectId/outline/chapters" -Headers $AuthHeaders
+  $ch1 = ($chapters.data.chapters | Where-Object { $_.chapterNumber -eq 1 } | Select-Object -First 1).id
+
+  $session = Invoke-ApiRequest -Method POST -Path "/api/projects/$ProjectId/write/sessions" -Headers $AuthHeaders `
+    -Body (@{ chapterOutlineId = $ch1 } | ConvertTo-Json)
+  $sessionId = $session.data.session.id
+
+  Invoke-ApiRequest -Method POST -Path "/api/projects/$ProjectId/write/sessions/$sessionId/beats/generate" -Headers $AuthHeaders -Body '{}' | Out-Null
+  $beats = Invoke-ApiRequest -Path "/api/projects/$ProjectId/write/sessions/$sessionId/beats" -Headers $AuthHeaders
+  $beatId = $beats.data.beats[0].id
+
+  Invoke-ApiRequest -Method POST -Path "/api/projects/$ProjectId/write/beats/$beatId/prose" -Headers $AuthHeaders `
+    -Body '{"proseText":"Nadira memangkas sayuran di dapur dengan irama yang sudah hafal di luar kepala."}' | Out-Null
+  Invoke-ApiRequest -Method POST -Path "/api/projects/$ProjectId/write/sessions/$sessionId/ready-for-summary" -Headers $AuthHeaders -Body '{}' | Out-Null
+
+  $gen = Invoke-ApiRequest -Method POST -Path "/api/projects/$ProjectId/summary/generate" -Headers $AuthHeaders `
+    -Body (@{ chapterOutlineId = $ch1; writingSessionId = $sessionId } | ConvertTo-Json)
+  $summaryId = $gen.data.summary.id
+
+  Invoke-ApiRequest -Method POST -Path "/api/projects/$ProjectId/summary/$summaryId/delta/extract" -Headers $AuthHeaders -Body '{}' | Out-Null
+  $approve = Invoke-ApiRequest -Method POST -Path "/api/projects/$ProjectId/summary/$summaryId/approve" -Headers $AuthHeaders -Body '{}'
+  if ($approve.data.summary.status -ne "approved") {
+    throw "summary approve failed: $($approve.data.summary.status)"
+  }
+}
+
 function Invoke-PlaywrightSprint9 {
   param(
     [string]$Name,
@@ -296,11 +331,16 @@ Add-StepResult "web dev server reachable" "PASS" $WebBaseUrl
 $anyFail = $false
 
 if (-not $SkipMockMode) {
-  $creditOk = Invoke-PlaywrightSprint9 -Name "mock-mode Playwright (credit UI)" -SpecFile "e2e/sprint9-credit-ui.spec.ts"
-  if (-not $creditOk) { $anyFail = $true }
+  if (-not $PublishAiOnly) {
+    $creditOk = Invoke-PlaywrightSprint9 -Name "mock-mode Playwright (credit UI)" -SpecFile "e2e/sprint9-credit-ui.spec.ts"
+    if (-not $creditOk) { $anyFail = $true }
 
-  $rewriteMockOk = Invoke-PlaywrightSprint9 -Name "mock-mode Playwright (rewrite hidden)" -SpecFile "e2e/sprint9-rewrite-flow.spec.ts" -GrepPattern "rewrite mock mode"
-  if (-not $rewriteMockOk) { $anyFail = $true }
+    $rewriteMockOk = Invoke-PlaywrightSprint9 -Name "mock-mode Playwright (rewrite hidden)" -SpecFile "e2e/sprint9-rewrite-flow.spec.ts" -GrepPattern "rewrite mock mode"
+    if (-not $rewriteMockOk) { $anyFail = $true }
+  }
+
+  $publishAiMockOk = Invoke-PlaywrightSprint9 -Name "mock-mode Playwright (publish copy AI hidden)" -SpecFile "e2e/sprint9-publish-ai-flow.spec.ts" -GrepPattern "publish copy AI mock mode"
+  if (-not $publishAiMockOk) { $anyFail = $true }
 } else {
   Add-StepResult "mock-mode Playwright" "SKIP" "-SkipMockMode"
 }
@@ -382,6 +422,8 @@ if ($IncludeApiMode) {
         Add-StepResult "API-mode bootstrap foundation locked" "PASS" ""
         Bootstrap-OutlineLocked -ProjectId $projectId -AuthHeaders $auth
         Add-StepResult "API-mode bootstrap outline locked" "PASS" "ready for write"
+        Bootstrap-ApprovedSummary -ProjectId $projectId -AuthHeaders $auth
+        Add-StepResult "API-mode bootstrap approved summary" "PASS" "ready for publish"
         if ($userId) {
           Seed-CreditBalance -UserId $userId -Balance 100 | Out-Null
           Add-StepResult "seed credit balance" "PASS" "balance=100"
@@ -414,17 +456,34 @@ if ($IncludeApiMode) {
         SMOKE_AI_ENABLED    = $(if ($aiEnabled) { "true" } else { "false" })
       }
 
-      $controlsOk = Invoke-PlaywrightSprint9 -Name "API-mode Playwright (rewrite controls)" -SpecFile "e2e/sprint9-rewrite-flow.spec.ts" -GrepPattern "rewrite controls and cost" -ExtraEnv $apiEnv
-      if (-not $controlsOk) { $anyFail = $true }
+      if (-not $PublishAiOnly) {
+        $controlsOk = Invoke-PlaywrightSprint9 -Name "API-mode Playwright (rewrite controls)" -SpecFile "e2e/sprint9-rewrite-flow.spec.ts" -GrepPattern "rewrite controls and cost" -ExtraEnv $apiEnv
+        if (-not $controlsOk) { $anyFail = $true }
+
+        if ($aiEnabled) {
+          $successOk = Invoke-PlaywrightSprint9 -Name "API-mode Playwright (rewrite mock success)" -SpecFile "e2e/sprint9-rewrite-flow.spec.ts" -GrepPattern "AI enabled rewrites prose" -ExtraEnv $apiEnv
+          if (-not $successOk) { $anyFail = $true }
+          Add-StepResult "API-mode Playwright (rewrite AI disabled)" "SKIP" "AI enabled - disabled test N/A"
+        } else {
+          $disabledOk = Invoke-PlaywrightSprint9 -Name "API-mode Playwright (rewrite AI disabled)" -SpecFile "e2e/sprint9-rewrite-flow.spec.ts" -GrepPattern "AI disabled shows safe rewrite" -ExtraEnv $apiEnv
+          if (-not $disabledOk) { $anyFail = $true }
+          Add-StepResult "API-mode Playwright (rewrite mock success)" "SKIP" "AI_GENERATION_ENABLED=false"
+        }
+      } else {
+        Add-StepResult "API-mode Playwright (rewrite)" "SKIP" "-PublishAiOnly"
+      }
+
+      $pubPanelOk = Invoke-PlaywrightSprint9 -Name "API-mode Playwright (publish copy AI panel)" -SpecFile "e2e/sprint9-publish-ai-flow.spec.ts" -GrepPattern "shows publish copy AI panel" -ExtraEnv $apiEnv
+      if (-not $pubPanelOk) { $anyFail = $true }
 
       if ($aiEnabled) {
-        $successOk = Invoke-PlaywrightSprint9 -Name "API-mode Playwright (rewrite mock success)" -SpecFile "e2e/sprint9-rewrite-flow.spec.ts" -GrepPattern "AI enabled rewrites prose" -ExtraEnv $apiEnv
-        if (-not $successOk) { $anyFail = $true }
-        Add-StepResult "API-mode Playwright (rewrite AI disabled)" "SKIP" "AI enabled - disabled test N/A"
+        $pubSuccessOk = Invoke-PlaywrightSprint9 -Name "API-mode Playwright (publish copy AI success)" -SpecFile "e2e/sprint9-publish-ai-flow.spec.ts" -GrepPattern "creates suggestions without mutating" -ExtraEnv $apiEnv
+        if (-not $pubSuccessOk) { $anyFail = $true }
+        Add-StepResult "API-mode Playwright (publish copy AI disabled)" "SKIP" "AI enabled - disabled test N/A"
       } else {
-        $disabledOk = Invoke-PlaywrightSprint9 -Name "API-mode Playwright (rewrite AI disabled)" -SpecFile "e2e/sprint9-rewrite-flow.spec.ts" -GrepPattern "AI disabled shows safe rewrite" -ExtraEnv $apiEnv
-        if (-not $disabledOk) { $anyFail = $true }
-        Add-StepResult "API-mode Playwright (rewrite mock success)" "SKIP" "AI_GENERATION_ENABLED=false"
+        $pubDisabledOk = Invoke-PlaywrightSprint9 -Name "API-mode Playwright (publish copy AI disabled)" -SpecFile "e2e/sprint9-publish-ai-flow.spec.ts" -GrepPattern "AI disabled shows safe message" -ExtraEnv $apiEnv
+        if (-not $pubDisabledOk) { $anyFail = $true }
+        Add-StepResult "API-mode Playwright (publish copy AI success)" "SKIP" "AI_GENERATION_ENABLED=false"
       }
     } else {
       Add-StepResult "API-mode Playwright (rewrite)" "NOT RUN" "signup, API health, or bootstrap failed"

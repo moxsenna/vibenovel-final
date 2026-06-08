@@ -1,3 +1,4 @@
+export { PublishAiCopyPanel } from "./PublishAiCopyPanel";
 export { PublishActionSection } from "./PublishActionSection";
 export { PublishChecklistCard } from "./PublishChecklistCard";
 export { PublishChecklistPanel } from "./PublishChecklistPanel";

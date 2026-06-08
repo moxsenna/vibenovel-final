@@ -1,6 +1,6 @@
 # 48 — Sprint 9: AI Rewrite, Publish Copy & Credit UI Implementation Plan
 
-**Status:** In progress — Tasks 9.1–9.5 complete; Tasks 9.6–9.8 pending  
+**Status:** In progress — Tasks 9.1–9.6 complete; Tasks 9.7–9.8 pending  
 **Date:** 8 Juni 2026  
 **Repo:** `vibenovel-unified-blueprint`  
 **Prerequisite:** [`docs/45-sprint-8-verification-report.md`](45-sprint-8-verification-report.md), [`docs/47-live-openrouter-staging-smoke-report.md`](47-live-openrouter-staging-smoke-report.md) (live OpenRouter staging **GO**)
@@ -55,7 +55,7 @@ Memperluas AI **setelah** live OpenRouter staging GO (`docs/47`), dengan batas c
 |---|---|
 | ~~`estimated_cost_usd` selalu `null`~~ | **Addressed Task 9.1** — populated when tokens + allowlisted model cost map |
 | ~~No prose rewrite API/UI~~ | **Addressed Tasks 9.3–9.4** — API + WritePage rewrite UI (API mode) |
-| ~~No publish copy AI API~~ | **Addressed Task 9.5** — `POST /ai/improve-publish-copy` suggestion-first; PublishPage UI Task 9.6 pending |
+| ~~No publish copy AI~~ | **Addressed Tasks 9.5–9.6** — API suggestion-first + PublishPage apply via PATCH |
 | No credit balance widget di WritePage | Saldo hanya di notice sukses + Settings mock/API |
 | ~~Rewrite/publish credit costs defined but unused~~ | **Addressed Tasks 9.3–9.5** — `prose_rewrite` + `publish_copy` debited via API |
 | `CHAPTER_PROSE_SOURCES` — no `ai_rewrite` | Enum: `user_edited`, `stub_deterministic`, `ai_generated` only |

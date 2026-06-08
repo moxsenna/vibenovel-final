@@ -373,15 +373,17 @@ Belum ada (sengaja — defer setelah hardening / Sprint 8):
 | 9.3 Prose rewrite API | ✅ | `POST /ai/rewrite-prose`, `smoke:api:sprint9` |
 | 9.4 WritePage rewrite UI | ✅ | `POST /ai/rewrite-prose` UI, `smoke:web:rewrite` (API-mode E2E verified 9.4b) |
 | 9.5 Publish copy AI API | ✅ | `POST /ai/improve-publish-copy`, suggestion-first, `smoke:api:sprint9` |
-| 9.6 PublishPage AI UI | ⏳ | Improve copy + apply via PATCH |
+| 9.6 PublishPage AI UI | ✅ | Perbaiki Copy dengan AI, apply via PATCH, `smoke:web:publish-ai` |
 | 9.7 Safety regression | ⏳ | Sprint 9 smokes |
 | 9.8 Verification report | ⏳ | `docs/49` |
 
-**Task berikutnya (disarankan):** **Task 9.6** — PublishPage AI UI (apply suggestions via existing PATCH).
+**Task berikutnya (disarankan):** **Task 9.7** — Sprint 9 safety regression (full smoke matrix).
 
 **Rewrite UI (Task 9.4):** Tersedia di mode API pada WritePage — mode perbaikan (emosi/pacing/dialog/panjang/custom), biaya rewrite 3/6/12 kredit (hemat/seimbang/terbaik), hasil disimpan sebagai versi prose baru. Mock/fallback tidak memalsukan rewrite. Top up belum tersedia.
 
-**Publish copy AI (Task 9.5):** `POST /ai/improve-publish-copy` mengembalikan saran teaser/caption/reader question/sinopsis singkat/next chapter teaser — **tidak** auto-patch paket publish. Biaya 3/6/12 kredit (hemat/seimbang/terbaik). Tidak auto-post KBM, tidak mutasi canon. User apply nanti di Task 9.6.
+**Publish copy AI (Task 9.5):** `POST /ai/improve-publish-copy` mengembalikan saran teaser/caption/reader question/sinopsis singkat/next chapter teaser — **tidak** auto-patch paket publish. Biaya 3/6/12 kredit (hemat/seimbang/terbaik). Tidak auto-post KBM, tidak mutasi canon.
+
+**Publish copy UI (Task 9.6):** PublishPage panel **Perbaiki Copy dengan AI** — suggestion-first; user **Terapkan** via PATCH publish fields yang sudah ada. Mock/fallback tidak memalsukan saran AI.
 
 ---
 
