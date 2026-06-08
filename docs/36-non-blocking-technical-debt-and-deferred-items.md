@@ -3,7 +3,7 @@
 **Status:** Living register (Task 5.8)  
 **Date:** 8 Juni 2026  
 **Repo:** `vibenovel-unified-blueprint`  
-**Related:** [`docs/35-sprint-5-verification-report.md`](35-sprint-5-verification-report.md), [`scripts/README.md`](../scripts/README.md)
+**Related:** [`docs/35-sprint-5-verification-report.md`](35-sprint-5-verification-report.md), [`docs/40-sprint-7-verification-report.md`](40-sprint-7-verification-report.md), [`docs/41-pre-ai-hardening-audit-transactions-ci-plan.md`](41-pre-ai-hardening-audit-transactions-ci-plan.md), [`scripts/README.md`](../scripts/README.md)
 
 Dokumen ini membedakan **blocker**, **non-blocking debt**, dan **deferred product scope**. Bukan sprint plan — gunakan sebagai checklist sebelum Sprint 6 dan sebelum AI/production deploy.
 
@@ -150,7 +150,8 @@ Sprint 5 closed with **zero blockers**. Items below are non-blocking unless mark
 | **Before Sprint 6** | Local smoke consolidation (Task 5.8 ✅), verification checklist, debt register |
 | **During Sprint 6** | ✅ Summary/canon tables, SummaryPage API, Chapter Delta (closed — `docs/38`) |
 | **Sprint 7** | ✅ Publish package / KBM export stub (closed — `docs/40`) |
-| **Before AI generation** | **P1 hardening:** audit logs, DB transaction wrappers, CI E2E strategy |
+| **Sprint 7.8 (plan ✅)** | [`docs/41`](41-pre-ai-hardening-audit-transactions-ci-plan.md) — audit/transaction/smoke/CI strategy; implement via 7.8.1–7.8.6 |
+| **Before AI generation** | **P1 hardening implement:** 7.8.2 audit P0, 7.8.3 transactions P0, 7.8.4 smoke consolidate |
 | **After hardening** | OpenRouter, model router, credit ledger, production AI generation |
 | **Before production deploy** | DB transactions, CI smoke strategy, remote Supabase/Worker, secrets hygiene |
 
@@ -160,16 +161,33 @@ Sprint 5 closed with **zero blockers**. Items below are non-blocking unless mark
 
 1. **`smoke:api`** remains Sprint 2 regression — add **`smoke:api:sprint5`**, **`smoke:api:sprint6`**, **`smoke:api:sprint7`** for Write Room, summary, and publish safety.
 2. **API-mode web E2E** not in GitHub Actions — local `-IncludeApiMode` for write/summary/publish smokes.
-3. **No audit logs** for outline/write/summary/**publish export** operations — **P1 before AI/production**.
-4. **No DB transaction wrapper** for multi-step prose/outline/summary/publish workflows — **P1 before AI/production**.
+3. **No audit logs** for outline/write/summary/**publish export** — **P1**; enum + coverage plan in [`docs/41`](41-pre-ai-hardening-audit-transactions-ci-plan.md) §3; implement **7.8.1–7.8.2**.
+4. **No DB transaction wrapper** for multi-step prose/outline/summary/publish — **P1**; matrix in `docs/41` §4; implement **7.8.3**.
 5. **Publish package API + UI + smoke complete Sprint 7** — no auto-post KBM; manual copy + `mark-exported` marker only (`docs/40`).
 6. **No UI regenerate publish package** — API supports regenerate; chapter picker Bab 1 default only.
 7. **High-risk reveal `confirmHighRisk` UI** not in web — API requires manual confirm; accept disabled in UI.
 8. **Prose/publish leakage markers** may false-positive on rare fictional text containing `model`/`token`/`provider`.
 9. **No prose delete endpoint**; **no export audit log table**.
 10. **Context Packet safety** — API/smoke only, not DB-enforced.
-11. **CI** — typecheck/build only; full smokes local-only.
-12. **Seed GoTrue login quirk** — smokes use ephemeral signup.
+11. **CI** — typecheck/build only; full smokes local-only — strategy in `docs/41` §5; **7.8.4–7.8.5**.
+12. **`smoke:all:local`** — missing Sprint 6/7 API + summary/publish web — **7.8.4**.
+13. **Seed GoTrue login quirk** — smokes use ephemeral signup.
+
+---
+
+## F. Pre-AI Hardening Task Register (from `docs/41`)
+
+| Task | Scope | Status |
+|---|---|---|
+| **7.8** | Hardening plan document | ✅ Plan complete |
+| **7.8.1** | Audit action enum + coverage map | Pending |
+| **7.8.2** | Audit writers for canon/export P0 paths | Pending |
+| **7.8.3** | Transaction wrapper + P0 workflows | Pending |
+| **7.8.4** | `smoke:all:local` include Sprint 6/7 | Pending |
+| **7.8.5** | CI E2E feasibility / optional nightly | Pending |
+| **7.8.6** | Hardening verification report (`docs/42`) | Pending |
+
+**Sprint 8 gate:** 7.8.2 + 7.8.3 + 7.8.4 + 7.8.6 minimum before AI/OpenRouter.
 
 ---
 
@@ -177,5 +195,6 @@ Sprint 5 closed with **zero blockers**. Items below are non-blocking unless mark
 
 - [`docs/35-sprint-5-verification-report.md`](35-sprint-5-verification-report.md)
 - [`docs/40-sprint-7-verification-report.md`](40-sprint-7-verification-report.md)
+- [`docs/41-pre-ai-hardening-audit-transactions-ci-plan.md`](41-pre-ai-hardening-audit-transactions-ci-plan.md)
 - [`scripts/README.md`](../scripts/README.md)
 - [`docs/17-roadmap-sprint-plan-mvp-to-full.md`](17-roadmap-sprint-plan-mvp-to-full.md)
