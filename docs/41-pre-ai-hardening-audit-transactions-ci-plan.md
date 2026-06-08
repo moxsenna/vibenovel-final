@@ -1,6 +1,6 @@
 # 41 — Pre-AI Hardening: Audit Logs, Transactions & CI Smoke Plan
 
-**Status:** Planning only — no migration, no API changes, no CI workflow changes yet  
+**Status:** Implemented & closed — see [`docs/43-pre-ai-hardening-verification-report.md`](43-pre-ai-hardening-verification-report.md)  
 **Date:** 8 Juni 2026  
 **Repo:** `vibenovel-unified-blueprint`  
 **Prerequisite:** [`docs/40-sprint-7-verification-report.md`](40-sprint-7-verification-report.md), [`docs/36-non-blocking-technical-debt-and-deferred-items.md`](36-non-blocking-technical-debt-and-deferred-items.md)
@@ -225,8 +225,8 @@ chapter_summary_proposal_link, publish_package
 | CI scope | typecheck + build only — no runtime regression |
 | Supabase smoke | Requires Docker + local `dev:api` — not in GHA |
 | API-mode web E2E | Playwright + dual env + `VITE_USE_MOCKS=false` — local only |
-| `smoke:all:local` | Includes sprint2 + sprint5 API + sprint3/4/5 web mock only — **missing sprint6/7 API + summary/publish web** |
-| `smoke:all:local:full` | Same gap for API-mode web (no summary/publish in orchestrator) |
+| `smoke:all:local` | ✅ **Addressed 7.8.4** — 9 phases incl. sprint6/7 API + summary/publish web |
+| `smoke:all:local:full` | ✅ **Addressed 7.8.4** — API-mode web incl. summary/publish |
 | Script portability | PowerShell primary — no bash port for Linux CI |
 | Secrets in CI | Would need `SUPABASE_*`, anon key, optional test user — not configured |
 
@@ -293,7 +293,7 @@ Same as above, pass `-IncludeApiMode` to web scripts 3–9 (or subset: write, su
 | **7.8.3** | Transaction wrapper strategy + P0 workflow hardening | `withTransaction` helper + foundation lock / delta / proposal accept |
 | **7.8.4** | `smoke:all:local` + `:full` include Sprint 6/7 | Update `smoke-all-local.ps1`, `scripts/README.md`, root `package.json` comment |
 | **7.8.5** | CI E2E feasibility + optional workflow | `.github/workflows/smoke-nightly.yml` draft or documented defer |
-| **7.8.6** | Hardening verification report | `docs/42` + regression smoke all PASS |
+| **7.8.6** | Hardening verification report | [`docs/43`](43-pre-ai-hardening-verification-report.md) ✅ |
 
 **Dependency order:**
 
@@ -356,9 +356,11 @@ Sprint 8 (AI/OpenRouter & credit) **tidak dimulai** sampai minimal:
 - 7.8.2 audit P0 paths ✅
 - 7.8.3 transaction P0 paths ✅
 - 7.8.4 smoke:all:local updated ✅
-- 7.8.6 verification report ✅
+- 7.8.6 verification report ✅ ([`docs/43`](43-pre-ai-hardening-verification-report.md))
 
-CI nightly (7.8.5) boleh deferred non-blocking jika local smoke suite lengkap.
+CI nightly (7.8.5) deferred non-blocking — local smoke suite lengkap (7.8.4 ✅).
+
+**Next:** Task 8.0 — AI/OpenRouter implementation plan (docs only).
 
 ---
 

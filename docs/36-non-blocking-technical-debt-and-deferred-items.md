@@ -153,8 +153,8 @@ Sprint 5 closed with **zero blockers**. Items below are non-blocking unless mark
 | **During Sprint 6** | ✅ Summary/canon tables, SummaryPage API, Chapter Delta (closed — `docs/38`) |
 | **Sprint 7** | ✅ Publish package / KBM export stub (closed — `docs/40`) |
 | **Sprint 7.8 (plan ✅)** | [`docs/41`](41-pre-ai-hardening-audit-transactions-ci-plan.md) — audit/transaction/smoke/CI strategy; implement via 7.8.1–7.8.6 |
-| **Before AI generation** | **P1 hardening implement:** 7.8.2 audit P0 ✅, 7.8.3 transactions P0 ✅, 7.8.4 smoke consolidate ✅ |
-| **After hardening** | OpenRouter, model router, credit ledger, production AI generation |
+| **Before AI generation** | **P1 hardening implement:** 7.8.2–7.8.4 + 7.8.6 ✅ closed (`docs/43`) |
+| **After hardening** | **Task 8.0** AI/OpenRouter plan → then OpenRouter, model router, credit ledger |
 | **Before production deploy** | DB transactions, CI smoke strategy, remote Supabase/Worker, secrets hygiene |
 
 ---
@@ -169,7 +169,7 @@ Sprint 5 closed with **zero blockers**. Items below are non-blocking unless mark
 6. **No UI regenerate publish package** — API supports regenerate; chapter picker Bab 1 default only.
 7. **High-risk reveal `confirmHighRisk` UI** not in web — API requires manual confirm; accept disabled in UI.
 8. **Prose/publish leakage markers** may false-positive on rare fictional text containing `model`/`token`/`provider`.
-9. **No prose delete endpoint**; **no export audit log table**.
+9. **No prose delete endpoint**; export audit via `publish_package_exported` ✅ (7.8.2).
 10. **Context Packet safety** — API/smoke only, not DB-enforced.
 11. **CI** — typecheck/build only; full smokes local-only — strategy in `docs/41` §5; **7.8.4–7.8.5**.
 12. **`smoke:all:local`** ✅ — includes Sprint 6/7 API + summary/publish web mock (**7.8.4**). **`smoke:all:local:full`** API-mode local/manual only (not CI).
@@ -187,9 +187,10 @@ Sprint 5 closed with **zero blockers**. Items below are non-blocking unless mark
 | **7.8.3** | Transaction wrapper + P0 workflows | ✅ Implemented (`transaction.ts`, P0 hardening, sprint6 smoke assertions) |
 | **7.8.4** | `smoke:all:local` include Sprint 6/7 | ✅ Consolidated (`smoke-all-local.ps1` 9 phases; `:full` passes `-IncludeApiMode` to web) |
 | **7.8.5** | CI E2E feasibility / optional nightly | Pending |
-| **7.8.6** | Hardening verification report (`docs/43`) | Pending |
+| **7.8.6** | Hardening verification report (`docs/43`) | ✅ Closed |
+| **8.0** | AI/OpenRouter & credit-gated generation plan | **Next** (docs only) |
 
-**Sprint 8 gate:** 7.8.2 + 7.8.3 + 7.8.4 + 7.8.6 minimum before AI/OpenRouter.
+**Sprint 8 gate:** Planning **allowed** (`docs/43` §8). Production AI **not** until Task 8.0 plan approved.
 
 ---
 
@@ -199,5 +200,6 @@ Sprint 5 closed with **zero blockers**. Items below are non-blocking unless mark
 - [`docs/40-sprint-7-verification-report.md`](40-sprint-7-verification-report.md)
 - [`docs/41-pre-ai-hardening-audit-transactions-ci-plan.md`](41-pre-ai-hardening-audit-transactions-ci-plan.md)
 - [`docs/42-audit-action-enum-and-coverage-plan.md`](42-audit-action-enum-and-coverage-plan.md)
+- [`docs/43-pre-ai-hardening-verification-report.md`](43-pre-ai-hardening-verification-report.md)
 - [`scripts/README.md`](../scripts/README.md)
 - [`docs/17-roadmap-sprint-plan-mvp-to-full.md`](17-roadmap-sprint-plan-mvp-to-full.md)
