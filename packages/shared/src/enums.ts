@@ -542,6 +542,36 @@ export const CHAPTER_DELTA_EXTRACTOR_VERSIONS = {
 export type ChapterDeltaExtractorVersion =
   (typeof CHAPTER_DELTA_EXTRACTOR_VERSIONS)[keyof typeof CHAPTER_DELTA_EXTRACTOR_VERSIONS];
 
+// --- Sprint 7: publish package (export artifact — NOT canon, NOT auto-post KBM) ---
+
+/** Publish package lifecycle — exported is local marker only, not platform publish. */
+export const PUBLISH_PACKAGE_STATUSES = {
+  draft: "draft",
+  ready: "ready",
+  exported: "exported",
+  superseded: "superseded",
+} as const;
+export type PublishPackageStatus =
+  (typeof PUBLISH_PACKAGE_STATUSES)[keyof typeof PUBLISH_PACKAGE_STATUSES];
+
+/** Fixed MVP checklist item ids — parity PublishPage mock labels. */
+export const PUBLISH_CHECKLIST_ITEM_IDS = {
+  chk_teaser: "chk_teaser",
+  chk_caption: "chk_caption",
+  chk_tags: "chk_tags",
+  chk_question: "chk_question",
+  chk_preview: "chk_preview",
+} as const;
+export type PublishChecklistItemId =
+  (typeof PUBLISH_CHECKLIST_ITEM_IDS)[keyof typeof PUBLISH_CHECKLIST_ITEM_IDS];
+
+/** Publish package generator version (text column in DB — string const, not PostgreSQL enum). */
+export const PUBLISH_PACKAGE_GENERATOR_VERSIONS = {
+  v1_stub: "publish_stub_v1",
+} as const;
+export type PublishPackageGeneratorVersion =
+  (typeof PUBLISH_PACKAGE_GENERATOR_VERSIONS)[keyof typeof PUBLISH_PACKAGE_GENERATOR_VERSIONS];
+
 // --- Credit balance (display/seed only in Sprint 2) ---
 
 export const CREDIT_BALANCE_SOURCES = {

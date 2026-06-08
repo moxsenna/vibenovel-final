@@ -30,6 +30,7 @@ supabase/
 | **4.1** ✅ | Outline planning migration | `migrations/00003_sprint4_outline_planning.sql` — 4 tabel + `workflow_phase` extend |
 | **5.1** ✅ | Write room migration | `migrations/00004_sprint5_write_room.sql` — 5 tabel + `workflow_phase` extend |
 | **6.1** ✅ | Chapter summary & delta migration | `migrations/00005_sprint6_chapter_summary_delta.sql` — 4 tabel + enum extend |
+| **7.1** ✅ | Publish package migration | `migrations/00006_sprint7_publish_package.sql` — 1 tabel + enum |
 | **Apply local** | Setelah Supabase CLI + Docker | `supabase start` lalu `supabase db reset` |
 | **Apply remote** | Manual / CI terpisah | **Tidak** tanpa approval eksplisit user |
 
@@ -102,7 +103,20 @@ Membuat:
 
 Seed Task 6.1: **no** `chapter_summaries` / deltas / items / summary proposals — runtime generation di Task 6.2+.
 
-**Belum ada:** `auth.users` trigger otomatis on signup (Task 2.6), `audit_action` enum Sprint 3 (deferred), `chapter_generation_attempts`, `validation_reports`, Summary Generation API (Task 6.2+).
+### Migration `00006_sprint7_publish_package.sql` (Task 7.1)
+
+Membuat:
+
+- **1 tabel:** `publish_packages`
+- **1 enum baru:** `publish_package_status` selaras `@vibenovel/shared` Sprint 7
+- **`generator_version`:** text column (default `publish_stub_v1`) — bukan PG enum
+- **RLS** owner-only; tabel **bukan canon**; tidak auto-post KBM
+- **Partial unique:** satu `is_current = true` per `(project_id, chapter_outline_id)`
+- **Unique:** `(project_id, chapter_outline_id, package_version)`
+
+Seed Task 7.1: **no** `publish_packages` — runtime generation di Task 7.2+ setelah summary approved.
+
+**Belum ada:** `auth.users` trigger otomatis on signup (Task 2.6), `audit_action` enum Sprint 3 (deferred), `chapter_generation_attempts`, `validation_reports`, Publish Package Generation API (Task 7.2+).
 
 Urutan disarankan:
 

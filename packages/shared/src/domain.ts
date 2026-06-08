@@ -15,6 +15,9 @@ import type {
   ChapterSummaryProposalStatus,
   ChapterSummaryStatus,
   ChapterWritingStatus,
+  PublishChecklistItemId,
+  PublishPackageGeneratorVersion,
+  PublishPackageStatus,
   CharacterRole,
   CharacterSource,
   CharacterStatus,
@@ -716,6 +719,109 @@ export interface ChapterSummaryProposal extends Timestamps {
   aiProposalId: ID;
   status: ChapterSummaryProposalStatus;
   metadata: JsonObject;
+}
+
+// --- Sprint 7: publish package (export artifact — NOT canon) ---
+
+/**
+ * Safety flags for publish package stub generation and user edits.
+ * Does not gate canon — informational for PublishPage review only.
+ */
+export interface PublishSafetyFlags {
+  possibleSpoilerInTeaser?: boolean;
+  possibleFutureLeakInNextTeaser?: boolean;
+  genericCaption?: boolean;
+  stubGenerated?: boolean;
+  summaryProseMismatch?: boolean;
+  overclaimUnlock?: boolean;
+  revealRisk?: boolean;
+  [key: string]: boolean | undefined;
+}
+
+/**
+ * Internal publish package metadata — audit references only.
+ * Must NOT store raw prose dumps, planningTruth, packet_json, context_packet,
+ * delta_json, or ai_proposal payloads.
+ */
+export interface PublishPackageMetadata {
+  chapterSummaryId?: ID;
+  proseVersionIds?: ID[];
+  generatedAt?: ISODateTime;
+  stubMarker?: boolean;
+  [key: string]: string | string[] | boolean | number | null | undefined;
+}
+
+/** Fixed MVP checklist row — state persisted in checklist_json. */
+export interface PublishChecklistItem {
+  id: PublishChecklistItemId | string;
+  label: string;
+  checked: boolean;
+}
+
+/** Prose excerpt slice for stub generator input — not full prose_text. */
+export interface PublishPackageProseExcerpt {
+  beatNumber: number;
+  firstSentence: string;
+  wordCount: number;
+}
+
+/** Safe next-chapter outline slice — hook/ending_hook only, no full summary dump. */
+export interface PublishPackageNextChapterSlice {
+  chapterNumber: number;
+  title: string;
+  hook: string | null;
+  endingHook: string | null;
+}
+
+/**
+ * Read-only snapshot inputs for publish_stub_v1 (Task 7.2+).
+ * Not persisted as a table — helper for generator services.
+ */
+export interface PublishPackageSnapshot {
+  approvedSummaryId: ID;
+  chapterOutlineId: ID;
+  chapterNumber: number;
+  chapterTitle: string;
+  synopsis: string;
+  miniVictory: string | null;
+  emotionalOutcome: string | null;
+  endingHook: string | null;
+  proseExcerpts: PublishPackageProseExcerpt[];
+  nextChapterSlice: PublishPackageNextChapterSlice | null;
+  genre: string | null;
+  styleTags: string[];
+}
+
+/**
+ * KBM-oriented publish export artifact — copy-ready fields for manual paste.
+ * NOT canon. Does NOT auto-post to KBM. Must NOT be used as Context Packet source.
+ * Must NOT store raw prose full dump, planningTruth, packet_json, delta_json,
+ * or proposal payloads in metadata or text columns.
+ */
+export interface PublishPackage extends Timestamps {
+  id: ID;
+  projectId: ID;
+  chapterOutlineId: ID;
+  chapterSummaryId: ID;
+  chapterNumber: number;
+  chapterTitle: string;
+  status: PublishPackageStatus;
+  packageVersion: number;
+  isCurrent: boolean;
+  displayTitle: string;
+  teaser: string;
+  shortSynopsis: string;
+  caption: string;
+  readerQuestion: string;
+  nextChapterTeaser: string | null;
+  tags: string[];
+  genre: string | null;
+  mobilePreviewExcerpt: string;
+  checklist: PublishChecklistItem[];
+  safetyFlags: PublishSafetyFlags;
+  generatorVersion: PublishPackageGeneratorVersion | string;
+  exportedAt: ISODateTime | null;
+  metadata: PublishPackageMetadata;
 }
 
 // Sprint 6+: validation_reports — deferred.

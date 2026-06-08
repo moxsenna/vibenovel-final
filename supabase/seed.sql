@@ -1096,6 +1096,12 @@ ON CONFLICT (chapter_outline_id, beat_number) DO UPDATE SET
 -- -----------------------------------------------------------------------------
 
 -- -----------------------------------------------------------------------------
+-- Sprint 7 (Task 7.1): no publish_packages seeded.
+-- Publish packages require approved summary runtime flow (Task 7.2+ API).
+-- Seeding would mask generate gate bugs (summary_approved + summarized).
+-- -----------------------------------------------------------------------------
+
+-- -----------------------------------------------------------------------------
 -- projects — Sprint 4 workflow pointer (outline seeded; foundation lock unchanged)
 -- -----------------------------------------------------------------------------
 UPDATE public.projects
