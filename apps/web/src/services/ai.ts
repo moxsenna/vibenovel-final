@@ -36,11 +36,17 @@ export interface GenerateBeatProseResponse {
   idempotentReplay: boolean;
 }
 
-/** Mirrors server ai-credit-policy prose_beat costs — display only; billing is server-side. */
+/** Mirrors server ai-credit-policy — display only; billing is server-side. */
 const PROSE_BEAT_CREDIT_COSTS: Record<WriterQualityMode, number> = {
   [WRITER_QUALITY_MODES.hemat]: 5,
   [WRITER_QUALITY_MODES.seimbang]: 10,
   [WRITER_QUALITY_MODES.terbaik]: 20,
+};
+
+const PROSE_REWRITE_CREDIT_COSTS: Record<WriterQualityMode, number> = {
+  [WRITER_QUALITY_MODES.hemat]: 3,
+  [WRITER_QUALITY_MODES.seimbang]: 6,
+  [WRITER_QUALITY_MODES.terbaik]: 12,
 };
 
 const QUALITY_SET = new Set<string>(Object.values(WRITER_QUALITY_MODES));
@@ -56,9 +62,29 @@ export function getProseBeatCreditCost(qualityMode: WriterQualityMode): number {
   return PROSE_BEAT_CREDIT_COSTS[qualityMode] ?? PROSE_BEAT_CREDIT_COSTS.seimbang;
 }
 
+export function getProseRewriteCreditCost(qualityMode: WriterQualityMode): number {
+  return PROSE_REWRITE_CREDIT_COSTS[qualityMode] ?? PROSE_REWRITE_CREDIT_COSTS.seimbang;
+}
+
+export function formatQualityModeLabel(qualityMode: WriterQualityMode): string {
+  if (qualityMode === WRITER_QUALITY_MODES.hemat) return "Hemat";
+  if (qualityMode === WRITER_QUALITY_MODES.terbaik) return "Terbaik";
+  return "Seimbang";
+}
+
 export function formatProseBeatCreditCostLabel(qualityMode: WriterQualityMode): string {
   const cost = getProseBeatCreditCost(qualityMode);
   return `Biaya: ${cost} kredit`;
+}
+
+export function formatProseBeatActionCostLabel(qualityMode: WriterQualityMode): string {
+  const cost = getProseBeatCreditCost(qualityMode);
+  return `Biaya Tulis Beat dengan AI: ${cost} kredit`;
+}
+
+export function formatProseRewriteActionCostLabel(qualityMode: WriterQualityMode): string {
+  const cost = getProseRewriteCreditCost(qualityMode);
+  return `Biaya perbaikan (nanti): ${cost} kredit`;
 }
 
 export function buildBeatProseIdempotencyKey(beatId: string): string {

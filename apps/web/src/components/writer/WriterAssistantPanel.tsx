@@ -12,6 +12,15 @@ export interface WriterAssistantPanelProps {
   aiError?: string | null;
   aiNotice?: string | null;
   creditCostLabel?: string | null;
+  creditActionCostLabel?: string | null;
+  creditRewriteCostLabel?: string | null;
+  qualityModeLabel?: string | null;
+  creditBalance?: number | null;
+  creditLoading?: boolean;
+  creditError?: string | null;
+  insufficientCredit?: boolean;
+  remainingAfterGenerate?: number | null;
+  showCreditUi?: boolean;
   aiUnavailableReason?: string | null;
 }
 
@@ -25,6 +34,15 @@ export function WriterAssistantPanel({
   aiError = null,
   aiNotice = null,
   creditCostLabel = null,
+  creditActionCostLabel = null,
+  creditRewriteCostLabel = null,
+  qualityModeLabel = null,
+  creditBalance = null,
+  creditLoading = false,
+  creditError = null,
+  insufficientCredit = false,
+  remainingAfterGenerate = null,
+  showCreditUi = false,
   aiUnavailableReason = null,
 }: WriterAssistantPanelProps) {
   const { pageCopy, storyChecks } = draft;
@@ -103,6 +121,55 @@ export function WriterAssistantPanel({
 
         {onBuildContext ? <div className="h-px w-full bg-border/50" /> : null}
 
+        {showCreditUi ? (
+          <>
+            <div className="flex flex-col gap-3">
+              <h3 className="font-label-md text-label-md uppercase tracking-wider text-muted-text text-[11px]">
+                Saldo Kredit
+              </h3>
+              <Card padding="sm" shadow={false} className="rounded-xl border border-border bg-surface-soft">
+                <p className="font-display text-display text-primary">
+                  {creditLoading
+                    ? "…"
+                    : creditError
+                      ? "—"
+                      : creditBalance != null
+                        ? creditBalance.toLocaleString("id-ID")
+                        : "—"}
+                </p>
+                <p className="font-label-sm text-label-sm text-muted-text">kredit tersisa</p>
+                {creditError ? (
+                  <p className="mt-2 font-body-sm text-body-sm text-warning">{creditError}</p>
+                ) : null}
+                {qualityModeLabel ? (
+                  <p className="mt-3 font-body-sm text-body-sm text-on-surface-variant">
+                    Mode kualitas: <span className="font-medium text-on-surface">{qualityModeLabel}</span>
+                  </p>
+                ) : null}
+                {creditActionCostLabel ? (
+                  <p className="mt-1 font-body-sm text-body-sm text-on-surface-variant">
+                    {creditActionCostLabel}
+                  </p>
+                ) : null}
+                {remainingAfterGenerate != null && !insufficientCredit ? (
+                  <p className="mt-1 font-body-sm text-body-sm text-muted-text">
+                    Estimasi sisa setelah generate: {remainingAfterGenerate} kredit
+                  </p>
+                ) : null}
+                {insufficientCredit ? (
+                  <p className="mt-2 font-body-sm text-body-sm text-warning">
+                    Kredit tidak cukup untuk aksi ini.
+                  </p>
+                ) : null}
+                <p className="mt-2 font-body-sm text-body-sm text-muted-text">
+                  Top up belum tersedia di versi ini.
+                </p>
+              </Card>
+            </div>
+            <div className="h-px w-full bg-border/50" />
+          </>
+        ) : null}
+
         <div className="flex flex-col gap-3">
           <h3 className="font-label-md text-label-md uppercase tracking-wider text-muted-text text-[11px]">
             Bantu Menulis
@@ -111,7 +178,7 @@ export function WriterAssistantPanel({
             variant="primary"
             className="w-full rounded-xl py-3.5 shadow-md shadow-primary/20"
             leftIcon={<Icon name="auto_awesome" size={20} />}
-            disabled={!onGenerateAi || aiGenerating}
+            disabled={!onGenerateAi || aiGenerating || insufficientCredit}
             onClick={onGenerateAi}
           >
             {aiGenerating ? "Menghasilkan narasi…" : "Tulis Beat dengan AI"}
@@ -151,7 +218,12 @@ export function WriterAssistantPanel({
                 </span>
               }
             >
-              <span className="font-body-sm text-body-sm">{pageCopy.strengthenEmotionAction}</span>
+              <span className="flex flex-col gap-0.5">
+                <span className="font-body-sm text-body-sm">{pageCopy.strengthenEmotionAction}</span>
+                {showCreditUi && creditRewriteCostLabel ? (
+                  <span className="font-label-sm text-label-sm text-muted-text">{creditRewriteCostLabel}</span>
+                ) : null}
+              </span>
             </Button>
             <Button
               variant="ghost"
@@ -163,7 +235,12 @@ export function WriterAssistantPanel({
                 </span>
               }
             >
-              <span className="font-body-sm text-body-sm">{pageCopy.addDialogAction}</span>
+              <span className="flex flex-col gap-0.5">
+                <span className="font-body-sm text-body-sm">{pageCopy.addDialogAction}</span>
+                {showCreditUi && creditRewriteCostLabel ? (
+                  <span className="font-label-sm text-label-sm text-muted-text">{creditRewriteCostLabel}</span>
+                ) : null}
+              </span>
             </Button>
           </div>
         </div>

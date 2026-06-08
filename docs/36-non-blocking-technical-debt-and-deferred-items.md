@@ -211,6 +211,8 @@ Sprint 5 closed with **zero blockers**. Items below are non-blocking unless mark
 
 **Addressed Task 9.1:** `estimated_cost_usd` population via `model-cost-map.ts` (internal observability only; fixed `credit_cost` billing unchanged).
 
+**Addressed Task 9.2:** WritePage credit UI minimal (saldo/biaya kredit read-only; no topup; server authoritative billing).
+
 ---
 
 ## Related documents

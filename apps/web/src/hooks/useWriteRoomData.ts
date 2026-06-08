@@ -10,8 +10,12 @@ import { ROUTES } from "@/routes/paths";
 import { mockChapterDraft } from "@/mocks/chapter";
 import {
   buildBeatProseIdempotencyKey,
+  formatProseBeatActionCostLabel,
   formatProseBeatCreditCostLabel,
+  formatProseRewriteActionCostLabel,
+  formatQualityModeLabel,
   generateBeatProse,
+  getProseBeatCreditCost,
   mapAiGenerationErrorCode,
   normalizeQualityMode,
 } from "@/services/ai";
@@ -117,6 +121,16 @@ export interface UseWriteRoomDataResult {
   aiError: string | null;
   aiNotice: string | null;
   creditCostLabel: string;
+  creditActionCostLabel: string;
+  creditRewriteCostLabel: string;
+  qualityModeLabel: string;
+  creditBalance: number | null;
+  creditLoading: boolean;
+  creditError: string | null;
+  proseBeatCreditCost: number;
+  insufficientCredit: boolean;
+  remainingAfterGenerate: number | null;
+  showCreditUi: boolean;
   onGenerateAi?: () => Promise<void>;
   aiUnavailableReason: string | null;
 }
@@ -156,7 +170,9 @@ export function useWriteRoomData(): UseWriteRoomDataResult {
   const [aiError, setAiError] = useState<string | null>(null);
   const [aiNotice, setAiNotice] = useState<string | null>(null);
   const [qualityMode, setQualityMode] = useState<WriterQualityMode>(WRITER_QUALITY_MODES.seimbang);
-  const [, setCreditBalance] = useState<CreditBalance | null>(null);
+  const [creditBalance, setCreditBalance] = useState<CreditBalance | null>(null);
+  const [creditLoading, setCreditLoading] = useState(false);
+  const [creditError, setCreditError] = useState<string | null>(null);
 
   const applyMock = useCallback((message: string | null) => {
     setDraft(mockChapterDraft);
@@ -173,7 +189,24 @@ export function useWriteRoomData(): UseWriteRoomDataResult {
     setAiError(null);
     setAiNotice(null);
     setCreditBalance(null);
+    setCreditLoading(false);
+    setCreditError(null);
   }, []);
+
+  const refreshCreditBalance = useCallback(async () => {
+    if (!apiMode || !token) return;
+    setCreditLoading(true);
+    setCreditError(null);
+    try {
+      const balance = await fetchCreditBalance(token);
+      setCreditBalance(balance);
+    } catch {
+      setCreditBalance(null);
+      setCreditError("Saldo kredit belum bisa dimuat.");
+    } finally {
+      setCreditLoading(false);
+    }
+  }, [apiMode, token]);
 
   const rebuildDraft = useCallback(
     (
@@ -233,12 +266,7 @@ export function useWriteRoomData(): UseWriteRoomDataResult {
         setQualityMode(WRITER_QUALITY_MODES.seimbang);
       }
 
-      try {
-        const balance = await fetchCreditBalance(token);
-        setCreditBalance(balance);
-      } catch {
-        setCreditBalance(null);
-      }
+      await refreshCreditBalance();
 
       const bundle = await fetchOutlineBundle(resolvedId, token);
       if (!isOutlineLocked(bundle)) {
@@ -302,7 +330,7 @@ export function useWriteRoomData(): UseWriteRoomDataResult {
     } finally {
       setLoading(false);
     }
-  }, [apiMode, applyMock, loadProseForBeat, rebuildDraft, routeProjectId, token]);
+  }, [apiMode, applyMock, loadProseForBeat, rebuildDraft, refreshCreditBalance, routeProjectId, token]);
 
   useEffect(() => {
     if (authLoading) return;
@@ -549,6 +577,12 @@ export function useWriteRoomData(): UseWriteRoomDataResult {
       return;
     }
 
+    const beatCost = getProseBeatCreditCost(qualityMode);
+    if (creditBalance != null && creditBalance.balance < beatCost) {
+      setAiError("Kredit tidak cukup.");
+      return;
+    }
+
     setAiGenerating(true);
     setAiError(null);
     setAiNotice(null);
@@ -572,6 +606,8 @@ export function useWriteRoomData(): UseWriteRoomDataResult {
 
       if (result.creditBalance) {
         setCreditBalance(result.creditBalance);
+      } else {
+        await refreshCreditBalance();
       }
 
       setApiBeats((prev) =>
@@ -586,12 +622,13 @@ export function useWriteRoomData(): UseWriteRoomDataResult {
       );
 
       const cost = result.creditCost ?? result.generationAttempt.creditCost;
+      const remaining =
+        result.creditBalance?.balance ??
+        (creditBalance != null ? Math.max(0, creditBalance.balance - cost) : null);
       const balanceNote =
-        result.creditBalance?.balance != null
-          ? ` Sisa kredit: ${result.creditBalance.balance}.`
-          : " Kredit berhasil dipotong.";
+        remaining != null ? ` Sisa: ${remaining}.` : "";
       const replayNote = result.idempotentReplay ? " (hasil permintaan sebelumnya)" : "";
-      setAiNotice(`Narasi AI berhasil dibuat. Biaya: ${cost} kredit.${balanceNote}${replayNote}`);
+      setAiNotice(`Narasi AI berhasil dibuat. Terpotong ${cost} kredit.${balanceNote}${replayNote}`);
     } catch (error) {
       if (error instanceof ApiClientError) {
         setAiError(mapAiGenerationErrorCode(error.code));
@@ -606,9 +643,11 @@ export function useWriteRoomData(): UseWriteRoomDataResult {
     aiGenerating,
     apiMode,
     chapterOutlineId,
+    creditBalance,
     needsGenerateBeats,
     projectId,
     qualityMode,
+    refreshCreditBalance,
     sessionId,
     source,
     token,
@@ -642,13 +681,24 @@ export function useWriteRoomData(): UseWriteRoomDataResult {
     draft.beats.find((beat) => beat.id === activeBeatId) ?? draft.beats[0];
 
   const editable = source === "api" && Boolean(activeBeat);
+  const proseBeatCreditCost = getProseBeatCreditCost(qualityMode);
   const creditCostLabel = formatProseBeatCreditCostLabel(qualityMode);
+  const creditActionCostLabel = formatProseBeatActionCostLabel(qualityMode);
+  const creditRewriteCostLabel = formatProseRewriteActionCostLabel(qualityMode);
+  const qualityModeLabel = formatQualityModeLabel(qualityMode);
+  const showCreditUi = source === "api";
+  const knownBalance = creditBalance?.balance ?? null;
+  const insufficientCredit =
+    knownBalance != null && knownBalance < proseBeatCreditCost;
+  const remainingAfterGenerate =
+    knownBalance != null ? Math.max(0, knownBalance - proseBeatCreditCost) : null;
   const aiCanGenerate =
     source === "api" &&
     Boolean(activeBeatId) &&
     Boolean(sessionId) &&
     Boolean(chapterOutlineId) &&
-    !needsGenerateBeats;
+    !needsGenerateBeats &&
+    !insufficientCredit;
   const aiUnavailableReason =
     source === "mock"
       ? "Generasi AI hanya tersedia dalam mode API (bukan mock)."
@@ -656,7 +706,9 @@ export function useWriteRoomData(): UseWriteRoomDataResult {
         ? "Generasi AI tidak tersedia saat fallback mock aktif."
         : needsGenerateBeats
           ? "Buat daftar adegan terlebih dahulu."
-          : null;
+          : insufficientCredit
+            ? "Kredit tidak cukup untuk aksi ini."
+            : null;
 
   return useMemo(
     () => ({
@@ -691,6 +743,16 @@ export function useWriteRoomData(): UseWriteRoomDataResult {
       aiError,
       aiNotice,
       creditCostLabel,
+      creditActionCostLabel,
+      creditRewriteCostLabel,
+      qualityModeLabel,
+      creditBalance: knownBalance,
+      creditLoading,
+      creditError,
+      proseBeatCreditCost,
+      insufficientCredit,
+      remainingAfterGenerate,
+      showCreditUi,
       onGenerateAi: aiCanGenerate ? generateAiForActiveBeat : undefined,
       aiUnavailableReason,
     }),
@@ -705,8 +767,18 @@ export function useWriteRoomData(): UseWriteRoomDataResult {
       buildSafeContext,
       buildingContext,
       contextPreview,
+      creditActionCostLabel,
       creditCostLabel,
+      creditError,
+      creditLoading,
+      creditRewriteCostLabel,
       draft,
+      insufficientCredit,
+      knownBalance,
+      proseBeatCreditCost,
+      qualityModeLabel,
+      remainingAfterGenerate,
+      showCreditUi,
       editable,
       errorNotice,
       finishChapter,

@@ -16,6 +16,10 @@ const DOM_LEAK_PATTERNS = [
   /"promptText"\s*:/i,
   /"promptMessages"\s*:/i,
   /openrouter/i,
+  /estimated_cost_usd/i,
+  /credit_ledger/i,
+  /generationAttempt/i,
+  /OPENROUTER_API_KEY/i,
 ];
 
 async function assertNoWriteAiLeaksInDom(page: Page) {
@@ -81,6 +85,8 @@ test.describe("Sprint 8 web smoke — write AI mock mode", () => {
       page.getByText(/Generasi AI hanya tersedia dalam mode API/i).first(),
     ).toBeVisible();
 
+    await expect(page.getByText(/Saldo Kredit/i)).toHaveCount(0);
+
     await assertNoWriteAiLeaksInDom(page);
   });
 });
@@ -101,6 +107,19 @@ test.describe("Sprint 8 web smoke — write AI API mode", () => {
     !testEmail || !testPassword || !projectId,
     "API mode skipped — missing SMOKE_TEST_EMAIL, SMOKE_TEST_PASSWORD, or SMOKE_PROJECT_ID",
   );
+
+  test("API mode shows credit balance and action cost labels", async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await devAuthLogin(page, testEmail, testPassword);
+    await prepareWriteRoomApi(page, projectId);
+
+    await expect(page.getByText(/Saldo Kredit/i).first()).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByText(/Biaya Tulis Beat dengan AI/i).first()).toBeVisible();
+    await expect(page.getByText(/kredit tersisa/i).first()).toBeVisible();
+    await expect(page.getByText(/Top up belum tersedia/i).first()).toBeVisible();
+
+    await assertNoWriteAiLeaksInDom(page);
+  });
 
   test("AI disabled shows safe message without leaking internals", async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 });
@@ -140,7 +159,8 @@ test.describe("Sprint 8 web smoke — write AI API mode", () => {
     await expect(page.getByText(/Narasi AI berhasil dibuat/i).first()).toBeVisible({
       timeout: 15_000,
     });
-    await expect(page.getByText(/kredit/i).first()).toBeVisible();
+    await expect(page.getByText(/Terpotong \d+ kredit/i).first()).toBeVisible();
+    await expect(page.getByText(/Sisa:/i).first()).toBeVisible();
 
     await assertNoWriteAiLeaksInDom(page);
   });

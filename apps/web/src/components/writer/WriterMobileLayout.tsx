@@ -19,6 +19,9 @@ export interface WriterMobileLayoutProps {
   onGenerateAi?: () => void;
   aiGenerating?: boolean;
   creditCostLabel?: string | null;
+  creditBalance?: number | null;
+  insufficientCredit?: boolean;
+  showCreditUi?: boolean;
 }
 
 export function WriterMobileLayout({
@@ -36,6 +39,9 @@ export function WriterMobileLayout({
   onGenerateAi,
   aiGenerating = false,
   creditCostLabel = null,
+  creditBalance = null,
+  insufficientCredit = false,
+  showCreditUi = false,
 }: WriterMobileLayoutProps) {
   const { pageCopy } = draft;
   const displayProse = proseText ?? activeBeat.prose;
@@ -151,7 +157,9 @@ export function WriterMobileLayout({
 
         <p className="font-body-sm text-body-sm text-muted-text">
           {draft.wordCount} kata · {draft.lastSavedLabel}
-          {creditCostLabel && onGenerateAi ? ` · ${creditCostLabel}` : ""}
+          {showCreditUi && creditBalance != null ? ` · Saldo: ${creditBalance}` : ""}
+          {showCreditUi && creditCostLabel ? ` · ${creditCostLabel}` : ""}
+          {showCreditUi && insufficientCredit ? " · Kredit tidak cukup" : ""}
         </p>
       </main>
 
@@ -171,7 +179,7 @@ export function WriterMobileLayout({
           <Button
             variant="ghost"
             pill
-            disabled={!onGenerateAi || aiGenerating}
+            disabled={!onGenerateAi || aiGenerating || insufficientCredit}
             onClick={onGenerateAi}
             className="min-h-[44px] gap-1.5 px-4 text-on-surface-variant"
             leftIcon={<Icon name="auto_awesome" size={20} />}

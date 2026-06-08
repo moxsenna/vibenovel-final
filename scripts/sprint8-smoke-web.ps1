@@ -409,6 +409,9 @@ if ($IncludeApiMode) {
         SMOKE_AI_ENABLED    = $(if ($aiEnabled) { "true" } else { "false" })
       }
 
+      $creditUiOk = Invoke-PlaywrightWriteAi -Name "API-mode Playwright (credit UI labels)" -GrepPattern "API mode shows credit balance" -ExtraEnv $apiEnv
+      if (-not $creditUiOk) { $anyFail = $true }
+
       if ($aiEnabled) {
         $successOk = Invoke-PlaywrightWriteAi -Name "API-mode Playwright (AI mock prose success)" -GrepPattern "AI enabled inserts mock prose" -ExtraEnv $apiEnv
         if (-not $successOk) { $anyFail = $true }

@@ -38,6 +38,15 @@ export function WritePage() {
     aiError,
     aiNotice,
     creditCostLabel,
+    creditActionCostLabel,
+    creditRewriteCostLabel,
+    qualityModeLabel,
+    creditBalance,
+    creditLoading,
+    creditError,
+    insufficientCredit,
+    remainingAfterGenerate,
+    showCreditUi,
     onGenerateAi,
     aiUnavailableReason,
   } = useWriteRoomData();
@@ -80,6 +89,9 @@ export function WritePage() {
     onGenerateAi: onGenerateAi ? () => void onGenerateAi() : undefined,
     aiGenerating,
     creditCostLabel,
+    creditBalance,
+    insufficientCredit,
+    showCreditUi,
   };
 
   const assistantProps = {
@@ -88,6 +100,15 @@ export function WritePage() {
     aiError,
     aiNotice,
     creditCostLabel,
+    creditActionCostLabel,
+    creditRewriteCostLabel,
+    qualityModeLabel,
+    creditBalance,
+    creditLoading,
+    creditError,
+    insufficientCredit,
+    remainingAfterGenerate,
+    showCreditUi,
     aiUnavailableReason,
   };
 
