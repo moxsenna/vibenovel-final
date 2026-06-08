@@ -66,12 +66,39 @@ apps/api/
       chapter-beat.ts     # beat list/generate/patch stub (Task 5.3)
       prose-draft.ts      # prose version save/list/make-current (Task 5.4)
       audit.ts         # append-only audit_logs (service role)
+      audit-snapshot.ts   # compact snapshots + metadata sanitizer (Task 7.8.2)
     lib/
       supabase.ts      # anon + service role clients
       mappers.ts
   wrangler.toml
   .dev.vars.example
 ```
+
+## Audit log coverage (Task 7.8.2)
+
+Migration `00007_audit_enum_extension.sql` extends `audit_action` / `audit_entity_type`. Types mirrored in `@vibenovel/shared` (`AUDIT_ACTIONS`, `AUDIT_ENTITY_TYPES`).
+
+**P0 writers (implemented):**
+
+| Workflow | Actions |
+|---|---|
+| Foundation lock | `foundation_lock_started`, `foundation_locked`, `foundation_lock_failed` |
+| Delta extract | `chapter_delta_extracted`, `summary_proposal_linked` (+ legacy `ai_proposal_created`) |
+| Summary proposal review | `summary_proposal_accepted`, `summary_proposal_rejected`, `canon_promotion_applied`, `canon_promotion_failed` (+ legacy `ai_proposal_accepted` / `rejected`) |
+| Publish export/update | `publish_package_exported`, `publish_package_updated`, `publish_checklist_updated` |
+
+**P1 writers (implemented):**
+
+| Workflow | Actions |
+|---|---|
+| Summary approval | `chapter_summary_approved` (replaces generic `project_updated` on approve path) |
+| Publish generate | `publish_package_generated`, `publish_package_regenerated` |
+
+**Payload policy:** `audit-snapshot.ts` strips secrets, prose, `packet_json`, `planningTruth`, long captions. Audit insert failure → HTTP 500.
+
+**Deferred (P2):** intake/concept/outline/write-room audit writers — enum ready, writers not yet added.
+
+See [`docs/42-audit-action-enum-and-coverage-plan.md`](../docs/42-audit-action-enum-and-coverage-plan.md).
 
 ## Local development
 

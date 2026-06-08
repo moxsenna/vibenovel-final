@@ -8,6 +8,8 @@ import type { AppBindings } from "../env.js";
 import { mapPublishPackageRow, type PublishPackageRow } from "../lib/mappers.js";
 import { createServiceRoleClient } from "../lib/supabase.js";
 import { AppError } from "../errors.js";
+import { writeAuditLog } from "./audit.js";
+import { snapshotPublishPackageStatus } from "./audit-snapshot.js";
 import { getOwnedProjectRow } from "./project.js";
 import { assertPublishUserTextSafe } from "./publish-safety.js";
 
@@ -287,7 +289,25 @@ export async function updatePublishPackageFieldsForOwner(
     throw AppError.internal("Failed to update publish package fields");
   }
 
-  return mapPublishPackageRow(data as PublishPackageRow);
+  const afterRow = data as PublishPackageRow;
+  const changedFields = Object.keys(body).filter((key) => EDITABLE_FIELD_KEYS.has(key));
+
+  await writeAuditLog(bindings, {
+    userId: ownerId,
+    projectId,
+    action: "publish_package_updated",
+    entityType: "publish_package",
+    entityId: packageId,
+    metadata: {
+      task: "publish_fields_update",
+      changedFields,
+      chapterNumber: afterRow.chapter_number,
+    },
+    beforeData: snapshotPublishPackageStatus(row),
+    afterData: snapshotPublishPackageStatus(afterRow),
+  });
+
+  return mapPublishPackageRow(afterRow);
 }
 
 export async function updatePublishPackageChecklistForOwner(
@@ -391,7 +411,26 @@ export async function updatePublishPackageChecklistForOwner(
     throw AppError.internal("Failed to update publish package checklist");
   }
 
-  return mapPublishPackageRow(data as PublishPackageRow);
+  const afterRow = data as PublishPackageRow;
+  const checklistComplete = normalized.every((item) => item.checked);
+
+  await writeAuditLog(bindings, {
+    userId: ownerId,
+    projectId,
+    action: "publish_checklist_updated",
+    entityType: "publish_package",
+    entityId: packageId,
+    metadata: {
+      task: "publish_checklist_update",
+      checklistItemIds: normalized.map((item) => item.id),
+      checklistComplete,
+      chapterNumber: afterRow.chapter_number,
+    },
+    beforeData: snapshotPublishPackageStatus(row),
+    afterData: snapshotPublishPackageStatus(afterRow),
+  });
+
+  return mapPublishPackageRow(afterRow);
 }
 
 export interface MarkPublishPackageExportedResult {
@@ -488,8 +527,29 @@ export async function markPublishPackageExportedForOwner(
     throw AppError.internal("Failed to mark publish package exported");
   }
 
+  const afterRow = data as PublishPackageRow;
+
+  await writeAuditLog(bindings, {
+    userId: ownerId,
+    projectId,
+    action: "publish_package_exported",
+    entityType: "publish_package",
+    entityId: packageId,
+    metadata: {
+      task: "publish_export",
+      exportTarget,
+      manualCopyConfirmed: true,
+      exportedAt: afterRow.exported_at,
+      checklistComplete: unchecked.length === 0,
+      warningFlags: warnings,
+      chapterNumber: afterRow.chapter_number,
+    },
+    beforeData: snapshotPublishPackageStatus(row),
+    afterData: snapshotPublishPackageStatus(afterRow),
+  });
+
   return {
-    publishPackage: mapPublishPackageRow(data as PublishPackageRow),
+    publishPackage: mapPublishPackageRow(afterRow),
     alreadyExported: false,
     warnings,
   };

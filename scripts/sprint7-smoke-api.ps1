@@ -93,6 +93,44 @@ function Test-PublishJsonNoLeakMarkers {
   return $true
 }
 
+function Get-AuditLogsByAction {
+  param([string]$ProjectId, [string]$Action, [hashtable]$AuthHeaders, [string]$AnonKey)
+  $headers = @{
+    apikey        = $AnonKey
+    Authorization = $AuthHeaders.Authorization
+  }
+  $uri = "$SupabaseUrl/rest/v1/audit_logs?project_id=eq.$ProjectId&action=eq.$Action&select=action,entity_type,entity_id,metadata,before_data,after_data&order=created_at.desc&limit=20"
+  return @(Invoke-RestMethod -Uri $uri -Method GET -Headers $headers -ErrorAction Stop)
+}
+
+function Test-AuditPayloadSafe {
+  param([string]$JsonText)
+  $forbidden = @(
+    'packet_json', 'packetJson', 'planningTruth', 'planning_truth', 'delta_json', 'deltaJson',
+    'prose_text', 'proseText', 'content_text', 'contentText', 'full_prompt', 'service_role', 'openrouter'
+  )
+  foreach ($f in $forbidden) {
+    if ($JsonText -match $f) { return $false }
+  }
+  return $true
+}
+
+function Assert-AuditActionExists {
+  param([string]$Name, [string]$ProjectId, [string]$Action, [hashtable]$AuthHeaders, [string]$AnonKey)
+  try {
+    $rows = Get-AuditLogsByAction -ProjectId $ProjectId -Action $Action -AuthHeaders $AuthHeaders -AnonKey $AnonKey
+    if ($rows.Count -lt 1) {
+      Add-StepResult $Name "FAIL" "no audit row for $Action"
+      return
+    }
+    $json = ($rows | ConvertTo-Json -Depth 12)
+    $safe = Test-AuditPayloadSafe $json
+    Add-StepResult $Name $(if ($safe) { "PASS" } else { "FAIL" }) "count=$($rows.Count)"
+  } catch {
+    Add-StepResult $Name "FAIL" $_.Exception.Message.Substring(0, [Math]::Min(80, $_.Exception.Message.Length))
+  }
+}
+
 function Bootstrap-FoundationLocked {
   param([string]$ProjectId)
   Invoke-Api -Method POST -Path "/api/projects/$ProjectId/intake/messages" -Headers $auth `
@@ -272,6 +310,9 @@ Add-StepResult "PATCH fields updates copy" $(if (
     $fieldPatch.data.publishPackage.tags.Count -eq 3
   ) { "PASS" } else { "FAIL" }) ""
 
+Assert-AuditActionExists -Name "audit publish_package_updated" -ProjectId $projectId `
+  -Action "publish_package_updated" -AuthHeaders $auth -AnonKey $anonKey
+
 Invoke-ApiExpectFailure -Name "PATCH fields rejects planningTruth" -Method PATCH -Headers $auth `
   -Path "/api/projects/$projectId/publish/$packageV2Id/fields" `
   -Body '{"caption":"planningTruth leak attempt"}'
@@ -308,6 +349,9 @@ foreach ($item in $checklistPatch.data.publishPackage.checklist) {
   if (-not $item.checked) { $allChecked = $false }
 }
 Add-StepResult "PATCH checklist updates ids" $(if ($allChecked -and $checklistPatch.data.publishPackage.checklist.Count -eq 5) { "PASS" } else { "FAIL" }) ""
+
+Assert-AuditActionExists -Name "audit publish_checklist_updated" -ProjectId $projectId `
+  -Action "publish_checklist_updated" -AuthHeaders $auth -AnonKey $anonKey
 
 $badChecklist = @(
   @{ id = "chk_unknown"; checked = $true },
@@ -350,6 +394,9 @@ if ($exportMeta -is [pscustomobject]) {
   $manualMarker = ($exportMeta.exportTarget -eq "kbm_manual_copy") -or ($exportMeta.exportedMarker -eq $true)
 }
 Add-StepResult "mark-exported manual marker only" $(if ($manualMarker) { "PASS" } else { "FAIL" }) "exportTarget=kbm_manual_copy"
+
+Assert-AuditActionExists -Name "audit publish_package_exported" -ProjectId $projectId `
+  -Action "publish_package_exported" -AuthHeaders $auth -AnonKey $anonKey
 Add-StepResult "mark-exported no external URL" $(if ($exportedJson -notmatch 'https?://[^"]*kbm') { "PASS" } else { "FAIL" }) ""
 
 Invoke-ApiExpectFailure -Name "exported package fields locked" -Method PATCH -Headers $auth `

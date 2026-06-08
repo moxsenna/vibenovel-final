@@ -14,6 +14,7 @@ import {
 import { createServiceRoleClient } from "../lib/supabase.js";
 import { AppError } from "../errors.js";
 import { writeAuditLog } from "./audit.js";
+import { snapshotChapterSummaryApproval } from "./audit-snapshot.js";
 import { getOwnedProjectRow } from "./project.js";
 import { countLinkedProposals } from "./summary-proposal-linker.js";
 
@@ -191,18 +192,33 @@ export async function approveChapterSummaryForOwner(
     }
   }
 
+  const approvedRow = updatedSummary as ChapterSummaryRow;
+
   await writeAuditLog(bindings, {
     userId: ownerId,
     projectId,
-    action: "project_updated",
-    entityType: "project",
-    entityId: projectId,
+    action: "chapter_summary_approved",
+    entityType: "chapter_summary",
+    entityId: summaryId,
     metadata: {
-      chapterSummaryApproved: summaryId,
+      task: "summary_approval",
       chapterOutlineId: summaryRow.chapter_outline_id,
       chapterNumber: summaryRow.chapter_number,
+      linkedProposalCount: linkedCount,
       note: "summary_approval_not_canon_promotion",
     },
+    beforeData: snapshotChapterSummaryApproval({
+      id: summaryRow.id,
+      status: summaryRow.status,
+      chapter_number: summaryRow.chapter_number,
+      summary_version: summaryRow.summary_version,
+    }),
+    afterData: snapshotChapterSummaryApproval({
+      id: approvedRow.id,
+      status: approvedRow.status,
+      chapter_number: approvedRow.chapter_number,
+      summary_version: approvedRow.summary_version,
+    }),
   });
 
   return {

@@ -33,6 +33,7 @@ import {
 import { createServiceRoleClient } from "../lib/supabase.js";
 import { AppError } from "../errors.js";
 import { writeAuditLog } from "./audit.js";
+import { generateCorrelationId, snapshotFoundationLock } from "./audit-snapshot.js";
 import { listCharactersForOwner } from "./character.js";
 import { listFactsForOwner } from "./fact.js";
 import {
@@ -901,6 +902,23 @@ export async function lockFoundationForOwner(
 
   validateAllAcceptedProposals(acceptedProposals);
 
+  const correlationId = generateCorrelationId();
+
+  await writeAuditLog(bindings, {
+    userId: ownerId,
+    projectId,
+    action: "foundation_lock_started",
+    entityType: "story_foundation",
+    entityId: foundation?.id,
+    metadata: {
+      correlationId,
+      task: "foundation_lock",
+      readinessScore: readiness.readinessScore,
+      canLock: readiness.canLock,
+      acceptedProposalCount: acceptedProposals.length,
+    },
+  });
+
   const existingByName = new Map<string, CharacterRow>();
   for (const ch of characters) {
     existingByName.set(ch.name.toLowerCase(), {
@@ -921,128 +939,167 @@ export async function lockFoundationForOwner(
 
   const foundationMerge = mergeFoundationUpdates(foundation, acceptedProposals);
 
-  const charResult = await promoteCharacters(
-    bindings,
-    ownerId,
-    projectId,
-    acceptedProposals,
-    existingByName,
-  );
-
-  const factResult = await promoteFacts(bindings, ownerId, projectId, acceptedProposals);
-
-  const ruleResult = await promoteSpeechRules(
-    bindings,
-    ownerId,
-    projectId,
-    acceptedProposals,
-    charResult.nameToId,
-  );
-
-  const promotedProposalIds = [
-    ...charResult.promotedIds,
-    ...factResult.promotedIds,
-    ...ruleResult.promotedIds,
-    ...acceptedProposals
-      .filter((p) => p.proposal_type === AI_PROPOSAL_TYPES.foundation || p.proposal_type === AI_PROPOSAL_TYPES.style)
-      .map((p) => p.id),
-  ];
-
-  const now = new Date().toISOString();
-  const lockUpdates: Record<string, unknown> = {
-    ...foundationMerge,
-    is_locked: true,
-    locked_at: now,
-    status: FOUNDATION_STATUSES.locked,
-    readiness_percent: Math.max(readiness.readinessScore, 75),
-    readiness_status: FOUNDATION_READINESS_LEVELS.siap_dikunci,
-  };
-
   let afterFoundation: FoundationRow;
+  let promotedProposalIds: string[] = [];
+  let charResult: Awaited<ReturnType<typeof promoteCharacters>>;
+  let factResult: Awaited<ReturnType<typeof promoteFacts>>;
+  let ruleResult: Awaited<ReturnType<typeof promoteSpeechRules>>;
 
-  if (foundation) {
-    const { data, error } = await admin
-      .from("story_foundations")
-      .update(lockUpdates)
-      .eq("project_id", projectId)
-      .eq("is_locked", false)
-      .select(FOUNDATION_SELECT)
-      .single();
+  try {
+    charResult = await promoteCharacters(
+      bindings,
+      ownerId,
+      projectId,
+      acceptedProposals,
+      existingByName,
+    );
 
-    if (error || !data) {
-      console.error("story_foundations lock update failed");
-      throw AppError.internal("Failed to lock foundation");
+    factResult = await promoteFacts(bindings, ownerId, projectId, acceptedProposals);
+
+    ruleResult = await promoteSpeechRules(
+      bindings,
+      ownerId,
+      projectId,
+      acceptedProposals,
+      charResult.nameToId,
+    );
+
+    promotedProposalIds = [
+      ...charResult.promotedIds,
+      ...factResult.promotedIds,
+      ...ruleResult.promotedIds,
+      ...acceptedProposals
+        .filter(
+          (p) =>
+            p.proposal_type === AI_PROPOSAL_TYPES.foundation ||
+            p.proposal_type === AI_PROPOSAL_TYPES.style,
+        )
+        .map((p) => p.id),
+    ];
+
+    const now = new Date().toISOString();
+    const lockUpdates: Record<string, unknown> = {
+      ...foundationMerge,
+      is_locked: true,
+      locked_at: now,
+      status: FOUNDATION_STATUSES.locked,
+      readiness_percent: Math.max(readiness.readinessScore, 75),
+      readiness_status: FOUNDATION_READINESS_LEVELS.siap_dikunci,
+    };
+
+    if (foundation) {
+      const { data, error } = await admin
+        .from("story_foundations")
+        .update(lockUpdates)
+        .eq("project_id", projectId)
+        .eq("is_locked", false)
+        .select(FOUNDATION_SELECT)
+        .single();
+
+      if (error || !data) {
+        console.error("story_foundations lock update failed");
+        throw AppError.internal("Failed to lock foundation");
+      }
+      afterFoundation = data as FoundationRow;
+    } else {
+      const { data, error } = await admin
+        .from("story_foundations")
+        .insert({
+          project_id: projectId,
+          premise: (lockUpdates.premise as string) ?? "",
+          main_conflict: (lockUpdates.main_conflict as string) ?? "",
+          reader_promise: (lockUpdates.reader_promise as string) ?? "",
+          tone: (lockUpdates.tone as string | undefined) ?? null,
+          genre: (lockUpdates.genre as string | undefined) ?? null,
+          target_reader: (lockUpdates.target_reader as string | undefined) ?? null,
+          style_tags: (lockUpdates.style_tags as string[] | undefined) ?? [],
+          is_locked: true,
+          locked_at: now,
+          status: FOUNDATION_STATUSES.locked,
+          readiness_percent: Math.max(readiness.readinessScore, 75),
+          readiness_status: FOUNDATION_READINESS_LEVELS.siap_dikunci,
+        })
+        .select(FOUNDATION_SELECT)
+        .single();
+
+      if (error || !data) {
+        console.error("story_foundations lock insert failed");
+        throw AppError.internal("Failed to lock foundation");
+      }
+      afterFoundation = data as FoundationRow;
     }
-    afterFoundation = data as FoundationRow;
-  } else {
-    const { data, error } = await admin
-      .from("story_foundations")
-      .insert({
-        project_id: projectId,
-        premise: (lockUpdates.premise as string) ?? "",
-        main_conflict: (lockUpdates.main_conflict as string) ?? "",
-        reader_promise: (lockUpdates.reader_promise as string) ?? "",
-        tone: (lockUpdates.tone as string | undefined) ?? null,
-        genre: (lockUpdates.genre as string | undefined) ?? null,
-        target_reader: (lockUpdates.target_reader as string | undefined) ?? null,
-        style_tags: (lockUpdates.style_tags as string[] | undefined) ?? [],
-        is_locked: true,
-        locked_at: now,
-        status: FOUNDATION_STATUSES.locked,
-        readiness_percent: Math.max(readiness.readinessScore, 75),
-        readiness_status: FOUNDATION_READINESS_LEVELS.siap_dikunci,
+
+    const { error: phaseError } = await admin
+      .from("projects")
+      .update({
+        workflow_phase: WORKFLOW_PHASES.foundation_locked,
+        last_edited_at: now,
       })
-      .select(FOUNDATION_SELECT)
-      .single();
+      .eq("id", projectId)
+      .eq("owner_id", ownerId);
 
-    if (error || !data) {
-      console.error("story_foundations lock insert failed");
-      throw AppError.internal("Failed to lock foundation");
+    if (phaseError) {
+      console.error("projects workflow_phase lock update failed");
+      throw AppError.internal("Failed to update project workflow phase");
     }
-    afterFoundation = data as FoundationRow;
+
+    const lockSnapshots = snapshotFoundationLock(
+      foundation
+        ? {
+            isLocked: foundation.is_locked,
+            status: foundation.status,
+            readinessPercent: foundation.readiness_percent,
+          }
+        : null,
+      {
+        isLocked: afterFoundation.is_locked,
+        status: afterFoundation.status,
+        readinessPercent: afterFoundation.readiness_percent,
+      },
+    );
+
+    await writeAuditLog(bindings, {
+      userId: ownerId,
+      projectId,
+      action: "foundation_locked",
+      entityType: "story_foundation",
+      entityId: afterFoundation.id,
+      metadata: {
+        correlationId,
+        task: "foundation_lock",
+        promotedProposalIds,
+        promotedCounts: {
+          characters: charResult.promotedIds.length,
+          facts: factResult.promotedIds.length,
+          speechRules: ruleResult.promotedIds.length,
+        },
+        readinessScore: readiness.readinessScore,
+        canLock: readiness.canLock,
+        lockedAt: now,
+      },
+      beforeData: lockSnapshots.beforeData,
+      afterData: {
+        ...lockSnapshots.afterData,
+        workflowPhase: WORKFLOW_PHASES.foundation_locked,
+      },
+    });
+  } catch (err) {
+    const errorCode = err instanceof AppError ? err.code : "internal_error";
+    await writeAuditLog(bindings, {
+      userId: ownerId,
+      projectId,
+      action: "foundation_lock_failed",
+      entityType: "story_foundation",
+      entityId: foundation?.id,
+      metadata: {
+        correlationId,
+        task: "foundation_lock",
+        errorCode,
+        readinessScore: readiness.readinessScore,
+      },
+    });
+    throw err;
   }
-
-  const { error: phaseError } = await admin
-    .from("projects")
-    .update({
-      workflow_phase: WORKFLOW_PHASES.foundation_locked,
-      last_edited_at: now,
-    })
-    .eq("id", projectId)
-    .eq("owner_id", ownerId);
-
-  if (phaseError) {
-    console.error("projects workflow_phase lock update failed");
-    throw AppError.internal("Failed to update project workflow phase");
-  }
-
-  await writeAuditLog(bindings, {
-    userId: ownerId,
-    projectId,
-    action: "foundation_locked",
-    entityType: "story_foundation",
-    entityId: afterFoundation.id,
-    metadata: {
-      promotedProposalIds,
-      readinessScore: readiness.readinessScore,
-      canLock: readiness.canLock,
-      lockedAt: now,
-      lockedBy: ownerId,
-    },
-    beforeData: foundation
-      ? {
-          isLocked: foundation.is_locked,
-          status: foundation.status,
-          readinessPercent: foundation.readiness_percent,
-        }
-      : { isLocked: false },
-    afterData: {
-      isLocked: afterFoundation.is_locked,
-      status: afterFoundation.status,
-      readinessPercent: afterFoundation.readiness_percent,
-      workflowPhase: WORKFLOW_PHASES.foundation_locked,
-    },
-  });
 
   const finalReadiness = await getFoundationReadinessForOwner(bindings, ownerId, projectId);
 

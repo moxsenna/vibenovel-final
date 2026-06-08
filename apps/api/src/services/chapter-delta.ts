@@ -10,6 +10,8 @@ import {
 } from "../lib/mappers.js";
 import { createServiceRoleClient } from "../lib/supabase.js";
 import { AppError } from "../errors.js";
+import { writeAuditLog } from "./audit.js";
+import { generateCorrelationId, snapshotChapterDelta } from "./audit-snapshot.js";
 import { getOwnedProjectRow } from "./project.js";
 import { extractChapterDeltaStub } from "./chapter-delta-extractor.js";
 import {
@@ -209,13 +211,38 @@ export async function extractChapterDeltaForOwner(
     deltaRow = data as ChapterDeltaRow;
   }
 
+  const correlationId = generateCorrelationId();
+  const proposalTypes = [...new Set(extracted.proposalDrafts.map((d) => d.proposalType))];
+  const highRiskCount = extracted.proposalDrafts.filter((d) => d.riskLevel === "high").length;
+
   const proposals = await createLinkedProposals(
     bindings,
     ownerId,
     projectId,
     summaryId,
     extracted.proposalDrafts,
+    correlationId,
   );
+
+  await writeAuditLog(bindings, {
+    userId: ownerId,
+    projectId,
+    action: "chapter_delta_extracted",
+    entityType: "chapter_delta",
+    entityId: deltaRow.id,
+    metadata: {
+      correlationId,
+      task: "delta_extract",
+      summaryId,
+      deltaId: deltaRow.id,
+      proposalCount: proposals.length,
+      extractorVersion: deltaRow.extractor_version,
+      proposalTypes,
+      highRiskCount,
+      regenerated: Boolean(existingDelta),
+    },
+    afterData: snapshotChapterDelta(deltaRow),
+  });
 
   return {
     delta: mapChapterDeltaRow(deltaRow),

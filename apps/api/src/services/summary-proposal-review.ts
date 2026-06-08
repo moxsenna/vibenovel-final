@@ -13,6 +13,7 @@ import {
 import { createServiceRoleClient } from "../lib/supabase.js";
 import { AppError } from "../errors.js";
 import { writeAuditLog } from "./audit.js";
+import { generateCorrelationId, snapshotCanonPromotion } from "./audit-snapshot.js";
 import { getOwnedProjectRow } from "./project.js";
 import {
   promoteProposalToCanon,
@@ -105,8 +106,51 @@ export async function acceptLinkedProposalForOwner(
     confirmHighRisk = body.confirmHighRisk === true;
   }
 
-  const promoted = await promoteProposalToCanon(bindings, projectId, proposal, {
-    confirmHighRisk,
+  const correlationId = generateCorrelationId();
+  let promoted: PromotedEntity;
+
+  try {
+    promoted = await promoteProposalToCanon(bindings, projectId, proposal, {
+      confirmHighRisk,
+    });
+  } catch (err) {
+    const errorCode = err instanceof AppError ? err.code : "internal_error";
+    await writeAuditLog(bindings, {
+      userId: ownerId,
+      projectId,
+      action: "canon_promotion_failed",
+      entityType: "ai_proposal",
+      entityId: proposalId,
+      metadata: {
+        correlationId,
+        task: "summary_proposal_accept",
+        proposalId,
+        proposalType: proposal.proposal_type,
+        riskLevel: proposal.risk_level,
+        chapterSummaryId: summaryId,
+        errorCode,
+        highRiskConfirmed: confirmHighRisk,
+      },
+    });
+    throw err;
+  }
+
+  await writeAuditLog(bindings, {
+    userId: ownerId,
+    projectId,
+    action: "canon_promotion_applied",
+    entityType: "ai_proposal",
+    entityId: proposalId,
+    metadata: {
+      correlationId,
+      task: "summary_proposal_accept",
+      proposalId,
+      proposalType: proposal.proposal_type,
+      riskLevel: proposal.risk_level,
+      chapterSummaryId: summaryId,
+      highRiskConfirmed: confirmHighRisk,
+      ...snapshotCanonPromotion(promoted),
+    },
   });
 
   const admin = createServiceRoleClient(bindings);
@@ -160,11 +204,31 @@ export async function acceptLinkedProposalForOwner(
     entityType: "ai_proposal",
     entityId: proposalId,
     metadata: {
+      correlationId,
       proposalType: proposalRow.proposal_type,
       chapterSummaryId: summaryId,
       promotedEntityType: promoted.entityType,
       promotedEntityId: promoted.entityId,
       canonPromotion: true,
+    },
+  });
+
+  await writeAuditLog(bindings, {
+    userId: ownerId,
+    projectId,
+    action: "summary_proposal_accepted",
+    entityType: "chapter_summary_proposal",
+    entityId: acceptedLink.id,
+    metadata: {
+      correlationId,
+      task: "summary_proposal_accept",
+      proposalId,
+      proposalType: proposalRow.proposal_type,
+      chapterSummaryId: summaryId,
+      promotedEntityType: promoted.entityType,
+      promotedEntityId: promoted.entityId,
+      created: promoted.created,
+      highRiskConfirmed: confirmHighRisk,
     },
   });
 
@@ -276,7 +340,22 @@ export async function rejectLinkedProposalForOwner(
     metadata: {
       proposalType: proposalRow.proposal_type,
       chapterSummaryId: summaryId,
-      ...(reason ? { reason } : {}),
+      ...(reason ? { reason: reason.slice(0, 200) } : {}),
+    },
+  });
+
+  await writeAuditLog(bindings, {
+    userId: ownerId,
+    projectId,
+    action: "summary_proposal_rejected",
+    entityType: "chapter_summary_proposal",
+    entityId: rejectedLink.id,
+    metadata: {
+      task: "summary_proposal_reject",
+      proposalId,
+      proposalType: proposalRow.proposal_type,
+      chapterSummaryId: summaryId,
+      ...(reason ? { reason: reason.slice(0, 200) } : {}),
     },
   });
 

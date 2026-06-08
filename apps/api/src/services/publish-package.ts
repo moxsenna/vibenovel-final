@@ -6,6 +6,8 @@ import type { AppBindings } from "../env.js";
 import { mapPublishPackageRow, type PublishPackageRow } from "../lib/mappers.js";
 import { createServiceRoleClient } from "../lib/supabase.js";
 import { AppError } from "../errors.js";
+import { writeAuditLog } from "./audit.js";
+import { generateCorrelationId, snapshotPublishPackageStatus } from "./audit-snapshot.js";
 import { getOwnedProjectRow } from "./project.js";
 import {
   generatePublishPackageStub,
@@ -288,8 +290,28 @@ export async function generatePublishPackageForOwner(
     throw AppError.internal("Failed to generate publish package");
   }
 
+  const insertedRow = inserted as PublishPackageRow;
+  const correlationId = generateCorrelationId();
+
+  await writeAuditLog(bindings, {
+    userId: ownerId,
+    projectId,
+    action: regenerate ? "publish_package_regenerated" : "publish_package_generated",
+    entityType: "publish_package",
+    entityId: insertedRow.id,
+    metadata: {
+      correlationId,
+      task: regenerate ? "publish_regenerate" : "publish_generate",
+      chapterNumber: insertedRow.chapter_number,
+      generatorVersion: insertedRow.generator_version,
+      packageVersion: insertedRow.package_version,
+      ...(regenerate && existing ? { supersededPackageId: existing.id } : {}),
+    },
+    afterData: snapshotPublishPackageStatus(insertedRow),
+  });
+
   return {
-    publishPackage: mapPublishPackageRow(inserted as PublishPackageRow),
+    publishPackage: mapPublishPackageRow(insertedRow),
     created: true,
   };
 }

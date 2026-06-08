@@ -29,11 +29,15 @@ export async function createLinkedProposals(
   projectId: string,
   summaryId: string,
   drafts: ProposalDraft[],
+  correlationId?: string,
 ): Promise<LinkedProposalSummary[]> {
   if (drafts.length === 0) return [];
 
   const admin = createServiceRoleClient(bindings);
   const results: LinkedProposalSummary[] = [];
+  const batchCorrelationId = correlationId ?? crypto.randomUUID();
+  const linkedProposalIds: string[] = [];
+  const linkedTypes: string[] = [];
 
   for (const draft of drafts) {
     assertProposalPayloadSafe(draft.payload);
@@ -94,12 +98,34 @@ export async function createLinkedProposals(
         source: proposal.source,
         chapterSummaryId: summaryId,
         fromDeltaExtraction: true,
+        correlationId: batchCorrelationId,
       },
     });
+
+    linkedProposalIds.push(proposal.id);
+    linkedTypes.push(proposal.proposal_type);
 
     results.push(
       mapLinkedProposalSummary(linkRow as ChapterSummaryProposalRow, proposal),
     );
+  }
+
+  if (results.length > 0) {
+    await writeAuditLog(bindings, {
+      userId: ownerId,
+      projectId,
+      action: "summary_proposal_linked",
+      entityType: "chapter_summary",
+      entityId: summaryId,
+      metadata: {
+        correlationId: batchCorrelationId,
+        task: "delta_extract",
+        summaryId,
+        proposalCount: results.length,
+        proposalIds: linkedProposalIds,
+        proposalTypes: [...new Set(linkedTypes)],
+      },
+    });
   }
 
   return results;

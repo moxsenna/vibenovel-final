@@ -339,16 +339,18 @@ Belum ada (sengaja — defer setelah hardening / Sprint 8):
 
 ## Sprint 7.8 — Pre-AI Hardening (plan) 📋
 
-**Audit logs, DB transaction strategy, smoke consolidation, CI E2E strategy — plan only, belum implementasi.**
+**Audit logs, DB transaction strategy, smoke consolidation, CI E2E strategy.**
 
-**Rencana:** [`docs/41-pre-ai-hardening-audit-transactions-ci-plan.md`](docs/41-pre-ai-hardening-audit-transactions-ci-plan.md)
+**Rencana:** [`docs/41-pre-ai-hardening-audit-transactions-ci-plan.md`](docs/41-pre-ai-hardening-audit-transactions-ci-plan.md)  
+**Audit enum:** [`docs/42-audit-action-enum-and-coverage-plan.md`](docs/42-audit-action-enum-and-coverage-plan.md)
 
 | Task | Status | Deliverable |
 |---|---|---|
 | 7.8 Pre-AI hardening plan | ✅ | `docs/41` + agent work log |
 | 7.8.1 Audit enum + coverage plan | ✅ | `docs/42` + agent work log |
+| 7.8.2 Audit log implementation (P0+P1) | ✅ | `00007` migration + audit writers + smoke audit asserts |
 
-**Task berikutnya (disarankan):** **Task 7.8.2** — Implement audit logs for canon-changing and export actions (`docs/42` §10, §5 P0). Sprint 8 AI/OpenRouter **setelah** hardening 7.8.2–7.8.6.
+**Task berikutnya (disarankan):** **Task 7.8.3** — Transaction wrapper strategy (`docs/41` §4). Sprint 8 AI/OpenRouter **setelah** hardening 7.8.3–7.8.6.
 
 ---
 

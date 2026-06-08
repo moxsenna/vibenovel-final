@@ -96,6 +96,44 @@ function Test-ProposalResponseSafe {
   return $true
 }
 
+function Get-AuditLogsByAction {
+  param([string]$ProjectId, [string]$Action, [hashtable]$AuthHeaders, [string]$AnonKey)
+  $headers = @{
+    apikey        = $AnonKey
+    Authorization = $AuthHeaders.Authorization
+  }
+  $uri = "$SupabaseUrl/rest/v1/audit_logs?project_id=eq.$ProjectId&action=eq.$Action&select=action,entity_type,entity_id,metadata,before_data,after_data&order=created_at.desc&limit=20"
+  return @(Invoke-RestMethod -Uri $uri -Method GET -Headers $headers -ErrorAction Stop)
+}
+
+function Test-AuditPayloadSafe {
+  param([string]$JsonText)
+  $forbidden = @(
+    'packet_json', 'packetJson', 'planningTruth', 'planning_truth', 'delta_json', 'deltaJson',
+    'prose_text', 'proseText', 'content_text', 'contentText', 'full_prompt', 'service_role', 'openrouter'
+  )
+  foreach ($f in $forbidden) {
+    if ($JsonText -match $f) { return $false }
+  }
+  return $true
+}
+
+function Assert-AuditActionExists {
+  param([string]$Name, [string]$ProjectId, [string]$Action, [hashtable]$AuthHeaders, [string]$AnonKey)
+  try {
+    $rows = Get-AuditLogsByAction -ProjectId $ProjectId -Action $Action -AuthHeaders $AuthHeaders -AnonKey $AnonKey
+    if ($rows.Count -lt 1) {
+      Add-StepResult $Name "FAIL" "no audit row for $Action"
+      return
+    }
+    $json = ($rows | ConvertTo-Json -Depth 12)
+    $safe = Test-AuditPayloadSafe $json
+    Add-StepResult $Name $(if ($safe) { "PASS" } else { "FAIL" }) "count=$($rows.Count)"
+  } catch {
+    Add-StepResult $Name "FAIL" $_.Exception.Message.Substring(0, [Math]::Min(80, $_.Exception.Message.Length))
+  }
+}
+
 function Get-SpeechRulesCount {
   param([string]$ProjectId)
   $res = Invoke-Api -Path "/api/projects/$ProjectId/speech-rules" -Headers $auth
@@ -287,6 +325,11 @@ Add-StepResult "delta extract idempotent" $(if (
     $extractAgain.data.created -eq $false -and $extractAgain.data.delta.id -eq $deltaId
   ) { "PASS" } else { "FAIL" }) ""
 
+Assert-AuditActionExists -Name "audit chapter_delta_extracted" -ProjectId $projectId `
+  -Action "chapter_delta_extracted" -AuthHeaders $auth -AnonKey $anonKey
+Assert-AuditActionExists -Name "audit summary_proposal_linked" -ProjectId $projectId `
+  -Action "summary_proposal_linked" -AuthHeaders $auth -AnonKey $anonKey
+
 $allProposed = $true
 foreach ($p in $propGet.data.proposals) {
   if ($p.status -ne "proposed") { $allProposed = $false }
@@ -360,6 +403,9 @@ Add-StepResult "writing state summarized" $(if ($sessionPostApprove.data.writing
 $approveAgain = Invoke-Api -Method POST -Path "/api/projects/$projectId/summary/$currentSummaryId/approve" -Headers $auth -Body '{}'
 Add-StepResult "approve idempotent" $(if ($approveAgain.data.alreadyApproved -eq $true) { "PASS" } else { "FAIL" }) ""
 
+Assert-AuditActionExists -Name "audit chapter_summary_approved" -ProjectId $projectId `
+  -Action "chapter_summary_approved" -AuthHeaders $auth -AnonKey $anonKey
+
 if ($revealProposal) {
   Invoke-ApiExpectFailure -Name "reveal accept without confirm" -Method POST -Headers $auth `
     -Path "/api/projects/$projectId/summary/$currentSummaryId/proposals/$($revealProposal.proposalId)/accept" -Body '{}'
@@ -394,6 +440,11 @@ if ($factProposal -and $factProposal.status -eq "proposed") {
 
   $acceptAgain = Invoke-Api -Method POST -Path "/api/projects/$projectId/summary/$currentSummaryId/proposals/$($factProposal.proposalId)/accept" -Headers $auth -Body '{}'
   Add-StepResult "accept idempotent" $(if ($acceptAgain.data.alreadyAccepted -eq $true) { "PASS" } else { "FAIL" }) ""
+
+  Assert-AuditActionExists -Name "audit summary_proposal_accepted" -ProjectId $projectId `
+    -Action "summary_proposal_accepted" -AuthHeaders $auth -AnonKey $anonKey
+  Assert-AuditActionExists -Name "audit canon_promotion_applied" -ProjectId $projectId `
+    -Action "canon_promotion_applied" -AuthHeaders $auth -AnonKey $anonKey
 
   Invoke-ApiExpectFailure -Name "reject accepted proposal" -Method POST -Headers $auth `
     -Path "/api/projects/$projectId/summary/$currentSummaryId/proposals/$($factProposal.proposalId)/reject" -Body '{}'

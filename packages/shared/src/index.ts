@@ -3,6 +3,8 @@ export type { ID, ISODateTime, JsonObject, JsonValue, Timestamps } from "./utils
 
 // Enums (const objects + union types)
 export {
+  AUDIT_ACTIONS,
+  AUDIT_ENTITY_TYPES,
   AI_PROPOSAL_RISK_LEVELS,
   AI_PROPOSAL_SOURCES,
   AI_PROPOSAL_STATUSES,
@@ -65,6 +67,8 @@ export {
 } from "./enums.js";
 
 export type {
+  AuditAction,
+  AuditEntityType,
   AiProposalRiskLevel,
   AiProposalSource,
   AiProposalStatus,

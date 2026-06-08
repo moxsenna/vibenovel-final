@@ -1,37 +1,10 @@
+import type { AuditAction, AuditEntityType } from "@vibenovel/shared";
 import type { AppBindings } from "../env.js";
 import { createServiceRoleClient } from "../lib/supabase.js";
 import { AppError } from "../errors.js";
+import { sanitizeAuditMetadata, sanitizeAuditSnapshot } from "./audit-snapshot.js";
 
-export type AuditAction =
-  | "project_created"
-  | "project_updated"
-  | "settings_updated"
-  | "foundation_created"
-  | "foundation_updated"
-  | "foundation_locked"
-  | "character_created"
-  | "character_updated"
-  | "fact_created"
-  | "fact_updated"
-  | "fact_deprecated"
-  | "speech_rule_created"
-  | "speech_rule_updated"
-  | "ai_proposal_created"
-  | "ai_proposal_accepted"
-  | "ai_proposal_rejected"
-  | "ai_proposal_merged"
-  | "credit_balance_seeded";
-
-export type AuditEntityType =
-  | "profile"
-  | "project"
-  | "project_settings"
-  | "story_foundation"
-  | "character"
-  | "fact"
-  | "relationship_speech_rule"
-  | "ai_proposal"
-  | "credit_balance";
+export type { AuditAction, AuditEntityType };
 
 export interface WriteAuditLogInput {
   userId: string;
@@ -50,15 +23,19 @@ export async function writeAuditLog(
   input: WriteAuditLogInput,
 ): Promise<void> {
   const admin = createServiceRoleClient(bindings);
+  const metadata = input.metadata ? sanitizeAuditMetadata(input.metadata) : null;
+  const beforeData = input.beforeData ? sanitizeAuditSnapshot(input.beforeData) : null;
+  const afterData = input.afterData ? sanitizeAuditSnapshot(input.afterData) : null;
+
   const { error } = await admin.from("audit_logs").insert({
     user_id: input.userId,
     project_id: input.projectId ?? null,
     action: input.action,
     entity_type: input.entityType ?? null,
     entity_id: input.entityId ?? null,
-    metadata: input.metadata ?? null,
-    before_data: input.beforeData ?? null,
-    after_data: input.afterData ?? null,
+    metadata,
+    before_data: beforeData,
+    after_data: afterData,
   });
 
   if (error) {

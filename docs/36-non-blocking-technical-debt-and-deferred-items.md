@@ -161,7 +161,7 @@ Sprint 5 closed with **zero blockers**. Items below are non-blocking unless mark
 
 1. **`smoke:api`** remains Sprint 2 regression — add **`smoke:api:sprint5`**, **`smoke:api:sprint6`**, **`smoke:api:sprint7`** for Write Room, summary, and publish safety.
 2. **API-mode web E2E** not in GitHub Actions — local `-IncludeApiMode` for write/summary/publish smokes.
-3. **No audit logs** for outline/write/summary/**publish export** — **P1**; enum design in [`docs/42`](42-audit-action-enum-and-coverage-plan.md); implement writers **7.8.2**.
+3. **Audit logs P0/P1** — foundation lock, delta, canon promotion, publish export/update, summary approve ✅ (**7.8.2**). Outline/write/intake P2 writers still pending.
 4. **No DB transaction wrapper** for multi-step prose/outline/summary/publish — **P1**; matrix in `docs/41` §4; implement **7.8.3**.
 5. **Publish package API + UI + smoke complete Sprint 7** — no auto-post KBM; manual copy + `mark-exported` marker only (`docs/40`).
 6. **No UI regenerate publish package** — API supports regenerate; chapter picker Bab 1 default only.
@@ -181,7 +181,7 @@ Sprint 5 closed with **zero blockers**. Items below are non-blocking unless mark
 |---|---|---|
 | **7.8** | Hardening plan document | ✅ Plan complete (`docs/41`) |
 | **7.8.1** | Audit action enum + coverage map | ✅ Design complete (`docs/42`) |
-| **7.8.2** | Audit writers for canon/export P0 paths | Pending |
+| **7.8.2** | Audit writers for canon/export P0 paths | ✅ Implemented (`00007`, P0+P1 writers) |
 | **7.8.3** | Transaction wrapper + P0 workflows | Pending |
 | **7.8.4** | `smoke:all:local` include Sprint 6/7 | Pending |
 | **7.8.5** | CI E2E feasibility / optional nightly | Pending |

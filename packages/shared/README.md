@@ -4,7 +4,7 @@ Kontrak data bersama antar `apps/web`, `apps/api`, dan migrasi database Sprint 2
 
 ## Status
 
-**Task 2.1 + 3.1 + 4.1 + 5.1 + 6.1 + 7.1 — implemented.** TypeScript types dan enums domain Sprint 2–7; belum ada Zod schema atau runtime validation.
+**Task 2.1 + 3.1 + 4.1 + 5.1 + 6.1 + 7.1 + 7.8.2 — implemented.** TypeScript types dan enums domain Sprint 2–7; `AUDIT_ACTIONS` / `AUDIT_ENTITY_TYPES` (migration `00007`); belum ada Zod schema atau runtime validation.
 
 ## Isi package
 
