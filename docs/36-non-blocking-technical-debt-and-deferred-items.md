@@ -153,7 +153,7 @@ Sprint 5 closed with **zero blockers**. Items below are non-blocking unless mark
 | **During Sprint 6** | ✅ Summary/canon tables, SummaryPage API, Chapter Delta (closed — `docs/38`) |
 | **Sprint 7** | ✅ Publish package / KBM export stub (closed — `docs/40`) |
 | **Sprint 7.8 (plan ✅)** | [`docs/41`](41-pre-ai-hardening-audit-transactions-ci-plan.md) — audit/transaction/smoke/CI strategy; implement via 7.8.1–7.8.6 |
-| **Before AI generation** | **P1 hardening implement:** 7.8.2 audit P0, 7.8.3 transactions P0, 7.8.4 smoke consolidate |
+| **Before AI generation** | **P1 hardening implement:** 7.8.2 audit P0 ✅, 7.8.3 transactions P0 ✅, 7.8.4 smoke consolidate ✅ |
 | **After hardening** | OpenRouter, model router, credit ledger, production AI generation |
 | **Before production deploy** | DB transactions, CI smoke strategy, remote Supabase/Worker, secrets hygiene |
 
@@ -172,7 +172,7 @@ Sprint 5 closed with **zero blockers**. Items below are non-blocking unless mark
 9. **No prose delete endpoint**; **no export audit log table**.
 10. **Context Packet safety** — API/smoke only, not DB-enforced.
 11. **CI** — typecheck/build only; full smokes local-only — strategy in `docs/41` §5; **7.8.4–7.8.5**.
-12. **`smoke:all:local`** — missing Sprint 6/7 API + summary/publish web — **7.8.4**.
+12. **`smoke:all:local`** ✅ — includes Sprint 6/7 API + summary/publish web mock (**7.8.4**). **`smoke:all:local:full`** API-mode local/manual only (not CI).
 13. **Seed GoTrue login quirk** — smokes use ephemeral signup.
 
 ---
@@ -185,7 +185,7 @@ Sprint 5 closed with **zero blockers**. Items below are non-blocking unless mark
 | **7.8.1** | Audit action enum + coverage map | ✅ Design complete (`docs/42`) |
 | **7.8.2** | Audit writers for canon/export P0 paths | ✅ Implemented (`00007`, P0+P1 writers) |
 | **7.8.3** | Transaction wrapper + P0 workflows | ✅ Implemented (`transaction.ts`, P0 hardening, sprint6 smoke assertions) |
-| **7.8.4** | `smoke:all:local` include Sprint 6/7 | Pending |
+| **7.8.4** | `smoke:all:local` include Sprint 6/7 | ✅ Consolidated (`smoke-all-local.ps1` 9 phases; `:full` passes `-IncludeApiMode` to web) |
 | **7.8.5** | CI E2E feasibility / optional nightly | Pending |
 | **7.8.6** | Hardening verification report (`docs/43`) | Pending |
 

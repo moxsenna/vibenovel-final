@@ -22,8 +22,8 @@ Run all commands from **repo root**. Windows/PowerShell primary.
 | `smoke:web:summary` | `sprint6-smoke-web.ps1` | Web mock `/summary` + leak guards; `-- -IncludeApiMode` for API flow | Same |
 | `smoke:web:publish` | `sprint7-smoke-web.ps1` | Web mock `/publish` + leak guards; `-- -IncludeApiMode` for API flow | Same |
 | `smoke:api:sprint7` | `sprint7-smoke-api.ps1` | Publish package generation/update/export safety (Task 7.5) | Same as API base |
-| `smoke:all:local` | `smoke-all-local.ps1` | API base + sprint5 + web mock (no API-mode web) | All API + web prerequisites |
-| `smoke:all:local:full` | `smoke-all-local.ps1 -IncludeApiMode` | Above + web API-mode E2E | + restart `dev:web` after `VITE_USE_MOCKS=false` |
+| `smoke:all:local` | `smoke-all-local.ps1` | Sprint 2/5/6/7 API + Sprint 3–7 web mock (9 phases) | All API + web prerequisites |
+| `smoke:all:local:full` | `smoke-all-local.ps1 -IncludeApiMode` | Above + web API-mode on all web wrappers (incl. summary/publish) | + restart `dev:web` after `VITE_USE_MOCKS=false` |
 
 **Optional (not in package.json):** `scripts/sprint4-smoke-api.ps1` — Sprint 4 outline API (20 steps).
 
@@ -447,21 +447,67 @@ npm run test:e2e:sprint5 -w @vibenovel/web
 - [`docs/34-sprint-5-safe-write-room-context-packet-implementation-plan.md`](../docs/34-sprint-5-safe-write-room-context-packet-implementation-plan.md)
 - [`scripts/sprint5-smoke-api.ps1`](sprint5-smoke-api.ps1)
 
-## Local smoke suite (Task 5.8)
+## Local smoke suite (Task 5.8, consolidated Task 7.8.4)
 
 ### `smoke-all-local.ps1`
 
-Runs API base + Sprint 5 API + web mock smokes in sequence. Optional `-IncludeApiMode` for full web API-mode E2E.
+Runs **nine phases** in sequence (collects failures; exits 1 if any phase FAIL):
+
+| Phase | Script | `smoke:all:local` | `smoke:all:local:full` |
+|---|---|---|---|
+| 1 | `sprint2-smoke-api.ps1` | API | API |
+| 2 | `sprint5-smoke-api.ps1` | API | API |
+| 3 | `sprint6-smoke-api.ps1` | API | API |
+| 4 | `sprint7-smoke-api.ps1` | API | API |
+| 5 | `sprint3-smoke-web.ps1` | mock | mock + `-IncludeApiMode` |
+| 6 | `sprint4-smoke-web.ps1` | mock | mock + `-IncludeApiMode` |
+| 7 | `sprint5-smoke-web.ps1` | mock | mock + `-IncludeApiMode` |
+| 8 | `sprint6-smoke-web.ps1` | mock | mock + `-IncludeApiMode` |
+| 9 | `sprint7-smoke-web.ps1` | mock | mock + `-IncludeApiMode` |
 
 ```bash
-# Mock web only (recommended pre-Sprint 6)
+# Mock web (default) — full Sprint 2/5/6/7 API + Sprint 3–7 web
 npm run smoke:all:local
 
-# Includes web -IncludeApiMode (outline + write + sprint3 foundation flow)
+# Full stack + web API-mode (summary/publish API flows included)
 npm run smoke:all:local:full
 ```
 
-Expect **~2–5 minutes** depending on API bootstrap. Requires `dev:api` and `dev:web` running before start.
+**Orchestrator parameters** (direct PowerShell):
+
+```powershell
+powershell -File scripts/smoke-all-local.ps1 -SkipApi          # web only
+powershell -File scripts/smoke-all-local.ps1 -SkipWeb          # API only
+powershell -File scripts/smoke-all-local.ps1 -WebBaseUrl "http://localhost:5174"
+powershell -File scripts/smoke-all-local.ps1 -IncludeApiMode   # same as :full
+```
+
+### Prerequisites — `smoke:all:local`
+
+| Requirement | Notes |
+|---|---|
+| Docker Desktop + `supabase start` | API phases 1–4 |
+| `supabase db reset` | Fresh schema/seed before long runs |
+| `npm run dev:api` → :8787 | API phases + API-mode web bootstrap |
+| `apps/api/.dev.vars` (gitignored) | From `supabase status` — never commit |
+| `npm run dev:web` → :5173 | Web phases 5–9 |
+| `npx playwright install chromium` | First run in `apps/web` |
+| `VITE_USE_MOCKS=true` in `apps/web/.env.local` | Default mock web (phases 5–9) |
+
+### Prerequisites — `smoke:all:local:full` (API-mode web)
+
+All mock prerequisites, plus:
+
+| Requirement | Notes |
+|---|---|
+| `VITE_USE_MOCKS=false` in `apps/web/.env.local` | Real API session in browser |
+| Supabase env in `.env.local` | `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `VITE_API_URL` |
+| **Restart** `dev:web` after env change | Vite bakes env at startup — flaky if skipped |
+| Same Supabase + `dev:api` as API smokes | Web API-mode bootstraps via API before Playwright |
+
+**CI note:** `smoke:all:local:full` remains **local/manual only** — not in GitHub Actions (see `docs/41` §5).
+
+Expect **~5–15 minutes** depending on API bootstrap and API-mode web runs. Requires `dev:api` and `dev:web` running before start.
 
 ## Future scripts (not yet implemented)
 

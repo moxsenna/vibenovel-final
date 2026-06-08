@@ -90,10 +90,10 @@ npm run smoke:web:write
 npm run smoke:web:summary
 npm run smoke:web:publish
 
-# Full local suite (API base + sprint5 + web mock — no API-mode web)
+# Full local suite — Sprint 2/5/6/7 API + Sprint 3–7 web mock (9 phases)
 npm run smoke:all:local
 
-# Full local + web API-mode E2E (requires VITE_USE_MOCKS=false + restart dev:web)
+# Full local + web API-mode E2E incl. summary/publish (VITE_USE_MOCKS=false + restart dev:web)
 npm run smoke:all:local:full
 ```
 
