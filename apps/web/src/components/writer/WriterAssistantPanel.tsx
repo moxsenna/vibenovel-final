@@ -1,6 +1,20 @@
 import type { SafeContextPreview } from "@/hooks/useWriteRoomData";
 import type { ChapterDraft } from "@/types";
+import {
+  formatProseRewriteModeLabel,
+  PROSE_REWRITE_MODES,
+  type ProseRewriteMode,
+} from "@/services/ai";
 import { Button, Card, Icon } from "@/components/ui";
+
+const REWRITE_MODE_OPTIONS: ProseRewriteMode[] = [
+  PROSE_REWRITE_MODES.improve_emotion,
+  PROSE_REWRITE_MODES.tighten_pacing,
+  PROSE_REWRITE_MODES.natural_dialogue,
+  PROSE_REWRITE_MODES.shorter,
+  PROSE_REWRITE_MODES.longer,
+  PROSE_REWRITE_MODES.custom,
+];
 
 export interface WriterAssistantPanelProps {
   draft: ChapterDraft;
@@ -19,9 +33,21 @@ export interface WriterAssistantPanelProps {
   creditLoading?: boolean;
   creditError?: string | null;
   insufficientCredit?: boolean;
+  insufficientCreditRewrite?: boolean;
   remainingAfterGenerate?: number | null;
+  remainingAfterRewrite?: number | null;
   showCreditUi?: boolean;
   aiUnavailableReason?: string | null;
+  onRewriteProse?: () => void;
+  rewriteGenerating?: boolean;
+  rewriteError?: string | null;
+  rewriteNotice?: string | null;
+  rewriteMode?: ProseRewriteMode;
+  rewriteInstruction?: string;
+  onRewriteModeChange?: (mode: ProseRewriteMode) => void;
+  onRewriteInstructionChange?: (text: string) => void;
+  rewriteUnavailableReason?: string | null;
+  hasProseForRewrite?: boolean;
 }
 
 export function WriterAssistantPanel({
@@ -41,9 +67,21 @@ export function WriterAssistantPanel({
   creditLoading = false,
   creditError = null,
   insufficientCredit = false,
+  insufficientCreditRewrite = false,
   remainingAfterGenerate = null,
+  remainingAfterRewrite = null,
   showCreditUi = false,
   aiUnavailableReason = null,
+  onRewriteProse,
+  rewriteGenerating = false,
+  rewriteError = null,
+  rewriteNotice = null,
+  rewriteMode = PROSE_REWRITE_MODES.improve_emotion,
+  rewriteInstruction = "",
+  onRewriteModeChange,
+  onRewriteInstructionChange,
+  rewriteUnavailableReason = null,
+  hasProseForRewrite = false,
 }: WriterAssistantPanelProps) {
   const { pageCopy, storyChecks } = draft;
 
@@ -203,47 +241,87 @@ export function WriterAssistantPanel({
 
         <div className="h-px w-full bg-border/50" />
 
-        <div className="flex flex-col gap-3">
-          <h3 className="font-label-md text-label-md uppercase tracking-wider text-muted-text text-[11px]">
-            Perbaiki Teks
-          </h3>
-          <div className="grid grid-cols-1 gap-2">
-            <Button
-              variant="ghost"
-              className="h-auto w-full justify-start gap-3 rounded-xl border border-border p-3 text-left hover:border-primary-soft hover:bg-primary-soft/30"
-              disabled
-              leftIcon={
-                <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-surface-container-high text-primary">
-                  <Icon name="favorite" size={18} />
-                </span>
-              }
-            >
-              <span className="flex flex-col gap-0.5">
-                <span className="font-body-sm text-body-sm">{pageCopy.strengthenEmotionAction}</span>
-                {showCreditUi && creditRewriteCostLabel ? (
-                  <span className="font-label-sm text-label-sm text-muted-text">{creditRewriteCostLabel}</span>
+        {onRewriteProse || rewriteUnavailableReason ? (
+          <div className="flex flex-col gap-3">
+            <h3 className="font-label-md text-label-md uppercase tracking-wider text-muted-text text-[11px]">
+              Perbaiki Teks dengan AI
+            </h3>
+            {onRewriteProse ? (
+              <>
+                <label className="flex flex-col gap-1.5">
+                  <span className="font-label-sm text-label-sm text-muted-text">Mode perbaikan</span>
+                  <select
+                    value={rewriteMode}
+                    disabled={rewriteGenerating}
+                    onChange={(event) =>
+                      onRewriteModeChange?.(event.target.value as ProseRewriteMode)
+                    }
+                    className="w-full rounded-xl border border-border bg-surface px-3 py-2.5 font-body-sm text-body-sm text-on-surface outline-none focus:border-primary"
+                    aria-label="Mode perbaikan teks"
+                  >
+                    {REWRITE_MODE_OPTIONS.map((mode) => (
+                      <option key={mode} value={mode}>
+                        {formatProseRewriteModeLabel(mode)}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                {rewriteMode === PROSE_REWRITE_MODES.custom ? (
+                  <label className="flex flex-col gap-1.5">
+                    <span className="font-label-sm text-label-sm text-muted-text">
+                      Instruksi khusus (maks. 500 karakter)
+                    </span>
+                    <textarea
+                      value={rewriteInstruction}
+                      maxLength={500}
+                      disabled={rewriteGenerating}
+                      onChange={(event) => onRewriteInstructionChange?.(event.target.value)}
+                      rows={3}
+                      placeholder="Contoh: buat dialog lebih natural tanpa mengubah plot."
+                      className="w-full resize-y rounded-xl border border-border bg-surface px-3 py-2 font-body-sm text-body-sm text-on-surface outline-none focus:border-primary"
+                      aria-label="Instruksi perbaikan khusus"
+                    />
+                  </label>
                 ) : null}
-              </span>
-            </Button>
-            <Button
-              variant="ghost"
-              className="h-auto w-full justify-start gap-3 rounded-xl border border-border p-3 text-left hover:border-primary-soft hover:bg-primary-soft/30"
-              disabled
-              leftIcon={
-                <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-surface-container-high text-primary">
-                  <Icon name="forum" size={18} />
-                </span>
-              }
-            >
-              <span className="flex flex-col gap-0.5">
-                <span className="font-body-sm text-body-sm">{pageCopy.addDialogAction}</span>
-                {showCreditUi && creditRewriteCostLabel ? (
-                  <span className="font-label-sm text-label-sm text-muted-text">{creditRewriteCostLabel}</span>
+                {creditRewriteCostLabel ? (
+                  <p className="font-body-sm text-body-sm text-muted-text">{creditRewriteCostLabel}</p>
                 ) : null}
-              </span>
-            </Button>
+                {remainingAfterRewrite != null && !insufficientCreditRewrite ? (
+                  <p className="font-body-sm text-body-sm text-muted-text">
+                    Estimasi sisa setelah rewrite: {remainingAfterRewrite} kredit
+                  </p>
+                ) : null}
+                <Button
+                  variant="ghost"
+                  className="w-full rounded-xl border border-primary-soft bg-primary-soft/20 py-3 text-primary hover:bg-primary-soft/40"
+                  leftIcon={<Icon name="edit_note" size={20} />}
+                  disabled={
+                    !onRewriteProse ||
+                    rewriteGenerating ||
+                    insufficientCreditRewrite ||
+                    !hasProseForRewrite ||
+                    (rewriteMode === PROSE_REWRITE_MODES.custom && !rewriteInstruction.trim())
+                  }
+                  onClick={onRewriteProse}
+                >
+                  {rewriteGenerating ? "Memperbaiki teks…" : "Perbaiki Teks"}
+                </Button>
+                {rewriteNotice ? (
+                  <p className="rounded-xl border border-success-soft bg-success-soft/40 px-3 py-2 font-body-sm text-body-sm text-on-surface">
+                    {rewriteNotice}
+                  </p>
+                ) : null}
+                {rewriteError ? (
+                  <p className="rounded-xl border border-warning/30 bg-warning-soft px-3 py-2 font-body-sm text-body-sm text-on-surface">
+                    {rewriteError}
+                  </p>
+                ) : null}
+              </>
+            ) : rewriteUnavailableReason ? (
+              <p className="font-body-sm text-body-sm text-muted-text">{rewriteUnavailableReason}</p>
+            ) : null}
           </div>
-        </div>
+        ) : null}
 
         <div className="h-px w-full bg-border/50" />
 

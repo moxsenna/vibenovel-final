@@ -371,13 +371,15 @@ Belum ada (sengaja — defer setelah hardening / Sprint 8):
 | 9.1 Cost estimation | ✅ | `model-cost-map.ts`, `estimated_cost_usd` on success |
 | 9.2 Credit UI minimal | ✅ | WritePage saldo/biaya kredit, `smoke:web:credit-ui` |
 | 9.3 Prose rewrite API | ✅ | `POST /ai/rewrite-prose`, `smoke:api:sprint9` |
-| 9.4 WritePage rewrite UI | ⏳ | Perbaiki Teks buttons |
+| 9.4 WritePage rewrite UI | ✅ | `POST /ai/rewrite-prose` UI, `smoke:web:rewrite` |
 | 9.5 Publish copy AI API | ⏳ | `POST /ai/improve-publish-copy` |
 | 9.6 PublishPage AI UI | ⏳ | Improve copy + apply |
 | 9.7 Safety regression | ⏳ | Sprint 9 smokes |
 | 9.8 Verification report | ⏳ | `docs/49` |
 
-**Task berikutnya (disarankan):** **Task 9.4** — WritePage rewrite UI (Perbaiki Teks buttons).
+**Task berikutnya (disarankan):** **Task 9.5** — Publish copy AI API (`POST /ai/improve-publish-copy`).
+
+**Rewrite UI (Task 9.4):** Tersedia di mode API pada WritePage — mode perbaikan (emosi/pacing/dialog/panjang/custom), biaya rewrite 3/6/12 kredit (hemat/seimbang/terbaik), hasil disimpan sebagai versi prose baru. Mock/fallback tidak memalsukan rewrite. Top up belum tersedia.
 
 ---
 

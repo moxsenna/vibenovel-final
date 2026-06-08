@@ -11,6 +11,9 @@ export interface WriterEditorPanelProps {
   saving?: boolean;
   onFinish?: () => void;
   finishing?: boolean;
+  rewriteGenerating?: boolean;
+  rewriteNotice?: string | null;
+  rewriteError?: string | null;
 }
 
 export function WriterEditorPanel({
@@ -23,6 +26,9 @@ export function WriterEditorPanel({
   saving = false,
   onFinish,
   finishing = false,
+  rewriteGenerating = false,
+  rewriteNotice = null,
+  rewriteError = null,
 }: WriterEditorPanelProps) {
   const { pageCopy } = draft;
   const displayProse = proseText ?? activeBeat.prose;
@@ -45,10 +51,28 @@ export function WriterEditorPanel({
               <p className="font-body-sm text-body-sm text-muted-text">
                 Adegan {activeBeat.number}: {activeBeat.title}
               </p>
-              <div className="mt-1 flex items-center gap-2 font-body-sm text-body-sm text-muted-text">
+              <div className="mt-1 flex flex-wrap items-center gap-2 font-body-sm text-body-sm text-muted-text">
                 <span>{draft.wordCount} kata</span>
                 <span>•</span>
                 <span>{draft.lastSavedLabel}</span>
+                {rewriteGenerating ? (
+                  <>
+                    <span>•</span>
+                    <span className="text-primary">Memperbaiki teks…</span>
+                  </>
+                ) : null}
+                {!rewriteGenerating && rewriteNotice ? (
+                  <>
+                    <span>•</span>
+                    <span className="text-tertiary">Teks diperbaiki</span>
+                  </>
+                ) : null}
+                {!rewriteGenerating && rewriteError ? (
+                  <>
+                    <span>•</span>
+                    <span className="text-warning">Perbaikan gagal</span>
+                  </>
+                ) : null}
               </div>
             </div>
             <div className="flex items-center gap-2">

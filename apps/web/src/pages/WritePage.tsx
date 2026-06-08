@@ -7,6 +7,7 @@ import {
 import { IntegrationNotice } from "@/components/common/IntegrationNotice";
 import { Button } from "@/components/ui";
 import { useWriteRoomData } from "@/hooks/useWriteRoomData";
+import { formatProseRewriteModeLabel } from "@/services/ai";
 
 /**
  * Ruang Tulis — Sprint 1 layout + Sprint 5 API integration (Task 5.5)
@@ -49,6 +50,18 @@ export function WritePage() {
     showCreditUi,
     onGenerateAi,
     aiUnavailableReason,
+    rewriteGenerating,
+    rewriteError,
+    rewriteNotice,
+    rewriteMode,
+    rewriteInstruction,
+    setRewriteMode,
+    setRewriteInstruction,
+    insufficientCreditRewrite,
+    remainingAfterRewrite,
+    onRewriteProse,
+    rewriteUnavailableReason,
+    hasProseForRewrite,
   } = useWriteRoomData();
 
   const activeBeat = draft.beats.find((beat) => beat.id === activeBeatId) ?? draft.beats[0];
@@ -92,6 +105,9 @@ export function WritePage() {
     creditBalance,
     insufficientCredit,
     showCreditUi,
+    rewriteGenerating,
+    rewriteNotice,
+    rewriteError,
   };
 
   const assistantProps = {
@@ -110,6 +126,18 @@ export function WritePage() {
     remainingAfterGenerate,
     showCreditUi,
     aiUnavailableReason,
+    onRewriteProse: onRewriteProse ? () => void onRewriteProse() : undefined,
+    rewriteGenerating,
+    rewriteError,
+    rewriteNotice,
+    rewriteMode,
+    rewriteInstruction,
+    onRewriteModeChange: setRewriteMode,
+    onRewriteInstructionChange: setRewriteInstruction,
+    insufficientCreditRewrite,
+    remainingAfterRewrite,
+    rewriteUnavailableReason,
+    hasProseForRewrite,
   };
 
   return (
@@ -144,6 +172,11 @@ export function WritePage() {
         activeBeatId={activeBeatId}
         onSelectBeat={(id) => void onSelectBeat(id)}
         {...editorProps}
+        insufficientCreditRewrite={insufficientCreditRewrite}
+        onRewriteProse={onRewriteProse ? () => void onRewriteProse() : undefined}
+        rewriteGenerating={rewriteGenerating}
+        rewriteModeLabel={formatProseRewriteModeLabel(rewriteMode)}
+        hasProseForRewrite={hasProseForRewrite}
       />
 
       <div className="hidden min-h-0 flex-1 overflow-hidden lg:flex">

@@ -84,12 +84,72 @@ export function formatProseBeatActionCostLabel(qualityMode: WriterQualityMode): 
 
 export function formatProseRewriteActionCostLabel(qualityMode: WriterQualityMode): string {
   const cost = getProseRewriteCreditCost(qualityMode);
-  return `Biaya perbaikan (nanti): ${cost} kredit`;
+  return `Biaya rewrite: ${cost} kredit`;
+}
+
+export const PROSE_REWRITE_MODES = {
+  improve_emotion: "improve_emotion",
+  tighten_pacing: "tighten_pacing",
+  natural_dialogue: "natural_dialogue",
+  shorter: "shorter",
+  longer: "longer",
+  custom: "custom",
+} as const;
+
+export type ProseRewriteMode =
+  (typeof PROSE_REWRITE_MODES)[keyof typeof PROSE_REWRITE_MODES];
+
+const REWRITE_MODE_SET = new Set<string>(Object.values(PROSE_REWRITE_MODES));
+
+export function isProseRewriteMode(value: string): value is ProseRewriteMode {
+  return REWRITE_MODE_SET.has(value);
+}
+
+export function formatProseRewriteModeLabel(mode: ProseRewriteMode): string {
+  switch (mode) {
+    case PROSE_REWRITE_MODES.improve_emotion:
+      return "Perkuat emosi";
+    case PROSE_REWRITE_MODES.tighten_pacing:
+      return "Rapikan pacing";
+    case PROSE_REWRITE_MODES.natural_dialogue:
+      return "Naturalkan dialog";
+    case PROSE_REWRITE_MODES.shorter:
+      return "Buat lebih singkat";
+    case PROSE_REWRITE_MODES.longer:
+      return "Buat lebih detail";
+    case PROSE_REWRITE_MODES.custom:
+      return "Instruksi khusus";
+    default:
+      return mode;
+  }
 }
 
 export function buildBeatProseIdempotencyKey(beatId: string): string {
   const suffix = Math.random().toString(36).slice(2, 10);
   return `${beatId}-${Date.now()}-${suffix}`;
+}
+
+export function buildRewriteProseIdempotencyKey(beatId: string): string {
+  const suffix = Math.random().toString(36).slice(2, 10);
+  return `rewrite-${beatId}-${Date.now()}-${suffix}`;
+}
+
+export interface RewriteBeatProseInput {
+  proseVersionId?: string;
+  beatId?: string;
+  writingSessionId: string;
+  rewriteMode: ProseRewriteMode;
+  qualityMode?: WriterQualityMode;
+  instruction?: string;
+  idempotencyKey: string;
+}
+
+export interface RewriteBeatProseResponse {
+  proseVersion: ChapterProseVersion;
+  generationAttempt: GenerationAttemptSummary;
+  creditBalance: CreditBalance | null;
+  rewriteMode: ProseRewriteMode;
+  idempotentReplay: boolean;
 }
 
 export function mapAiGenerationErrorCode(code: string): string {
@@ -116,6 +176,23 @@ export function mapAiGenerationErrorCode(code: string): string {
   }
 }
 
+export function mapAiRewriteErrorCode(code: string, fallbackMessage?: string): string {
+  switch (code) {
+    case "NO_PROSE_TO_REWRITE":
+      return "Belum ada teks untuk diperbaiki.";
+    case "GENERATION_IN_PROGRESS":
+      return "Rewrite masih berjalan.";
+    case "GENERATION_FAILED":
+      return "Rewrite sebelumnya gagal. Coba lagi dengan permintaan baru.";
+    case "AI_OUTPUT_UNSAFE":
+      return "Output rewrite ditolak oleh pemeriksaan keamanan.";
+    case "BAD_REQUEST":
+      return fallbackMessage?.trim() || "Permintaan rewrite tidak valid.";
+    default:
+      return mapAiGenerationErrorCode(code);
+  }
+}
+
 export async function generateBeatProse(
   projectId: string,
   token: string | null | undefined,
@@ -123,6 +200,17 @@ export async function generateBeatProse(
 ): Promise<GenerateBeatProseResponse> {
   return apiRequest<GenerateBeatProseResponse>(
     `/api/projects/${projectId}/ai/generate-prose`,
+    { method: "POST", body: input, token },
+  );
+}
+
+export async function rewriteBeatProse(
+  projectId: string,
+  token: string | null | undefined,
+  input: RewriteBeatProseInput,
+): Promise<RewriteBeatProseResponse> {
+  return apiRequest<RewriteBeatProseResponse>(
+    `/api/projects/${projectId}/ai/rewrite-prose`,
     { method: "POST", body: input, token },
   );
 }

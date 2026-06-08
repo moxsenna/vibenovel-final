@@ -20,7 +20,9 @@ Run all commands from **repo root**. Windows/PowerShell primary.
 | `smoke:web:outline` | `sprint4-smoke-web.ps1` | Web mock `/outline`; add `-- -IncludeApiMode` for API | `dev:web`; API mode + `VITE_USE_MOCKS=false` |
 | `smoke:web:write` | `sprint5-smoke-web.ps1` | Web mock `/write`; add `-- -IncludeApiMode` for API | Same |
 | `smoke:web:write-ai` | `sprint8-smoke-web.ps1` | WritePage AI button mock + optional API (`-- -IncludeApiMode`) | Same; AI success needs `AI_GENERATION_ENABLED=true` + mock provider |
-| `smoke:web:credit-ui` | `sprint9-smoke-web.ps1` | WritePage credit UI mock E2E (Task 9.2) | `dev:web` mock mode |
+| `smoke:web:credit-ui` | `sprint9-smoke-web.ps1` | WritePage credit UI + rewrite mock E2E (Tasks 9.2 + 9.4) | `dev:web` mock mode |
+| `smoke:web:rewrite` | `sprint9-smoke-web.ps1` | Alias — same as `smoke:web:credit-ui` | Same |
+| `smoke:web:sprint9` | `sprint9-smoke-web.ps1` | Alias — Sprint 9 web smokes (credit + rewrite) | Same; add `-- -IncludeApiMode` for rewrite API E2E |
 | `smoke:web:summary` | `sprint6-smoke-web.ps1` | Web mock `/summary` + leak guards; `-- -IncludeApiMode` for API flow | Same |
 | `smoke:web:publish` | `sprint7-smoke-web.ps1` | Web mock `/publish` + leak guards; `-- -IncludeApiMode` for API flow | Same |
 | `smoke:api:sprint7` | `sprint7-smoke-api.ps1` | Publish package generation/update/export safety (Task 7.5) | Same as API base |

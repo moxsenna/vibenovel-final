@@ -64,10 +64,10 @@ Sprint 5 closed with **zero blockers**. Items below are non-blocking unless mark
 
 | Item | Priority | Timing |
 |---|---|---|
-| Write Room prose beat AI button (Task 8.5) | P1 | **Addressed Sprint 8** — `Tulis Beat dengan AI` API mode only; rewrite/fix CTAs still disabled |
+| Write Room prose beat AI button (Task 8.5) | P1 | **Addressed Sprint 8** — `Tulis Beat dengan AI` API mode only |
 | Sprint 8 full AI mock smoke (success/fail/unsafe) | P1 | **Addressed Task 8.6** — manual env restart; not in default `smoke:all:local` |
 | WritePage AI success API-mode E2E | P1 | **Addressed Task 8.6** — `smoke:web:write-ai -IncludeApiMode` with AI enabled |
-| Write Room rewrite/fix AI CTAs disabled | P2 | Post-MVP (Task 8.5 scope excluded) |
+| ~~Write Room rewrite/fix AI CTAs disabled~~ | P2 | **Addressed Task 9.4** — `Perbaiki Teks dengan AI` on WritePage (API mode); mock/fallback disabled |
 | Open loop / reveal CRUD UI display-only on outline | P2 | Post-MVP |
 | Chapter selector Bab 2–10 read-only minimal | P2 | During Sprint 6+ |
 | No prose delete endpoint / UI | P2 | Nice-to-have |
@@ -213,7 +213,9 @@ Sprint 5 closed with **zero blockers**. Items below are non-blocking unless mark
 
 **Addressed Task 9.2:** WritePage credit UI minimal (saldo/biaya kredit read-only; no topup; server authoritative billing).
 
-**Addressed Task 9.3:** Prose rewrite API (`POST /ai/rewrite-prose`) — draft-only new prose version; `source=ai_generated` + metadata `generationType=prose_rewrite`; no WritePage rewrite UI yet.
+**Addressed Task 9.3:** Prose rewrite API (`POST /ai/rewrite-prose`) — draft-only new prose version; `source=ai_generated` + metadata `generationType=prose_rewrite`.
+
+**Addressed Task 9.4:** WritePage rewrite UI — mode picker + `Perbaiki Teks` calls rewrite API; biaya 3/6/12 kredit; mock/fallback tidak fake rewrite; `smoke:web:rewrite` / `smoke:web:sprint9`.
 
 ---
 

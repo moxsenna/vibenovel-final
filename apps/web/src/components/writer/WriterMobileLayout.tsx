@@ -21,7 +21,12 @@ export interface WriterMobileLayoutProps {
   creditCostLabel?: string | null;
   creditBalance?: number | null;
   insufficientCredit?: boolean;
+  insufficientCreditRewrite?: boolean;
   showCreditUi?: boolean;
+  onRewriteProse?: () => void;
+  rewriteGenerating?: boolean;
+  rewriteModeLabel?: string | null;
+  hasProseForRewrite?: boolean;
 }
 
 export function WriterMobileLayout({
@@ -41,7 +46,12 @@ export function WriterMobileLayout({
   creditCostLabel = null,
   creditBalance = null,
   insufficientCredit = false,
+  insufficientCreditRewrite = false,
   showCreditUi = false,
+  onRewriteProse,
+  rewriteGenerating = false,
+  rewriteModeLabel = null,
+  hasProseForRewrite = false,
 }: WriterMobileLayoutProps) {
   const { pageCopy } = draft;
   const displayProse = proseText ?? activeBeat.prose;
@@ -160,6 +170,7 @@ export function WriterMobileLayout({
           {showCreditUi && creditBalance != null ? ` · Saldo: ${creditBalance}` : ""}
           {showCreditUi && creditCostLabel ? ` · ${creditCostLabel}` : ""}
           {showCreditUi && insufficientCredit ? " · Kredit tidak cukup" : ""}
+          {onRewriteProse && rewriteModeLabel ? ` · Mode rewrite: ${rewriteModeLabel}` : ""}
         </p>
       </main>
 
@@ -190,11 +201,18 @@ export function WriterMobileLayout({
           <Button
             variant="ghost"
             pill
-            disabled
+            disabled={
+              !onRewriteProse ||
+              rewriteGenerating ||
+              insufficientCreditRewrite ||
+              !hasProseForRewrite
+            }
+            onClick={onRewriteProse}
             className="min-h-[44px] gap-1.5 px-4 text-on-surface-variant"
-            leftIcon={<Icon name="spellcheck" size={20} />}
+            leftIcon={<Icon name="edit_note" size={20} />}
+            aria-label="Perbaiki Teks"
           >
-            {pageCopy.mobileCheckAction}
+            {rewriteGenerating ? "…" : onRewriteProse ? "Perbaiki" : pageCopy.mobileFixAction}
           </Button>
         </div>
       </div>

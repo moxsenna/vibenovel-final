@@ -10,14 +10,20 @@ import { ROUTES } from "@/routes/paths";
 import { mockChapterDraft } from "@/mocks/chapter";
 import {
   buildBeatProseIdempotencyKey,
+  buildRewriteProseIdempotencyKey,
   formatProseBeatActionCostLabel,
   formatProseBeatCreditCostLabel,
   formatProseRewriteActionCostLabel,
   formatQualityModeLabel,
   generateBeatProse,
   getProseBeatCreditCost,
+  getProseRewriteCreditCost,
   mapAiGenerationErrorCode,
+  mapAiRewriteErrorCode,
   normalizeQualityMode,
+  PROSE_REWRITE_MODES,
+  rewriteBeatProse,
+  type ProseRewriteMode,
 } from "@/services/ai";
 import { fetchCreditBalance } from "@/services/credits";
 import { fetchOutlineBundle } from "@/services/outline";
@@ -133,6 +139,19 @@ export interface UseWriteRoomDataResult {
   showCreditUi: boolean;
   onGenerateAi?: () => Promise<void>;
   aiUnavailableReason: string | null;
+  rewriteGenerating: boolean;
+  rewriteError: string | null;
+  rewriteNotice: string | null;
+  rewriteMode: ProseRewriteMode;
+  rewriteInstruction: string;
+  setRewriteMode: (mode: ProseRewriteMode) => void;
+  setRewriteInstruction: (text: string) => void;
+  proseRewriteCreditCost: number;
+  insufficientCreditRewrite: boolean;
+  remainingAfterRewrite: number | null;
+  onRewriteProse?: () => Promise<void>;
+  rewriteUnavailableReason: string | null;
+  hasProseForRewrite: boolean;
 }
 
 export function useWriteRoomData(): UseWriteRoomDataResult {
@@ -160,6 +179,9 @@ export function useWriteRoomData(): UseWriteRoomDataResult {
   const [apiBeats, setApiBeats] = useState<ChapterBeat[]>([]);
   const [activeBeatId, setActiveBeatId] = useState("");
   const [proseByBeatId, setProseByBeatId] = useState<Record<string, string>>({});
+  const [proseVersionIdByBeatId, setProseVersionIdByBeatId] = useState<
+    Record<string, string | null>
+  >({});
   const [proseText, setProseText] = useState("");
   const [wordCount, setWordCount] = useState(0);
   const [lastSavedAt, setLastSavedAt] = useState<string | null>(null);
@@ -173,12 +195,20 @@ export function useWriteRoomData(): UseWriteRoomDataResult {
   const [creditBalance, setCreditBalance] = useState<CreditBalance | null>(null);
   const [creditLoading, setCreditLoading] = useState(false);
   const [creditError, setCreditError] = useState<string | null>(null);
+  const [rewriteGenerating, setRewriteGenerating] = useState(false);
+  const [rewriteError, setRewriteError] = useState<string | null>(null);
+  const [rewriteNotice, setRewriteNotice] = useState<string | null>(null);
+  const [rewriteMode, setRewriteMode] = useState<ProseRewriteMode>(
+    PROSE_REWRITE_MODES.improve_emotion,
+  );
+  const [rewriteInstruction, setRewriteInstruction] = useState("");
 
   const applyMock = useCallback((message: string | null) => {
     setDraft(mockChapterDraft);
     setApiBeats([]);
     setActiveBeatId(mockChapterDraft.beats[0]?.id ?? "");
     setProseByBeatId({});
+    setProseVersionIdByBeatId({});
     setProseText(mockChapterDraft.beats[0]?.prose ?? "");
     setSource("api-fallback");
     setNotice(message);
@@ -191,6 +221,11 @@ export function useWriteRoomData(): UseWriteRoomDataResult {
     setCreditBalance(null);
     setCreditLoading(false);
     setCreditError(null);
+    setRewriteGenerating(false);
+    setRewriteError(null);
+    setRewriteNotice(null);
+    setRewriteMode(PROSE_REWRITE_MODES.improve_emotion);
+    setRewriteInstruction("");
   }, []);
 
   const refreshCreditBalance = useCallback(async () => {
@@ -236,7 +271,9 @@ export function useWriteRoomData(): UseWriteRoomDataResult {
       if (!token) return "";
       const result = await fetchBeatProseVersions(resolvedProjectId, beatId, token);
       const text = result.currentVersion?.proseText ?? "";
+      const versionId = result.currentVersion?.id ?? null;
       setProseByBeatId((prev) => ({ ...prev, [beatId]: text }));
+      setProseVersionIdByBeatId((prev) => ({ ...prev, [beatId]: versionId }));
       return text;
     },
     [token],
@@ -384,6 +421,8 @@ export function useWriteRoomData(): UseWriteRoomDataResult {
       setErrorNotice(null);
       setAiError(null);
       setAiNotice(null);
+      setRewriteError(null);
+      setRewriteNotice(null);
 
       if (source !== "api" || !projectId || !sessionId || !token) {
         const beat = draft.beats.find((b) => b.id === beatId);
@@ -501,6 +540,10 @@ export function useWriteRoomData(): UseWriteRoomDataResult {
       });
 
       setProseByBeatId((prev) => ({ ...prev, [activeBeatId]: trimmed }));
+      setProseVersionIdByBeatId((prev) => ({
+        ...prev,
+        [activeBeatId]: result.version.id,
+      }));
       setWordCount(result.chapterWordCount);
       setLastSavedAt(new Date().toISOString());
 
@@ -601,6 +644,10 @@ export function useWriteRoomData(): UseWriteRoomDataResult {
       const text = result.version.proseText;
       setProseText(text);
       setProseByBeatId((prev) => ({ ...prev, [activeBeatId]: text }));
+      setProseVersionIdByBeatId((prev) => ({
+        ...prev,
+        [activeBeatId]: result.version.id,
+      }));
       setWordCount(result.version.wordCount);
       setLastSavedAt(result.version.createdAt ?? new Date().toISOString());
 
@@ -653,6 +700,110 @@ export function useWriteRoomData(): UseWriteRoomDataResult {
     token,
   ]);
 
+  const rewriteActiveBeatProse = useCallback(async () => {
+    if (
+      rewriteGenerating ||
+      source !== "api" ||
+      !apiMode ||
+      !token ||
+      !projectId ||
+      !sessionId ||
+      !activeBeatId ||
+      needsGenerateBeats
+    ) {
+      return;
+    }
+
+    const proseVersionId = proseVersionIdByBeatId[activeBeatId] ?? undefined;
+    const hasLocalProse = proseText.trim().length > 0;
+    if (!proseVersionId && !hasLocalProse) {
+      setRewriteError("Belum ada teks untuk diperbaiki.");
+      return;
+    }
+
+    if (rewriteMode === PROSE_REWRITE_MODES.custom && !rewriteInstruction.trim()) {
+      setRewriteError("Isi instruksi untuk mode instruksi khusus.");
+      return;
+    }
+
+    const rewriteCost = getProseRewriteCreditCost(qualityMode);
+    if (creditBalance != null && creditBalance.balance < rewriteCost) {
+      setRewriteError("Kredit tidak cukup.");
+      return;
+    }
+
+    setRewriteGenerating(true);
+    setRewriteError(null);
+    setRewriteNotice(null);
+
+    const idempotencyKey = buildRewriteProseIdempotencyKey(activeBeatId);
+    const instruction =
+      rewriteMode === PROSE_REWRITE_MODES.custom
+        ? rewriteInstruction.trim()
+        : undefined;
+
+    try {
+      const result = await rewriteBeatProse(projectId, token, {
+        ...(proseVersionId ? { proseVersionId } : { beatId: activeBeatId }),
+        writingSessionId: sessionId,
+        rewriteMode,
+        qualityMode,
+        idempotencyKey,
+        ...(instruction ? { instruction } : {}),
+      });
+
+      const text = result.proseVersion.proseText;
+      setProseText(text);
+      setProseByBeatId((prev) => ({ ...prev, [activeBeatId]: text }));
+      setProseVersionIdByBeatId((prev) => ({
+        ...prev,
+        [activeBeatId]: result.proseVersion.id,
+      }));
+      setWordCount(result.proseVersion.wordCount);
+      setLastSavedAt(result.proseVersion.createdAt ?? new Date().toISOString());
+
+      if (result.creditBalance) {
+        setCreditBalance(result.creditBalance);
+      } else {
+        await refreshCreditBalance();
+      }
+
+      const cost = result.generationAttempt.creditCost;
+      const remaining =
+        result.creditBalance?.balance ??
+        (creditBalance != null ? Math.max(0, creditBalance.balance - cost) : null);
+      const balanceNote = remaining != null ? ` Sisa: ${remaining}.` : "";
+      const replayNote = result.idempotentReplay ? " (hasil permintaan sebelumnya)" : "";
+      setRewriteNotice(
+        `Teks berhasil diperbaiki. Terpotong ${cost} kredit.${balanceNote}${replayNote}`,
+      );
+    } catch (error) {
+      if (error instanceof ApiClientError) {
+        setRewriteError(mapAiRewriteErrorCode(error.code, error.message));
+      } else {
+        setRewriteError("Gagal memperbaiki teks.");
+      }
+    } finally {
+      setRewriteGenerating(false);
+    }
+  }, [
+    activeBeatId,
+    apiMode,
+    creditBalance,
+    needsGenerateBeats,
+    projectId,
+    proseText,
+    proseVersionIdByBeatId,
+    qualityMode,
+    refreshCreditBalance,
+    rewriteGenerating,
+    rewriteInstruction,
+    rewriteMode,
+    sessionId,
+    source,
+    token,
+  ]);
+
   const finishChapter = useCallback(async () => {
     if (source === "api" && projectId && sessionId && token) {
       setMarkingReady(true);
@@ -682,6 +833,7 @@ export function useWriteRoomData(): UseWriteRoomDataResult {
 
   const editable = source === "api" && Boolean(activeBeat);
   const proseBeatCreditCost = getProseBeatCreditCost(qualityMode);
+  const proseRewriteCreditCost = getProseRewriteCreditCost(qualityMode);
   const creditCostLabel = formatProseBeatCreditCostLabel(qualityMode);
   const creditActionCostLabel = formatProseBeatActionCostLabel(qualityMode);
   const creditRewriteCostLabel = formatProseRewriteActionCostLabel(qualityMode);
@@ -690,8 +842,17 @@ export function useWriteRoomData(): UseWriteRoomDataResult {
   const knownBalance = creditBalance?.balance ?? null;
   const insufficientCredit =
     knownBalance != null && knownBalance < proseBeatCreditCost;
+  const insufficientCreditRewrite =
+    knownBalance != null && knownBalance < proseRewriteCreditCost;
   const remainingAfterGenerate =
     knownBalance != null ? Math.max(0, knownBalance - proseBeatCreditCost) : null;
+  const remainingAfterRewrite =
+    knownBalance != null ? Math.max(0, knownBalance - proseRewriteCreditCost) : null;
+  const activeProseVersionId = proseVersionIdByBeatId[activeBeatId] ?? null;
+  const hasProseForRewrite =
+    Boolean(activeProseVersionId) || proseText.trim().length > 0;
+  const customInstructionOk =
+    rewriteMode !== PROSE_REWRITE_MODES.custom || rewriteInstruction.trim().length > 0;
   const aiCanGenerate =
     source === "api" &&
     Boolean(activeBeatId) &&
@@ -699,6 +860,15 @@ export function useWriteRoomData(): UseWriteRoomDataResult {
     Boolean(chapterOutlineId) &&
     !needsGenerateBeats &&
     !insufficientCredit;
+  const rewriteCanRun =
+    source === "api" &&
+    Boolean(activeBeatId) &&
+    Boolean(sessionId) &&
+    !needsGenerateBeats &&
+    hasProseForRewrite &&
+    !insufficientCreditRewrite &&
+    customInstructionOk &&
+    !rewriteGenerating;
   const aiUnavailableReason =
     source === "mock"
       ? "Generasi AI hanya tersedia dalam mode API (bukan mock)."
@@ -709,6 +879,20 @@ export function useWriteRoomData(): UseWriteRoomDataResult {
           : insufficientCredit
             ? "Kredit tidak cukup untuk aksi ini."
             : null;
+  const rewriteUnavailableReason =
+    source === "mock"
+      ? "Perbaiki teks dengan AI hanya tersedia dalam mode API (bukan mock)."
+      : source === "api-fallback"
+        ? "Perbaiki teks tidak tersedia saat fallback mock aktif."
+        : needsGenerateBeats
+          ? "Buat daftar adegan terlebih dahulu."
+          : !hasProseForRewrite
+            ? "Belum ada teks untuk diperbaiki."
+            : insufficientCreditRewrite
+              ? "Kredit tidak cukup untuk perbaikan teks."
+              : rewriteMode === PROSE_REWRITE_MODES.custom && !customInstructionOk
+                ? "Isi instruksi untuk mode instruksi khusus."
+                : null;
 
   return useMemo(
     () => ({
@@ -755,6 +939,19 @@ export function useWriteRoomData(): UseWriteRoomDataResult {
       showCreditUi,
       onGenerateAi: aiCanGenerate ? generateAiForActiveBeat : undefined,
       aiUnavailableReason,
+      rewriteGenerating,
+      rewriteError,
+      rewriteNotice,
+      rewriteMode,
+      rewriteInstruction,
+      setRewriteMode,
+      setRewriteInstruction,
+      proseRewriteCreditCost,
+      insufficientCreditRewrite,
+      remainingAfterRewrite,
+      onRewriteProse: rewriteCanRun ? rewriteActiveBeatProse : undefined,
+      rewriteUnavailableReason,
+      hasProseForRewrite,
     }),
     [
       activeBeatId,
@@ -773,11 +970,23 @@ export function useWriteRoomData(): UseWriteRoomDataResult {
       creditLoading,
       creditRewriteCostLabel,
       draft,
+      hasProseForRewrite,
       insufficientCredit,
+      insufficientCreditRewrite,
       knownBalance,
       proseBeatCreditCost,
+      proseRewriteCreditCost,
       qualityModeLabel,
       remainingAfterGenerate,
+      remainingAfterRewrite,
+      rewriteActiveBeatProse,
+      rewriteCanRun,
+      rewriteError,
+      rewriteGenerating,
+      rewriteInstruction,
+      rewriteMode,
+      rewriteNotice,
+      rewriteUnavailableReason,
       showCreditUi,
       editable,
       errorNotice,
