@@ -354,7 +354,26 @@ Belum ada (sengaja — defer setelah hardening / Sprint 8):
 | 7.8.4 Smoke orchestration | ✅ | `smoke:all:local` 9 phases |
 | 7.8.6 Hardening verification report | ✅ | `docs/43` |
 
-**Task berikutnya (disarankan):** **Task 8.0** — AI/OpenRouter & Credit-Gated Generation **Implementation Plan** (docs only). Sprint 8 **planning** allowed; production AI **not** until plan approved.
+**Task berikutnya (disarankan):** **Task 8.1** — AI Generation Data Model + Credit Ledger (`docs/44` §16).
+
+---
+
+## Sprint 8 — AI/OpenRouter & Credit-Gated Generation (plan) 📋
+
+**Rencana:** [`docs/44-sprint-8-ai-openrouter-credit-generation-implementation-plan.md`](docs/44-sprint-8-ai-openrouter-credit-generation-implementation-plan.md)
+
+| Task | Status | Deliverable |
+|---|---|---|
+| 8.0 Implementation plan | ✅ | `docs/44` |
+| 8.1 Data model + credit ledger | Pending | Migration `00008` + shared types |
+| 8.2 Model router + OpenRouter shell | Pending | Disabled by default |
+| 8.3 Credit debit/refund service | Pending | Idempotent ledger |
+| 8.4 Prose beat generation API | Pending | `POST /ai/generate-prose` |
+| 8.5 WritePage AI button | Pending | Credit cost + loading states |
+| 8.6 Safety smoke tests | Pending | `sprint8-smoke-api.ps1` |
+| 8.7 Verification report | Pending | `docs/45` |
+
+Sprint 8 MVP: **prose beat generation** first; summary/delta AI deferred. AI **disabled by default** until env enabled.
 
 ---
 
@@ -377,13 +396,14 @@ Belum ada (sengaja — defer setelah hardening / Sprint 8):
 13. `docs/41-pre-ai-hardening-audit-transactions-ci-plan.md` — rencana hardening pre-AI (Task 7.8)
 14. `docs/42-audit-action-enum-and-coverage-plan.md` — audit enum + coverage (Task 7.8.1)
 15. `docs/43-pre-ai-hardening-verification-report.md` — penutupan hardening pre-AI (Task 7.8.6)
-16. `docs/36-non-blocking-technical-debt-and-deferred-items.md` — debt register (Task 5.8)
-17. `docs/39-sprint-7-publish-package-kbm-export-implementation-plan.md` — rencana Sprint 7
-18. `docs/37-sprint-6-chapter-summary-delta-canon-proposal-implementation-plan.md` — rencana Sprint 6
-19. `docs/34-sprint-5-safe-write-room-context-packet-implementation-plan.md` — rencana Sprint 5
-20. `docs/32-sprint-4-outline-planning-engine-implementation-plan.md` — rencana Sprint 4
-21. `docs/30-sprint-3-story-foundation-flow-implementation-plan.md` — rencana Sprint 3
-22. `docs/27-sprint-2-data-model-implementation-plan.md` — rencana Sprint 2
+16. `docs/44-sprint-8-ai-openrouter-credit-generation-implementation-plan.md` — rencana Sprint 8 AI (Task 8.0)
+17. `docs/36-non-blocking-technical-debt-and-deferred-items.md` — debt register (Task 5.8)
+18. `docs/39-sprint-7-publish-package-kbm-export-implementation-plan.md` — rencana Sprint 7
+19. `docs/37-sprint-6-chapter-summary-delta-canon-proposal-implementation-plan.md` — rencana Sprint 6
+20. `docs/34-sprint-5-safe-write-room-context-packet-implementation-plan.md` — rencana Sprint 5
+21. `docs/32-sprint-4-outline-planning-engine-implementation-plan.md` — rencana Sprint 4
+22. `docs/30-sprint-3-story-foundation-flow-implementation-plan.md` — rencana Sprint 3
+23. `docs/27-sprint-2-data-model-implementation-plan.md` — rencana Sprint 2
 
 ### Untuk AI coding agent
 
@@ -402,13 +422,14 @@ Belum ada (sengaja — defer setelah hardening / Sprint 8):
 13. `docs/41-pre-ai-hardening-audit-transactions-ci-plan.md`
 14. `docs/42-audit-action-enum-and-coverage-plan.md`
 15. `docs/43-pre-ai-hardening-verification-report.md`
-16. `docs/36-non-blocking-technical-debt-and-deferred-items.md`
-17. `docs/39-sprint-7-publish-package-kbm-export-implementation-plan.md`
-18. `docs/37-sprint-6-chapter-summary-delta-canon-proposal-implementation-plan.md`
-19. `docs/34-sprint-5-safe-write-room-context-packet-implementation-plan.md`
-20. `docs/30-sprint-3-story-foundation-flow-implementation-plan.md`
-21. `docs/27-sprint-2-data-model-implementation-plan.md`
-22. Dokumen domain sesuai task.
+16. `docs/44-sprint-8-ai-openrouter-credit-generation-implementation-plan.md`
+17. `docs/36-non-blocking-technical-debt-and-deferred-items.md`
+18. `docs/39-sprint-7-publish-package-kbm-export-implementation-plan.md`
+19. `docs/37-sprint-6-chapter-summary-delta-canon-proposal-implementation-plan.md`
+20. `docs/34-sprint-5-safe-write-room-context-packet-implementation-plan.md`
+21. `docs/30-sprint-3-story-foundation-flow-implementation-plan.md`
+22. `docs/27-sprint-2-data-model-implementation-plan.md`
+23. Dokumen domain sesuai task.
 
 ---
 

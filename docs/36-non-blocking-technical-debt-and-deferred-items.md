@@ -154,7 +154,7 @@ Sprint 5 closed with **zero blockers**. Items below are non-blocking unless mark
 | **Sprint 7** | ✅ Publish package / KBM export stub (closed — `docs/40`) |
 | **Sprint 7.8 (plan ✅)** | [`docs/41`](41-pre-ai-hardening-audit-transactions-ci-plan.md) — audit/transaction/smoke/CI strategy; implement via 7.8.1–7.8.6 |
 | **Before AI generation** | **P1 hardening implement:** 7.8.2–7.8.4 + 7.8.6 ✅ closed (`docs/43`) |
-| **After hardening** | **Task 8.0** AI/OpenRouter plan → then OpenRouter, model router, credit ledger |
+| **After hardening** | **Task 8.1+** implement AI per [`docs/44`](44-sprint-8-ai-openrouter-credit-generation-implementation-plan.md) |
 | **Before production deploy** | DB transactions, CI smoke strategy, remote Supabase/Worker, secrets hygiene |
 
 ---
@@ -188,9 +188,10 @@ Sprint 5 closed with **zero blockers**. Items below are non-blocking unless mark
 | **7.8.4** | `smoke:all:local` include Sprint 6/7 | ✅ Consolidated (`smoke-all-local.ps1` 9 phases; `:full` passes `-IncludeApiMode` to web) |
 | **7.8.5** | CI E2E feasibility / optional nightly | Pending |
 | **7.8.6** | Hardening verification report (`docs/43`) | ✅ Closed |
-| **8.0** | AI/OpenRouter & credit-gated generation plan | **Next** (docs only) |
+| **8.0** | AI/OpenRouter & credit-gated generation plan | ✅ [`docs/44`](44-sprint-8-ai-openrouter-credit-generation-implementation-plan.md) |
+| **8.1** | `generation_attempts` + `credit_ledger` migration | **Next** |
 
-**Sprint 8 gate:** Planning **allowed** (`docs/43` §8). Production AI **not** until Task 8.0 plan approved.
+**Sprint 8 gate:** Plan approved (`docs/44`). Production AI **not** until 8.4+ with env enabled + smokes PASS.
 
 ---
 
@@ -201,5 +202,6 @@ Sprint 5 closed with **zero blockers**. Items below are non-blocking unless mark
 - [`docs/41-pre-ai-hardening-audit-transactions-ci-plan.md`](41-pre-ai-hardening-audit-transactions-ci-plan.md)
 - [`docs/42-audit-action-enum-and-coverage-plan.md`](42-audit-action-enum-and-coverage-plan.md)
 - [`docs/43-pre-ai-hardening-verification-report.md`](43-pre-ai-hardening-verification-report.md)
+- [`docs/44-sprint-8-ai-openrouter-credit-generation-implementation-plan.md`](44-sprint-8-ai-openrouter-credit-generation-implementation-plan.md)
 - [`scripts/README.md`](../scripts/README.md)
 - [`docs/17-roadmap-sprint-plan-mvp-to-full.md`](17-roadmap-sprint-plan-mvp-to-full.md)
