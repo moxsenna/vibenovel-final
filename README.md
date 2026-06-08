@@ -360,9 +360,10 @@ Belum ada (sengaja — defer setelah hardening / Sprint 8):
 
 ---
 
-## Sprint 9 — AI Rewrite, Publish Copy & Credit UI (planning)
+## Sprint 9 — AI Rewrite, Publish Copy & Credit UI ✅
 
 **Rencana:** [`docs/48-sprint-9-ai-rewrite-publish-credit-ui-implementation-plan.md`](docs/48-sprint-9-ai-rewrite-publish-credit-ui-implementation-plan.md)  
+**Verifikasi penutupan:** [`docs/49-sprint-9-verification-report.md`](docs/49-sprint-9-verification-report.md)  
 **Prerequisite:** Live OpenRouter staging **GO** — [`docs/47`](docs/47-live-openrouter-staging-smoke-report.md)
 
 | Task | Status | Deliverable |
@@ -375,9 +376,11 @@ Belum ada (sengaja — defer setelah hardening / Sprint 8):
 | 9.5 Publish copy AI API | ✅ | `POST /ai/improve-publish-copy`, suggestion-first, `smoke:api:sprint9` |
 | 9.6 PublishPage AI UI | ✅ | Perbaiki Copy dengan AI, apply via PATCH, `smoke:web:publish-ai` |
 | 9.7 Safety regression | ✅ | Full API/web smoke matrix; mock modes; API-mode E2E |
-| 9.8 Verification report | ⏳ | `docs/49` |
+| 9.8 Verification report | ✅ | `docs/49` |
 
-**Task berikutnya (disarankan):** **Task 9.8** — Sprint 9 verification report (`docs/49`).
+**Task berikutnya (disarankan):** **Task 9.9** — Sprint 9 smoke orchestrator consolidation + optional live rewrite/publish spot check.
+
+Sprint 9 MVP: **prose rewrite**, **publish copy AI** (suggestion-first), **credit UI** — verified mock + API-mode E2E. AI **disabled by default** (`AI_GENERATION_ENABLED=false`). Live rewrite/publish copy not run (non-blocking).
 
 **Rewrite UI (Task 9.4):** Tersedia di mode API pada WritePage — mode perbaikan (emosi/pacing/dialog/panjang/custom), biaya rewrite 3/6/12 kredit (hemat/seimbang/terbaik), hasil disimpan sebagai versi prose baru. Mock/fallback tidak memalsukan rewrite. Top up belum tersedia.
 
@@ -434,13 +437,14 @@ Sprint 8 MVP: **prose beat generation** verified mock + **live OpenRouter stagin
 18. `docs/46-live-openrouter-staging-verification-plan.md` — rencana staging OpenRouter live (Task 8.8)
 19. `docs/47-live-openrouter-staging-smoke-report.md` — hasil smoke staging OpenRouter (Task 8.9)
 20. `docs/48-sprint-9-ai-rewrite-publish-credit-ui-implementation-plan.md` — rencana Sprint 9 AI (Task 9.0)
-21. `docs/36-non-blocking-technical-debt-and-deferred-items.md` — debt register (Task 5.8)
-22. `docs/39-sprint-7-publish-package-kbm-export-implementation-plan.md` — rencana Sprint 7
-23. `docs/37-sprint-6-chapter-summary-delta-canon-proposal-implementation-plan.md` — rencana Sprint 6
-24. `docs/34-sprint-5-safe-write-room-context-packet-implementation-plan.md` — rencana Sprint 5
-25. `docs/32-sprint-4-outline-planning-engine-implementation-plan.md` — rencana Sprint 4
-26. `docs/30-sprint-3-story-foundation-flow-implementation-plan.md` — rencana Sprint 3
-27. `docs/27-sprint-2-data-model-implementation-plan.md` — rencana Sprint 2
+21. `docs/49-sprint-9-verification-report.md` — penutupan Sprint 9 AI (Task 9.8)
+22. `docs/36-non-blocking-technical-debt-and-deferred-items.md` — debt register (Task 5.8)
+23. `docs/39-sprint-7-publish-package-kbm-export-implementation-plan.md` — rencana Sprint 7
+24. `docs/37-sprint-6-chapter-summary-delta-canon-proposal-implementation-plan.md` — rencana Sprint 6
+25. `docs/34-sprint-5-safe-write-room-context-packet-implementation-plan.md` — rencana Sprint 5
+26. `docs/32-sprint-4-outline-planning-engine-implementation-plan.md` — rencana Sprint 4
+27. `docs/30-sprint-3-story-foundation-flow-implementation-plan.md` — rencana Sprint 3
+28. `docs/27-sprint-2-data-model-implementation-plan.md` — rencana Sprint 2
 
 ### Untuk AI coding agent
 

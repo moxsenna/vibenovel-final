@@ -223,6 +223,22 @@ Sprint 5 closed with **zero blockers**. Items below are non-blocking unless mark
 
 **Addressed Task 9.7:** Sprint 9 safety regression — full API baseline (Sprint 2/5/6/7/8/9), Sprint 8/9 mock modes (success/fail_provider/unsafe_output), web mock matrix, API-mode write/rewrite/publish AI success + disabled E2E; `smoke:all:local` 11/11 PASS; env restored safe default.
 
+**Sprint 9 closed (Task 9.8):** [`docs/49-sprint-9-verification-report.md`](49-sprint-9-verification-report.md) — rewrite API/UI, publish copy AI (suggestion-first), credit UI, cost observability; mock + API-mode E2E verified; live rewrite/publish NOT RUN.
+
+### Sprint 9 post-close deferred (non-blocking)
+
+| Item | Priority | Timing |
+|---|---|---|
+| `smoke:all:local` include Sprint 9 API + web mock phases | P1 | Task 9.9 |
+| `smoke:all:local:full` env-switching playbook / split phases | P1 | Task 9.9 |
+| CI API-mode E2E (write/rewrite/publish AI) | P1 | Before production |
+| Live rewrite / publish copy spot check (`google/gemini-2.5-flash`) | P2 | Optional Task 9.9 |
+| Publish **Terapkan Semua** dedicated E2E | P2 | Nice-to-have |
+| Topup / payment / admin credit dashboard | P2 | Sprint 10+ |
+| True DB RPC credit + attempt atomicity | P1 | Before production deploy |
+| Summary / delta AI | P2 | After validator mature |
+| Foundation / concept / outline AI | P2 | Post-MVP |
+
 ---
 
 ## Related documents

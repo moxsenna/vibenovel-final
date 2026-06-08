@@ -674,6 +674,8 @@ npm run smoke:all:local
 
 `smoke:all:local:full` (`-IncludeApiMode`) does not include Sprint 9 web scripts; use explicit Sprint 9 commands above.
 
+**Sprint 9 closure:** full verification results in [`docs/49-sprint-9-verification-report.md`](../docs/49-sprint-9-verification-report.md).
+
 ## Future scripts (not yet implemented)
 
 ```txt
