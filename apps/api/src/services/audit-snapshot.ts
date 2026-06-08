@@ -1,5 +1,13 @@
 import type { JsonObject } from "@vibenovel/shared";
 
+const PUBLISH_COPY_SUGGESTION_KEYS = new Set([
+  "teaser",
+  "caption",
+  "readerQuestion",
+  "shortSynopsis",
+  "nextChapterTeaser",
+]);
+
 const FORBIDDEN_METADATA_KEYS = new Set([
   "token",
   "service_role",
@@ -52,20 +60,32 @@ export function compactChangedFields(
   return changed;
 }
 
-function stripForbiddenKeys(value: unknown, depth = 0): unknown {
+function stripForbiddenKeys(
+  value: unknown,
+  depth = 0,
+  parentKey?: string,
+): unknown {
   if (depth > 6) return "[depth_truncated]";
   if (value === null || value === undefined) return value;
   if (typeof value === "string") {
-    return truncateAuditText(value, 500);
+    const maxLen = parentKey === "suggestions" ? 1500 : 500;
+    return truncateAuditText(value, maxLen);
   }
   if (Array.isArray(value)) {
-    return value.slice(0, 50).map((item) => stripForbiddenKeys(item, depth + 1));
+    return value
+      .slice(0, 50)
+      .map((item) => stripForbiddenKeys(item, depth + 1, parentKey));
   }
   if (typeof value === "object") {
     const out: JsonObject = {};
+    const allowPublishSuggestions = parentKey === "suggestions";
     for (const [key, child] of Object.entries(value as JsonObject)) {
-      if (FORBIDDEN_METADATA_KEYS.has(key)) continue;
-      out[key] = stripForbiddenKeys(child, depth + 1) as JsonObject[keyof JsonObject];
+      if (allowPublishSuggestions) {
+        if (!PUBLISH_COPY_SUGGESTION_KEYS.has(key)) continue;
+      } else if (FORBIDDEN_METADATA_KEYS.has(key)) {
+        continue;
+      }
+      out[key] = stripForbiddenKeys(child, depth + 1, key) as JsonObject[keyof JsonObject];
     }
     return out;
   }

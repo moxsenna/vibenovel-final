@@ -66,13 +66,13 @@ export interface CreateGenerationAttemptInput {
   projectId: string;
   userId: string;
   chapterOutlineId: string;
-  beatId: string;
-  writingSessionId: string | null;
+  beatId?: string | null;
+  writingSessionId?: string | null;
   generationType: GenerationType;
   idempotencyKey: string;
   creditCost: number;
   promptHash: string;
-  contextPacketLogId: string;
+  contextPacketLogId?: string | null;
   qualityMode: WriterQualityMode;
   correlationId?: string;
   metadata?: Record<string, unknown>;
@@ -195,13 +195,13 @@ export async function createGenerationAttempt(
       project_id: input.projectId,
       user_id: input.userId,
       chapter_outline_id: input.chapterOutlineId,
-      beat_id: input.beatId,
-      writing_session_id: input.writingSessionId,
+      beat_id: input.beatId ?? null,
+      writing_session_id: input.writingSessionId ?? null,
       generation_type: input.generationType,
       status: GENERATION_STATUSES.pending,
       idempotency_key: input.idempotencyKey,
       prompt_hash: input.promptHash,
-      context_packet_log_id: input.contextPacketLogId,
+      context_packet_log_id: input.contextPacketLogId ?? null,
       credit_cost: input.creditCost,
       metadata,
     })
@@ -268,15 +268,18 @@ export async function markGenerationAttemptSucceeded(
     inputTokens?: number;
     outputTokens?: number;
     outputEntityId: string;
+    outputEntityType?: string;
     correlationId?: string;
     estimatedCostUsd?: number | null;
     costEstimateMetadata?: GenerationAttemptCostEstimateMetadata;
+    additionalMetadata?: Record<string, unknown>;
   },
 ): Promise<GenerationAttempt> {
   const existing = await getGenerationAttemptById(bindings, input.attemptId);
   const mergedMetadata = sanitizeAuditMetadata({
     ...(existing?.metadata ?? {}),
     ...(input.costEstimateMetadata ?? {}),
+    ...(input.additionalMetadata ?? {}),
   });
 
   const attempt = await updateGenerationAttemptStatus(bindings, input.attemptId, {
@@ -287,7 +290,7 @@ export async function markGenerationAttemptSucceeded(
     output_tokens: input.outputTokens ?? null,
     estimated_cost_usd:
       typeof input.estimatedCostUsd === "number" ? input.estimatedCostUsd : null,
-    output_entity_type: "chapter_prose_version",
+    output_entity_type: input.outputEntityType ?? "chapter_prose_version",
     output_entity_id: input.outputEntityId,
     error_code: null,
     error_message_safe: null,

@@ -274,7 +274,7 @@ Requires `proseVersionId` or `beatId`. Rejects `prompt`, `rawPrompt`, `packet_js
 
 **Services:** `prose-rewrite-generation.ts`, `prose-rewrite-prompt.ts`, `saveAiRewrittenProseVersionForOwner` in `prose-draft.ts`.
 
-**No UI yet** — WritePage rewrite buttons remain disabled (Task 9.4).
+**WritePage UI:** Task 9.4 — `Perbaiki Teks` calls this endpoint in API mode.
 
 **Local smoke:**
 
@@ -285,6 +285,42 @@ Requires `proseVersionId` or `beatId`. Rejects `prompt`, `rawPrompt`, `packet_js
 | Mock fail / unsafe | `-MockMode fail_provider` / `unsafe_output` |
 
 Live OpenRouter rewrite not tested in smoke.
+
+## AI publish copy improvement (Task 9.5)
+
+**Route:** `POST /api/projects/:id/ai/improve-publish-copy` (auth required)
+
+**Gate:** `AI_GENERATION_ENABLED=true`; otherwise `503 AI_DISABLED`. **Suggestion-first** — returns safe copy suggestions only; **does not** patch `publish_packages`. User applies via existing `PATCH /api/projects/:id/publish/:packageId/fields` (Task 9.6 UI).
+
+**Request body:**
+
+```json
+{
+  "packageId": "uuid",
+  "fields": ["teaser", "caption", "readerQuestion", "shortSynopsis", "nextChapterTeaser"],
+  "qualityMode": "optional hemat|seimbang|terbaik (default seimbang)",
+  "instruction": "optional max 500",
+  "idempotencyKey": "string"
+}
+```
+
+`fields` required, non-empty, max 5, no duplicates. Unknown field names → `400`. Exported package → `409 CONFLICT` (`exported_package_locked`). Rejects `prompt`, `rawPrompt`, `packet_json`, `planningTruth`, `model`, `provider`, `creditCost`, etc.
+
+**Credit:** `publish_copy` fixed costs — hemat 3 / seimbang 6 / terbaik 12. Debit before provider; refund on provider failure, unsafe output, or parse failure. No refund if user dislikes suggestions.
+
+**Persistence:** Sanitized suggestions stored in `generation_attempt.metadata.suggestions` only (bounded). No raw prompt, no package snapshot, no `publish_packages` mutation, no canon mutation, no `ai_proposals`, no auto-post KBM.
+
+**Idempotency:** Succeeded replay returns existing suggestions from attempt metadata without second debit or provider call. Failed same key → `422 GENERATION_FAILED` (use new key).
+
+**Response (safe):** `suggestions` (requested fields only), `generationAttempt` summary, `creditBalance`, `idempotentReplay`. No raw prompt, packet, or provider body.
+
+**Services:** `publish-copy-ai-generation.ts`, `publish-copy-ai-prompt.ts`. Overclaim/leak guards via `publish-safety.ts`.
+
+**No PublishPage UI yet** — Task 9.6.
+
+**Local smoke:** Same env pattern as rewrite — `npm run smoke:api:sprint9` (baseline AI disabled); mock success with `-MockMode success` after restarting `dev:api` with AI+mock. Live OpenRouter publish copy not tested in smoke.
+
+**Audit:** `generation_attempt_created/succeeded/failed`, `credit_debited/refunded`, `ai_output_persisted` on `generation_attempt` with `suggestedFields` only (no `publish_package_updated`).
 
 **Audit ordering:** `*_started` / preflight before writes; `*_applied` only after success; `*_failed` after validation or write failure. No payload leak (`audit-snapshot.ts`).
 

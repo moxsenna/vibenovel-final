@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-  Sprint 9 Prose Rewrite API safety smoke (Task 9.3).
+  Sprint 9 AI API safety smoke — prose rewrite (9.3) + publish copy (9.5).
 
 .DESCRIPTION
   Run from repo root:
@@ -171,6 +171,83 @@ function Invoke-ApiExpectFailure {
     Add-StepResult $Name "FAIL" "expected error, got 2xx"
   } catch {
     Add-StepResult $Name "PASS" ($_.Exception.Message.Substring(0, [Math]::Min(80, $_.Exception.Message.Length)))
+  }
+}
+
+function Test-PublishCopyResponseSafe {
+  param([string]$JsonText)
+  $forbidden = @(
+    '"packetJson"\s*:', '"packet_json"\s*:', '"planningTruth"\s*:', '"planning_truth"\s*:',
+    '"full_prompt"\s*:', 'openrouter', '"promptText"\s*:', '"prompt_text"\s*:',
+    '"promptMessages"\s*:', '"contextPacket"\s*:', '"context_packet"\s*:',
+    '"proseText"\s*:', '"prose_text"\s*:', '"delta_json"\s*:', 'estimated_cost_usd'
+  )
+  foreach ($f in $forbidden) {
+    if ($JsonText -match $f) { return $false }
+  }
+  return $true
+}
+
+function New-ImprovePublishCopyBody {
+  param(
+    [string]$PackageId,
+    [string[]]$Fields,
+    [string]$IdempotencyKey,
+    [string]$QualityMode = $null,
+    [string]$Instruction = $null
+  )
+  $body = @{
+    packageId      = $PackageId
+    fields         = $Fields
+    idempotencyKey = $IdempotencyKey
+  }
+  if ($QualityMode) { $body.qualityMode = $QualityMode }
+  if ($Instruction) { $body.instruction = $Instruction }
+  return ($body | ConvertTo-Json -Compress)
+}
+
+function Initialize-PublishSmokeContext {
+  $created = Invoke-Api -Method POST -Path "/api/projects" -Headers $auth -Body '{"title":"S9 Publish Copy Smoke","entryPath":"rough_idea"}'
+  if (-not $created.data.id) { throw "POST /api/projects returned no project id" }
+  $projectId = $created.data.id
+  Add-StepResult "publish bootstrap project" "PASS" "projectId=$projectId"
+
+  Bootstrap-FoundationLocked -ProjectId $projectId
+  Invoke-Api -Method POST -Path "/api/projects/$projectId/outline/generate" -Headers $auth -Body '{}' | Out-Null
+  Invoke-Api -Method POST -Path "/api/projects/$projectId/outline/approve" -Headers $auth -Body '{}' | Out-Null
+  Invoke-Api -Method POST -Path "/api/projects/$projectId/outline/lock" -Headers $auth -Body '{}' | Out-Null
+
+  $chapters = Invoke-Api -Path "/api/projects/$projectId/outline/chapters" -Headers $auth
+  $ch1 = ($chapters.data.chapters | Where-Object { $_.chapterNumber -eq 1 } | Select-Object -First 1)
+  if (-not $ch1.id) { throw "chapter 1 outline not found" }
+  $ch1Id = $ch1.id
+
+  $session = Invoke-Api -Method POST -Path "/api/projects/$projectId/write/sessions" -Headers $auth `
+    -Body (@{ chapterOutlineId = $ch1Id } | ConvertTo-Json)
+  $sessionId = $session.data.session.id
+  Invoke-Api -Method POST -Path "/api/projects/$projectId/write/sessions/$sessionId/beats/generate" -Headers $auth -Body '{}' | Out-Null
+  $beats = Invoke-Api -Path "/api/projects/$projectId/write/sessions/$sessionId/beats" -Headers $auth
+  $beatId = $beats.data.beats[0].id
+
+  Invoke-Api -Method POST -Path "/api/projects/$projectId/write/beats/$beatId/prose" -Headers $auth `
+    -Body '{"proseText":"Nadira memangkas sayuran di dapur dengan irama yang sudah hafal di luar kepala."}' | Out-Null
+  Invoke-Api -Method POST -Path "/api/projects/$projectId/write/sessions/$sessionId/ready-for-summary" -Headers $auth -Body '{}' | Out-Null
+
+  $gen = Invoke-Api -Method POST -Path "/api/projects/$projectId/summary/generate" -Headers $auth `
+    -Body (@{ chapterOutlineId = $ch1Id; writingSessionId = $sessionId } | ConvertTo-Json)
+  $summaryId = $gen.data.summary.id
+  Invoke-Api -Method POST -Path "/api/projects/$projectId/summary/$summaryId/delta/extract" -Headers $auth -Body '{}' | Out-Null
+  Invoke-Api -Method POST -Path "/api/projects/$projectId/summary/$summaryId/approve" -Headers $auth -Body '{}' | Out-Null
+
+  $pubGen = Invoke-Api -Method POST -Path "/api/projects/$projectId/publish/generate" -Headers $auth `
+    -Body (@{ chapterOutlineId = $ch1Id } | ConvertTo-Json)
+  $packageId = $pubGen.data.publishPackage.id
+  Add-StepResult "publish package ready" "PASS" "packageId=$packageId"
+
+  return [PSCustomObject]@{
+    ProjectId  = $projectId
+    PackageId  = $packageId
+    Ch1Id      = $ch1Id
   }
 }
 
@@ -406,7 +483,7 @@ function Seed-UserProseForBeat {
   }
 }
 
-Write-Host "`nVibeNovel Sprint 9 Prose Rewrite API Smoke Test" -ForegroundColor Cyan
+Write-Host "`nVibeNovel Sprint 9 AI API Smoke Test (rewrite + publish copy)" -ForegroundColor Cyan
 
 $anonKey = Resolve-SupabaseAnonKey
 if ([string]::IsNullOrWhiteSpace($TestEmail)) {
@@ -464,10 +541,18 @@ $rewriteBodyBase = New-RewriteProseBody -BeatId $beatId -SessionId $sessionId `
 
 Invoke-ApiExpectFailure -Name "POST rewrite-prose no token" -Method POST -Path $rewritePath -Body $rewriteBodyBase
 
+$improvePath = "/api/projects/$projectId/ai/improve-publish-copy"
+$improveBodyBase = New-ImprovePublishCopyBody -PackageId "00000000-0000-4000-8000-000000000099" `
+  -Fields @("teaser") -IdempotencyKey "s9-pub-base-$(Get-Random)"
+
+Invoke-ApiExpectFailure -Name "POST improve-publish-copy no token" -Method POST -Path $improvePath -Body $improveBodyBase
+
 if (-not $aiEnabled) {
-  Invoke-ApiExpectErrorCode -Name "AI disabled 503" -Method POST -Path $rewritePath -Headers $auth -Body $rewriteBodyBase -ExpectedCode "AI_DISABLED"
+  Invoke-ApiExpectErrorCode -Name "AI disabled 503 rewrite" -Method POST -Path $rewritePath -Headers $auth -Body $rewriteBodyBase -ExpectedCode "AI_DISABLED"
+  Invoke-ApiExpectErrorCode -Name "AI disabled 503 publish copy" -Method POST -Path $improvePath -Headers $auth -Body $improveBodyBase -ExpectedCode "AI_DISABLED"
 } else {
-  Add-StepResult "AI disabled 503" "SKIP" "AI_GENERATION_ENABLED=true on server"
+  Add-StepResult "AI disabled 503 rewrite" "SKIP" "AI_GENERATION_ENABLED=true on server"
+  Add-StepResult "AI disabled 503 publish copy" "SKIP" "AI_GENERATION_ENABLED=true on server"
 }
 
 $resolvedMockMode = $MockMode
@@ -486,6 +571,7 @@ if ($resolvedMockMode -eq "skip_mock" -or -not $aiEnabled -or -not $aiMock) {
   Add-StepResult "invalid rewriteMode 400" "NOT RUN" "requires AI enabled"
   Add-StepResult "custom without instruction 400" "NOT RUN" "requires AI enabled"
   Add-StepResult "reject client model" "NOT RUN" "requires AI enabled"
+  Add-StepResult "publish copy tests" "NOT RUN" "requires AI enabled"
 } else {
   $foundationBefore = Invoke-Api -Path "/api/projects/$projectId/foundation" -Headers $auth
   $factsBefore = $foundationBefore.data.facts.Count
@@ -692,6 +778,160 @@ if ($resolvedMockMode -eq "skip_mock" -or -not $aiEnabled -or -not $aiMock) {
       -SpeechBefore $speechBefore -OpenLoopsBefore $openLoopsBefore -RevealsBefore $revealsBefore -ProposalsBefore $proposalsBefore
     Add-StepResult "no canon mutation unsafe_output" $(if ($canonUnsafeOk) { "PASS" } else { "FAIL" }) "facts=$factsBefore"
     Add-StepResult "mock fail_provider" "SKIP" "wrong MockMode"
+  }
+
+  # --- Publish copy AI (Task 9.5) ---
+  try {
+    $pubCtx = Initialize-PublishSmokeContext
+    $pubProjectId = $pubCtx.ProjectId
+    $packageId = $pubCtx.PackageId
+    $improvePathPub = "/api/projects/$pubProjectId/ai/improve-publish-copy"
+
+    $foundationPubBefore = Invoke-Api -Path "/api/projects/$pubProjectId/foundation" -Headers $auth
+    $factsPubBefore = $foundationPubBefore.data.facts.Count
+    $charsPubBefore = $foundationPubBefore.data.characters.Count
+    $speechPubBefore = Get-SpeechRulesCount -ProjectId $pubProjectId
+    $openLoopsPubBefore = (Invoke-Api -Path "/api/projects/$pubProjectId/outline/open-loops" -Headers $auth).data.openLoops.Count
+    $revealsPubBefore = (Invoke-Api -Path "/api/projects/$pubProjectId/outline/reveals" -Headers $auth).data.reveals.Count
+    $propPubBefore = Invoke-Api -Path "/api/projects/$pubProjectId/proposals?includeResolved=true" -Headers $auth
+    $proposalsPubBefore = if ($propPubBefore.data -is [array]) { $propPubBefore.data.Count } else { 0 }
+
+    Invoke-ApiExpectFailure -Name "publish copy package missing 404" -Method POST -Headers $auth `
+      -Path "/api/projects/$pubProjectId/ai/improve-publish-copy" `
+      -Body (New-ImprovePublishCopyBody -PackageId "00000000-0000-4000-8000-000000000088" -Fields @("teaser") -IdempotencyKey "s9-pub-miss-$(Get-Random)")
+
+    $dupBody = (@{
+      packageId      = $packageId
+      fields         = @("teaser", "teaser")
+      idempotencyKey = "s9-pub-dup-$(Get-Random)"
+    } | ConvertTo-Json -Compress)
+    Invoke-ApiExpectErrorCode -Name "publish copy duplicate fields 400" -Method POST -Path $improvePathPub `
+      -Headers $auth -Body $dupBody -ExpectedCode "BAD_REQUEST"
+
+    $badFieldBody = New-ImprovePublishCopyBody -PackageId $packageId -Fields @("evil_field") -IdempotencyKey "s9-pub-badfield-$(Get-Random)"
+    Invoke-ApiExpectErrorCode -Name "publish copy invalid field 400" -Method POST -Path $improvePathPub `
+      -Headers $auth -Body $badFieldBody -ExpectedCode "BAD_REQUEST"
+
+    $badModelBody = (@{
+      packageId      = $packageId
+      fields         = @("teaser")
+      idempotencyKey = "s9-pub-badmodel-$(Get-Random)"
+      model          = "evil/model"
+    } | ConvertTo-Json -Compress)
+    Invoke-ApiExpectErrorCode -Name "publish copy reject client model" -Method POST -Path $improvePathPub `
+      -Headers $auth -Body $badModelBody -ExpectedCode "BAD_REQUEST"
+
+    $signupPubB = Invoke-RestMethod -Uri "$SupabaseUrl/auth/v1/signup" -Method POST `
+      -Headers @{ apikey = $anonKey; Authorization = "Bearer $anonKey" } -ContentType "application/json" `
+      -Body (@{ email = "s9pubb-$(Get-Random)@example.com"; password = $TestPassword } | ConvertTo-Json)
+    $authPubB = @{ Authorization = "Bearer $($signupPubB.access_token)" }
+    Invoke-ApiExpectFailure -Name "publish copy cross-user 404" -Method POST -Headers $authPubB `
+      -Path $improvePathPub `
+      -Body (New-ImprovePublishCopyBody -PackageId $packageId -Fields @("teaser") -IdempotencyKey "s9-pub-cross-$(Get-Random)")
+
+    $exportPkg = Invoke-Api -Method POST -Path "/api/projects/$pubProjectId/publish/generate" -Headers $auth `
+      -Body (@{ chapterOutlineId = $pubCtx.Ch1Id; regenerate = $true } | ConvertTo-Json)
+    $exportPackageId = $exportPkg.data.publishPackage.id
+    Invoke-Api -Method POST -Path "/api/projects/$pubProjectId/publish/$exportPackageId/mark-exported" -Headers $auth -Body '{}' | Out-Null
+    Invoke-ApiExpectErrorCode -Name "publish copy exported package 409" -Method POST -Path $improvePathPub `
+      -Headers $auth -Body (New-ImprovePublishCopyBody -PackageId $exportPackageId -Fields @("teaser") -IdempotencyKey "s9-pub-exp-$(Get-Random)") `
+      -ExpectedCode "CONFLICT"
+
+    if ($resolvedMockMode -eq "success") {
+      try {
+        Seed-CreditBalance -UserId $script:UserId -Balance 100 | Out-Null
+      } catch { }
+
+      $pkgBefore = Invoke-Api -Path "/api/projects/$pubProjectId/publish/$packageId" -Headers $auth
+      $teaserBefore = $pkgBefore.data.publishPackage.teaser
+      $captionBefore = $pkgBefore.data.publishPackage.caption
+
+      $balanceBeforePub = (Invoke-Api -Path "/api/credits/balance" -Headers $auth).data.creditBalance.balance
+      $idemPub = "s9-pub-ok-$(Get-Random)"
+      $bodyPub = New-ImprovePublishCopyBody -PackageId $packageId -Fields @("teaser", "caption") -IdempotencyKey $idemPub
+
+      $improveRes = Invoke-Api -Method POST -Path $improvePathPub -Headers $auth -Body $bodyPub
+      $jsonPub = $improveRes | ConvertTo-Json -Depth 12
+      $safePub = Test-PublishCopyResponseSafe $jsonPub
+      $hasTeaser = [bool]$improveRes.data.suggestions.teaser
+      $hasCaption = [bool]$improveRes.data.suggestions.caption
+      $genTypeOk = ($improveRes.data.generationAttempt.generationType -eq "publish_copy")
+      $attemptOk = ($improveRes.data.generationAttempt.status -eq "succeeded")
+      $balanceAfterPub = $improveRes.data.creditBalance.balance
+      $debitPubOk = ($balanceAfterPub -eq ($balanceBeforePub - 6))
+
+      $pkgAfter = Invoke-Api -Path "/api/projects/$pubProjectId/publish/$packageId" -Headers $auth
+      $noMutationOk = (
+        $pkgAfter.data.publishPackage.teaser -eq $teaserBefore -and
+        $pkgAfter.data.publishPackage.caption -eq $captionBefore
+      )
+
+      $overclaimOk = -not (
+        $improveRes.data.suggestions.teaser -match 'dijamin\s+viral|pasti\s+viral' -or
+        $improveRes.data.suggestions.caption -match 'dijamin\s+viral|pasti\s+viral'
+      )
+
+      Add-StepResult "publish copy mock success" $(if ($safePub -and $hasTeaser -and $hasCaption -and $genTypeOk -and $attemptOk) { "PASS" } else { "FAIL" }) "fields=teaser,caption"
+      Add-StepResult "publish copy no package mutation" $(if ($noMutationOk) { "PASS" } else { "FAIL" }) "teaser unchanged"
+      Add-StepResult "publish copy debit (seimbang=6)" $(if ($debitPubOk) { "PASS" } else { "FAIL" }) "before=$balanceBeforePub after=$balanceAfterPub"
+      Add-StepResult "publish copy overclaim guard" $(if ($overclaimOk) { "PASS" } else { "FAIL" }) "no viral guarantee"
+      Add-StepResult "publish copy response leak guard" $(if ($safePub) { "PASS" } else { "FAIL" }) "no prompt/packet leak"
+
+      $replayPub = Invoke-Api -Method POST -Path $improvePathPub -Headers $auth -Body $bodyPub
+      $replayPubOk = (
+        $replayPub.data.idempotentReplay -eq $true -and
+        $replayPub.data.creditBalance.balance -eq $balanceAfterPub -and
+        $replayPub.data.suggestions.teaser -eq $improveRes.data.suggestions.teaser
+      )
+      Add-StepResult "publish copy idempotency replay" $(if ($replayPubOk) { "PASS" } else { "FAIL" }) "balance=$($replayPub.data.creditBalance.balance)"
+
+      Assert-AuditActionExists -Name "publish copy audit generation_attempt_created" -ProjectId $pubProjectId -Action "generation_attempt_created" -AuthHeaders $auth -AnonKey $anonKey
+      Assert-AuditActionExists -Name "publish copy audit generation_attempt_succeeded" -ProjectId $pubProjectId -Action "generation_attempt_succeeded" -AuthHeaders $auth -AnonKey $anonKey
+      Assert-AuditActionExists -Name "publish copy audit ai_output_persisted" -ProjectId $pubProjectId -Action "ai_output_persisted" -AuthHeaders $auth -AnonKey $anonKey
+
+      $canonPubOk = Test-CanonUnchanged -ProjectId $pubProjectId -FactsBefore $factsPubBefore -CharsBefore $charsPubBefore `
+        -SpeechBefore $speechPubBefore -OpenLoopsBefore $openLoopsPubBefore -RevealsBefore $revealsPubBefore -ProposalsBefore $proposalsPubBefore
+      Add-StepResult "publish copy no canon mutation" $(if ($canonPubOk) { "PASS" } else { "FAIL" }) "facts=$factsPubBefore"
+
+      $propPubAfter = Invoke-Api -Path "/api/projects/$pubProjectId/proposals?includeResolved=true" -Headers $auth
+      $proposalsPubAfter = if ($propPubAfter.data -is [array]) { $propPubAfter.data.Count } else { 0 }
+      Add-StepResult "publish copy no new ai_proposals" $(if ($proposalsPubAfter -eq $proposalsPubBefore) { "PASS" } else { "FAIL" }) "before=$proposalsPubBefore after=$proposalsPubAfter"
+
+      Add-StepResult "publish copy fail_provider" "SKIP" "run with -MockMode fail_provider after env restart"
+      Add-StepResult "publish copy unsafe_output" "SKIP" "run with -MockMode unsafe_output after env restart"
+    }
+
+    if ($resolvedMockMode -eq "fail_provider") {
+      Seed-CreditBalance -UserId $script:UserId -Balance 100 | Out-Null
+      $balanceBeforeFailPub = (Invoke-Api -Path "/api/credits/balance" -Headers $auth).data.creditBalance.balance
+      $pkgSnap = Invoke-Api -Path "/api/projects/$pubProjectId/publish/$packageId" -Headers $auth
+      $teaserSnap = $pkgSnap.data.publishPackage.teaser
+      $idemFailPub = "s9-pub-fail-$(Get-Random)"
+      $bodyFailPub = New-ImprovePublishCopyBody -PackageId $packageId -Fields @("teaser") -IdempotencyKey $idemFailPub
+      Invoke-ApiExpectErrorCode -Name "publish copy fail_provider" -Method POST -Path $improvePathPub `
+        -Headers $auth -Body $bodyFailPub -ExpectedCode "AI_PROVIDER_ERROR"
+      $balanceAfterFailPub = (Invoke-Api -Path "/api/credits/balance" -Headers $auth).data.creditBalance.balance
+      $pkgAfterFail = Invoke-Api -Path "/api/projects/$pubProjectId/publish/$packageId" -Headers $auth
+      $refundPubOk = ($balanceAfterFailPub -eq $balanceBeforeFailPub)
+      $noMutFailOk = ($pkgAfterFail.data.publishPackage.teaser -eq $teaserSnap)
+      Add-StepResult "publish copy refund fail_provider" $(if ($refundPubOk) { "PASS" } else { "FAIL" }) "before=$balanceBeforeFailPub after=$balanceAfterFailPub"
+      Add-StepResult "publish copy no mutation fail_provider" $(if ($noMutFailOk) { "PASS" } else { "FAIL" }) "teaser unchanged"
+      Add-StepResult "publish copy mock success" "SKIP" "fail_provider mode"
+    }
+
+    if ($resolvedMockMode -eq "unsafe_output") {
+      Seed-CreditBalance -UserId $script:UserId -Balance 100 | Out-Null
+      $balanceBeforeUnsafePub = (Invoke-Api -Path "/api/credits/balance" -Headers $auth).data.creditBalance.balance
+      $idemUnsafePub = "s9-pub-unsafe-$(Get-Random)"
+      $bodyUnsafePub = New-ImprovePublishCopyBody -PackageId $packageId -Fields @("caption") -IdempotencyKey $idemUnsafePub
+      Invoke-ApiExpectErrorCode -Name "publish copy unsafe_output" -Method POST -Path $improvePathPub `
+        -Headers $auth -Body $bodyUnsafePub -ExpectedCode "AI_OUTPUT_UNSAFE"
+      $balanceAfterUnsafePub = (Invoke-Api -Path "/api/credits/balance" -Headers $auth).data.creditBalance.balance
+      Add-StepResult "publish copy refund unsafe_output" $(if ($balanceAfterUnsafePub -eq $balanceBeforeUnsafePub) { "PASS" } else { "FAIL" }) "before=$balanceBeforeUnsafePub after=$balanceAfterUnsafePub"
+      Add-StepResult "publish copy mock success" "SKIP" "unsafe_output mode"
+    }
+  } catch {
+    Add-StepResult "publish copy bootstrap/tests" "FAIL" (Get-SafeDetail $_.Exception.Message)
   }
 }
 

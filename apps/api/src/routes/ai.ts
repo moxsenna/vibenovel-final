@@ -1,6 +1,7 @@
 import type { Hono } from "hono";
 import { authMiddleware } from "../middleware/auth.js";
 import { jsonSuccess } from "../response.js";
+import { improvePublishCopyForOwner } from "../services/publish-copy-ai-generation.js";
 import { generateProseBeatForOwner } from "../services/prose-beat-generation.js";
 import { rewriteProseForOwner } from "../services/prose-rewrite-generation.js";
 import type { AppEnv } from "../types.js";
@@ -19,6 +20,14 @@ export function registerAiRoutes(app: Hono<AppEnv>): void {
     const projectId = c.req.param("id");
     const body = await c.req.json().catch(() => ({}));
     const result = await rewriteProseForOwner(c.env, ownerId, projectId, body);
+    return jsonSuccess(c, result, result.idempotentReplay ? 200 : 201);
+  });
+
+  app.post("/api/projects/:id/ai/improve-publish-copy", authMiddleware, async (c) => {
+    const ownerId = c.get("userId");
+    const projectId = c.req.param("id");
+    const body = await c.req.json().catch(() => ({}));
+    const result = await improvePublishCopyForOwner(c.env, ownerId, projectId, body);
     return jsonSuccess(c, result, result.idempotentReplay ? 200 : 201);
   });
 }
