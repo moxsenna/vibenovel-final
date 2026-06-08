@@ -636,6 +636,13 @@ export const AUDIT_ACTIONS = {
   credit_debited: "credit_debited",
   credit_refunded: "credit_refunded",
   ai_output_persisted: "ai_output_persisted",
+  credit_topup_checkout_created: "credit_topup_checkout_created",
+  payment_invoice_created: "payment_invoice_created",
+  payment_webhook_received: "payment_webhook_received",
+  payment_webhook_processed: "payment_webhook_processed",
+  payment_webhook_failed: "payment_webhook_failed",
+  credit_topup_granted: "credit_topup_granted",
+  credit_topup_grant_failed: "credit_topup_grant_failed",
 } as const;
 export type AuditAction = (typeof AUDIT_ACTIONS)[keyof typeof AUDIT_ACTIONS];
 
@@ -667,6 +674,9 @@ export const AUDIT_ENTITY_TYPES = {
   publish_package: "publish_package",
   generation_attempt: "generation_attempt",
   credit_ledger_entry: "credit_ledger_entry",
+  credit_topup_product: "credit_topup_product",
+  credit_topup_order: "credit_topup_order",
+  payment_webhook_event: "payment_webhook_event",
 } as const;
 export type AuditEntityType = (typeof AUDIT_ENTITY_TYPES)[keyof typeof AUDIT_ENTITY_TYPES];
 
@@ -709,3 +719,46 @@ export const CREDIT_BALANCE_SOURCES = {
 } as const;
 export type CreditBalanceSource =
   (typeof CREDIT_BALANCE_SOURCES)[keyof typeof CREDIT_BALANCE_SOURCES];
+
+// --- Sprint 10: payment topup (schema Task 10.1 — checkout/webhook Task 10.2+) ---
+
+export const CREDIT_TOPUP_ORDER_STATUSES = {
+  pending: "pending",
+  paid: "paid",
+  expired: "expired",
+  failed: "failed",
+  cancelled: "cancelled",
+} as const;
+export type CreditTopupOrderStatus =
+  (typeof CREDIT_TOPUP_ORDER_STATUSES)[keyof typeof CREDIT_TOPUP_ORDER_STATUSES];
+
+export const PAYMENT_WEBHOOK_PROCESSING_STATUSES = {
+  received: "received",
+  processed: "processed",
+  ignored: "ignored",
+  failed: "failed",
+} as const;
+export type PaymentWebhookProcessingStatus =
+  (typeof PAYMENT_WEBHOOK_PROCESSING_STATUSES)[keyof typeof PAYMENT_WEBHOOK_PROCESSING_STATUSES];
+
+export const PAYMENT_PROVIDERS = {
+  mayar: "mayar",
+} as const;
+export type PaymentProvider = (typeof PAYMENT_PROVIDERS)[keyof typeof PAYMENT_PROVIDERS];
+
+export const CREDIT_TOPUP_PRODUCT_SLUGS = {
+  starter: "starter",
+  creator: "creator",
+  pro: "pro",
+  studio: "studio",
+} as const;
+export type CreditTopupProductSlug =
+  (typeof CREDIT_TOPUP_PRODUCT_SLUGS)[keyof typeof CREDIT_TOPUP_PRODUCT_SLUGS];
+
+/** Ledger reasons for topup grants (direction=credit) — writers in Task 10.3 */
+export const CREDIT_LEDGER_TOPUP_REASONS = {
+  credit_topup: "credit_topup",
+  welcome_bonus: "welcome_bonus",
+} as const;
+export type CreditLedgerTopupReason =
+  (typeof CREDIT_LEDGER_TOPUP_REASONS)[keyof typeof CREDIT_LEDGER_TOPUP_REASONS];

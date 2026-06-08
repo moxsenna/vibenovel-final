@@ -681,10 +681,23 @@ Add to `apps/api/src/env.ts` presence flags (names only in docs): `hasMayarApiKe
 
 ## 20. Next Recommended Task
 
-**Task 10.1 — Mayar/Payment Data Model + Shared Types**
+**Task 10.2 — Payment Provider Abstraction + Mayar Invoice Create Shell**
 
-Implement migration `00009_sprint10_payment_topup.sql`, shared enums/types, seed credit packages, audit enum extensions, and document ledger `credit` + `credit_topup` reason — no Mayar HTTP calls yet.
+`mayar-client.ts`, mock payment provider, `POST /api/credits/topup/checkout`, `GET /api/credits/topup/products` — no webhook grant yet.
 
 ---
 
-*Plan authored Task 10.0 — 8 Juni 2026. Implementation begins Task 10.1.*
+## 21. Implementation Status — Task 10.1 (2026-06-08)
+
+| Deliverable | Status |
+|---|---|
+| `00009_sprint10_payment_topup.sql` | ✅ 3 tables, 2 enums, audit extend, seed 4 packages |
+| Shared enums/types (`@vibenovel/shared`) | ✅ |
+| Checkout / webhook / grant service | **Not started** (10.2/10.3) |
+| Mayar HTTP | **Not started** |
+
+Work log: [`.agent-logs/sprint-10/task-10.1-mayar-payment-data-model-shared-types.md`](../.agent-logs/sprint-10/task-10.1-mayar-payment-data-model-shared-types.md)
+
+---
+
+*Plan authored Task 10.0 — 8 Juni 2026. Task 10.1 schema complete.*

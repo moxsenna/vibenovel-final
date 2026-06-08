@@ -379,9 +379,16 @@ Belum ada (sengaja — defer setelah hardening / Sprint 8):
 | 9.8 Verification report | ✅ | `docs/49` |
 | 9.9 Smoke orchestrator + optional live hook | ✅ | `smoke:all:local` 13 phases; `-LiveSpotCheck` in sprint9 API smoke |
 
-**Sprint 10 (rencana):** [`docs/50-sprint-10-production-readiness-mayar-monetization-plan.md`](docs/50-sprint-10-production-readiness-mayar-monetization-plan.md) — production readiness + Mayar credit topup (Task 10.0 ✅).
+## Sprint 10 — Production Readiness & Mayar Monetization (in progress)
 
-**Task berikutnya (disarankan):** **Task 10.1** — Mayar/Payment Data Model + Shared Types.
+**Rencana:** [`docs/50-sprint-10-production-readiness-mayar-monetization-plan.md`](docs/50-sprint-10-production-readiness-mayar-monetization-plan.md)
+
+| Task | Status | Deliverable |
+|---|---|---|
+| 10.0 Monetization plan | ✅ | `docs/50` |
+| 10.1 Payment data model | ✅ | `00009` migration, shared types, seed packages |
+
+**Task berikutnya (disarankan):** **Task 10.2** — Payment Provider Abstraction + Mayar Invoice Create Shell.
 
 Sprint 9 MVP: **prose rewrite**, **publish copy AI** (suggestion-first), **credit UI** — verified mock + API-mode E2E. AI **disabled by default** (`AI_GENERATION_ENABLED=false`). Live rewrite/publish copy not run (non-blocking).
 

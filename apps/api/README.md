@@ -1255,6 +1255,16 @@ npm run build:api
 | `AI_GENERATION_ENABLED` | Optional | Default false — see § AI model router shell |
 | `AI_PROVIDER_MOCK` | Optional | Local mock provider |
 | `OPENROUTER_API_KEY` | When AI live | Server only — never client |
+| `MAYAR_API_KEY` | Task 10.2+ checkout | Server only — never client |
+| `MAYAR_BASE_URL` | Task 10.2+ | Sandbox: `https://api.mayar.club/hl/v1`; prod: `https://api.mayar.id/hl/v1` |
+| `MAYAR_ENV` | Task 10.2+ | `sandbox` \| `production` |
+| `MAYAR_REDIRECT_BASE_URL` | Task 10.2+ | Web origin for Mayar `redirectUrl` |
+| `CREDIT_TOPUP_ENABLED` | Task 10.2+ | Default **false** — master gate for checkout |
+| `PAYMENT_PROVIDER_MOCK` | Task 10.2+ smoke | Default **true** in local smoke — no Mayar network |
+
+### Payment topup schema (Task 10.1 — no routes yet)
+
+Tables `credit_topup_products`, `credit_topup_orders`, `payment_webhook_events` (migration `00009`). Seed catalog only. Checkout/webhook/grant deferred Task 10.2–10.3. Topup grant will use `credit_ledger.direction=credit` + `reason=credit_topup`.
 
 ## Not in Task 2.12
 

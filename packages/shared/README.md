@@ -4,7 +4,7 @@ Kontrak data bersama antar `apps/web`, `apps/api`, dan migrasi database Sprint 2
 
 ## Status
 
-**Task 2.1 + 3.1 + 4.1 + 5.1 + 6.1 + 7.1 + 7.8.2 + 8.1 — implemented.** TypeScript types dan enums domain Sprint 2–8; `AUDIT_ACTIONS` / `AUDIT_ENTITY_TYPES` (migrations `00007`, `00008`); belum ada Zod schema atau runtime validation.
+**Task 2.1 + 3.1 + 4.1 + 5.1 + 6.1 + 7.1 + 7.8.2 + 8.1 + 10.1 — implemented.** TypeScript types dan enums domain Sprint 2–8 + Sprint 10 payment topup; `AUDIT_ACTIONS` / `AUDIT_ENTITY_TYPES` (migrations `00007`, `00008`, `00009`); belum ada Zod schema atau runtime validation.
 
 ## Isi package
 
@@ -27,6 +27,7 @@ Kontrak data bersama antar `apps/web`, `apps/api`, dan migrasi database Sprint 2
 - Sprint 7: `publish_packages` **bukan canon**; export artifact for KBM copy-paste only. Does **not** auto-post to KBM. Must **not** be Context Packet source. `metadata` must not store raw prose, `planningTruth`, `packet_json`, `delta_json`, or proposal payloads.
 - Mode kualitas user-facing: `hemat` | `seimbang` | `terbaik` — bukan raw model ID.
 - Sprint 8: `generation_attempts` tracks AI call lifecycle (`promptHash` only — no raw prompt). `credit_ledger` is append-only; mutations deferred to Task 8.3. `summary_delta` generation type reserved — AI deferred.
+- Sprint 10: `credit_topup_products` / `credit_topup_orders` / `payment_webhook_events` are **payment records only** — not canon, not AI. Client must not mutate balances or orders directly. Topup grant uses existing `credit_ledger_direction.credit` (Task 10.3). `providerPayloadSafe` / `payloadSafeJson` must not store API keys.
 
 ## Scripts
 

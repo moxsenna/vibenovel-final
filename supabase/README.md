@@ -32,6 +32,7 @@ supabase/
 | **6.1** ✅ | Chapter summary & delta migration | `migrations/00005_sprint6_chapter_summary_delta.sql` — 4 tabel + enum extend |
 | **7.1** ✅ | Publish package migration | `migrations/00006_sprint7_publish_package.sql` — 1 tabel + enum |
 | **8.1** ✅ | AI generation + credit ledger | `migrations/00008_sprint8_ai_generation_credit.sql` — 2 tabel + 3 enums + audit extend |
+| **10.1** ✅ | Payment topup schema (Mayar) | `migrations/00009_sprint10_payment_topup.sql` — 3 tabel + 2 enums + audit extend + seed packages |
 | **Apply local** | Setelah Supabase CLI + Docker | `supabase start` lalu `supabase db reset` |
 | **Apply remote** | Manual / CI terpisah | **Tidak** tanpa approval eksplisit user |
 
@@ -130,7 +131,20 @@ Membuat:
 
 Seed Task 8.1: **no** `generation_attempts` / `credit_ledger` rows — runtime in Task 8.3+.
 
-**Belum ada:** RPC debit/refund, OpenRouter client, AI endpoints (Task 8.2+), `auth.users` trigger otomatis on signup (Task 2.6), `validation_reports`.
+### Migration `00009_sprint10_payment_topup.sql` (Task 10.1)
+
+Membuat:
+
+- **3 tabel:** `credit_topup_products`, `credit_topup_orders`, `payment_webhook_events`
+- **2 enum baru:** `credit_topup_order_status`, `payment_webhook_processing_status` selaras `@vibenovel/shared`
+- **Audit extend:** payment topup lifecycle actions + entity types `credit_topup_product`, `credit_topup_order`, `payment_webhook_event`
+- **`credit_ledger_direction` unchanged** — topup grant akan pakai `direction=credit` + `reason=credit_topup` (Task 10.3)
+- **RLS:** authenticated SELECT active products; owner SELECT own orders; webhook events service_role only
+- **Seed:** 4 paket kredit (starter/creator/pro/pro studio) — `metadata.proposalPricing=true`
+
+Seed Task 10.1: **no** `credit_topup_orders` / `payment_webhook_events` — checkout/webhook Task 10.2+.
+
+**Belum ada:** Mayar HTTP client, checkout API, webhook endpoint, credit grant service, topup UI (Task 10.2+), RPC debit/refund/topup atomicity, `auth.users` trigger otomatis on signup (Task 2.6).
 
 Urutan disarankan:
 

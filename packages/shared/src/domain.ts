@@ -24,6 +24,10 @@ import type {
   ContextPacketBuilderVersion,
   CreditBalanceSource,
   CreditLedgerDirection,
+  CreditTopupOrderStatus,
+  CreditTopupProductSlug,
+  PaymentProvider,
+  PaymentWebhookProcessingStatus,
   GenerationStatus,
   GenerationType,
   DefaultLanguage,
@@ -257,6 +261,68 @@ export interface CreditLedgerEntry {
   balanceAfter: number;
   metadata: JsonObject;
   createdAt: ISODateTime;
+}
+
+// --- Sprint 10: payment topup catalog & orders (not canon — no AI mutation) ---
+
+/** Server-authoritative credit package — price/credits from DB seed, not client. */
+export interface CreditTopupProduct extends Timestamps {
+  id: ID;
+  slug: CreditTopupProductSlug | string;
+  name: string;
+  description: string | null;
+  priceIdr: number;
+  credits: number;
+  bonusCredits: number;
+  isActive: boolean;
+  sortOrder: number;
+  metadata: JsonObject;
+}
+
+/** Checkout session row — mutations via service_role API only (Task 10.2+). */
+export interface CreditTopupOrder extends Timestamps {
+  id: ID;
+  userId: ID;
+  productId: ID;
+  provider: PaymentProvider | string;
+  providerInvoiceId: string | null;
+  providerTransactionId: string | null;
+  paymentUrl: string | null;
+  amountIdr: number;
+  creditsToGrant: number;
+  status: CreditTopupOrderStatus;
+  idempotencyKey: string;
+  providerPayloadSafe: JsonObject;
+  paidAt: ISODateTime | null;
+  expiresAt: ISODateTime | null;
+  metadata: JsonObject;
+}
+
+/** Operational webhook log — service_role only; payload sanitized. */
+export interface PaymentWebhookEvent {
+  id: ID;
+  provider: PaymentProvider | string;
+  providerEventId: string | null;
+  providerTransactionId: string | null;
+  providerInvoiceId: string | null;
+  eventType: string | null;
+  payloadHash: string;
+  payloadSafeJson: JsonObject;
+  processedAt: ISODateTime | null;
+  processingStatus: PaymentWebhookProcessingStatus;
+  errorMessageSafe: string | null;
+  metadata: JsonObject;
+  createdAt: ISODateTime;
+}
+
+/** Safe checkout response shape for Task 10.2 — no provider secrets. */
+export interface CreditTopupCheckoutSnapshot {
+  orderId: ID;
+  paymentUrl: string;
+  expiresAt: ISODateTime | null;
+  amountIdr: number;
+  creditsToGrant: number;
+  status: CreditTopupOrderStatus;
 }
 
 // --- Sprint 3: intake & concepts (not canon — no direct writes to facts) ---
