@@ -29,6 +29,15 @@ const PUBLISH_OUTPUT_FORBIDDEN_PATTERNS = [
 
 const OVERCLAIM_PATTERNS = [/dijamin\s+viral/i, /pasti\s+trending/i, /dijamin\s+populer/i];
 
+const OVERCLAIM_REJECT_PATTERNS = [
+  /dijamin\s+viral/i,
+  /pasti\s+viral/i,
+  /dijamin\s+unlock/i,
+  /pasti\s+banyak\s+pembaca/i,
+  /pasti\s+trending/i,
+  /dijamin\s+populer/i,
+];
+
 export function assertPublishTextSafe(text: string, fieldLabel = "field"): void {
   const lower = text.toLowerCase();
   for (const marker of PUBLISH_LEAKAGE_MARKERS) {
@@ -95,6 +104,22 @@ export function assertPublishResponseSafe(serializedJson: string): void {
 
 export function detectOverclaimUnlock(text: string): boolean {
   return OVERCLAIM_PATTERNS.some((p) => p.test(text));
+}
+
+/** Reject user-edited copy that overclaims viral/unlock outcomes. */
+export function assertNoOverclaimCopy(text: string, fieldLabel = "field"): void {
+  for (const pattern of OVERCLAIM_REJECT_PATTERNS) {
+    if (pattern.test(text)) {
+      throw AppError.badRequest(`Publish ${fieldLabel} contains disallowed overclaim language`, {
+        missing: ["unsafe_content"],
+      });
+    }
+  }
+}
+
+export function assertPublishUserTextSafe(text: string, fieldLabel = "field"): void {
+  assertPublishTextSafe(text, fieldLabel);
+  assertNoOverclaimCopy(text, fieldLabel);
 }
 
 export function assertProseExcerptSafe(excerpt: string): void {

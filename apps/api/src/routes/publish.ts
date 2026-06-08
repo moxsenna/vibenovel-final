@@ -7,6 +7,11 @@ import {
   getPublishPackageDetailForOwner,
   listPublishPackagesForOwner,
 } from "../services/publish-package.js";
+import {
+  markPublishPackageExportedForOwner,
+  updatePublishPackageChecklistForOwner,
+  updatePublishPackageFieldsForOwner,
+} from "../services/publish-package-update.js";
 import type { AppEnv } from "../types.js";
 
 export function registerPublishRoutes(app: Hono<AppEnv>): void {
@@ -51,6 +56,69 @@ export function registerPublishRoutes(app: Hono<AppEnv>): void {
     const status = result.created ? 201 : 200;
     return jsonSuccess(c, result, status);
   });
+
+  app.patch(
+    "/api/projects/:id/publish/:packageId/fields",
+    authMiddleware,
+    async (c) => {
+      const ownerId = c.get("userId");
+      const projectId = c.req.param("id");
+      const packageId = c.req.param("packageId");
+      const body = await c.req.json().catch(() => ({}));
+
+      const publishPackage = await updatePublishPackageFieldsForOwner(
+        c.env,
+        ownerId,
+        projectId,
+        packageId,
+        body,
+      );
+
+      return jsonSuccess(c, { publishPackage });
+    },
+  );
+
+  app.patch(
+    "/api/projects/:id/publish/:packageId/checklist",
+    authMiddleware,
+    async (c) => {
+      const ownerId = c.get("userId");
+      const projectId = c.req.param("id");
+      const packageId = c.req.param("packageId");
+      const body = await c.req.json().catch(() => ({}));
+
+      const publishPackage = await updatePublishPackageChecklistForOwner(
+        c.env,
+        ownerId,
+        projectId,
+        packageId,
+        body,
+      );
+
+      return jsonSuccess(c, { publishPackage });
+    },
+  );
+
+  app.post(
+    "/api/projects/:id/publish/:packageId/mark-exported",
+    authMiddleware,
+    async (c) => {
+      const ownerId = c.get("userId");
+      const projectId = c.req.param("id");
+      const packageId = c.req.param("packageId");
+      const body = await c.req.json().catch(() => ({}));
+
+      const result = await markPublishPackageExportedForOwner(
+        c.env,
+        ownerId,
+        projectId,
+        packageId,
+        body,
+      );
+
+      return jsonSuccess(c, result);
+    },
+  );
 
   app.get("/api/projects/:id/publish/:packageId", authMiddleware, async (c) => {
     const ownerId = c.get("userId");

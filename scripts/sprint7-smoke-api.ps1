@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-  Sprint 7 Publish Package Generation API safety smoke (Task 7.2).
+  Sprint 7 Publish Package API safety smoke (Task 7.2–7.3).
 
 .DESCRIPTION
   Run from repo root:
@@ -234,6 +234,92 @@ if ($ch2 -and $ch2.summary -and $nextTeaser) {
 }
 Add-StepResult "next chapter teaser safe" $(if (-not $ch2SummaryLeak) { "PASS" } else { "FAIL" }) ""
 
+Invoke-ApiExpectFailure -Name "PATCH fields no token" -Method PATCH `
+  -Path "/api/projects/$projectId/publish/$packageV2Id/fields" `
+  -Body '{"teaser":"Teaser smoke edit"}'
+
+$fieldPatch = Invoke-Api -Method PATCH -Path "/api/projects/$projectId/publish/$packageV2Id/fields" -Headers $auth `
+  -Body '{"teaser":"Teaser bab ini menggoda tanpa membocorkan rahasia besar.","caption":"Caption hangat untuk pembaca serial mobile.","tags":["drama keluarga","revenge emosional","bab 1"]}'
+Add-StepResult "PATCH fields updates copy" $(if (
+    $fieldPatch.data.publishPackage.teaser -match "menggoda" -and
+    $fieldPatch.data.publishPackage.caption -match "Caption hangat" -and
+    $fieldPatch.data.publishPackage.tags.Count -eq 3
+  ) { "PASS" } else { "FAIL" }) ""
+
+Invoke-ApiExpectFailure -Name "PATCH fields rejects planningTruth" -Method PATCH -Headers $auth `
+  -Path "/api/projects/$projectId/publish/$packageV2Id/fields" `
+  -Body '{"caption":"planningTruth leak attempt"}'
+Invoke-ApiExpectFailure -Name "PATCH fields rejects packet_json" -Method PATCH -Headers $auth `
+  -Path "/api/projects/$projectId/publish/$packageV2Id/fields" `
+  -Body '{"teaser":"packet_json dump"}'
+Invoke-ApiExpectFailure -Name "PATCH fields rejects prose_text" -Method PATCH -Headers $auth `
+  -Path "/api/projects/$projectId/publish/$packageV2Id/fields" `
+  -Body '{"caption":"prose_text full dump"}'
+Invoke-ApiExpectFailure -Name "PATCH fields rejects overclaim" -Method PATCH -Headers $auth `
+  -Path "/api/projects/$projectId/publish/$packageV2Id/fields" `
+  -Body '{"caption":"dijamin viral di KBM"}'
+
+$checklistItems = @(
+  @{ id = "chk_teaser"; checked = $true },
+  @{ id = "chk_caption"; checked = $true },
+  @{ id = "chk_tags"; checked = $true },
+  @{ id = "chk_question"; checked = $true },
+  @{ id = "chk_preview"; checked = $true }
+)
+$checklistPatch = Invoke-Api -Method PATCH -Path "/api/projects/$projectId/publish/$packageV2Id/checklist" -Headers $auth `
+  -Body (@{ items = $checklistItems } | ConvertTo-Json -Depth 5)
+$allChecked = $true
+foreach ($item in $checklistPatch.data.publishPackage.checklist) {
+  if (-not $item.checked) { $allChecked = $false }
+}
+Add-StepResult "PATCH checklist updates ids" $(if ($allChecked -and $checklistPatch.data.publishPackage.checklist.Count -eq 5) { "PASS" } else { "FAIL" }) ""
+
+$badChecklist = @(
+  @{ id = "chk_unknown"; checked = $true },
+  @{ id = "chk_caption"; checked = $true },
+  @{ id = "chk_tags"; checked = $true },
+  @{ id = "chk_question"; checked = $true },
+  @{ id = "chk_preview"; checked = $true }
+)
+Invoke-ApiExpectFailure -Name "PATCH checklist rejects unknown id" -Method PATCH -Headers $auth `
+  -Path "/api/projects/$projectId/publish/$packageV2Id/checklist" `
+  -Body (@{ items = $badChecklist } | ConvertTo-Json -Depth 5)
+
+$factsBeforeExport = (Invoke-Api -Path "/api/projects/$projectId/foundation" -Headers $auth).data.facts.Count
+$exported = Invoke-Api -Method POST -Path "/api/projects/$projectId/publish/$packageV2Id/mark-exported" -Headers $auth `
+  -Body '{"exportTarget":"kbm_manual_copy","note":"smoke manual copy"}'
+Add-StepResult "mark-exported sets status" $(if (
+    $exported.data.publishPackage.status -eq "exported" -and $exported.data.publishPackage.exportedAt
+  ) { "PASS" } else { "FAIL" }) "status=$($exported.data.publishPackage.status)"
+
+$factsAfterExport = (Invoke-Api -Path "/api/projects/$projectId/foundation" -Headers $auth).data.facts.Count
+Add-StepResult "mark-exported no canon mutation" $(if ($factsAfterExport -eq $factsBeforeExport) { "PASS" } else { "FAIL" }) ""
+
+$exportedJson = ($exported | ConvertTo-Json -Depth 20)
+Add-StepResult "mark-exported response leak guard" $(if (Test-PublishJsonNoLeakMarkers $exportedJson) { "PASS" } else { "FAIL" }) ""
+
+Invoke-ApiExpectFailure -Name "exported package fields locked" -Method PATCH -Headers $auth `
+  -Path "/api/projects/$projectId/publish/$packageV2Id/fields" `
+  -Body '{"teaser":"should fail"}'
+Invoke-ApiExpectFailure -Name "exported package checklist locked" -Method PATCH -Headers $auth `
+  -Path "/api/projects/$projectId/publish/$packageV2Id/checklist" `
+  -Body (@{ items = $checklistItems } | ConvertTo-Json -Depth 5)
+
+$exportedAgain = Invoke-Api -Method POST -Path "/api/projects/$projectId/publish/$packageV2Id/mark-exported" -Headers $auth `
+  -Body '{"exportTarget":"kbm_manual_copy"}'
+Add-StepResult "mark-exported idempotent" $(if ($exportedAgain.data.alreadyExported -eq $true) { "PASS" } else { "FAIL" }) ""
+
+$pubV3 = Invoke-Api -Method POST -Path "/api/projects/$projectId/publish/generate" -Headers $auth `
+  -Body (@{ chapterOutlineId = $ch1Id; regenerate = $true } | ConvertTo-Json)
+$packageV3Id = $pubV3.data.publishPackage.id
+$v2AfterRegen = Invoke-Api -Path "/api/projects/$projectId/publish/$packageV2Id" -Headers $auth
+Add-StepResult "regenerate after exported keeps exported" $(if (
+    $pubV3.data.created -eq $true -and
+    $pubV3.data.publishPackage.packageVersion -eq 3 -and
+    $v2AfterRegen.data.publishPackage.status -eq "exported" -and
+    $v2AfterRegen.data.publishPackage.isCurrent -eq $false
+  ) { "PASS" } else { "FAIL" }) "v3=$($pubV3.data.publishPackage.packageVersion)"
+
 $signupB = Invoke-RestMethod -Uri "$SupabaseUrl/auth/v1/signup" -Method POST `
   -Headers @{ apikey = $anonKey; Authorization = "Bearer $anonKey" } -ContentType "application/json" `
   -Body (@{ email = "s7b-$(Get-Random)@example.com"; password = $TestPassword } | ConvertTo-Json)
@@ -244,6 +330,14 @@ Invoke-ApiExpectFailure -Name "cross-user publish detail 404" -Method GET -Heade
   -Path "/api/projects/$projectId/publish/$packageV2Id"
 Invoke-ApiExpectFailure -Name "cross-user publish by-chapter 404" -Method GET -Headers $authB `
   -Path "/api/projects/$projectId/publish/by-chapter/$ch1Id"
+Invoke-ApiExpectFailure -Name "cross-user PATCH fields 404" -Method PATCH -Headers $authB `
+  -Path "/api/projects/$projectId/publish/$packageV3Id/fields" `
+  -Body '{"teaser":"cross user"}'
+Invoke-ApiExpectFailure -Name "cross-user PATCH checklist 404" -Method PATCH -Headers $authB `
+  -Path "/api/projects/$projectId/publish/$packageV3Id/checklist" `
+  -Body (@{ items = $checklistItems } | ConvertTo-Json -Depth 5)
+Invoke-ApiExpectFailure -Name "cross-user mark-exported 404" -Method POST -Headers $authB `
+  -Path "/api/projects/$projectId/publish/$packageV3Id/mark-exported" -Body '{}'
 
 $fail = @($Results | Where-Object { $_.Result -eq "FAIL" }).Count
 Write-Host "`nSummary: $($Results.Count - $fail) PASS, $fail FAIL"

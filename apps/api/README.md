@@ -754,7 +754,39 @@ Returns `{ publishPackage }` — owner-only copy fields.
 
 Returns `{ publishPackage }` or `{ publishPackage: null }` when none exists. Missing chapter outline → `404`.
 
-**Deferred Task 7.2:** PATCH fields/checklist, mark-exported, PublishPage integration, KBM auto-post.
+### Publish Package Update / Export Marker API (Task 7.3)
+
+Extends `apps/api/src/routes/publish.ts` and `publish-package-update.ts`. All endpoints require Bearer JWT. Cross-user → `404`.
+
+**Exported package lock:** `status = exported` packages reject `PATCH .../fields` and `PATCH .../checklist` with `409` (`exported_package_locked`). Regenerate a new version via `POST .../generate?regenerate=true` (Task 7.2).
+
+**`PATCH /api/projects/:id/publish/:packageId/fields`**
+
+Partial update of copy-ready fields: `displayTitle`, `teaser`, `shortSynopsis`, `caption`, `readerQuestion`, `nextChapterTeaser`, `tags`, `genre`, `mobilePreviewExcerpt`.
+
+- Rejects immutable keys (`status`, `packageVersion`, `isCurrent`, `generatorVersion`, `metadata`, `safetyFlags`, etc.).
+- Length limits enforced; non-empty required when field is sent.
+- Rejects leak markers and overclaim copy (`dijamin viral`, `pasti viral`, `dijamin unlock`, `pasti banyak pembaca`).
+- Returns `{ publishPackage }` — no canon mutation.
+
+**`PATCH /api/projects/:id/publish/:packageId/checklist`**
+
+Body: `{ "items": [{ "id": "chk_teaser", "label?": "...", "checked": true, "note?": "..." }, ...] }` — exactly 5 allowed ids.
+
+- Normalizes to fixed MVP checklist array in `checklist_json`.
+- Rejects unknown ids, duplicates, leak markers in label/note.
+- Exported packages → `409 exported_package_locked`.
+
+**`POST /api/projects/:id/publish/:packageId/mark-exported`**
+
+Body: `{ "exportTarget": "kbm_manual_copy", "note?": "..." }`
+
+- **Manual-copy marker only** — no KBM API call, no external network, no canon mutation.
+- Requires `status` `ready` or `draft`; sets `status=exported`, `exported_at=now()`, merges `metadata.exportTarget` / `exportNote`.
+- Returns `{ publishPackage, alreadyExported, warnings }` — `warnings` may include `checklist_incomplete` (non-blocking MVP).
+- Idempotent when already `exported` → `alreadyExported=true`.
+
+**Deferred Task 7.3:** PublishPage integration, KBM auto-post.
 
 Local smoke: `npm run smoke:api:sprint6` (`scripts/sprint6-smoke-api.ps1`), `npm run smoke:api:sprint7` (`scripts/sprint7-smoke-api.ps1`).
 

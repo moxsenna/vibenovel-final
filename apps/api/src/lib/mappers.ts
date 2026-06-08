@@ -1084,11 +1084,15 @@ function parseChecklistJson(value: unknown): PublishChecklistItem[] {
         typeof (item as PublishChecklistItem).label === "string" &&
         typeof (item as PublishChecklistItem).checked === "boolean",
     )
-    .map((item) => ({
-      id: item.id,
-      label: item.label,
-      checked: item.checked,
-    }));
+    .map((item) => {
+      const row = item as PublishChecklistItem & { note?: string };
+      return {
+        id: row.id,
+        label: row.label,
+        checked: row.checked,
+        ...(typeof row.note === "string" && row.note ? { note: row.note } : {}),
+      };
+    });
 }
 
 export function mapPublishPackageRow(row: PublishPackageRow): PublishPackage {

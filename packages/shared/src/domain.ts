@@ -756,6 +756,8 @@ export interface PublishChecklistItem {
   id: PublishChecklistItemId | string;
   label: string;
   checked: boolean;
+  /** Optional user note — max 280 chars in API validation. */
+  note?: string;
 }
 
 /** Prose excerpt slice for stub generator input — not full prose_text. */
