@@ -718,9 +718,45 @@ Extends summary route group. All endpoints require Bearer JWT. Ownership via `ge
 - Sets `ai_proposals.status=rejected` + `chapter_summary_proposals.status=rejected`. No canon mutation.
 - Accepted proposal → `409 cannot_reject_accepted`. Already rejected → idempotent `200`.
 
-**Deferred Task 6.4:** SummaryPage integration, publish package, merge endpoint, multi-table transactions.
+### Publish Package Generation API (Task 7.2)
 
-Local smoke: `npm run smoke:api:sprint6` (`scripts/sprint6-smoke-api.ps1`).
+Route group: `apps/api/src/routes/publish.ts`. All endpoints require Bearer JWT. Ownership via `getOwnedProjectRow` + row `project_id` match — cross-user → `404`.
+
+**Export artifact — not canon:** `publish_packages` are KBM copy-paste assets only. Does **not** mutate `facts`, `characters`, `speech_rules`, `open_loops`, `planned_reveals`, `chapter_summaries`, or create `ai_proposals`. Does **not** auto-post to KBM. No OpenRouter, no AI generation, no credit deduction.
+
+**Gate (409) for `POST .../publish/generate`:**
+
+| Requirement | `details.missing` |
+|---|---|
+| `chapter_summaries.status = approved` | `summary_approved` |
+| `chapter_summaries.is_current = true` | `current_summary_required` |
+| `chapter_writing_states.status = summarized` | `chapter_summarized` |
+
+**`POST /api/projects/:id/publish/generate`**
+
+Body: `{ "chapterOutlineId": "uuid", "chapterSummaryId?": "uuid", "regenerate": false }`
+
+- Deterministic stub (`publish_stub_v1`) from approved summary + prose excerpt (≤280 chars) + safe next-chapter hook slice.
+- `regenerate=false` + current package exists → returns existing (`created=false`, `200`).
+- `regenerate=true` → prior current row `is_current=false`; status `superseded` unless prior was `exported` (exported rows keep `exported` status).
+- Unsafe leak markers in generated fields → `400` (`unsafe_content`) — no insert.
+- Returns `{ publishPackage, created }` — no raw `proseText`, no `planningTruth`, no `packet_json`, no `delta_json`.
+
+**`GET /api/projects/:id/publish`**
+
+Query: `?chapterOutlineId=`, `?status=`. Default lists `is_current=true` packages ordered by `chapterNumber`.
+
+**`GET /api/projects/:id/publish/:packageId`**
+
+Returns `{ publishPackage }` — owner-only copy fields.
+
+**`GET /api/projects/:id/publish/by-chapter/:chapterOutlineId`**
+
+Returns `{ publishPackage }` or `{ publishPackage: null }` when none exists. Missing chapter outline → `404`.
+
+**Deferred Task 7.2:** PATCH fields/checklist, mark-exported, PublishPage integration, KBM auto-post.
+
+Local smoke: `npm run smoke:api:sprint6` (`scripts/sprint6-smoke-api.ps1`), `npm run smoke:api:sprint7` (`scripts/sprint7-smoke-api.ps1`).
 
 ### Safety smoke tests (Task 5.6)
 

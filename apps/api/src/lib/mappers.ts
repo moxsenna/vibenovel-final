@@ -17,6 +17,11 @@ import type {
   ChapterSummaryStatus,
   ChapterWritingState,
   ChapterWritingStatus,
+  PublishChecklistItem,
+  PublishPackage,
+  PublishPackageMetadata,
+  PublishPackageStatus,
+  PublishSafetyFlags,
   Character,
   CreditBalance,
   DetectedSignal,
@@ -1037,6 +1042,82 @@ export function mapLinkedProposalSummary(
     payloadExcerpt: safeExcerpt,
     source: proposal.source,
     metadata: parseJsonObject(link.metadata),
+  };
+}
+
+export interface PublishPackageRow {
+  id: string;
+  project_id: string;
+  chapter_outline_id: string;
+  chapter_summary_id: string;
+  chapter_number: number;
+  chapter_title: string;
+  status: string;
+  package_version: number;
+  is_current: boolean;
+  display_title: string;
+  teaser: string;
+  short_synopsis: string;
+  caption: string;
+  reader_question: string;
+  next_chapter_teaser: string | null;
+  tags: string[];
+  genre: string | null;
+  mobile_preview_excerpt: string;
+  checklist_json: unknown;
+  safety_flags: JsonObject | unknown;
+  generator_version: string;
+  exported_at: string | null;
+  metadata: JsonObject | unknown;
+  created_at: string;
+  updated_at: string;
+}
+
+function parseChecklistJson(value: unknown): PublishChecklistItem[] {
+  if (!Array.isArray(value)) return [];
+  return value
+    .filter(
+      (item): item is PublishChecklistItem =>
+        typeof item === "object" &&
+        item !== null &&
+        typeof (item as PublishChecklistItem).id === "string" &&
+        typeof (item as PublishChecklistItem).label === "string" &&
+        typeof (item as PublishChecklistItem).checked === "boolean",
+    )
+    .map((item) => ({
+      id: item.id,
+      label: item.label,
+      checked: item.checked,
+    }));
+}
+
+export function mapPublishPackageRow(row: PublishPackageRow): PublishPackage {
+  return {
+    id: row.id,
+    projectId: row.project_id,
+    chapterOutlineId: row.chapter_outline_id,
+    chapterSummaryId: row.chapter_summary_id,
+    chapterNumber: row.chapter_number,
+    chapterTitle: row.chapter_title,
+    status: row.status as PublishPackageStatus,
+    packageVersion: row.package_version,
+    isCurrent: row.is_current,
+    displayTitle: row.display_title,
+    teaser: row.teaser,
+    shortSynopsis: row.short_synopsis,
+    caption: row.caption,
+    readerQuestion: row.reader_question,
+    nextChapterTeaser: row.next_chapter_teaser,
+    tags: row.tags ?? [],
+    genre: row.genre,
+    mobilePreviewExcerpt: row.mobile_preview_excerpt,
+    checklist: parseChecklistJson(row.checklist_json),
+    safetyFlags: parseJsonObject(row.safety_flags) as PublishSafetyFlags,
+    generatorVersion: row.generator_version,
+    exportedAt: row.exported_at,
+    metadata: parseJsonObject(row.metadata) as PublishPackageMetadata,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
   };
 }
 
