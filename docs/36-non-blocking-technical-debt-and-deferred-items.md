@@ -199,12 +199,13 @@ Sprint 5 closed with **zero blockers**. Items below are non-blocking unless mark
 | **8.5** | WritePage AI button | ✅ `Tulis Beat dengan AI`, `smoke:web:write-ai` |
 | **8.6** | Safety + verification | ✅ Full mock matrix + E2E (Task 8.6) |
 | **8.7** | Verification report | ✅ [`docs/45`](45-sprint-8-verification-report.md) |
+| **8.8** | Live OpenRouter staging verification plan | ✅ Plan complete [`docs/46`](46-live-openrouter-staging-verification-plan.md) — **not executed** |
 
-**Sprint 8:** **Closed** (`docs/45`). MVP prose beat generation verified with mock provider. Production AI **not** until Task 8.8 staging plan + env enabled. **AI disabled by default** (`AI_GENERATION_ENABLED=false`).
+**Sprint 8:** **Closed** (`docs/45`). MVP prose beat generation verified with mock provider. Production AI **not** until Task 8.9 live staging smoke Go. **AI disabled by default** (`AI_GENERATION_ENABLED=false`).
 
-**Sprint 8 smoke note:** `smoke:api:sprint8` baseline (AI disabled) in `smoke:all:local`. Full success/fail/unsafe modes require manual env restart — see `scripts/README.md` § Sprint 8 full verification.
+**Sprint 8 smoke note:** `smoke:api:sprint8` baseline (AI disabled) in `smoke:all:local`. Full success/fail/unsafe modes require manual env restart — see `scripts/README.md` § Sprint 8 full verification. Live OpenRouter manual checklist: [`docs/46`](46-live-openrouter-staging-verification-plan.md) §6–§11.
 
-**Remaining AI debt (non-blocking):** live OpenRouter (Task 8.8), rewrite/publish AI, credit UI/topup, true RPC credit mutation, CI E2E.
+**Remaining AI debt (non-blocking):** live OpenRouter **execution** (Task 8.9), rewrite/publish AI, credit UI/topup, true RPC credit mutation, CI E2E, `estimated_cost_usd` population on success.
 
 ---
 
@@ -217,5 +218,6 @@ Sprint 5 closed with **zero blockers**. Items below are non-blocking unless mark
 - [`docs/43-pre-ai-hardening-verification-report.md`](43-pre-ai-hardening-verification-report.md)
 - [`docs/44-sprint-8-ai-openrouter-credit-generation-implementation-plan.md`](44-sprint-8-ai-openrouter-credit-generation-implementation-plan.md)
 - [`docs/45-sprint-8-verification-report.md`](45-sprint-8-verification-report.md)
+- [`docs/46-live-openrouter-staging-verification-plan.md`](46-live-openrouter-staging-verification-plan.md)
 - [`scripts/README.md`](../scripts/README.md)
 - [`docs/17-roadmap-sprint-plan-mvp-to-full.md`](17-roadmap-sprint-plan-mvp-to-full.md)

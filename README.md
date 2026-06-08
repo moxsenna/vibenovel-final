@@ -358,7 +358,7 @@ Belum ada (sengaja — defer setelah hardening / Sprint 8):
 | 7.8.4 Smoke orchestration | ✅ | `smoke:all:local` 9 phases |
 | 7.8.6 Hardening verification report | ✅ | `docs/43` |
 
-**Task berikutnya (disarankan):** **Task 8.8** — Live OpenRouter Staging Verification Plan (sebelum fitur AI baru).
+**Task berikutnya (disarankan):** **Task 8.9** — Live OpenRouter Staging Smoke Execution (jalankan rencana `docs/46`).
 
 ---
 
@@ -377,8 +377,9 @@ Belum ada (sengaja — defer setelah hardening / Sprint 8):
 | 8.5 WritePage AI button | ✅ | `Tulis Beat dengan AI` → `POST /ai/generate-prose` (API mode only) |
 | 8.6 Safety + verification | ✅ | API mock success/fail/unsafe + WritePage AI E2E success/disabled |
 | 8.7 Verification report | ✅ | `docs/45` |
+| 8.8 Live OpenRouter staging plan | ✅ | `docs/46` — plan only; live provider not tested |
 
-Sprint 8 MVP: **prose beat generation** dengan mock provider. Live OpenRouter belum diuji. AI **disabled by default** (`AI_GENERATION_ENABLED=false`).
+Sprint 8 MVP: **prose beat generation** dengan mock provider. Live OpenRouter **belum diuji** (rencana staging: `docs/46`). AI **disabled by default** (`AI_GENERATION_ENABLED=false`).
 
 ---
 
@@ -403,13 +404,14 @@ Sprint 8 MVP: **prose beat generation** dengan mock provider. Live OpenRouter be
 15. `docs/43-pre-ai-hardening-verification-report.md` — penutupan hardening pre-AI (Task 7.8.6)
 16. `docs/44-sprint-8-ai-openrouter-credit-generation-implementation-plan.md` — rencana Sprint 8 AI (Task 8.0)
 17. `docs/45-sprint-8-verification-report.md` — penutupan Sprint 8 AI (Task 8.7)
-18. `docs/36-non-blocking-technical-debt-and-deferred-items.md` — debt register (Task 5.8)
-19. `docs/39-sprint-7-publish-package-kbm-export-implementation-plan.md` — rencana Sprint 7
-20. `docs/37-sprint-6-chapter-summary-delta-canon-proposal-implementation-plan.md` — rencana Sprint 6
-21. `docs/34-sprint-5-safe-write-room-context-packet-implementation-plan.md` — rencana Sprint 5
-22. `docs/32-sprint-4-outline-planning-engine-implementation-plan.md` — rencana Sprint 4
-23. `docs/30-sprint-3-story-foundation-flow-implementation-plan.md` — rencana Sprint 3
-24. `docs/27-sprint-2-data-model-implementation-plan.md` — rencana Sprint 2
+18. `docs/46-live-openrouter-staging-verification-plan.md` — rencana staging OpenRouter live (Task 8.8)
+19. `docs/36-non-blocking-technical-debt-and-deferred-items.md` — debt register (Task 5.8)
+20. `docs/39-sprint-7-publish-package-kbm-export-implementation-plan.md` — rencana Sprint 7
+21. `docs/37-sprint-6-chapter-summary-delta-canon-proposal-implementation-plan.md` — rencana Sprint 6
+22. `docs/34-sprint-5-safe-write-room-context-packet-implementation-plan.md` — rencana Sprint 5
+23. `docs/32-sprint-4-outline-planning-engine-implementation-plan.md` — rencana Sprint 4
+24. `docs/30-sprint-3-story-foundation-flow-implementation-plan.md` — rencana Sprint 3
+25. `docs/27-sprint-2-data-model-implementation-plan.md` — rencana Sprint 2
 
 ### Untuk AI coding agent
 
@@ -430,12 +432,13 @@ Sprint 8 MVP: **prose beat generation** dengan mock provider. Live OpenRouter be
 15. `docs/43-pre-ai-hardening-verification-report.md`
 16. `docs/44-sprint-8-ai-openrouter-credit-generation-implementation-plan.md`
 17. `docs/45-sprint-8-verification-report.md`
-18. `docs/36-non-blocking-technical-debt-and-deferred-items.md`
-19. `docs/39-sprint-7-publish-package-kbm-export-implementation-plan.md`
-20. `docs/37-sprint-6-chapter-summary-delta-canon-proposal-implementation-plan.md`
-21. `docs/34-sprint-5-safe-write-room-context-packet-implementation-plan.md`
-22. `docs/30-sprint-3-story-foundation-flow-implementation-plan.md`
-23. `docs/27-sprint-2-data-model-implementation-plan.md`
+18. `docs/46-live-openrouter-staging-verification-plan.md`
+19. `docs/36-non-blocking-technical-debt-and-deferred-items.md`
+20. `docs/39-sprint-7-publish-package-kbm-export-implementation-plan.md`
+21. `docs/37-sprint-6-chapter-summary-delta-canon-proposal-implementation-plan.md`
+22. `docs/34-sprint-5-safe-write-room-context-packet-implementation-plan.md`
+23. `docs/30-sprint-3-story-foundation-flow-implementation-plan.md`
+24. `docs/27-sprint-2-data-model-implementation-plan.md`
 24. Dokumen domain sesuai task.
 
 ---

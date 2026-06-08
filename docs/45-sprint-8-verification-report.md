@@ -43,7 +43,7 @@ Sprint 8 **siap ditutup**. MVP prose beat generation end-to-end (API + WritePage
 | Publish copy AI | Sprint 9+ |
 | Summary / delta AI extraction | Sprint 9+ (butuh validator kuat) |
 | Topup / payment / credit purchase UI | Out of scope |
-| Live OpenRouter production test | Task 8.8 (staging plan) |
+| Live OpenRouter production test | Task 8.8 plan ✅ [`docs/46`](46-live-openrouter-staging-verification-plan.md); execution Task 8.9 |
 | True Postgres RPC untuk credit+attempt | Before production deploy |
 | CI API-mode E2E | Deferred (7.8.5) |
 | Remote deploy / remote migration push | Not done |
@@ -299,23 +299,15 @@ No secret values committed to repository.
 
 ## 14. Recommended Next Task
 
-### Task 8.8 — Live OpenRouter Staging Verification Plan
+### Task 8.8 — Live OpenRouter Staging Verification Plan ✅
 
-**Preferred before new AI features** (rewrite, publish copy, credit UI).
+**Plan complete:** [`docs/46-live-openrouter-staging-verification-plan.md`](46-live-openrouter-staging-verification-plan.md) (8 Juni 2026). Docs-only — live OpenRouter **not** tested in 8.8.
 
-Rencana staging harus mencakup:
+### Task 8.9 — Live OpenRouter Staging Smoke Execution (next)
 
-| Area | Requirement |
-|---|---|
-| Key handling | Worker secrets, rotation, never in repo/logs |
-| Budget cap | Per-user/project spend limits |
-| Model allowlist | Validate production models against `MODEL_ALLOWLIST` |
-| Timeout / retry | Observe failure rates vs `AI_TIMEOUT_MS` |
-| Cost observation | Compare fixed credit costs vs actual token usage |
-| Rollback | `AI_GENERATION_ENABLED=false` kill switch |
-| Smoke extension | Optional staging smoke (not blocking Sprint 8 closure) |
+Jalankan manual checklist di `docs/46` §6–§11; dokumentasikan hasil dan Go/No-Go.
 
-Alternatif (lower priority): Sprint 9 planning for AI rewrite / publish copy / credit UI — **after** 8.8 staging plan.
+Alternatif (lower priority): Sprint 9 planning for AI rewrite / publish copy / credit UI — **after** 8.9 Go.
 
 ---
 
@@ -324,5 +316,6 @@ Alternatif (lower priority): Sprint 9 planning for AI rewrite / publish copy / c
 - [`docs/44-sprint-8-ai-openrouter-credit-generation-implementation-plan.md`](44-sprint-8-ai-openrouter-credit-generation-implementation-plan.md)
 - [`docs/43-pre-ai-hardening-verification-report.md`](43-pre-ai-hardening-verification-report.md)
 - [`docs/36-non-blocking-technical-debt-and-deferred-items.md`](36-non-blocking-technical-debt-and-deferred-items.md)
+- [`docs/46-live-openrouter-staging-verification-plan.md`](46-live-openrouter-staging-verification-plan.md)
 - [`apps/api/README.md`](../apps/api/README.md)
 - [`scripts/README.md`](../scripts/README.md)
