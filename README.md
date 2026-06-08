@@ -346,8 +346,9 @@ Belum ada (sengaja — defer setelah hardening / Sprint 8):
 | Task | Status | Deliverable |
 |---|---|---|
 | 7.8 Pre-AI hardening plan | ✅ | `docs/41` + agent work log |
+| 7.8.1 Audit enum + coverage plan | ✅ | `docs/42` + agent work log |
 
-**Task berikutnya (disarankan):** **Task 7.8.1** — Audit Action Enum + Audit Coverage Plan (`docs/41` §7, §10). Sprint 8 AI/OpenRouter **setelah** hardening 7.8.1–7.8.6.
+**Task berikutnya (disarankan):** **Task 7.8.2** — Implement audit logs for canon-changing and export actions (`docs/42` §10, §5 P0). Sprint 8 AI/OpenRouter **setelah** hardening 7.8.2–7.8.6.
 
 ---
 
@@ -368,13 +369,14 @@ Belum ada (sengaja — defer setelah hardening / Sprint 8):
 11. `docs/38-sprint-6-verification-report.md` — status penutupan Sprint 6
 12. `docs/40-sprint-7-verification-report.md` — status penutupan Sprint 7
 13. `docs/41-pre-ai-hardening-audit-transactions-ci-plan.md` — rencana hardening pre-AI (Task 7.8)
-14. `docs/36-non-blocking-technical-debt-and-deferred-items.md` — debt register (Task 5.8)
-15. `docs/39-sprint-7-publish-package-kbm-export-implementation-plan.md` — rencana Sprint 7
-16. `docs/37-sprint-6-chapter-summary-delta-canon-proposal-implementation-plan.md` — rencana Sprint 6
-17. `docs/34-sprint-5-safe-write-room-context-packet-implementation-plan.md` — rencana Sprint 5
-18. `docs/32-sprint-4-outline-planning-engine-implementation-plan.md` — rencana Sprint 4
-19. `docs/30-sprint-3-story-foundation-flow-implementation-plan.md` — rencana Sprint 3
-20. `docs/27-sprint-2-data-model-implementation-plan.md` — rencana Sprint 2
+14. `docs/42-audit-action-enum-and-coverage-plan.md` — audit enum + coverage (Task 7.8.1)
+15. `docs/36-non-blocking-technical-debt-and-deferred-items.md` — debt register (Task 5.8)
+16. `docs/39-sprint-7-publish-package-kbm-export-implementation-plan.md` — rencana Sprint 7
+17. `docs/37-sprint-6-chapter-summary-delta-canon-proposal-implementation-plan.md` — rencana Sprint 6
+18. `docs/34-sprint-5-safe-write-room-context-packet-implementation-plan.md` — rencana Sprint 5
+19. `docs/32-sprint-4-outline-planning-engine-implementation-plan.md` — rencana Sprint 4
+20. `docs/30-sprint-3-story-foundation-flow-implementation-plan.md` — rencana Sprint 3
+21. `docs/27-sprint-2-data-model-implementation-plan.md` — rencana Sprint 2
 
 ### Untuk AI coding agent
 
@@ -391,13 +393,14 @@ Belum ada (sengaja — defer setelah hardening / Sprint 8):
 11. `docs/38-sprint-6-verification-report.md`
 12. `docs/40-sprint-7-verification-report.md`
 13. `docs/41-pre-ai-hardening-audit-transactions-ci-plan.md`
-14. `docs/36-non-blocking-technical-debt-and-deferred-items.md`
-15. `docs/39-sprint-7-publish-package-kbm-export-implementation-plan.md`
-16. `docs/37-sprint-6-chapter-summary-delta-canon-proposal-implementation-plan.md`
-17. `docs/34-sprint-5-safe-write-room-context-packet-implementation-plan.md`
-18. `docs/30-sprint-3-story-foundation-flow-implementation-plan.md`
-19. `docs/27-sprint-2-data-model-implementation-plan.md`
-20. Dokumen domain sesuai task.
+14. `docs/42-audit-action-enum-and-coverage-plan.md`
+15. `docs/36-non-blocking-technical-debt-and-deferred-items.md`
+16. `docs/39-sprint-7-publish-package-kbm-export-implementation-plan.md`
+17. `docs/37-sprint-6-chapter-summary-delta-canon-proposal-implementation-plan.md`
+18. `docs/34-sprint-5-safe-write-room-context-packet-implementation-plan.md`
+19. `docs/30-sprint-3-story-foundation-flow-implementation-plan.md`
+20. `docs/27-sprint-2-data-model-implementation-plan.md`
+21. Dokumen domain sesuai task.
 
 ---
 
