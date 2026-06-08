@@ -23,6 +23,11 @@
   Example mock success run:
     npm run smoke:api:sprint9 -- -MockMode success
 
+  Live spot check (Task 9.9 — optional, low-cost):
+    AI_GENERATION_ENABLED=true, AI_PROVIDER_MOCK=false, OPENROUTER_API_KEY in .dev.vars
+    restart dev:api, then:
+    npm run smoke:api:sprint9 -- -MockMode success -LiveSpotCheck
+
   Security: does not print JWT or service role keys.
 #>
 [CmdletBinding()]
@@ -32,6 +37,7 @@ param(
   [string]$SupabaseAnonKey = "",
   [ValidateSet("auto", "success", "fail_provider", "unsafe_output", "skip_mock")]
   [string]$MockMode = "auto",
+  [switch]$LiveSpotCheck,
   [string]$TestEmail = "",
   [string]$TestPassword = "VibeNovel-Local-Smoke-Test!"
 )
@@ -524,6 +530,11 @@ $aiEnabled = [bool]$health.data.env.aiGenerationEnabled
 $aiMock = [bool]$health.data.env.aiProviderMock
 Add-StepResult "health AI flags" "PASS" "enabled=$aiEnabled mock=$aiMock"
 
+if ($LiveSpotCheck) {
+  $MockMode = "success"
+  Add-StepResult "live spot check mode" "PASS" "MockMode=success qualityMode=hemat"
+}
+
 try {
   $ctx = Initialize-WriteSmokeContext
   $projectId = $ctx.ProjectId
@@ -560,7 +571,10 @@ if ($MockMode -eq "auto") {
   if ($aiEnabled -and $aiMock) { $resolvedMockMode = "success" } else { $resolvedMockMode = "skip_mock" }
 }
 
-if ($resolvedMockMode -eq "skip_mock" -or -not $aiEnabled -or -not $aiMock) {
+$successUsesLiveProvider = ($resolvedMockMode -eq "success") -and $aiEnabled -and (-not $aiMock)
+$successQualityMode = if ($LiveSpotCheck -or $successUsesLiveProvider) { "hemat" } else { $null }
+
+if ($resolvedMockMode -eq "skip_mock" -or -not $aiEnabled -or (-not $aiMock -and $MockMode -eq "auto")) {
   Add-StepResult "rewrite before prose NO_PROSE_TO_REWRITE" "NOT RUN" "requires AI enabled"
   Add-StepResult "POST user prose seed" "NOT RUN" "requires AI enabled"
   Add-StepResult "mock success path" "NOT RUN" "set AI_GENERATION_ENABLED=true AI_PROVIDER_MOCK=true and restart dev:api"
@@ -650,12 +664,12 @@ if ($resolvedMockMode -eq "skip_mock" -or -not $aiEnabled -or -not $aiMock) {
       Add-StepResult "credit balance read" "FAIL" $_.Exception.Message.Substring(0, [Math]::Min(80, $_.Exception.Message.Length))
     }
   }
-  $expectedCost = 6
+  $expectedCost = if ($successQualityMode -eq "hemat") { 3 } else { 6 }
 
   if ($resolvedMockMode -eq "success" -and $sourceProse -and $null -ne $balanceBefore) {
     $idemSuccess = "s9-ok-$(Get-Random)"
     $bodySuccess = New-RewriteProseBody -BeatId $beatId -SessionId $sessionId `
-      -RewriteMode "improve_emotion" -IdempotencyKey $idemSuccess
+      -RewriteMode "improve_emotion" -IdempotencyKey $idemSuccess -QualityMode $successQualityMode
     $versionsBeforeSuccess = (Invoke-Api -Path "/api/projects/$projectId/write/beats/$beatId/prose" -Headers $auth).data.versions.Count
     try {
       $rewriteRes = Invoke-Api -Method POST -Path $rewritePath -Headers $auth -Body $bodySuccess
@@ -680,7 +694,8 @@ if ($resolvedMockMode -eq "skip_mock" -or -not $aiEnabled -or -not $aiMock) {
       )
       Add-StepResult "rewrite prose 200/201" $(if ($safe -and $newVersionOk -and $currentOk -and $genTypeOk -and $metaTypeOk -and $attemptOk -and $entityOk -and $newVersionCountOk) { "PASS" } else { "FAIL" }) "version=$($rewriteRes.data.proseVersion.id)"
       Add-StepResult "source prose unchanged" $(if ($sourceUnchangedOk) { "PASS" } else { "FAIL" }) "source=$($sourceProse.VersionId)"
-      Add-StepResult "credit debited once (seimbang=6)" $(if ($debitOk) { "PASS" } else { "FAIL" }) "before=$balanceBefore after=$balanceAfter cost=$expectedCost"
+      $tierLabel = if ($successQualityMode -eq "hemat") { "hemat=3" } else { "seimbang=6" }
+      Add-StepResult "credit debited once ($tierLabel)" $(if ($debitOk) { "PASS" } else { "FAIL" }) "before=$balanceBefore after=$balanceAfter cost=$expectedCost"
       Add-StepResult "response leak guard" $(if ($safe) { "PASS" } else { "FAIL" }) "no packet/prompt/planningTruth"
 
       $versionsBeforeReplay = (Invoke-Api -Path "/api/projects/$projectId/write/beats/$beatId/prose" -Headers $auth).data.versions.Count
@@ -716,15 +731,21 @@ if ($resolvedMockMode -eq "skip_mock" -or -not $aiEnabled -or -not $aiMock) {
           if ($provider -eq "mock") {
             $mockCostOk = ($null -ne $estCost) -and ([decimal]$estCost -eq 0)
             $approxOk = ($attemptRow.metadata.costEstimateApproximate -eq $true)
-            Add-StepResult "estimated_cost_usd mock" $(if ($mockCostOk -and $approxOk) { "PASS" } else { "FAIL" }) "cost=$estCost approximate=$($attemptRow.metadata.costEstimateApproximate)"
+            Add-StepResult "estimated_cost_usd mock (rewrite)" $(if ($mockCostOk -and $approxOk) { "PASS" } else { "FAIL" }) "cost=$estCost approximate=$($attemptRow.metadata.costEstimateApproximate)"
+            Add-StepResult "estimated_cost_usd live (rewrite)" "SKIP" "provider=mock"
+          } elseif ($provider -eq "openrouter" -and $attemptRow.model -eq "google/gemini-2.5-flash" -and $attemptRow.input_tokens -and $attemptRow.output_tokens) {
+            $liveCostOk = ($null -ne $estCost) -and ([decimal]$estCost -gt 0)
+            Add-StepResult "estimated_cost_usd live (rewrite)" $(if ($liveCostOk) { "PASS" } else { "FAIL" }) "cost=$estCost model=$($attemptRow.model)"
+            Add-StepResult "estimated_cost_usd mock (rewrite)" "SKIP" "provider=openrouter"
           } else {
-            Add-StepResult "estimated_cost_usd mock" "SKIP" "provider=$provider (not mock success path)"
+            Add-StepResult "estimated_cost_usd mock (rewrite)" "SKIP" "provider=$provider"
+            Add-StepResult "estimated_cost_usd live (rewrite)" "SKIP" "provider=$provider model=$($attemptRow.model)"
           }
-          Add-StepResult "attempt metadata leak guard" $(if ($metaSafe) { "PASS" } else { "FAIL" }) "no pricing table dump"
+          Add-StepResult "attempt metadata leak guard (rewrite)" $(if ($metaSafe) { "PASS" } else { "FAIL" }) "no pricing table dump"
         }
       } catch {
-        Add-StepResult "estimated_cost_usd mock" "FAIL" $_.Exception.Message.Substring(0, [Math]::Min(80, $_.Exception.Message.Length))
-        Add-StepResult "attempt metadata leak guard" "NOT RUN" "lookup failed"
+        Add-StepResult "estimated_cost_usd mock (rewrite)" "FAIL" $_.Exception.Message.Substring(0, [Math]::Min(80, $_.Exception.Message.Length))
+        Add-StepResult "attempt metadata leak guard (rewrite)" "NOT RUN" "lookup failed"
       }
     } catch {
       Add-StepResult "rewrite prose 200/201" "FAIL" $_.Exception.Message.Substring(0, [Math]::Min(100, $_.Exception.Message.Length))
@@ -848,7 +869,9 @@ if ($resolvedMockMode -eq "skip_mock" -or -not $aiEnabled -or -not $aiMock) {
 
       $balanceBeforePub = (Invoke-Api -Path "/api/credits/balance" -Headers $auth).data.creditBalance.balance
       $idemPub = "s9-pub-ok-$(Get-Random)"
-      $bodyPub = New-ImprovePublishCopyBody -PackageId $packageId -Fields @("teaser", "caption") -IdempotencyKey $idemPub
+      $bodyPub = New-ImprovePublishCopyBody -PackageId $packageId -Fields @("teaser", "caption") `
+        -IdempotencyKey $idemPub -QualityMode $successQualityMode
+      $expectedPubCost = if ($successQualityMode -eq "hemat") { 3 } else { 6 }
 
       $improveRes = Invoke-Api -Method POST -Path $improvePathPub -Headers $auth -Body $bodyPub
       $jsonPub = $improveRes | ConvertTo-Json -Depth 12
@@ -858,7 +881,7 @@ if ($resolvedMockMode -eq "skip_mock" -or -not $aiEnabled -or -not $aiMock) {
       $genTypeOk = ($improveRes.data.generationAttempt.generationType -eq "publish_copy")
       $attemptOk = ($improveRes.data.generationAttempt.status -eq "succeeded")
       $balanceAfterPub = $improveRes.data.creditBalance.balance
-      $debitPubOk = ($balanceAfterPub -eq ($balanceBeforePub - 6))
+      $debitPubOk = ($balanceAfterPub -eq ($balanceBeforePub - $expectedPubCost))
 
       $pkgAfter = Invoke-Api -Path "/api/projects/$pubProjectId/publish/$packageId" -Headers $auth
       $noMutationOk = (
@@ -871,9 +894,11 @@ if ($resolvedMockMode -eq "skip_mock" -or -not $aiEnabled -or -not $aiMock) {
         $improveRes.data.suggestions.caption -match 'dijamin\s+viral|pasti\s+viral'
       )
 
-      Add-StepResult "publish copy mock success" $(if ($safePub -and $hasTeaser -and $hasCaption -and $genTypeOk -and $attemptOk) { "PASS" } else { "FAIL" }) "fields=teaser,caption"
+      $pubSuccessLabel = if ($successUsesLiveProvider) { "publish copy live success" } else { "publish copy mock success" }
+      Add-StepResult $pubSuccessLabel $(if ($safePub -and $hasTeaser -and $hasCaption -and $genTypeOk -and $attemptOk) { "PASS" } else { "FAIL" }) "fields=teaser,caption"
       Add-StepResult "publish copy no package mutation" $(if ($noMutationOk) { "PASS" } else { "FAIL" }) "teaser unchanged"
-      Add-StepResult "publish copy debit (seimbang=6)" $(if ($debitPubOk) { "PASS" } else { "FAIL" }) "before=$balanceBeforePub after=$balanceAfterPub"
+      $pubTierLabel = if ($successQualityMode -eq "hemat") { "hemat=3" } else { "seimbang=6" }
+      Add-StepResult "publish copy debit ($pubTierLabel)" $(if ($debitPubOk) { "PASS" } else { "FAIL" }) "before=$balanceBeforePub after=$balanceAfterPub"
       Add-StepResult "publish copy overclaim guard" $(if ($overclaimOk) { "PASS" } else { "FAIL" }) "no viral guarantee"
       Add-StepResult "publish copy response leak guard" $(if ($safePub) { "PASS" } else { "FAIL" }) "no prompt/packet leak"
 
@@ -896,6 +921,28 @@ if ($resolvedMockMode -eq "skip_mock" -or -not $aiEnabled -or -not $aiMock) {
       $propPubAfter = Invoke-Api -Path "/api/projects/$pubProjectId/proposals?includeResolved=true" -Headers $auth
       $proposalsPubAfter = if ($propPubAfter.data -is [array]) { $propPubAfter.data.Count } else { 0 }
       Add-StepResult "publish copy no new ai_proposals" $(if ($proposalsPubAfter -eq $proposalsPubBefore) { "PASS" } else { "FAIL" }) "before=$proposalsPubBefore after=$proposalsPubAfter"
+
+      try {
+        $attemptPubRow = Get-GenerationAttemptRow -AttemptId $improveRes.data.generationAttempt.id
+        if ($attemptPubRow) {
+          $providerPub = [string]$attemptPubRow.provider
+          $estCostPub = $attemptPubRow.estimated_cost_usd
+          if ($providerPub -eq "mock") {
+            $mockPubCostOk = ($null -ne $estCostPub) -and ([decimal]$estCostPub -eq 0)
+            Add-StepResult "estimated_cost_usd mock (publish)" $(if ($mockPubCostOk) { "PASS" } else { "FAIL" }) "cost=$estCostPub"
+            Add-StepResult "estimated_cost_usd live (publish)" "SKIP" "provider=mock"
+          } elseif ($providerPub -eq "openrouter" -and $attemptPubRow.model -eq "google/gemini-2.5-flash" -and $attemptPubRow.input_tokens -and $attemptPubRow.output_tokens) {
+            $livePubCostOk = ($null -ne $estCostPub) -and ([decimal]$estCostPub -gt 0)
+            Add-StepResult "estimated_cost_usd live (publish)" $(if ($livePubCostOk) { "PASS" } else { "FAIL" }) "cost=$estCostPub model=$($attemptPubRow.model)"
+            Add-StepResult "estimated_cost_usd mock (publish)" "SKIP" "provider=openrouter"
+          } else {
+            Add-StepResult "estimated_cost_usd mock (publish)" "SKIP" "provider=$providerPub"
+            Add-StepResult "estimated_cost_usd live (publish)" "SKIP" "provider=$providerPub"
+          }
+        }
+      } catch {
+        Add-StepResult "estimated_cost_usd live (publish)" "SKIP" "lookup failed"
+      }
 
       Add-StepResult "publish copy fail_provider" "SKIP" "run with -MockMode fail_provider after env restart"
       Add-StepResult "publish copy unsafe_output" "SKIP" "run with -MockMode unsafe_output after env restart"

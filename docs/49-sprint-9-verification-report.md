@@ -182,8 +182,8 @@ AI **disabled by default** (`AI_GENERATION_ENABLED=false`). Sprint 9 verificatio
 
 | Command | Result |
 |---|---|
-| `npm run smoke:all:local` | **11/11 PASS** (~1.0m) |
-| `npm run smoke:all:local:full` | **NOT RUN** — `smoke-all-local.ps1` lacks Sprint 9 web/API phases; API-mode matrix verified explicitly in Task 9.7 with dedicated env switching; `:full` requires `VITE_USE_MOCKS=false` incompatible with safe mock default end state |
+| `npm run smoke:all:local` | **11/11 PASS** (~1.0m) at Task 9.7 closure; **13/13 PASS** (~1.9m, exit 0) after Task 9.9 |
+| `npm run smoke:all:local:full` | **NOT RUN** (9.7, 9.9) — API-mode matrix verified explicitly in Task 9.7; `:full` requires manual `VITE_USE_MOCKS=false` + restart `dev:web`; orchestrator does not auto-switch env |
 
 ---
 
@@ -257,8 +257,8 @@ Explicit assertions verified via Sprint 5/7/8/9 smoke scripts and Playwright lea
 
 | Limitation | Impact |
 |---|---|
-| `smoke:all:local` excludes Sprint 9 API/web scripts | Sprint 9 verified separately (Task 9.7) |
-| `smoke:all:local:full` not run | See §4 orchestrator note |
+| `smoke:all:local` was 11 phases at 9.8 closure | **Addressed Task 9.9** — now 13 phases incl. Sprint 9 |
+| `smoke:all:local:full` not run | See §4 orchestrator note; manual env only |
 | API-mode E2E local-only, not CI | Manual dual-env discipline |
 | **Terapkan Semua** not dedicated E2E | Single-field apply verified (9.6b, 9.7) |
 | Live rewrite / publish copy not run | Non-blocking; mock matrix PASS |
@@ -286,8 +286,8 @@ Updated summary for [`docs/36`](36-non-blocking-technical-debt-and-deferred-item
 | Item | Priority | Timing |
 |---|---|---|
 | CI API-mode E2E (write/rewrite/publish AI) | P1 | Before production or dedicated CI runner |
-| `smoke:all:local` include Sprint 9 phases | P1 | Task 9.9 candidate |
-| Live rewrite / publish copy spot check | P2 | Optional post-close |
+| `smoke:all:local` include Sprint 9 phases | P1 | **Addressed Task 9.9** |
+| Live rewrite / publish copy spot check | P2 | Optional manual (`-LiveSpotCheck`); NOT RUN 9.9 |
 | Topup / payment | P2 | Sprint 10+ |
 | Admin credit dashboard | P2 | Sprint 10+ |
 | True DB RPC for credit + attempt atomicity | P1 | Before production deploy |
@@ -299,22 +299,30 @@ Updated summary for [`docs/36`](36-non-blocking-technical-debt-and-deferred-item
 
 ## 12. Next Recommended Task
 
-### Recommendation: **Task 9.9 — Sprint 9 Smoke Orchestrator Consolidation + Optional Live Rewrite/Publish Spot Check**
+### Recommendation: **Task 10.0 — Production Readiness / Monetization Plan**
 
-**Why not Sprint 10.0 yet:** Sprint 9 baru ditutup; orchestrator belum mencakup Sprint 9; live rewrite/publish belum diuji; CI API-mode E2E masih deferred. Konsolidasi smoke + optional live spot check menutup gap operasional tanpa membuka scope monetization/production deploy.
-
-**Task 9.9 scope (suggested):**
-
-1. Extend `scripts/smoke-all-local.ps1` — Sprint 9 API baseline + web mock (`sprint9-smoke-api.ps1` disabled default, `sprint9-smoke-web.ps1` mock)
-2. Document `:full` env-switching playbook or split orchestrator phases
-3. Optional: one live rewrite OR publish copy call with `google/gemini-2.5-flash` — verify `estimated_cost_usd`, immediate rollback
-4. Small CI planning note (what blocks GitHub Actions API-mode E2E)
-
-**Alternative (later):** Task 10.0 — Production Readiness / Monetization Plan — after 9.9 hygiene and true RPC credit hardening discussion.
+Task 9.9 complete — orchestrator consolidated (13 phases). Remaining gaps: CI API-mode E2E, true RPC credit hardening, optional live rewrite/publish spot check, topup/monetization. Sprint 10.0 should plan production deploy readiness without rushing live AI expansion.
 
 ---
 
-## 13. Related Documents
+## 13. Post-Close Addendum — Task 9.9 (2026-06-08)
+
+| Deliverable | Status |
+|---|---|
+| `smoke-all-local.ps1` phases 6 + 13 (Sprint 9 API + web mock) | ✅ |
+| `sprint9-smoke-api.ps1` `-LiveSpotCheck` hook | ✅ (manual only) |
+| PowerShell em dash parse fix in orchestrator `Write-Host` | ✅ |
+| `smoke:all:local` verification | **13/13 PASS**, exit **0**, ~**1.9m** (run 2 after API restart) |
+| First orchestrator run (prior) | **TIMEOUT** ~12m Phase 1 — hung API on :8787 (tooling; not product FAIL) |
+| `smoke:all:local:full` | **NOT RUN** — API-mode verified Task 9.7; manual env switch required |
+| Live OpenRouter spot check | **NOT RUN** — cost/exposure; hook documented |
+| Env final | `AI_GENERATION_ENABLED=false`, `AI_PROVIDER_MOCK=true`, `AI_PROVIDER_MOCK_MODE=success`, `VITE_USE_MOCKS=true` |
+
+Work log: [`.agent-logs/sprint-9/task-9.9-smoke-orchestrator-live-spot-check.md`](../.agent-logs/sprint-9/task-9.9-smoke-orchestrator-live-spot-check.md)
+
+---
+
+## 14. Related Documents
 
 | Doc | Role |
 |---|---|
@@ -322,7 +330,7 @@ Updated summary for [`docs/36`](36-non-blocking-technical-debt-and-deferred-item
 | [`docs/45`](45-sprint-8-verification-report.md) | Sprint 8 closure |
 | [`docs/47`](47-live-openrouter-staging-smoke-report.md) | Live prose beat GO |
 | [`docs/36`](36-non-blocking-technical-debt-and-deferred-items.md) | Debt register |
-| [`scripts/README.md`](../scripts/README.md) | Smoke commands + Task 9.7 matrix |
+| [`scripts/README.md`](../scripts/README.md) | Smoke commands + Task 9.7 matrix + 9.9 orchestrator |
 
 ---
 

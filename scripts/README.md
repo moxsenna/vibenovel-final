@@ -29,8 +29,8 @@ Run all commands from **repo root**. Windows/PowerShell primary.
 | `smoke:api:sprint7` | `sprint7-smoke-api.ps1` | Publish package generation/update/export safety (Task 7.5) | Same as API base |
 | `smoke:api:sprint8` | `sprint8-smoke-api.ps1` | AI prose beat generation safety (Task 8.4) | Same as API base; mock modes need AI env + restart `dev:api` |
 | `smoke:api:sprint9` | `sprint9-smoke-api.ps1` | AI prose rewrite (9.3) + publish copy (9.5) safety | Same as sprint8 mock env pattern |
-| `smoke:all:local` | `smoke-all-local.ps1` | Sprint 2/5/6/7/8 API + Sprint 3–8 web mock (11 phases) | All API + web prerequisites |
-| `smoke:all:local:full` | `smoke-all-local.ps1 -IncludeApiMode` | Above + web API-mode on all web wrappers (incl. summary/publish) | + restart `dev:web` after `VITE_USE_MOCKS=false` |
+| `smoke:all:local` | `smoke-all-local.ps1` | Sprint 2/5/6/7/8/9 API + Sprint 3–9 web mock (13 phases) | All API + web prerequisites |
+| `smoke:all:local:full` | `smoke-all-local.ps1 -IncludeApiMode` | Same 13 phases + `-IncludeApiMode` on web wrappers (7–13) | + restart `dev:web` after `VITE_USE_MOCKS=false` |
 
 **Optional (not in package.json):** `scripts/sprint4-smoke-api.ps1` — Sprint 4 outline API (20 steps).
 
@@ -454,11 +454,11 @@ npm run test:e2e:sprint5 -w @vibenovel/web
 - [`docs/34-sprint-5-safe-write-room-context-packet-implementation-plan.md`](../docs/34-sprint-5-safe-write-room-context-packet-implementation-plan.md)
 - [`scripts/sprint5-smoke-api.ps1`](sprint5-smoke-api.ps1)
 
-## Local smoke suite (Task 5.8, consolidated Task 7.8.4)
+## Local smoke suite (Task 5.8, consolidated Task 7.8.4 + Task 9.9)
 
 ### `smoke-all-local.ps1`
 
-Runs **eleven phases** in sequence (collects failures; exits 1 if any phase FAIL):
+Runs **thirteen phases** in sequence (collects failures; exits 1 if any phase FAIL):
 
 | Phase | Script | `smoke:all:local` | `smoke:all:local:full` |
 |---|---|---|---|
@@ -467,18 +467,20 @@ Runs **eleven phases** in sequence (collects failures; exits 1 if any phase FAIL
 | 3 | `sprint6-smoke-api.ps1` | API | API |
 | 4 | `sprint7-smoke-api.ps1` | API | API |
 | 5 | `sprint8-smoke-api.ps1` | API baseline (AI disabled OK) | API baseline |
-| 6 | `sprint3-smoke-web.ps1` | mock | mock + `-IncludeApiMode` |
-| 7 | `sprint4-smoke-web.ps1` | mock | mock + `-IncludeApiMode` |
-| 8 | `sprint5-smoke-web.ps1` | mock | mock + `-IncludeApiMode` |
-| 9 | `sprint6-smoke-web.ps1` | mock | mock + `-IncludeApiMode` |
-| 10 | `sprint7-smoke-web.ps1` | mock | mock + `-IncludeApiMode` |
-| 11 | `sprint8-smoke-web.ps1` | mock write AI | mock + `-IncludeApiMode` |
+| 6 | `sprint9-smoke-api.ps1` | API baseline (AI disabled OK) | API baseline |
+| 7 | `sprint3-smoke-web.ps1` | mock | mock + `-IncludeApiMode` |
+| 8 | `sprint4-smoke-web.ps1` | mock | mock + `-IncludeApiMode` |
+| 9 | `sprint5-smoke-web.ps1` | mock | mock + `-IncludeApiMode` |
+| 10 | `sprint6-smoke-web.ps1` | mock | mock + `-IncludeApiMode` |
+| 11 | `sprint7-smoke-web.ps1` | mock | mock + `-IncludeApiMode` |
+| 12 | `sprint8-smoke-web.ps1` | mock write AI | mock + `-IncludeApiMode` |
+| 13 | `sprint9-smoke-web.ps1` | mock credit/rewrite/publish AI | mock + `-IncludeApiMode` |
 
 ```bash
-# Mock web (default) — full Sprint 2/5/6/7/8 API + Sprint 3–8 web
+# Mock web (default) — Sprint 2/5/6/7/8/9 API + Sprint 3–9 web
 npm run smoke:all:local
 
-# Full stack + web API-mode (summary/publish API flows included)
+# Same 13 phases + web API-mode on phases 7–13
 npm run smoke:all:local:full
 ```
 
@@ -495,13 +497,14 @@ powershell -File scripts/smoke-all-local.ps1 -IncludeApiMode   # same as :full
 
 | Requirement | Notes |
 |---|---|
-| Docker Desktop + `supabase start` | API phases 1–5 |
+| Docker Desktop + `supabase start` | API phases 1–6 |
 | `supabase db reset` | Fresh schema/seed before long runs |
 | `npm run dev:api` → :8787 | API phases + API-mode web bootstrap |
 | `apps/api/.dev.vars` (gitignored) | From `supabase status` — never commit |
-| `npm run dev:web` → :5173 | Web phases 6–11 |
+| `npm run dev:web` → :5173 | Web phases 7–13 |
 | `npx playwright install chromium` | First run in `apps/web` |
-| `VITE_USE_MOCKS=true` in `apps/web/.env.local` | Default mock web (phases 6–11) |
+| `VITE_USE_MOCKS=true` in `apps/web/.env.local` | Default mock web (phases 7–13) |
+| **Single** `dev:api` listener on :8787 | Avoid hung health/timeouts from stale workers |
 
 ### Prerequisites — `smoke:all:local:full` (API-mode web)
 
@@ -516,7 +519,7 @@ All mock prerequisites, plus:
 
 **CI note:** `smoke:all:local:full` remains **local/manual only** — not in GitHub Actions (see `docs/41` §5).
 
-Expect **~5–15 minutes** depending on API bootstrap and API-mode web runs. Requires `dev:api` and `dev:web` running before start.
+Expect **~2–15 minutes** for mock default (`smoke:all:local` verified **1.9m** / 13 PASS Task 9.9); longer with `:full` API-mode web. Requires `dev:api` and `dev:web` running before start. Orchestrator does **not** edit `.env` files.
 
 ## Sprint 8 AI prose generation API smoke (Task 8.4)
 
@@ -621,7 +624,7 @@ Live OpenRouter is **not** required or tested. Never commit `.dev.vars` or print
 
 ## Sprint 9 full safety regression (Task 9.7) — manual env switching
 
-`smoke:all:local` includes Sprint 8 API **baseline only** and Web Sprint 3–8 mock — **not** Sprint 9 web/API scripts. Task 9.7 runs Sprint 9 smokes separately. Full AI modes require restart `dev:api` between runs (same pattern as Sprint 8.6):
+**Task 9.9:** `smoke:all:local` now includes Sprint 9 API baseline (phase 6) + web mock (phase 13) in the default 13-phase suite. Task 9.7 mock success/fail/unsafe and API-mode matrices remain **manual** with env switching. Full AI mock modes require restart `dev:api` between runs (same pattern as Sprint 8.6):
 
 ```powershell
 # 1) API baseline — safe default (no restart)
@@ -672,9 +675,11 @@ npm run smoke:web:publish-ai -- -IncludeApiMode
 npm run smoke:all:local
 ```
 
-`smoke:all:local:full` (`-IncludeApiMode`) does not include Sprint 9 web scripts; use explicit Sprint 9 commands above.
+`smoke:all:local:full` passes `-IncludeApiMode` to web phases 7–13 (including Sprint 9). It does **not** run Sprint 8/9 AI mock success/fail/unsafe API modes — use explicit commands above.
 
-**Sprint 9 closure:** full verification results in [`docs/49-sprint-9-verification-report.md`](../docs/49-sprint-9-verification-report.md).
+**Optional live spot check (Task 9.9, manual only):** `npm run smoke:api:sprint9 -- -MockMode success -LiveSpotCheck` with `AI_GENERATION_ENABLED=true`, `AI_PROVIDER_MOCK=false`, `OPENROUTER_API_KEY` in `.dev.vars`, restart `dev:api`. Not run in Task 9.9 (cost/exposure).
+
+**Sprint 9 closure:** [`docs/49-sprint-9-verification-report.md`](../docs/49-sprint-9-verification-report.md) + Task 9.9 addendum §14.
 
 ## Future scripts (not yet implemented)
 

@@ -35,7 +35,7 @@ Sprint 5 closed with **zero blockers**. Items below are non-blocking unless mark
 
 | Item | Priority | Timing |
 |---|---|---|
-| `smoke:api` = Sprint 2 only (17 steps) — Sprint 5+ separate aliases | P1 | **Addressed Task 5.8/8.6** — `smoke:all:local` now 11 phases incl. Sprint 8 API baseline + write-AI web mock |
+| `smoke:api` = Sprint 2 only (17 steps) — Sprint 5+ separate aliases | P1 | **Addressed Task 5.8/8.6/9.9** — `smoke:all:local` now **13 phases** incl. Sprint 8/9 API baseline + Sprint 3–9 web mock |
 | API-mode web E2E not in GitHub Actions | P1 | Before production or dedicated CI runner |
 | `sprint4-smoke-api.ps1` not wired to npm script | P2 | Nice-to-have alias `smoke:api:sprint4` |
 | `make-current` prose endpoint not in Sprint 5 smoke | P2 | Before Sprint 6 if version switching critical |
@@ -175,7 +175,7 @@ Sprint 5 closed with **zero blockers**. Items below are non-blocking unless mark
 9. **No prose delete endpoint**; export audit via `publish_package_exported` ✅ (7.8.2).
 10. **Context Packet safety** — API/smoke only, not DB-enforced.
 11. **CI** — typecheck/build only; full smokes local-only — strategy in `docs/41` §5; **7.8.4–7.8.5**.
-12. **`smoke:all:local`** ✅ — 11 phases: Sprint 2/5/6/7/8 API + Sprint 3–8 web mock (**7.8.4**, **8.6**). Full AI mock modes remain manual env restart. **`smoke:all:local:full`** API-mode local/manual only (not CI).
+12. **`smoke:all:local`** ✅ — **13 phases**: Sprint 2/5/6/7/8/9 API + Sprint 3–9 web mock (**7.8.4**, **8.6**, **9.9**). Full AI mock modes remain manual env restart. **`smoke:all:local:full`** API-mode local/manual only (not CI); orchestrator does not auto-switch env.
 13. **Seed GoTrue login quirk** — smokes use ephemeral signup.
 
 ---
@@ -188,7 +188,7 @@ Sprint 5 closed with **zero blockers**. Items below are non-blocking unless mark
 | **7.8.1** | Audit action enum + coverage map | ✅ Design complete (`docs/42`) |
 | **7.8.2** | Audit writers for canon/export P0 paths | ✅ Implemented (`00007`, P0+P1 writers) |
 | **7.8.3** | Transaction wrapper + P0 workflows | ✅ Implemented (`transaction.ts`, P0 hardening, sprint6 smoke assertions) |
-| **7.8.4** | `smoke:all:local` include Sprint 6/7 | ✅ Extended **8.6** — `smoke-all-local.ps1` 11 phases; `:full` passes `-IncludeApiMode` to web |
+| **7.8.4** | `smoke:all:local` include Sprint 6/7 | ✅ Extended **8.6** / **9.9** — `smoke-all-local.ps1` **13 phases**; `:full` passes `-IncludeApiMode` to web 7–13 |
 | **7.8.5** | CI E2E feasibility / optional nightly | Pending |
 | **7.8.6** | Hardening verification report (`docs/43`) | ✅ Closed |
 | **8.0** | AI/OpenRouter & credit-gated generation plan | ✅ [`docs/44`](44-sprint-8-ai-openrouter-credit-generation-implementation-plan.md) |
@@ -221,7 +221,9 @@ Sprint 5 closed with **zero blockers**. Items below are non-blocking unless mark
 
 **Addressed Task 9.6:** PublishPage AI UI — panel **Perbaiki Copy dengan AI**; suggestions displayed; user **Terapkan** via existing `PATCH .../publish/:packageId/fields`; mock/fallback no fake AI; `smoke:web:publish-ai` / `smoke:web:sprint9`.
 
-**Addressed Task 9.7:** Sprint 9 safety regression — full API baseline (Sprint 2/5/6/7/8/9), Sprint 8/9 mock modes (success/fail_provider/unsafe_output), web mock matrix, API-mode write/rewrite/publish AI success + disabled E2E; `smoke:all:local` 11/11 PASS; env restored safe default.
+**Addressed Task 9.7:** Sprint 9 safety regression — full API baseline (Sprint 2/5/6/7/8/9), Sprint 8/9 mock modes (success/fail_provider/unsafe_output), web mock matrix, API-mode write/rewrite/publish AI success + disabled E2E; env restored safe default.
+
+**Addressed Task 9.9:** `smoke:all:local` extended to **13/13 PASS** (~1.9m, exit 0) — Sprint 9 API baseline (phase 6) + web mock (phase 13); `-LiveSpotCheck` hook in `sprint9-smoke-api.ps1`; `:full` playbook documented (NOT RUN in 9.9 — API-mode already verified in 9.7).
 
 **Sprint 9 closed (Task 9.8):** [`docs/49-sprint-9-verification-report.md`](49-sprint-9-verification-report.md) — rewrite API/UI, publish copy AI (suggestion-first), credit UI, cost observability; mock + API-mode E2E verified; live rewrite/publish NOT RUN.
 
@@ -229,10 +231,9 @@ Sprint 5 closed with **zero blockers**. Items below are non-blocking unless mark
 
 | Item | Priority | Timing |
 |---|---|---|
-| `smoke:all:local` include Sprint 9 API + web mock phases | P1 | Task 9.9 |
-| `smoke:all:local:full` env-switching playbook / split phases | P1 | Task 9.9 |
+| `smoke:all:local:full` automated env switch / CI | P1 | Before production or dedicated runner |
 | CI API-mode E2E (write/rewrite/publish AI) | P1 | Before production |
-| Live rewrite / publish copy spot check (`google/gemini-2.5-flash`) | P2 | Optional Task 9.9 |
+| Live rewrite / publish copy spot check (`google/gemini-2.5-flash`) | P2 | Optional manual (`-LiveSpotCheck`) |
 | Publish **Terapkan Semua** dedicated E2E | P2 | Nice-to-have |
 | Topup / payment / admin credit dashboard | P2 | Sprint 10+ |
 | True DB RPC credit + attempt atomicity | P1 | Before production deploy |
