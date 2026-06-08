@@ -68,6 +68,11 @@ apps/api/
       audit.ts         # append-only audit_logs (service role)
       audit-snapshot.ts   # compact snapshots + metadata sanitizer (Task 7.8.2)
       transaction.ts   # compensation runner + failure classification (Task 7.8.3)
+      ai-generation-types.ts  # internal AI router types (Task 8.2)
+      ai-prompt-safety.ts     # prompt/output safety asserts (Task 8.2)
+      model-router.ts         # model allowlist + provider boundary (Task 8.2)
+      openrouter-client.ts    # OpenRouter shell — Worker-only (Task 8.2)
+      mock-ai-provider.ts     # deterministic mock for local smoke (Task 8.2)
     lib/
       supabase.ts      # anon + service role clients
       mappers.ts
@@ -118,6 +123,39 @@ Cloudflare Worker + `@supabase/supabase-js` cannot wrap arbitrary multi-table wr
 - `ai_proposals.status = accepted` only after canon promotion succeeds (or idempotent re-read).
 - `story_foundations.is_locked = true` only after promotions + lock row update succeed.
 - Delta extract does not return success if proposal/link enqueue fails (new delta rolled back).
+
+## AI model router shell (Task 8.2)
+
+**Status:** Internal services only — **no public `/api/projects/:id/ai/*` routes yet** (Task 8.4). **No credit mutation** (Task 8.3). **AI disabled by default.**
+
+```txt
+(future) route → ai-generation-service → model-router → openrouter-client | mock-ai-provider
+```
+
+| Service | Role |
+|---|---|
+| `model-router.ts` | `resolveModelForGeneration`, `generateWithModelRouter` — allowlist, quality tier mapping |
+| `openrouter-client.ts` | OpenRouter `/chat/completions` shell — timeout, safe error mapping, no key/body logging |
+| `mock-ai-provider.ts` | Deterministic local output when `AI_PROVIDER_MOCK=true` |
+| `ai-prompt-safety.ts` | `assertPromptSafeForProvider`, `assertProviderOutputSafe` — never logs prompt |
+
+**Env (Worker-only — names in `.dev.vars.example`, never commit values):**
+
+| Variable | Default | Notes |
+|---|---|---|
+| `AI_GENERATION_ENABLED` | `false` | When false, `generateWithModelRouter` → `503 AI_DISABLED` |
+| `AI_PROVIDER_MOCK` | `false` | Use mock provider (no network) |
+| `AI_PROVIDER_MOCK_MODE` | `success` | `fail_provider` \| `unsafe_output` for future smoke |
+| `OPENROUTER_API_KEY` | unset | Required for live OpenRouter when mock off |
+| `OPENROUTER_BASE_URL` | `https://openrouter.ai/api/v1` | Optional override |
+| `DEFAULT_AI_MODEL` | unset | Fallback if tier env invalid; must be in allowlist |
+| `AI_MODEL_HEMAT` / `SEIMBANG` / `TERBAIK` | tier defaults | Must be in `MODEL_ALLOWLIST` |
+| `AI_TIMEOUT_MS` | `45000` | Per-request timeout (tier caps also apply) |
+| `AI_MAX_RETRIES` | `1` | Transient provider retries only |
+
+`/health` exposes safe flags: `aiGenerationEnabled`, `aiProviderMock`, `hasOpenRouterApiKey` (booleans only).
+
+**Security:** OpenRouter key never in frontend. Raw prompt never logged or stored. Client cannot pass arbitrary `model`. Provider errors mapped to `AI_*` codes without raw body.
 
 **Audit ordering:** `*_started` / preflight before writes; `*_applied` only after success; `*_failed` after validation or write failure. No payload leak (`audit-snapshot.ts`).
 
@@ -1049,6 +1087,9 @@ npm run build:api
 | `SUPABASE_SERVICE_ROLE_KEY` | Yes for profile/credit reads | Server only |
 | `APP_ENV` | Optional | Default `development` |
 | `ALLOWED_ORIGINS` | Optional | CSV; default localhost:5173–5175 |
+| `AI_GENERATION_ENABLED` | Optional | Default false — see § AI model router shell |
+| `AI_PROVIDER_MOCK` | Optional | Local mock provider |
+| `OPENROUTER_API_KEY` | When AI live | Server only — never client |
 
 ## Not in Task 2.12
 
