@@ -93,6 +93,22 @@ Display credit balance and AI action cost minimally on WritePage (API mode). Rea
 - `estimated_cost_usd` not exposed to user (by design).
 - No topup/payment.
 
+## Verification addendum (Task 9.2b — 2026-06-08)
+
+Deferred regressions completed after Docker/Supabase restored. See `.agent-logs/sprint-9/task-9.2b-credit-ui-regression-stabilization.md`.
+
+| Item | Final status |
+|---|---|
+| `smoke:api:sprint7` | PASS 53/53 |
+| `smoke:api:sprint8` baseline | PASS |
+| `smoke:api:sprint8` success / fail_provider / unsafe_output | PASS |
+| API-mode credit UI E2E | PASS (AI disabled path) |
+| `smoke:web:credit-ui` mock | PASS |
+| Insufficient credit web E2E | NOT RUN (API 402 + client guard sufficient) |
+| `smoke:all:local` | PASS 11/11 |
+
+**Task 9.2 approved.**
+
 ## Next recommended task
 
 **Task 9.3** — Prose Rewrite API (`POST /api/projects/:id/ai/rewrite-prose`).

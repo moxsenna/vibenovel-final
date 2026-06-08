@@ -56,9 +56,17 @@ async function prepareWriteRoomApi(page: Page, projectId: string) {
 
   const generateBeatsBtn = page.getByRole("button", { name: /Buat Daftar Adegan/i }).first();
   const babHeading = page.getByRole("heading", { name: /Bab 1/ }).first();
+  const firstBeatBtn = page.getByRole("button", { name: /Adegan 1/i }).first();
 
-  if (await babHeading.isHidden()) {
-    await expect(generateBeatsBtn).toBeVisible({ timeout: 30_000 });
+  await expect(async () => {
+    const ready =
+      (await generateBeatsBtn.isVisible()) ||
+      (await babHeading.isVisible()) ||
+      (await firstBeatBtn.count()) > 0;
+    expect(ready).toBe(true);
+  }).toPass({ timeout: 30_000 });
+
+  if (await generateBeatsBtn.isVisible()) {
     await generateBeatsBtn.click();
     await expect(page.getByText(/Membuat adegan|Membuat…/i)).toBeHidden({ timeout: 60_000 });
     await expect(page.getByText(/Adegan bab berhasil dibuat/i)).toBeVisible({ timeout: 30_000 });
@@ -66,9 +74,8 @@ async function prepareWriteRoomApi(page: Page, projectId: string) {
 
   await expect(babHeading).toBeVisible({ timeout: 20_000 });
 
-  const firstBeat = page.getByRole("button", { name: /Adegan 1/i }).first();
-  if ((await firstBeat.count()) > 0) {
-    await firstBeat.click();
+  if ((await firstBeatBtn.count()) > 0) {
+    await firstBeatBtn.click();
   }
 }
 
