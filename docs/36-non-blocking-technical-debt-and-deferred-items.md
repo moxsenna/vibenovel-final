@@ -127,8 +127,9 @@ Sprint 5 closed with **zero blockers**. Items below are non-blocking unless mark
 | Window | Focus |
 |---|---|
 | **Before Sprint 6** | Local smoke consolidation (Task 5.8 ✅), verification checklist, debt register |
-| **During Sprint 6** | Summary/canon tables, SummaryPage API, Chapter Delta |
-| **Before AI generation** | OpenRouter, validator, reveal gate compiler, audit logs |
+| **During Sprint 6** | ✅ Summary/canon tables, SummaryPage API, Chapter Delta (closed — `docs/38`) |
+| **Sprint 7** | Publish package / KBM export |
+| **Before AI generation** | OpenRouter, validator, reveal gate compiler, audit logs + DB transactions |
 | **Before production deploy** | DB transactions, CI smoke strategy, remote Supabase/Worker, secrets hygiene |
 
 ---
