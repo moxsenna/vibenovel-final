@@ -1,0 +1,1231 @@
+
+> vibenovel@0.1.0 smoke:api
+> powershell -ExecutionPolicy Bypass -File scripts/sprint2-smoke-api.ps1
+
+
+VibeNovel Sprint 2 API Smoke Test
+API:      http://127.0.0.1:8787
+Supabase: http://127.0.0.1:54321
+Repo:     D:\Coding\vibenovel-unified-blueprint
+
+[PASS] resolve anon key                     source=env|cli
+[PASS] GET /health                          ok=True
+[PASS] GET /api/me no token                 Cannot send a content-body with this verb-type.
+[PASS] signup/login                         email=s2smoke-23669590@example.com
+[PASS] GET /api/projects                    count=0
+[PASS] POST /api/projects                   projectId=889361bb-efc0-414f-aafa-b2fe09ad9c5e
+[PASS] GET/PUT settings                     qualityMode=terbaik
+[PASS] GET/PUT foundation                   premise_len=18
+[PASS] POST character                       characterId=d0b1550d-ffa4-41a1-a4ef-1562222447f5
+[PASS] POST fact source=user                factId=02724cf8-3747-4349-973c-e8338e2ad80e
+[PASS] POST fact source=ai_direct           {"ok":false,"error":{"code":"BAD_REQUEST","message":"AI-origin facts must go through ai_proposals first"}}
+[PASS] POST speech rule user                ruleId=0155a786-c9a5-41cd-bcdd-6ee951e3c23f
+[PASS] POST speech rule ai_direct           {"ok":false,"error":{"code":"BAD_REQUEST","message":"AI-origin speech rules must go through ai_proposals first"}}
+[PASS] POST proposal high-risk              status=proposed
+[PASS] accept proposal status-only          status=accepted
+[PASS] GET credit balance                   balance=null
+[PASS] cross-user project 404               Cannot send a content-body with this verb-type.
+
+
+Step Test                        Result Detail                                                                         
+---- ----                        ------ ------                                                                         
+   1 resolve anon key            PASS   source=env|cli                                                                 
+   2 GET /health                 PASS   ok=True                                                                        
+   3 GET /api/me no token        PASS   Cannot send a content-body with this verb-type.                                
+   4 signup/login                PASS   email=s2smoke-23669590@example.com                                             
+   5 GET /api/projects           PASS   count=0                                                                        
+   6 POST /api/projects          PASS   projectId=889361bb-efc0-414f-aafa-b2fe09ad9c5e                                 
+   7 GET/PUT settings            PASS   qualityMode=terbaik                                                            
+   8 GET/PUT foundation          PASS   premise_len=18                                                                 
+   9 POST character              PASS   characterId=d0b1550d-ffa4-41a1-a4ef-1562222447f5                               
+  10 POST fact source=user       PASS   factId=02724cf8-3747-4349-973c-e8338e2ad80e                                    
+  11 POST fact source=ai_direct  PASS   {"ok":false,"error":{"code":"BAD_REQUEST","message":"AI-origin facts must go...
+  12 POST speech rule user       PASS   ruleId=0155a786-c9a5-41cd-bcdd-6ee951e3c23f                                    
+  13 POST speech rule ai_direct  PASS   {"ok":false,"error":{"code":"BAD_REQUEST","message":"AI-origin speech rules ...
+  14 POST proposal high-risk     PASS   status=proposed                                                                
+  15 accept proposal status-only PASS   status=accepted                                                                
+  16 GET credit balance          PASS   balance=null                                                                   
+  17 cross-user project 404      PASS   Cannot send a content-body with this verb-type.                                
+
+
+Summary: 17 PASS, 0 FAIL
+
+> vibenovel@0.1.0 smoke:api:sprint5
+> powershell -ExecutionPolicy Bypass -File scripts/sprint5-smoke-api.ps1
+
+
+VibeNovel Sprint 5 Write Room API Smoke Test
+[PASS] signup/login                                   email=s5smoke-86266106@example.com
+[PASS] POST context-packet no token                   The remote server returned an error: (401) Unauthorized.
+[PASS] POST /api/projects                             projectId=9e149f98-49f4-4713-9549-1679141f63a3
+[PASS] bootstrap foundation locked                    
+[PASS] POST without outline_locked                    The remote server returned an error: (409) Conflict.
+[PASS] outline lock flow                              locked
+[PASS] POST context-packet ch1                        logId=0635a468-510f-4edb-a4a0-b7b3ac8a6df5
+[PASS] response preview-only leak guard               
+[PASS] ch1 response no ch2 title                      
+[PASS] ch1 response no ch2 summary                    
+[PASS] response has preview fields                    
+[PASS] GET preview by logId                           
+[PASS] GET preview redacted                           
+[PASS] DB packet_json leak guard                      
+[PASS] DB packet_json no ch2 title                    
+[PASS] DB packet_json no ch2 summary                  
+[PASS] DB packet_json no planning truth               
+[PASS] DB forbidden reveal label only                 
+[PASS] cross-user project 404                         The remote server returned an error: (404) Not Found.
+[PASS] canon counts unchanged                         
+[PASS] POST session no token                          The remote server returned an error: (401) Unauthorized.
+[PASS] POST writing session                           sessionId=97bb4f2b-de5e-4719-b2cb-84c7a46fb278
+[PASS] POST session idempotent                        
+[PASS] GET writing session                            beatsCount=0
+[PASS] GET beats before generate                      count=0
+[PASS] POST beats/generate                            count=5
+[PASS] POST beats/generate idempotent                 
+[PASS] PATCH beat status/direction                    
+[PASS] PATCH beat rejects proseText                   The remote server returned an error: (400) Bad Request.
+[PASS] PATCH session activeBeatId                     
+[PASS] POST prose no token                            The remote server returned an error: (401) Unauthorized.
+[PASS] POST prose without session                     The remote server returned an error: (409) Conflict.
+[PASS] resume session for prose                       
+[PASS] POST prose fictional secret allowed            
+[PASS] POST prose version 2                           v=0e3f0eb0-cf4c-4ce8-930a-510f74181168
+[PASS] prose response no packet_json                  
+[PASS] POST prose version 3                           
+[PASS] GET prose versions                             
+[PASS] GET prose version detail                       
+[PASS] contextPacketLogId linked                      
+[PASS] POST prose ai_generated rejected               The remote server returned an error: (400) Bad Request.
+[PASS] POST prose planningTruth rejected              The remote server returned an error: (400) Bad Request.
+[PASS] POST prose packet dump rejected                The remote server returned an error: (400) Bad Request.
+[PASS] prose save no canon mutation                   
+[PASS] POST ready-for-summary                         
+[PASS] ready_for_summary not summarized               status=ready_for_summary
+[PASS] canon unchanged after write flow               
+[PASS] ready_for_summary no fact mutation             
+[PASS] cross-user session 404                         The remote server returned an error: (404) Not Found.
+
+Summary: 49 PASS, 0 FAIL
+
+> vibenovel@0.1.0 smoke:api:sprint6
+> powershell -ExecutionPolicy Bypass -File scripts/sprint6-smoke-api.ps1
+
+
+VibeNovel Sprint 6 Chapter Summary API Smoke Test
+[PASS] signup/login                                     email=s6smoke-76696421@example.com
+[PASS] POST summary no token                            The remote server returned an error: (401) Unauthorized.
+[PASS] POST /api/projects                               projectId=b6425c32-01e4-4e7e-9393-d559fbd3643c
+[PASS] generate before ready_for_summary                The remote server returned an error: (409) Conflict.
+[PASS] POST summary generate                            id=9ff92dfa-2791-40cf-83b8-0c4d15fedc06
+[PASS] summary has items                                count=7
+[PASS] summary response leak guard                      
+[PASS] GET summary list                                 
+[PASS] GET summary list leak guard                      
+[PASS] GET summary detail                               
+[PASS] GET summary detail leak guard                    
+[PASS] GET summary by chapter                           
+[PASS] regenerate=false idempotent                      
+[PASS] regenerate=true new version                      v=2
+[PASS] regenerate supersedes previous                   v1 current=False
+[PASS] no canon mutation                                
+[PASS] no ai_proposals created                          before=11 after=11
+[PASS] not summarized yet                               
+[PASS] POST delta extract no token                      The remote server returned an error: (401) Unauthorized.
+[PASS] extract before summary exists                    The remote server returned an error: (404) Not Found.
+[PASS] POST delta extract                               deltaId=10fae847-801c-4f11-b986-8e2526b3f697
+[PASS] proposals created from delta                     count=2
+[PASS] delta/proposal leak guard                        
+[PASS] GET summary delta                                
+[PASS] GET delta leak guard                             
+[PASS] GET summary proposals                            
+[PASS] proposals response safe excerpt                  
+[PASS] proposals linked not accepted                    
+[PASS] delta regenerate blocked                         The remote server returned an error: (409) Conflict.
+[PASS] delta extract idempotent                         
+[PASS] audit chapter_delta_extracted                    count=1
+[PASS] audit summary_proposal_linked                    count=1
+[PASS] proposals remain proposed                        
+[PASS] delta proposals added                            before=11 after=13
+[PASS] no canon mutation after delta                    
+[PASS] cross-user summary list 404                      The remote server returned an error: (404) Not Found.
+[PASS] cross-user summary 404                           The remote server returned an error: (404) Not Found.
+[PASS] cross-user delta 404                             The remote server returned an error: (404) Not Found.
+[PASS] cross-user proposals 404                         The remote server returned an error: (404) Not Found.
+[PASS] POST approve no token                            The remote server returned an error: (401) Unauthorized.
+[PASS] accept before approve                            The remote server returned an error: (409) Conflict.
+[PASS] accept before approve stays proposed             expect=proposed/linked
+[PASS] POST approve summary                             
+[PASS] approve no canon mutation                        
+[PASS] approve response leak guard                      
+[PASS] approve proposalCounts no accept                 accepted=0
+[PASS] approve no auto-accept proposals                 
+[PASS] session completed after approve                  
+[PASS] writing state summarized                         
+[PASS] approve idempotent                               
+[PASS] audit chapter_summary_approved                   count=1
+[PASS] reveal accept without confirm                    The remote server returned an error: (409) Conflict.
+[PASS] reveal accept stays proposed                     expect=proposed/linked
+[PASS] audit canon_promotion_failed reveal              count=1
+[PASS] reject linked proposal                           reveal
+[PASS] reject no canon mutation                         
+[PASS] accept fact proposal                             
+[PASS] accept response leak guard                       
+[PASS] accept link status                               
+[PASS] fact creates confirmed canon                     before=3 after=4
+[PASS] accept idempotent                                
+[PASS] audit summary_proposal_accepted                  count=1
+[PASS] audit canon_promotion_applied                    count=1
+[PASS] reject accepted proposal                         The remote server returned an error: (409) Conflict.
+[PASS] reject accepted status unchanged                 expect=accepted/accepted
+[PASS] cross-user approve 404                           The remote server returned an error: (404) Not Found.
+[PASS] cross-user accept 404                            The remote server returned an error: (404) Not Found.
+[PASS] cross-user reject 404                            The remote server returned an error: (404) Not Found.
+
+Summary: 68 PASS, 0 FAIL
+
+Step Test                                 Result Detail                                                  
+---- ----                                 ------ ------                                                  
+   1 signup/login                         PASS   email=s6smoke-76696421@example.com                      
+   2 POST summary no token                PASS   The remote server returned an error: (401) Unauthorized.
+   3 POST /api/projects                   PASS   projectId=b6425c32-01e4-4e7e-9393-d559fbd3643c          
+   4 generate before ready_for_summary    PASS   The remote server returned an error: (409) Conflict.    
+   5 POST summary generate                PASS   id=9ff92dfa-2791-40cf-83b8-0c4d15fedc06                 
+   6 summary has items                    PASS   count=7                                                 
+   7 summary response leak guard          PASS                                                           
+   8 GET summary list                     PASS                                                           
+   9 GET summary list leak guard          PASS                                                           
+  10 GET summary detail                   PASS                                                           
+  11 GET summary detail leak guard        PASS                                                           
+  12 GET summary by chapter               PASS                                                           
+  13 regenerate=false idempotent          PASS                                                           
+  14 regenerate=true new version          PASS   v=2                                                     
+  15 regenerate supersedes previous       PASS   v1 current=False                                        
+  16 no canon mutation                    PASS                                                           
+  17 no ai_proposals created              PASS   before=11 after=11                                      
+  18 not summarized yet                   PASS                                                           
+  19 POST delta extract no token          PASS   The remote server returned an error: (401) Unauthorized.
+  20 extract before summary exists        PASS   The remote server returned an error: (404) Not Found.   
+  21 POST delta extract                   PASS   deltaId=10fae847-801c-4f11-b986-8e2526b3f697            
+  22 proposals created from delta         PASS   count=2                                                 
+  23 delta/proposal leak guard            PASS                                                           
+  24 GET summary delta                    PASS                                                           
+  25 GET delta leak guard                 PASS                                                           
+  26 GET summary proposals                PASS                                                           
+  27 proposals response safe excerpt      PASS                                                           
+  28 proposals linked not accepted        PASS                                                           
+  29 delta regenerate blocked             PASS   The remote server returned an error: (409) Conflict.    
+  30 delta extract idempotent             PASS                                                           
+  31 audit chapter_delta_extracted        PASS   count=1                                                 
+  32 audit summary_proposal_linked        PASS   count=1                                                 
+  33 proposals remain proposed            PASS                                                           
+  34 delta proposals added                PASS   before=11 after=13                                      
+  35 no canon mutation after delta        PASS                                                           
+  36 cross-user summary list 404          PASS   The remote server returned an error: (404) Not Found.   
+  37 cross-user summary 404               PASS   The remote server returned an error: (404) Not Found.   
+  38 cross-user delta 404                 PASS   The remote server returned an error: (404) Not Found.   
+  39 cross-user proposals 404             PASS   The remote server returned an error: (404) Not Found.   
+  40 POST approve no token                PASS   The remote server returned an error: (401) Unauthorized.
+  41 accept before approve                PASS   The remote server returned an error: (409) Conflict.    
+  42 accept before approve stays proposed PASS   expect=proposed/linked                                  
+  43 POST approve summary                 PASS                                                           
+  44 approve no canon mutation            PASS                                                           
+  45 approve response leak guard          PASS                                                           
+  46 approve proposalCounts no accept     PASS   accepted=0                                              
+  47 approve no auto-accept proposals     PASS                                                           
+  48 session completed after approve      PASS                                                           
+  49 writing state summarized             PASS                                                           
+  50 approve idempotent                   PASS                                                           
+  51 audit chapter_summary_approved       PASS   count=1                                                 
+  52 reveal accept without confirm        PASS   The remote server returned an error: (409) Conflict.    
+  53 reveal accept stays proposed         PASS   expect=proposed/linked                                  
+  54 audit canon_promotion_failed reveal  PASS   count=1                                                 
+  55 reject linked proposal               PASS   reveal                                                  
+  56 reject no canon mutation             PASS                                                           
+  57 accept fact proposal                 PASS                                                           
+  58 accept response leak guard           PASS                                                           
+  59 accept link status                   PASS                                                           
+  60 fact creates confirmed canon         PASS   before=3 after=4                                        
+  61 accept idempotent                    PASS                                                           
+  62 audit summary_proposal_accepted      PASS   count=1                                                 
+  63 audit canon_promotion_applied        PASS   count=1                                                 
+  64 reject accepted proposal             PASS   The remote server returned an error: (409) Conflict.    
+  65 reject accepted status unchanged     PASS   expect=accepted/accepted                                
+  66 cross-user approve 404               PASS   The remote server returned an error: (404) Not Found.   
+  67 cross-user accept 404                PASS   The remote server returned an error: (404) Not Found.   
+  68 cross-user reject 404                PASS   The remote server returned an error: (404) Not Found.   
+
+
+
+> vibenovel@0.1.0 smoke:api:sprint7
+> powershell -ExecutionPolicy Bypass -File scripts/sprint7-smoke-api.ps1
+
+
+VibeNovel Sprint 7 Publish Package API Smoke Test
+[PASS] signup/login                                     email=s7smoke-44157769@example.com
+[PASS] POST publish/generate no token                   The remote server returned an error: (401) Unauthorized.
+[PASS] POST /api/projects                               projectId=f86e6dbd-9294-4a4c-bf3d-54053612d685
+[PASS] POST summary generate                            id=d464effd-8131-446e-925a-e50ba357545a
+[PASS] generate before summary approved                 The remote server returned an error: (409) Conflict.
+Invoke-RestMethod : {"ok":false,"error":{"code":"UNAUTHORIZED","message":"Invalid or expired access token"}}
+[PASS] publish generate leak guard                      At D:\Coding\vibenovel-unified-blueprint\scripts\sprint7-smoke-api.ps1:61 char:10
++   return Invoke-RestMethod -Uri $uri -Method $Method -Headers $Header ...
++          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : InvalidOperation: (System.Net.HttpWebRequest:HttpWebRequest) [Invoke-RestMethod], WebExc 
+   eption
+    + FullyQualifiedErrorId : WebCmdletWebResponseException,Microsoft.PowerShell.Commands.InvokeRestMethodCommand
+The property 'data' cannot be found on this object. Verify that the property exists.
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint7-smoke-api.ps1:219 char:45
++ ... ve summary" $(if ($approve.data.summary.status -eq "approved") { "PAS ...
++                       ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [], PropertyNotFoundException
+    + FullyQualifiedErrorId : PropertyNotFoundStrict
+ 
+Add-StepResult : Cannot validate argument on parameter 'Result'. The argument "" does not belong to the set 
+"PASS,FAIL,SKIP,NOT RUN" specified by the ValidateSet attribute. Supply an argument that is in the set and then try 
+the command again.
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint7-smoke-api.ps1:219 char:39
++ ... ve summary" $(if ($approve.data.summary.status -eq "approved") { "PAS ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : InvalidData: (:) [Add-StepResult], ParameterBindingValidationException
+    + FullyQualifiedErrorId : ParameterArgumentValidationError,Add-StepResult
+ 
+
+Invoke-RestMethod : {"ok":false,"error":{"code":"UNAUTHORIZED","message":"Invalid or expired access token"}}
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint7-smoke-api.ps1:59 char:12
++     return Invoke-RestMethod -Uri $uri -Method $Method -Headers $Head ...
++            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : InvalidOperation: (System.Net.HttpWebRequest:HttpWebRequest) [Invoke-RestMethod], WebExc 
+   eption
+    + FullyQualifiedErrorId : WebCmdletWebResponseException,Microsoft.PowerShell.Commands.InvokeRestMethodCommand
+Invoke-RestMethod : Cannot send a content-body with this verb-type.
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint7-smoke-api.ps1:61 char:10
++   return Invoke-RestMethod -Uri $uri -Method $Method -Headers $Header ...
++          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [Invoke-RestMethod], ProtocolViolationException
+    + FullyQualifiedErrorId : System.Net.ProtocolViolationException,Microsoft.PowerShell.Commands.InvokeRestMethodComm 
+   and
+ 
+The property 'data' cannot be found on this object. Verify that the property exists.
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint7-smoke-api.ps1:222 char:31
++ ... alsBeforePublish = if ($propResBeforePublish.data -is [array]) { $pro ...
++                            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [], PropertyNotFoundException
+    + FullyQualifiedErrorId : PropertyNotFoundStrict
+ 
+Invoke-RestMethod : {"ok":false,"error":{"code":"UNAUTHORIZED","message":"Invalid or expired access token"}}
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint7-smoke-api.ps1:59 char:12
++     return Invoke-RestMethod -Uri $uri -Method $Method -Headers $Head ...
++            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : InvalidOperation: (System.Net.HttpWebRequest:HttpWebRequest) [Invoke-RestMethod], WebExc 
+   eption
+    + FullyQualifiedErrorId : WebCmdletWebResponseException,Microsoft.PowerShell.Commands.InvokeRestMethodCommand
+Invoke-RestMethod : Cannot send a content-body with this verb-type.
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint7-smoke-api.ps1:61 char:10
++   return Invoke-RestMethod -Uri $uri -Method $Method -Headers $Header ...
++          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [Invoke-RestMethod], ProtocolViolationException
+    + FullyQualifiedErrorId : System.Net.ProtocolViolationException,Microsoft.PowerShell.Commands.InvokeRestMethodComm 
+   and
+ 
+The property 'data' cannot be found on this object. Verify that the property exists.
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint7-smoke-api.ps1:223 char:1
++ $summariesBeforePublish = (Invoke-Api -Path "/api/projects/$projectId ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [], PropertyNotFoundException
+    + FullyQualifiedErrorId : PropertyNotFoundStrict
+ 
+Invoke-RestMethod : {"ok":false,"error":{"code":"UNAUTHORIZED","message":"Invalid or expired access token"}}
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint7-smoke-api.ps1:61 char:10
++   return Invoke-RestMethod -Uri $uri -Method $Method -Headers $Header ...
++          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : InvalidOperation: (System.Net.HttpWebRequest:HttpWebRequest) [Invoke-RestMethod], WebExc 
+   eption
+    + FullyQualifiedErrorId : WebCmdletWebResponseException,Microsoft.PowerShell.Commands.InvokeRestMethodCommand
+The property 'data' cannot be found on this object. Verify that the property exists.
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint7-smoke-api.ps1:227 char:1
++ $packageId = $pubGen.data.publishPackage.id
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [], PropertyNotFoundException
+    + FullyQualifiedErrorId : PropertyNotFoundStrict
+ 
+The property 'data' cannot be found on this object. Verify that the property exists.
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint7-smoke-api.ps1:228 char:46
++ ... enerate" $(if ($pubGen.data.created -eq $true -and $packageId) { "PAS ...
++                    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [], PropertyNotFoundException
+    + FullyQualifiedErrorId : PropertyNotFoundStrict
+ 
+The variable '$packageId' cannot be retrieved because it has not been set.
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint7-smoke-api.ps1:228 char:126
++ ... e -and $packageId) { "PASS" } else { "FAIL" }) "id=$packageId created ...
++                                                        ~~~~~~~~~~
+    + CategoryInfo          : InvalidOperation: (packageId:String) [], RuntimeException
+    + FullyQualifiedErrorId : VariableIsUndefined
+ 
+The property 'data' cannot be found on this object. Verify that the property exists.
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint7-smoke-api.ps1:230 char:5
++     $pubGen.data.publishPackage.status -in @("draft", "ready") -and
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [], PropertyNotFoundException
+    + FullyQualifiedErrorId : PropertyNotFoundStrict
+ 
+The property 'data' cannot be found on this object. Verify that the property exists.
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint7-smoke-api.ps1:232 char:43
++ ... SS" } else { "FAIL" }) "status=$($pubGen.data.publishPackage.status)"
++                                      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [], PropertyNotFoundException
+    + FullyQualifiedErrorId : PropertyNotFoundStrict
+ 
+Add-StepResult : Cannot validate argument on parameter 'Result'. The argument "" does not belong to the set 
+"PASS,FAIL,SKIP,NOT RUN" specified by the ValidateSet attribute. Supply an argument that is in the set and then try 
+the command again.
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint7-smoke-api.ps1:229 char:53
++ Add-StepResult "generate after approved+summarized" $(if (
++                                                     ~~~~~~
+    + CategoryInfo          : InvalidData: (:) [Add-StepResult], ParameterBindingValidationException
+    + FullyQualifiedErrorId : ParameterArgumentValidationError,Add-StepResult
+ 
+The property 'data' cannot be found on this object. Verify that the property exists.
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint7-smoke-api.ps1:234 char:5
++     $pubGen.data.publishPackage.displayTitle -and
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [], PropertyNotFoundException
+    + FullyQualifiedErrorId : PropertyNotFoundStrict
+ 
+Add-StepResult : Cannot validate argument on parameter 'Result'. The argument "" does not belong to the set 
+"PASS,FAIL,SKIP,NOT RUN" specified by the ValidateSet attribute. Supply an argument that is in the set and then try 
+the command again.
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint7-smoke-api.ps1:233 char:42
++ Add-StepResult "package has copy fields" $(if (
++                                          ~~~~~~
+    + CategoryInfo          : InvalidData: (:) [Add-StepResult], ParameterBindingValidationException
+    + FullyQualifiedErrorId : ParameterArgumentValidationError,Add-StepResult
+ 
+[PASS] GET publish list leak guard                      
+Invoke-RestMethod : {"ok":false,"error":{"code":"UNAUTHORIZED","message":"Invalid or expired access token"}}
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint7-smoke-api.ps1:59 char:12
++     return Invoke-RestMethod -Uri $uri -Method $Method -Headers $Head ...
++            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : InvalidOperation: (System.Net.HttpWebRequest:HttpWebRequest) [Invoke-RestMethod], WebExc 
+   eption
+    + FullyQualifiedErrorId : WebCmdletWebResponseException,Microsoft.PowerShell.Commands.InvokeRestMethodCommand
+Invoke-RestMethod : Cannot send a content-body with this verb-type.
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint7-smoke-api.ps1:61 char:10
++   return Invoke-RestMethod -Uri $uri -Method $Method -Headers $Header ...
++          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [Invoke-RestMethod], ProtocolViolationException
+    + FullyQualifiedErrorId : System.Net.ProtocolViolationException,Microsoft.PowerShell.Commands.InvokeRestMethodComm 
+   and
+ 
+The property 'data' cannot be found on this object. Verify that the property exists.
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint7-smoke-api.ps1:246 char:41
++ ... sult "GET publish list" $(if ($list.data.packages.Count -ge 1) { "PAS ...
++                                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [], PropertyNotFoundException
+    + FullyQualifiedErrorId : PropertyNotFoundStrict
+ 
+The property 'data' cannot be found on this object. Verify that the property exists.
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint7-smoke-api.ps1:246 char:111
++ ... e 1) { "PASS" } else { "FAIL" }) "count=$($list.data.packages.Count)"
++                                               ~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [], PropertyNotFoundException
+    + FullyQualifiedErrorId : PropertyNotFoundStrict
+ 
+Add-StepResult : Cannot validate argument on parameter 'Result'. The argument "" does not belong to the set 
+"PASS,FAIL,SKIP,NOT RUN" specified by the ValidateSet attribute. Supply an argument that is in the set and then try 
+the command again.
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint7-smoke-api.ps1:246 char:35
++ ... blish list" $(if ($list.data.packages.Count -ge 1) { "PASS" } else {  ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : InvalidData: (:) [Add-StepResult], ParameterBindingValidationException
+    + FullyQualifiedErrorId : ParameterArgumentValidationError,Add-StepResult
+ 
+The variable '$packageId' cannot be retrieved because it has not been set.
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint7-smoke-api.ps1:250 char:62
++ ... Invoke-Api -Path "/api/projects/$projectId/publish/$packageId" -Heade ...
++                                                        ~~~~~~~~~~
+    + CategoryInfo          : InvalidOperation: (packageId:String) [], RuntimeException
+    + FullyQualifiedErrorId : VariableIsUndefined
+ 
+The variable '$detail' cannot be retrieved because it has not been set.
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint7-smoke-api.ps1:251 char:43
++ Add-StepResult "GET publish detail" $(if ($detail.data.publishPackage ...
++                                           ~~~~~~~
+    + CategoryInfo          : InvalidOperation: (detail:String) [], RuntimeException
+    + FullyQualifiedErrorId : VariableIsUndefined
+ 
+Add-StepResult : Cannot validate argument on parameter 'Result'. The argument "" does not belong to the set 
+"PASS,FAIL,SKIP,NOT RUN" specified by the ValidateSet attribute. Supply an argument that is in the set and then try 
+the command again.
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint7-smoke-api.ps1:251 char:37
++ ... ish detail" $(if ($detail.data.publishPackage.id -eq $packageId) { "P ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : InvalidData: (:) [Add-StepResult], ParameterBindingValidationException
+    + FullyQualifiedErrorId : ParameterArgumentValidationError,Add-StepResult
+ 
+The variable '$detail' cannot be retrieved because it has not been set.
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint7-smoke-api.ps1:252 char:16
++ $detailJson = ($detail | ConvertTo-Json -Depth 20)
++                ~~~~~~~
+    + CategoryInfo          : InvalidOperation: (detail:String) [], RuntimeException
+    + FullyQualifiedErrorId : VariableIsUndefined
+ 
+The variable '$detailJson' cannot be retrieved because it has not been set.
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint7-smoke-api.ps1:253 char:84
++ ... l leak guard" $(if (Test-PublishJsonNoLeakMarkers $detailJson) { "PAS ...
++                                                       ~~~~~~~~~~~
+    + CategoryInfo          : InvalidOperation: (detailJson:String) [], RuntimeException
+    + FullyQualifiedErrorId : VariableIsUndefined
+ 
+Add-StepResult : Cannot validate argument on parameter 'Result'. The argument "" does not belong to the set 
+"PASS,FAIL,SKIP,NOT RUN" specified by the ValidateSet attribute. Supply an argument that is in the set and then try 
+the command again.
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint7-smoke-api.ps1:253 char:48
++ ... leak guard" $(if (Test-PublishJsonNoLeakMarkers $detailJson) { "PASS" ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : InvalidData: (:) [Add-StepResult], ParameterBindingValidationException
+    + FullyQualifiedErrorId : ParameterArgumentValidationError,Add-StepResult
+ 
+Invoke-RestMethod : {"ok":false,"error":{"code":"UNAUTHORIZED","message":"Invalid or expired access token"}}
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint7-smoke-api.ps1:59 char:12
++     return Invoke-RestMethod -Uri $uri -Method $Method -Headers $Head ...
++            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : InvalidOperation: (System.Net.HttpWebRequest:HttpWebRequest) [Invoke-RestMethod], WebExc 
+   eption
+    + FullyQualifiedErrorId : WebCmdletWebResponseException,Microsoft.PowerShell.Commands.InvokeRestMethodCommand
+Invoke-RestMethod : Cannot send a content-body with this verb-type.
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint7-smoke-api.ps1:61 char:10
++   return Invoke-RestMethod -Uri $uri -Method $Method -Headers $Header ...
++          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [Invoke-RestMethod], ProtocolViolationException
+    + FullyQualifiedErrorId : System.Net.ProtocolViolationException,Microsoft.PowerShell.Commands.InvokeRestMethodComm 
+   and
+ 
+The property 'data' cannot be found on this object. Verify that the property exists.
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint7-smoke-api.ps1:256 char:47
++ ... apter" $(if ($byChapter.data.publishPackage.id -eq $packageId) { "PAS ...
++                  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [], PropertyNotFoundException
+    + FullyQualifiedErrorId : PropertyNotFoundStrict
+ 
+Add-StepResult : Cannot validate argument on parameter 'Result'. The argument "" does not belong to the set 
+"PASS,FAIL,SKIP,NOT RUN" specified by the ValidateSet attribute. Supply an argument that is in the set and then try 
+the command again.
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint7-smoke-api.ps1:256 char:41
++ ... by chapter" $(if ($byChapter.data.publishPackage.id -eq $packageId) { ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : InvalidData: (:) [Add-StepResult], ParameterBindingValidationException
+    + FullyQualifiedErrorId : ParameterArgumentValidationError,Add-StepResult
+ 
+Invoke-RestMethod : {"ok":false,"error":{"code":"UNAUTHORIZED","message":"Invalid or expired access token"}}
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint7-smoke-api.ps1:61 char:10
++   return Invoke-RestMethod -Uri $uri -Method $Method -Headers $Header ...
++          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : InvalidOperation: (System.Net.HttpWebRequest:HttpWebRequest) [Invoke-RestMethod], WebExc 
+   eption
+    + FullyQualifiedErrorId : WebCmdletWebResponseException,Microsoft.PowerShell.Commands.InvokeRestMethodCommand
+The property 'data' cannot be found on this object. Verify that the property exists.
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint7-smoke-api.ps1:261 char:5
++     $pubAgain.data.created -eq $false -and $pubAgain.data.publishPack ...
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [], PropertyNotFoundException
+    + FullyQualifiedErrorId : PropertyNotFoundStrict
+ 
+Add-StepResult : Cannot validate argument on parameter 'Result'. The argument "" does not belong to the set 
+"PASS,FAIL,SKIP,NOT RUN" specified by the ValidateSet attribute. Supply an argument that is in the set and then try 
+the command again.
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint7-smoke-api.ps1:260 char:46
++ Add-StepResult "regenerate=false idempotent" $(if (
++                                              ~~~~~~
+    + CategoryInfo          : InvalidData: (:) [Add-StepResult], ParameterBindingValidationException
+    + FullyQualifiedErrorId : ParameterArgumentValidationError,Add-StepResult
+ 
+Invoke-RestMethod : {"ok":false,"error":{"code":"UNAUTHORIZED","message":"Invalid or expired access token"}}
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint7-smoke-api.ps1:61 char:10
++   return Invoke-RestMethod -Uri $uri -Method $Method -Headers $Header ...
++          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : InvalidOperation: (System.Net.HttpWebRequest:HttpWebRequest) [Invoke-RestMethod], WebExc 
+   eption
+    + FullyQualifiedErrorId : WebCmdletWebResponseException,Microsoft.PowerShell.Commands.InvokeRestMethodCommand
+The property 'data' cannot be found on this object. Verify that the property exists.
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint7-smoke-api.ps1:266 char:1
++ $packageV2Id = $pubV2.data.publishPackage.id
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [], PropertyNotFoundException
+    + FullyQualifiedErrorId : PropertyNotFoundStrict
+ 
+The property 'data' cannot be found on this object. Verify that the property exists.
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint7-smoke-api.ps1:268 char:5
++     $pubV2.data.created -eq $true -and $pubV2.data.publishPackage.pac ...
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [], PropertyNotFoundException
+    + FullyQualifiedErrorId : PropertyNotFoundStrict
+ 
+The property 'data' cannot be found on this object. Verify that the property exists.
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint7-smoke-api.ps1:269 char:38
++ ... " } else { "FAIL" }) "v=$($pubV2.data.publishPackage.packageVersion)"
++                               ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [], PropertyNotFoundException
+    + FullyQualifiedErrorId : PropertyNotFoundStrict
+ 
+Add-StepResult : Cannot validate argument on parameter 'Result'. The argument "" does not belong to the set 
+"PASS,FAIL,SKIP,NOT RUN" specified by the ValidateSet attribute. Supply an argument that is in the set and then try 
+the command again.
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint7-smoke-api.ps1:267 char:46
++ Add-StepResult "regenerate=true new version" $(if (
++                                              ~~~~~~
+    + CategoryInfo          : InvalidData: (:) [Add-StepResult], ParameterBindingValidationException
+    + FullyQualifiedErrorId : ParameterArgumentValidationError,Add-StepResult
+ 
+The variable '$packageId' cannot be retrieved because it has not been set.
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint7-smoke-api.ps1:271 char:64
++ ... Invoke-Api -Path "/api/projects/$projectId/publish/$packageId" -Heade ...
++                                                        ~~~~~~~~~~
+    + CategoryInfo          : InvalidOperation: (packageId:String) [], RuntimeException
+    + FullyQualifiedErrorId : VariableIsUndefined
+ 
+The variable '$v1Detail' cannot be retrieved because it has not been set.
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint7-smoke-api.ps1:273 char:5
++     $v1Detail.data.publishPackage.isCurrent -eq $false -and $v1Detail ...
++     ~~~~~~~~~
+    + CategoryInfo          : InvalidOperation: (v1Detail:String) [], RuntimeException
+    + FullyQualifiedErrorId : VariableIsUndefined
+ 
+The variable '$v1Detail' cannot be retrieved because it has not been set.
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint7-smoke-api.ps1:274 char:47
++   ) { "PASS" } else { "FAIL" }) "v1 current=$($v1Detail.data.publishP ...
++                                               ~~~~~~~~~
+    + CategoryInfo          : InvalidOperation: (v1Detail:String) [], RuntimeException
+    + FullyQualifiedErrorId : VariableIsUndefined
+ 
+Add-StepResult : Cannot validate argument on parameter 'Result'. The argument "" does not belong to the set 
+"PASS,FAIL,SKIP,NOT RUN" specified by the ValidateSet attribute. Supply an argument that is in the set and then try 
+the command again.
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint7-smoke-api.ps1:272 char:49
++ Add-StepResult "regenerate supersedes previous" $(if (
++                                                 ~~~~~~
+    + CategoryInfo          : InvalidData: (:) [Add-StepResult], ParameterBindingValidationException
+    + FullyQualifiedErrorId : ParameterArgumentValidationError,Add-StepResult
+ 
+Invoke-RestMethod : {"ok":false,"error":{"code":"UNAUTHORIZED","message":"Invalid or expired access token"}}
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint7-smoke-api.ps1:59 char:12
++     return Invoke-RestMethod -Uri $uri -Method $Method -Headers $Head ...
++            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : InvalidOperation: (System.Net.HttpWebRequest:HttpWebRequest) [Invoke-RestMethod], WebExc 
+   eption
+    + FullyQualifiedErrorId : WebCmdletWebResponseException,Microsoft.PowerShell.Commands.InvokeRestMethodCommand
+Invoke-RestMethod : Cannot send a content-body with this verb-type.
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint7-smoke-api.ps1:61 char:10
++   return Invoke-RestMethod -Uri $uri -Method $Method -Headers $Header ...
++          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [Invoke-RestMethod], ProtocolViolationException
+    + FullyQualifiedErrorId : System.Net.ProtocolViolationException,Microsoft.PowerShell.Commands.InvokeRestMethodComm 
+   and
+ 
+Invoke-RestMethod : {"ok":false,"error":{"code":"UNAUTHORIZED","message":"Invalid or expired access token"}}
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint7-smoke-api.ps1:59 char:12
++     return Invoke-RestMethod -Uri $uri -Method $Method -Headers $Head ...
++            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : InvalidOperation: (System.Net.HttpWebRequest:HttpWebRequest) [Invoke-RestMethod], WebExc 
+   eption
+    + FullyQualifiedErrorId : WebCmdletWebResponseException,Microsoft.PowerShell.Commands.InvokeRestMethodCommand
+Invoke-RestMethod : Cannot send a content-body with this verb-type.
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint7-smoke-api.ps1:61 char:10
++   return Invoke-RestMethod -Uri $uri -Method $Method -Headers $Header ...
++          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [Invoke-RestMethod], ProtocolViolationException
+    + FullyQualifiedErrorId : System.Net.ProtocolViolationException,Microsoft.PowerShell.Commands.InvokeRestMethodComm 
+   and
+ 
+The property 'data' cannot be found on this object. Verify that the property exists.
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint7-smoke-api.ps1:278 char:23
++ $proposalsAfter = if ($propResAfter.data -is [array]) { $propResAfter ...
++                       ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [], PropertyNotFoundException
+    + FullyQualifiedErrorId : PropertyNotFoundStrict
+ 
+Invoke-RestMethod : {"ok":false,"error":{"code":"UNAUTHORIZED","message":"Invalid or expired access token"}}
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint7-smoke-api.ps1:59 char:12
++     return Invoke-RestMethod -Uri $uri -Method $Method -Headers $Head ...
++            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : InvalidOperation: (System.Net.HttpWebRequest:HttpWebRequest) [Invoke-RestMethod], WebExc 
+   eption
+    + FullyQualifiedErrorId : WebCmdletWebResponseException,Microsoft.PowerShell.Commands.InvokeRestMethodCommand
+Invoke-RestMethod : Cannot send a content-body with this verb-type.
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint7-smoke-api.ps1:61 char:10
++   return Invoke-RestMethod -Uri $uri -Method $Method -Headers $Header ...
++          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [Invoke-RestMethod], ProtocolViolationException
+    + FullyQualifiedErrorId : System.Net.ProtocolViolationException,Microsoft.PowerShell.Commands.InvokeRestMethodComm 
+   and
+ 
+The property 'data' cannot be found on this object. Verify that the property exists.
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint7-smoke-api.ps1:77 char:7
++   if ($res.data -is [array]) { return $res.data.Count }
++       ~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [], PropertyNotFoundException
+    + FullyQualifiedErrorId : PropertyNotFoundStrict
+ 
+The property 'data' cannot be found on this object. Verify that the property exists.
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint7-smoke-api.ps1:78 char:7
++   if ($null -ne $res.data.rules) { return $res.data.rules.Count }
++       ~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [], PropertyNotFoundException
+    + FullyQualifiedErrorId : PropertyNotFoundStrict
+ 
+Invoke-RestMethod : {"ok":false,"error":{"code":"UNAUTHORIZED","message":"Invalid or expired access token"}}
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint7-smoke-api.ps1:59 char:12
++     return Invoke-RestMethod -Uri $uri -Method $Method -Headers $Head ...
++            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : InvalidOperation: (System.Net.HttpWebRequest:HttpWebRequest) [Invoke-RestMethod], WebExc 
+   eption
+    + FullyQualifiedErrorId : WebCmdletWebResponseException,Microsoft.PowerShell.Commands.InvokeRestMethodCommand
+Invoke-RestMethod : Cannot send a content-body with this verb-type.
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint7-smoke-api.ps1:61 char:10
++   return Invoke-RestMethod -Uri $uri -Method $Method -Headers $Header ...
++          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [Invoke-RestMethod], ProtocolViolationException
+    + FullyQualifiedErrorId : System.Net.ProtocolViolationException,Microsoft.PowerShell.Commands.InvokeRestMethodComm 
+   and
+ 
+The property 'data' cannot be found on this object. Verify that the property exists.
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint7-smoke-api.ps1:280 char:1
++ $openLoopsAfter = (Invoke-Api -Path "/api/projects/$projectId/outline ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [], PropertyNotFoundException
+    + FullyQualifiedErrorId : PropertyNotFoundStrict
+ 
+Invoke-RestMethod : {"ok":false,"error":{"code":"UNAUTHORIZED","message":"Invalid or expired access token"}}
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint7-smoke-api.ps1:59 char:12
++     return Invoke-RestMethod -Uri $uri -Method $Method -Headers $Head ...
++            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : InvalidOperation: (System.Net.HttpWebRequest:HttpWebRequest) [Invoke-RestMethod], WebExc 
+   eption
+    + FullyQualifiedErrorId : WebCmdletWebResponseException,Microsoft.PowerShell.Commands.InvokeRestMethodCommand
+Invoke-RestMethod : Cannot send a content-body with this verb-type.
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint7-smoke-api.ps1:61 char:10
++   return Invoke-RestMethod -Uri $uri -Method $Method -Headers $Header ...
++          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [Invoke-RestMethod], ProtocolViolationException
+    + FullyQualifiedErrorId : System.Net.ProtocolViolationException,Microsoft.PowerShell.Commands.InvokeRestMethodComm 
+   and
+ 
+The property 'data' cannot be found on this object. Verify that the property exists.
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint7-smoke-api.ps1:281 char:1
++ $revealsAfter = (Invoke-Api -Path "/api/projects/$projectId/outline/r ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [], PropertyNotFoundException
+    + FullyQualifiedErrorId : PropertyNotFoundStrict
+ 
+Invoke-RestMethod : {"ok":false,"error":{"code":"UNAUTHORIZED","message":"Invalid or expired access token"}}
+[PASS] next chapter teaser safe                         At D:\Coding\vibenovel-unified-blueprint\scripts\sprint7-smoke-api.ps1:59 char:12
++     return Invoke-RestMethod -Uri $uri -Method $Method -Headers $Head ...
++            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : InvalidOperation: (System.Net.HttpWebRequest:HttpWebRequest) [Invoke-RestMethod], WebExc 
+   eption
+    + FullyQualifiedErrorId : WebCmdletWebResponseException,Microsoft.PowerShell.Commands.InvokeRestMethodCommand
+Invoke-RestMethod : Cannot send a content-body with this verb-type.
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint7-smoke-api.ps1:61 char:10
++   return Invoke-RestMethod -Uri $uri -Method $Method -Headers $Header ...
++          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [Invoke-RestMethod], ProtocolViolationException
+    + FullyQualifiedErrorId : System.Net.ProtocolViolationException,Microsoft.PowerShell.Commands.InvokeRestMethodComm 
+   and
+ 
+The property 'data' cannot be found on this object. Verify that the property exists.
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint7-smoke-api.ps1:282 char:1
+
++ $summariesAfter = (Invoke-Api -Path "/api/projects/$projectId/summary ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [], PropertyNotFoundException
+    + FullyQualifiedErrorId : PropertyNotFoundStrict
+ 
+The property 'data' cannot be found on this object. Verify that the property exists.
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint7-smoke-api.ps1:284 char:5
++     $foundationAfter.data.facts.Count -eq $factsBefore -and
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [], PropertyNotFoundException
+    + FullyQualifiedErrorId : PropertyNotFoundStrict
+ 
+Add-StepResult : Cannot validate argument on parameter 'Result'. The argument "" does not belong to the set 
+"PASS,FAIL,SKIP,NOT RUN" specified by the ValidateSet attribute. Supply an argument that is in the set and then try 
+the command again.
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint7-smoke-api.ps1:283 char:36
++ Add-StepResult "no canon mutation" $(if (
++                                    ~~~~~~
+    + CategoryInfo          : InvalidData: (:) [Add-StepResult], ParameterBindingValidationException
+    + FullyQualifiedErrorId : ParameterArgumentValidationError,Add-StepResult
+ 
+The variable '$summariesAfter' cannot be retrieved because it has not been set.
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint7-smoke-api.ps1:290 char:55
++ ... Result "summaries unchanged by publish" $(if ($summariesAfter -eq $su ...
++                                                   ~~~~~~~~~~~~~~~
+    + CategoryInfo          : InvalidOperation: (summariesAfter:String) [], RuntimeException
+    + FullyQualifiedErrorId : VariableIsUndefined
+ 
+The variable '$summariesBeforePublish' cannot be retrieved because it has not been set.
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint7-smoke-api.ps1:290 char:136
++ ... ) { "PASS" } else { "FAIL" }) "before=$summariesBeforePublish after=$ ...
++                                           ~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : InvalidOperation: (summariesBeforePublish:String) [], RuntimeException
+    + FullyQualifiedErrorId : VariableIsUndefined
+ 
+The variable '$proposalsAfter' cannot be retrieved because it has not been set.
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint7-smoke-api.ps1:291 char:53
++ ... epResult "no ai_proposals from publish" $(if ($proposalsAfter -eq $pr ...
++                                                   ~~~~~~~~~~~~~~~
+    + CategoryInfo          : InvalidOperation: (proposalsAfter:String) [], RuntimeException
+    + FullyQualifiedErrorId : VariableIsUndefined
+ 
+The variable '$proposalsBeforePublish' cannot be retrieved because it has not been set.
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint7-smoke-api.ps1:291 char:134
++ ... ) { "PASS" } else { "FAIL" }) "before=$proposalsBeforePublish after=$ ...
++                                           ~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : InvalidOperation: (proposalsBeforePublish:String) [], RuntimeException
+    + FullyQualifiedErrorId : VariableIsUndefined
+ 
+The property 'data' cannot be found on this object. Verify that the property exists.
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint7-smoke-api.ps1:293 char:1
++ $nextTeaser = $pubV2.data.publishPackage.nextChapterTeaser
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [], PropertyNotFoundException
+    + FullyQualifiedErrorId : PropertyNotFoundStrict
+ 
+The variable '$nextTeaser' cannot be retrieved because it has not been set.
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint7-smoke-api.ps1:295 char:33
++ if ($ch2 -and $ch2.summary -and $nextTeaser) {
++                                 ~~~~~~~~~~~
+    + CategoryInfo          : InvalidOperation: (nextTeaser:String) [], RuntimeException
+    + FullyQualifiedErrorId : VariableIsUndefined
+ 
+The variable '$packageV2Id' cannot be retrieved because it has not been set.
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint7-smoke-api.ps1:302 char:43
++   -Path "/api/projects/$projectId/publish/$packageV2Id/fields" `
++                                           ~~~~~~~~~~~~
+    + CategoryInfo          : InvalidOperation: (packageV2Id:String) [], RuntimeException
+    + FullyQualifiedErrorId : VariableIsUndefined
+ 
+The variable '$packageV2Id' cannot be retrieved because it has not been set.
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint7-smoke-api.ps1:305 char:80
++ ... od PATCH -Path "/api/projects/$projectId/publish/$packageV2Id/fields" ...
++                                                      ~~~~~~~~~~~~
+    + CategoryInfo          : InvalidOperation: (packageV2Id:String) [], RuntimeException
+    + FullyQualifiedErrorId : VariableIsUndefined
+ 
+The variable '$fieldPatch' cannot be retrieved because it has not been set.
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint7-smoke-api.ps1:308 char:5
++     $fieldPatch.data.publishPackage.teaser -match "menggoda" -and
++     ~~~~~~~~~~~
+    + CategoryInfo          : InvalidOperation: (fieldPatch:String) [], RuntimeException
+    + FullyQualifiedErrorId : VariableIsUndefined
+ 
+Add-StepResult : Cannot validate argument on parameter 'Result'. The argument "" does not belong to the set 
+"PASS,FAIL,SKIP,NOT RUN" specified by the ValidateSet attribute. Supply an argument that is in the set and then try 
+the command again.
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint7-smoke-api.ps1:307 char:44
++ Add-StepResult "PATCH fields updates copy" $(if (
++                                            ~~~~~~
+    + CategoryInfo          : InvalidData: (:) [Add-StepResult], ParameterBindingValidationException
+    + FullyQualifiedErrorId : ParameterArgumentValidationError,Add-StepResult
+ 
+[FAIL] audit publish_package_updated                    Unable to connect to the remote serverThe variable '$packageV2Id' cannot be retrieved because it has not been set.
+
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint7-smoke-api.ps1:317 char:43
++   -Path "/api/projects/$projectId/publish/$packageV2Id/fields" `
++                                           ~~~~~~~~~~~~
+    + CategoryInfo          : InvalidOperation: (packageV2Id:String) [], RuntimeException
+    + FullyQualifiedErrorId : VariableIsUndefined
+ 
+The variable '$packageV2Id' cannot be retrieved because it has not been set.
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint7-smoke-api.ps1:320 char:43
++   -Path "/api/projects/$projectId/publish/$packageV2Id/fields" `
++                                           ~~~~~~~~~~~~
+    + CategoryInfo          : InvalidOperation: (packageV2Id:String) [], RuntimeException
+    + FullyQualifiedErrorId : VariableIsUndefined
+ 
+The variable '$packageV2Id' cannot be retrieved because it has not been set.
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint7-smoke-api.ps1:323 char:43
++   -Path "/api/projects/$projectId/publish/$packageV2Id/fields" `
++                                           ~~~~~~~~~~~~
+    + CategoryInfo          : InvalidOperation: (packageV2Id:String) [], RuntimeException
+    + FullyQualifiedErrorId : VariableIsUndefined
+ 
+The variable '$packageV2Id' cannot be retrieved because it has not been set.
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint7-smoke-api.ps1:326 char:43
++   -Path "/api/projects/$projectId/publish/$packageV2Id/fields" `
++                                           ~~~~~~~~~~~~
+    + CategoryInfo          : InvalidOperation: (packageV2Id:String) [], RuntimeException
+    + FullyQualifiedErrorId : VariableIsUndefined
+ 
+The variable '$packageV2Id' cannot be retrieved because it has not been set.
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint7-smoke-api.ps1:329 char:43
++   -Path "/api/projects/$projectId/publish/$packageV2Id/fields" `
++                                           ~~~~~~~~~~~~
+    + CategoryInfo          : InvalidOperation: (packageV2Id:String) [], RuntimeException
+    + FullyQualifiedErrorId : VariableIsUndefined
+ 
+The variable '$packageV2Id' cannot be retrieved because it has not been set.
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint7-smoke-api.ps1:332 char:43
++   -Path "/api/projects/$projectId/publish/$packageV2Id/fields" `
++                                           ~~~~~~~~~~~~
+    + CategoryInfo          : InvalidOperation: (packageV2Id:String) [], RuntimeException
+    + FullyQualifiedErrorId : VariableIsUndefined
+ 
+The variable '$packageV2Id' cannot be retrieved because it has not been set.
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint7-smoke-api.ps1:335 char:43
++   -Path "/api/projects/$projectId/publish/$packageV2Id/fields" `
++                                           ~~~~~~~~~~~~
+    + CategoryInfo          : InvalidOperation: (packageV2Id:String) [], RuntimeException
+    + FullyQualifiedErrorId : VariableIsUndefined
+ 
+The variable '$packageV2Id' cannot be retrieved because it has not been set.
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint7-smoke-api.ps1:345 char:84
++ ... od PATCH -Path "/api/projects/$projectId/publish/$packageV2Id/checkli ...
++                                                      ~~~~~~~~~~~~
+    + CategoryInfo          : InvalidOperation: (packageV2Id:String) [], RuntimeException
+    + FullyQualifiedErrorId : VariableIsUndefined
+ 
+The variable '$checklistPatch' cannot be retrieved because it has not been set.
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint7-smoke-api.ps1:348 char:19
++ foreach ($item in $checklistPatch.data.publishPackage.checklist) {
++                   ~~~~~~~~~~~~~~~
+    + CategoryInfo          : InvalidOperation: (checklistPatch:String) [], RuntimeException
+    + FullyQualifiedErrorId : VariableIsUndefined
+ 
+The variable '$checklistPatch' cannot be retrieved because it has not been set.
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint7-smoke-api.ps1:351 char:69
++ ... checklist updates ids" $(if ($allChecked -and $checklistPatch.data.pu ...
++                                                   ~~~~~~~~~~~~~~~
+    + CategoryInfo          : InvalidOperation: (checklistPatch:String) [], RuntimeException
+    + FullyQualifiedErrorId : VariableIsUndefined
+ 
+Add-StepResult : Cannot validate argument on parameter 'Result'. The argument "" does not belong to the set 
+"PASS,FAIL,SKIP,NOT RUN" specified by the ValidateSet attribute. Supply an argument that is in the set and then try 
+the command again.
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint7-smoke-api.ps1:351 char:46
++ ... pdates ids" $(if ($allChecked -and $checklistPatch.data.publishPackag ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : InvalidData: (:) [Add-StepResult], ParameterBindingValidationException
+    + FullyQualifiedErrorId : ParameterArgumentValidationError,Add-StepResult
+ 
+[FAIL] audit publish_checklist_updated                  Unable to connect to the remote serverThe variable '$packageV2Id' cannot be retrieved because it has not been set.
+
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint7-smoke-api.ps1:364 char:43
++   -Path "/api/projects/$projectId/publish/$packageV2Id/checklist" `
++                                           ~~~~~~~~~~~~
+    + CategoryInfo          : InvalidOperation: (packageV2Id:String) [], RuntimeException
+    + FullyQualifiedErrorId : VariableIsUndefined
+ 
+The variable '$packageV2Id' cannot be retrieved because it has not been set.
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint7-smoke-api.ps1:375 char:43
++   -Path "/api/projects/$projectId/publish/$packageV2Id/checklist" `
++                                           ~~~~~~~~~~~~
+    + CategoryInfo          : InvalidOperation: (packageV2Id:String) [], RuntimeException
+    + FullyQualifiedErrorId : VariableIsUndefined
+ 
+Invoke-RestMethod : {"ok":false,"error":{"code":"UNAUTHORIZED","message":"Invalid or expired access token"}}
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint7-smoke-api.ps1:59 char:12
++     return Invoke-RestMethod -Uri $uri -Method $Method -Headers $Head ...
++            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : InvalidOperation: (System.Net.HttpWebRequest:HttpWebRequest) [Invoke-RestMethod], WebExc 
+   eption
+    + FullyQualifiedErrorId : WebCmdletWebResponseException,Microsoft.PowerShell.Commands.InvokeRestMethodCommand
+Invoke-RestMethod : Cannot send a content-body with this verb-type.
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint7-smoke-api.ps1:61 char:10
++   return Invoke-RestMethod -Uri $uri -Method $Method -Headers $Header ...
++          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [Invoke-RestMethod], ProtocolViolationException
+    + FullyQualifiedErrorId : System.Net.ProtocolViolationException,Microsoft.PowerShell.Commands.InvokeRestMethodComm 
+   and
+ 
+The property 'data' cannot be found on this object. Verify that the property exists.
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint7-smoke-api.ps1:378 char:1
++ $factsBeforeExport = (Invoke-Api -Path "/api/projects/$projectId/foun ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [], PropertyNotFoundException
+    + FullyQualifiedErrorId : PropertyNotFoundStrict
+ 
+The variable '$packageV2Id' cannot be retrieved because it has not been set.
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint7-smoke-api.ps1:379 char:77
++ ... hod POST -Path "/api/projects/$projectId/publish/$packageV2Id/mark-ex ...
++                                                      ~~~~~~~~~~~~
+    + CategoryInfo          : InvalidOperation: (packageV2Id:String) [], RuntimeException
+    + FullyQualifiedErrorId : VariableIsUndefined
+ 
+The variable '$exported' cannot be retrieved because it has not been set.
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint7-smoke-api.ps1:382 char:5
++     $exported.data.publishPackage.status -eq "exported" -and $exporte ...
++     ~~~~~~~~~
+    + CategoryInfo          : InvalidOperation: (exported:String) [], RuntimeException
+    + FullyQualifiedErrorId : VariableIsUndefined
+ 
+The variable '$exported' cannot be retrieved because it has not been set.
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint7-smoke-api.ps1:383 char:43
++   ) { "PASS" } else { "FAIL" }) "status=$($exported.data.publishPacka ...
++                                           ~~~~~~~~~
+    + CategoryInfo          : InvalidOperation: (exported:String) [], RuntimeException
+    + FullyQualifiedErrorId : VariableIsUndefined
+ 
+Add-StepResult : Cannot validate argument on parameter 'Result'. The argument "" does not belong to the set 
+"PASS,FAIL,SKIP,NOT RUN" specified by the ValidateSet attribute. Supply an argument that is in the set and then try 
+the command again.
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint7-smoke-api.ps1:381 char:44
++ Add-StepResult "mark-exported sets status" $(if (
++                                            ~~~~~~
+    + CategoryInfo          : InvalidData: (:) [Add-StepResult], ParameterBindingValidationException
+    + FullyQualifiedErrorId : ParameterArgumentValidationError,Add-StepResult
+ 
+[FAIL] mark-exported manual marker only                 exportTarget=kbm_manual_copyInvoke-RestMethod : {"ok":false,"error":{"code":"UNAUTHORIZED","message":"Invalid or expired access token"}}
+
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint7-smoke-api.ps1:59 char:12
++     return Invoke-RestMethod -Uri $uri -Method $Method -Headers $Head ...
++            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : InvalidOperation: (System.Net.HttpWebRequest:HttpWebRequest) [Invoke-RestMethod], WebExc 
+   eption
+    + FullyQualifiedErrorId : WebCmdletWebResponseException,Microsoft.PowerShell.Commands.InvokeRestMethodCommand
+Invoke-RestMethod : Cannot send a content-body with this verb-type.
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint7-smoke-api.ps1:61 char:10
++   return Invoke-RestMethod -Uri $uri -Method $Method -Headers $Header ...
++          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [Invoke-RestMethod], ProtocolViolationException
+    + FullyQualifiedErrorId : System.Net.ProtocolViolationException,Microsoft.PowerShell.Commands.InvokeRestMethodComm 
+   and
+ 
+The property 'data' cannot be found on this object. Verify that the property exists.
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint7-smoke-api.ps1:385 char:1
++ $factsAfterExport = (Invoke-Api -Path "/api/projects/$projectId/found ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [], PropertyNotFoundException
+    + FullyQualifiedErrorId : PropertyNotFoundStrict
+ 
+The variable '$factsAfterExport' cannot be retrieved because it has not been set.
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint7-smoke-api.ps1:386 char:56
++ ... ult "mark-exported no canon mutation" $(if ($factsAfterExport -eq $fa ...
++                                                 ~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : InvalidOperation: (factsAfterExport:String) [], RuntimeException
+    + FullyQualifiedErrorId : VariableIsUndefined
+ 
+Add-StepResult : Cannot validate argument on parameter 'Result'. The argument "" does not belong to the set 
+"PASS,FAIL,SKIP,NOT RUN" specified by the ValidateSet attribute. Supply an argument that is in the set and then try 
+the command again.
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint7-smoke-api.ps1:386 char:50
++ ... n mutation" $(if ($factsAfterExport -eq $factsBeforeExport) { "PASS"  ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : InvalidData: (:) [Add-StepResult], ParameterBindingValidationException
+    + FullyQualifiedErrorId : ParameterArgumentValidationError,Add-StepResult
+ 
+The variable '$exported' cannot be retrieved because it has not been set.
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint7-smoke-api.ps1:388 char:18
++ $exportedJson = ($exported | ConvertTo-Json -Depth 20)
++                  ~~~~~~~~~
+    + CategoryInfo          : InvalidOperation: (exported:String) [], RuntimeException
+    + FullyQualifiedErrorId : VariableIsUndefined
+ 
+The variable '$exportedJson' cannot be retrieved because it has not been set.
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint7-smoke-api.ps1:389 char:88
++ ... leak guard" $(if (Test-PublishJsonNoLeakMarkers $exportedJson) { "PAS ...
++                                                     ~~~~~~~~~~~~~
+    + CategoryInfo          : InvalidOperation: (exportedJson:String) [], RuntimeException
+    + FullyQualifiedErrorId : VariableIsUndefined
+ 
+Add-StepResult : Cannot validate argument on parameter 'Result'. The argument "" does not belong to the set 
+"PASS,FAIL,SKIP,NOT RUN" specified by the ValidateSet attribute. Supply an argument that is in the set and then try 
+the command again.
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint7-smoke-api.ps1:389 char:52
++ ... leak guard" $(if (Test-PublishJsonNoLeakMarkers $exportedJson) { "PAS ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : InvalidData: (:) [Add-StepResult], ParameterBindingValidationException
+    + FullyQualifiedErrorId : ParameterArgumentValidationError,Add-StepResult
+ 
+The variable '$exported' cannot be retrieved because it has not been set.
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint7-smoke-api.ps1:391 char:15
++ $exportMeta = $exported.data.publishPackage.metadata
++               ~~~~~~~~~
+    + CategoryInfo          : InvalidOperation: (exported:String) [], RuntimeException
+    + FullyQualifiedErrorId : VariableIsUndefined
+ 
+The variable '$exportMeta' cannot be retrieved because it has not been set.
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint7-smoke-api.ps1:393 char:5
++ if ($exportMeta -is [pscustomobject]) {
++     ~~~~~~~~~~~
+    + CategoryInfo          : InvalidOperation: (exportMeta:String) [], RuntimeException
+    + FullyQualifiedErrorId : VariableIsUndefined
+ 
+[FAIL] audit publish_package_exported                   Unable to connect to the remote serverThe variable '$exportedJson' cannot be retrieved because it has not been set.
+
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint7-smoke-api.ps1:400 char:54
++ ... tepResult "mark-exported no external URL" $(if ($exportedJson -notmat ...
++                                                     ~~~~~~~~~~~~~
+    + CategoryInfo          : InvalidOperation: (exportedJson:String) [], RuntimeException
+    + FullyQualifiedErrorId : VariableIsUndefined
+ 
+Add-StepResult : Cannot validate argument on parameter 'Result'. The argument "" does not belong to the set 
+"PASS,FAIL,SKIP,NOT RUN" specified by the ValidateSet attribute. Supply an argument that is in the set and then try 
+the command again.
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint7-smoke-api.ps1:400 char:48
++ ... ternal URL" $(if ($exportedJson -notmatch 'https?://[^"]*kbm') { "PAS ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : InvalidData: (:) [Add-StepResult], ParameterBindingValidationException
+    + FullyQualifiedErrorId : ParameterArgumentValidationError,Add-StepResult
+ 
+The variable '$packageV2Id' cannot be retrieved because it has not been set.
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint7-smoke-api.ps1:403 char:43
++   -Path "/api/projects/$projectId/publish/$packageV2Id/fields" `
++                                           ~~~~~~~~~~~~
+    + CategoryInfo          : InvalidOperation: (packageV2Id:String) [], RuntimeException
+    + FullyQualifiedErrorId : VariableIsUndefined
+ 
+The variable '$packageV2Id' cannot be retrieved because it has not been set.
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint7-smoke-api.ps1:406 char:43
++   -Path "/api/projects/$projectId/publish/$packageV2Id/checklist" `
++                                           ~~~~~~~~~~~~
+    + CategoryInfo          : InvalidOperation: (packageV2Id:String) [], RuntimeException
+    + FullyQualifiedErrorId : VariableIsUndefined
+ 
+The variable '$packageV2Id' cannot be retrieved because it has not been set.
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint7-smoke-api.ps1:409 char:82
++ ... hod POST -Path "/api/projects/$projectId/publish/$packageV2Id/mark-ex ...
++                                                      ~~~~~~~~~~~~
+    + CategoryInfo          : InvalidOperation: (packageV2Id:String) [], RuntimeException
+    + FullyQualifiedErrorId : VariableIsUndefined
+ 
+The variable '$exportedAgain' cannot be retrieved because it has not been set.
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint7-smoke-api.ps1:411 char:49
++ ... dd-StepResult "mark-exported idempotent" $(if ($exportedAgain.data.al ...
++                                                    ~~~~~~~~~~~~~~
+    + CategoryInfo          : InvalidOperation: (exportedAgain:String) [], RuntimeException
+    + FullyQualifiedErrorId : VariableIsUndefined
+ 
+Add-StepResult : Cannot validate argument on parameter 'Result'. The argument "" does not belong to the set 
+"PASS,FAIL,SKIP,NOT RUN" specified by the ValidateSet attribute. Supply an argument that is in the set and then try 
+the command again.
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint7-smoke-api.ps1:411 char:43
++ ... idempotent" $(if ($exportedAgain.data.alreadyExported -eq $true) { "P ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : InvalidData: (:) [Add-StepResult], ParameterBindingValidationException
+    + FullyQualifiedErrorId : ParameterArgumentValidationError,Add-StepResult
+ 
+Invoke-RestMethod : {"ok":false,"error":{"code":"UNAUTHORIZED","message":"Invalid or expired access token"}}
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint7-smoke-api.ps1:61 char:10
++   return Invoke-RestMethod -Uri $uri -Method $Method -Headers $Header ...
++          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : InvalidOperation: (System.Net.HttpWebRequest:HttpWebRequest) [Invoke-RestMethod], WebExc 
+   eption
+    + FullyQualifiedErrorId : WebCmdletWebResponseException,Microsoft.PowerShell.Commands.InvokeRestMethodCommand
+The property 'data' cannot be found on this object. Verify that the property exists.
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint7-smoke-api.ps1:415 char:1
++ $packageV3Id = $pubV3.data.publishPackage.id
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [], PropertyNotFoundException
+    + FullyQualifiedErrorId : PropertyNotFoundStrict
+ 
+The variable '$packageV2Id' cannot be retrieved because it has not been set.
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint7-smoke-api.ps1:416 char:68
++ ... voke-Api -Path "/api/projects/$projectId/publish/$packageV2Id" -Heade ...
++                                                      ~~~~~~~~~~~~
+    + CategoryInfo          : InvalidOperation: (packageV2Id:String) [], RuntimeException
+    + FullyQualifiedErrorId : VariableIsUndefined
+ 
+The property 'data' cannot be found on this object. Verify that the property exists.
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint7-smoke-api.ps1:418 char:5
++     $pubV3.data.created -eq $true -and
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [], PropertyNotFoundException
+    + FullyQualifiedErrorId : PropertyNotFoundStrict
+ 
+The property 'data' cannot be found on this object. Verify that the property exists.
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint7-smoke-api.ps1:422 char:39
++ ...  } else { "FAIL" }) "v3=$($pubV3.data.publishPackage.packageVersion)"
++                               ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [], PropertyNotFoundException
+    + FullyQualifiedErrorId : PropertyNotFoundStrict
+ 
+Add-StepResult : Cannot validate argument on parameter 'Result'. The argument "" does not belong to the set 
+"PASS,FAIL,SKIP,NOT RUN" specified by the ValidateSet attribute. Supply an argument that is in the set and then try 
+the command again.
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint7-smoke-api.ps1:417 char:59
++ Add-StepResult "regenerate after exported keeps exported" $(if (
++                                                           ~~~~~~
+    + CategoryInfo          : InvalidData: (:) [Add-StepResult], ParameterBindingValidationException
+    + FullyQualifiedErrorId : ParameterArgumentValidationError,Add-StepResult
+ 
+[PASS] cross-user publish list 404                      The remote server returned an error: (401) Unauthorized.Invoke-RestMethod : Unable to connect to the remote server
+
+[PASS] cross-user publish by-chapter 404                The remote server returned an error: (401) Unauthorized.
+[PASS] no KBM autopost route in publish API             publish.ts static check
+
+Summary: 11 PASS, 4 FAIL
+
+Step Test                                 Result Detail                                                  
+---- ----                                 ------ ------                                                  
+   1 signup/login                         PASS   email=s7smoke-44157769@example.com                      
+   2 POST publish/generate no token       PASS   The remote server returned an error: (401) Unauthorized.
+   3 POST /api/projects                   PASS   projectId=f86e6dbd-9294-4a4c-bf3d-54053612d685          
+   4 POST summary generate                PASS   id=d464effd-8131-446e-925a-e50ba357545a                 
+   5 generate before summary approved     PASS   The remote server returned an error: (409) Conflict.    
+   6 publish generate leak guard          PASS                                                           
+   7 GET publish list leak guard          PASS                                                           
+   8 next chapter teaser safe             PASS                                                           
+   9 audit publish_package_updated        FAIL   Unable to connect to the remote server                  
+  10 audit publish_checklist_updated      FAIL   Unable to connect to the remote server                  
+  11 mark-exported manual marker only     FAIL   exportTarget=kbm_manual_copy                            
+  12 audit publish_package_exported       FAIL   Unable to connect to the remote server                  
+  13 cross-user publish list 404          PASS   The remote server returned an error: (401) Unauthorized.
+  14 cross-user publish by-chapter 404    PASS   The remote server returned an error: (401) Unauthorized.
+  15 no KBM autopost route in publish API PASS   publish.ts static check                                 
+
+
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint7-smoke-api.ps1:424 char:12
++ $signupB = Invoke-RestMethod -Uri "$SupabaseUrl/auth/v1/signup" -Meth ...
++            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [Invoke-RestMethod], WebException
+    + FullyQualifiedErrorId : System.Net.WebException,Microsoft.PowerShell.Commands.InvokeRestMethodCommand
+ 
+The variable '$signupB' cannot be retrieved because it has not been set.
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint7-smoke-api.ps1:427 char:39
++ $authB = @{ Authorization = "Bearer $($signupB.access_token)" }
++                                       ~~~~~~~~
+    + CategoryInfo          : InvalidOperation: (signupB:String) [], RuntimeException
+    + FullyQualifiedErrorId : VariableIsUndefined
+ 
+The variable '$packageV2Id' cannot be retrieved because it has not been set.
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint7-smoke-api.ps1:431 char:43
++   -Path "/api/projects/$projectId/publish/$packageV2Id"
++                                           ~~~~~~~~~~~~
+    + CategoryInfo          : InvalidOperation: (packageV2Id:String) [], RuntimeException
+    + FullyQualifiedErrorId : VariableIsUndefined
+ 
+The variable '$packageV3Id' cannot be retrieved because it has not been set.
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint7-smoke-api.ps1:435 char:43
++   -Path "/api/projects/$projectId/publish/$packageV3Id/fields" `
++                                           ~~~~~~~~~~~~
+    + CategoryInfo          : InvalidOperation: (packageV3Id:String) [], RuntimeException
+    + FullyQualifiedErrorId : VariableIsUndefined
+ 
+The variable '$packageV3Id' cannot be retrieved because it has not been set.
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint7-smoke-api.ps1:438 char:43
++   -Path "/api/projects/$projectId/publish/$packageV3Id/checklist" `
++                                           ~~~~~~~~~~~~
+    + CategoryInfo          : InvalidOperation: (packageV3Id:String) [], RuntimeException
+    + FullyQualifiedErrorId : VariableIsUndefined
+ 
+The variable '$packageV3Id' cannot be retrieved because it has not been set.
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint7-smoke-api.ps1:441 char:43
++   -Path "/api/projects/$projectId/publish/$packageV3Id/mark-exported" ...
++                                           ~~~~~~~~~~~~
+    + CategoryInfo          : InvalidOperation: (packageV3Id:String) [], RuntimeException
+    + FullyQualifiedErrorId : VariableIsUndefined
+ 
+
+> vibenovel@0.1.0 smoke:api:sprint8
+> powershell -ExecutionPolicy Bypass -File scripts/sprint8-smoke-api.ps1
+
+
+VibeNovel Sprint 8 Prose Beat Generation API Smoke Test
+Supabase anon key not found.
+At D:\Coding\vibenovel-unified-blueprint\scripts\sprint8-smoke-api.ps1:66 char:3
++   throw "Supabase anon key not found."
++   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : OperationStopped: (Supabase anon key not found.:String) [], RuntimeException
+    + FullyQualifiedErrorId : Supabase anon key not found.
+ 

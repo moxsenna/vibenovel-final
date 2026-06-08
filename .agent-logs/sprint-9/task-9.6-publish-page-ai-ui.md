@@ -86,13 +86,22 @@ Wire PublishPage to `POST /api/projects/:id/ai/improve-publish-copy` with sugges
 5. **Audit:** No UI exposure of `generationAttempt` internals — only cost/balance in notice.
 6. **E2E:** `sprint9-publish-ai-flow.spec.ts` with mock + API branches; smoke script bootstraps approved summary for API publish tests.
 
+## Addendum (Task 9.6b, 2026-06-08)
+
+API-mode publish AI E2E verified in Task 9.6b:
+
+- `npm run smoke:web:publish-ai -- -IncludeApiMode` PASS with `AI_GENERATION_ENABLED=true` (success path: suggestions, no pre-apply mutation, Terapkan updates teaser).
+- Same command PASS with `AI_GENERATION_ENABLED=false` (disabled path: safe message, no suggestions).
+- Mock regressions and API smokes PASS; env restored to safe default.
+- See `.agent-logs/sprint-9/task-9.6b-publish-page-ai-api-mode-e2e.md`.
+
 ## Limitations
 
-- API-mode publish AI success E2E not run in this session (needs dual env + AI mock restart).
+- **Terapkan Semua** not covered by dedicated E2E (single-field apply verified in 9.6b).
 - No topup/payment UI.
 - Quality mode read-only from settings (no picker on PublishPage).
 - Suggestions cleared per-field on apply; dismiss removes without PATCH.
 
 ## Next recommended task
 
-**Task 9.7** — Sprint 9 safety regression (full API + web smoke matrix, optional API-mode publish AI E2E verification).
+**Task 9.7** — Sprint 9 safety regression (full API + web smoke matrix).
