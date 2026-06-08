@@ -53,8 +53,9 @@ Sprint 5 closed with **zero blockers**. Items below are non-blocking unless mark
 
 | Item | Priority | Timing |
 |---|---|---|
-| Sprint 3 API-mode E2E optional (`-IncludeApiMode`) | P2 | Before Sprint 6 full-browser regression |
-| No Playwright coverage for `/summary`, `/publish` | P2 | Sprint 6+ |
+| Sprint 3 API-mode E2E optional (`-IncludeApiMode`) | P2 | Before production CI |
+| Playwright `/summary` + `/publish` mock + local API-mode | **Addressed Sprint 6–7** | `smoke:web:summary`, `smoke:web:publish` |
+| API-mode web E2E not in GitHub Actions | P1 | Before production or dedicated CI runner |
 | Mock/API mode require different `VITE_USE_MOCKS` + dev:web restart | P1 | Documented; manual discipline |
 
 ### UI deferred items
@@ -70,10 +71,30 @@ Sprint 5 closed with **zero blockers**. Items below are non-blocking unless mark
 
 | Item | Priority | Timing |
 |---|---|---|
-| No `chapter_summaries` table | P0 | **Sprint 6** |
-| SummaryPage still mock Sprint 1 | P0 | **Sprint 6** |
-| `ready_for_summary` marker only — no canon promotion | P0 | **Sprint 6** |
-| No Chapter Delta / canon proposal flow | P0 | **Sprint 6** |
+| No `chapter_summaries` table | P0 | **Addressed Sprint 6** |
+| SummaryPage still mock Sprint 1 | P0 | **Addressed Sprint 6** |
+| `ready_for_summary` marker only — no canon promotion | P0 | **Addressed Sprint 6** |
+| No Chapter Delta / canon proposal flow | P0 | **Addressed Sprint 6** |
+
+### Publish package deferred (Sprint 7 — now addressed)
+
+| Item | Priority | Timing |
+|---|---|---|
+| No `publish_packages` table | P0 | **Addressed Sprint 7** (`00006`) |
+| PublishPage still mock Sprint 1 | P0 | **Addressed Sprint 7** (`usePublishData`) |
+| No publish package API | P0 | **Addressed Sprint 7** (generate/fields/checklist/mark-exported) |
+| No publish safety smoke | P1 | **Addressed Sprint 7** (`smoke:api:sprint7`, `smoke:web:publish`) |
+
+### Publish / KBM still deferred (non-blocking)
+
+| Item | Priority | Timing |
+|---|---|---|
+| No auto-post KBM | P0 | By design — manual copy only |
+| No UI regenerate publish package | P2 | Optional UX; API `regenerate=true` exists |
+| No chapter picker on PublishPage | P2 | Default Bab 1 only |
+| No export audit log event | P1 | Before production deploy |
+| Checklist incomplete does not block mark-exported | P2 | Warning only (MVP) |
+| Clipboard content not asserted in E2E | P2 | Copy button presence only |
 
 ### Write Room limitations
 
@@ -128,29 +149,33 @@ Sprint 5 closed with **zero blockers**. Items below are non-blocking unless mark
 |---|---|
 | **Before Sprint 6** | Local smoke consolidation (Task 5.8 ✅), verification checklist, debt register |
 | **During Sprint 6** | ✅ Summary/canon tables, SummaryPage API, Chapter Delta (closed — `docs/38`) |
-| **Sprint 7** | Publish package / KBM export |
-| **Before AI generation** | OpenRouter, validator, reveal gate compiler, audit logs + DB transactions |
+| **Sprint 7** | ✅ Publish package / KBM export stub (closed — `docs/40`) |
+| **Before AI generation** | **P1 hardening:** audit logs, DB transaction wrappers, CI E2E strategy |
+| **After hardening** | OpenRouter, model router, credit ledger, production AI generation |
 | **Before production deploy** | DB transactions, CI smoke strategy, remote Supabase/Worker, secrets hygiene |
 
 ---
 
 ## E. Important Current Items (quick reference)
 
-1. **`smoke:api`** remains Sprint 2 regression — use **`smoke:api:sprint5`** (Write Room) and **`smoke:api:sprint6`** (summary/delta/approval safety, Task 6.6).
-2. **API-mode web E2E** not in GitHub Actions — local `npm run smoke:web:write -- -IncludeApiMode` and `npm run smoke:web:summary -- -IncludeApiMode`.
-3. **No audit logs** for outline/write/summary operations (summary approve uses `project_updated` metadata).
-4. **No DB transaction wrapper** for multi-step prose/outline/summary workflows.
-5. **Publish package deferred Sprint 7** — SummaryPage API mode covers summary/delta/proposal review only.
-6. **High-risk reveal `confirmHighRisk` UI** not in web — API requires manual confirm; accept disabled in UI.
-7. **Prose leakage markers** may false-positive on rare fictional text containing `model`/`token`/`provider`.
-8. **No prose delete endpoint**.
-9. **Context Packet safety** — API/smoke only, not DB-enforced.
-10. **Seed GoTrue login quirk** — smokes use ephemeral signup.
+1. **`smoke:api`** remains Sprint 2 regression — add **`smoke:api:sprint5`**, **`smoke:api:sprint6`**, **`smoke:api:sprint7`** for Write Room, summary, and publish safety.
+2. **API-mode web E2E** not in GitHub Actions — local `-IncludeApiMode` for write/summary/publish smokes.
+3. **No audit logs** for outline/write/summary/**publish export** operations — **P1 before AI/production**.
+4. **No DB transaction wrapper** for multi-step prose/outline/summary/publish workflows — **P1 before AI/production**.
+5. **Publish package API + UI + smoke complete Sprint 7** — no auto-post KBM; manual copy + `mark-exported` marker only (`docs/40`).
+6. **No UI regenerate publish package** — API supports regenerate; chapter picker Bab 1 default only.
+7. **High-risk reveal `confirmHighRisk` UI** not in web — API requires manual confirm; accept disabled in UI.
+8. **Prose/publish leakage markers** may false-positive on rare fictional text containing `model`/`token`/`provider`.
+9. **No prose delete endpoint**; **no export audit log table**.
+10. **Context Packet safety** — API/smoke only, not DB-enforced.
+11. **CI** — typecheck/build only; full smokes local-only.
+12. **Seed GoTrue login quirk** — smokes use ephemeral signup.
 
 ---
 
 ## Related documents
 
 - [`docs/35-sprint-5-verification-report.md`](35-sprint-5-verification-report.md)
+- [`docs/40-sprint-7-verification-report.md`](40-sprint-7-verification-report.md)
 - [`scripts/README.md`](../scripts/README.md)
 - [`docs/17-roadmap-sprint-plan-mvp-to-full.md`](17-roadmap-sprint-plan-mvp-to-full.md)

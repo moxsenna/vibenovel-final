@@ -11,8 +11,8 @@ VibeNovel adalah **AI Serial Fiction Production OS** — bukan chatbot novel bia
 ```txt
 vibenovel-unified-blueprint/
 ├── apps/
-│   ├── web/          ✅ Frontend React — Sprint 1 UI + API integration (through Sprint 7 Task 7.4)
-│   └── api/          ✅ Backend API — Hono/Cloudflare Worker (Sprint 2–6)
+│   ├── web/          ✅ Frontend React — Sprint 1 UI + API integration (through Sprint 7)
+│   └── api/          ✅ Backend API — Hono/Cloudflare Worker (Sprint 2–7)
 ├── packages/
 │   ├── core/         ⏳ Placeholder — story/AI engine (Sprint 4–6+)
 │   └── shared/       ✅ Shared domain types & API contracts (Task 2.1, 4.1)
@@ -25,11 +25,11 @@ vibenovel-unified-blueprint/
 
 | Folder | Status | Keterangan |
 |---|---|---|
-| `apps/web` | **Sprint 7 Task 7.4** | UI parity Stitch; foundation + outline + Write Room + Summary + Publish page API integration |
-| `apps/api` | **Sprint 6 complete** | Sprint 2–6 APIs + write room + chapter summary/delta/approval |
-| `packages/shared` | **Implemented (Task 2.1, 4.1, 5.1, 6.1)** | Domain types, enums, write room + summary/delta contracts |
+| `apps/web` | **Sprint 7 complete** | UI parity Stitch; foundation + outline + Write Room + Summary + Publish page API integration |
+| `apps/api` | **Sprint 7 complete** | Sprint 2–7 APIs + write room + summary/delta + publish package |
+| `packages/shared` | **Implemented (Task 2.1, 4.1, 5.1, 6.1, 7.1)** | Domain types, enums, write room + summary/delta + publish contracts |
 | `packages/core` | Placeholder | Engine AI/story — nanti |
-| `supabase` | **Migration + seed (Task 6.1)** | 27 tabel (+ summary/delta), RLS, demo seed — `supabase db reset` verified |
+| `supabase` | **Migration + seed (Task 7.1)** | 28 tabel (+ publish_packages), RLS, demo seed — `supabase db reset` verified |
 | `scripts` | **Smoke scripts (through 7.5)** | `smoke:api`, `smoke:api:sprint5/6/7`, `smoke:web:summary`, `smoke:web:publish` — see `scripts/README.md` |
 | `docs` | Dokumentasi | Sumber arsitektur & sprint plan |
 | `stitch-reference` | Referensi desain | HTML + screen.png per halaman |
@@ -99,6 +99,10 @@ npm run smoke:all:local:full
 
 See [`scripts/README.md`](scripts/README.md) for prerequisites. **Debt register:** [`docs/36-non-blocking-technical-debt-and-deferred-items.md`](docs/36-non-blocking-technical-debt-and-deferred-items.md).
 
+### Local verification (Sprint 7 closure)
+
+See [`docs/40-sprint-7-verification-report.md`](docs/40-sprint-7-verification-report.md).
+
 ### Local verification (Sprint 6 closure)
 
 Recommended order (local machine with Docker + Supabase + `dev:api` + `dev:web`):
@@ -120,7 +124,12 @@ npm run smoke:web:summary
 npm run smoke:web:publish
 ```
 
-Optional full browser API-mode: `npm run smoke:all:local:full` (or per-page `-- -IncludeApiMode`).
+Optional full browser API-mode:
+
+```bash
+npm run smoke:web:publish -- -IncludeApiMode
+npm run smoke:all:local:full   # or per-page -- -IncludeApiMode
+```
 
 **Do not commit** `apps/web/.env.local` or `apps/api/.dev.vars`.
 
@@ -298,7 +307,35 @@ Belum ada (sengaja — defer Sprint 7+):
 - Credit deduction
 - Web E2E in GitHub Actions CI
 
-**Task berikutnya (disarankan):** Sprint 7 — Publish Package / KBM Export Flow.
+---
+
+## Sprint 7 — selesai ✅
+
+**Publish Package / KBM Export Flow — copy-ready artifact setelah summary approved; manual copy only.**
+
+**Rencana:** [`docs/39-sprint-7-publish-package-kbm-export-implementation-plan.md`](docs/39-sprint-7-publish-package-kbm-export-implementation-plan.md)  
+**Laporan penutupan:** [`docs/40-sprint-7-verification-report.md`](docs/40-sprint-7-verification-report.md)
+
+| Task | Status | Deliverable |
+|---|---|---|
+| 7.0 Flow plan | ✅ | `docs/39` |
+| 7.1 Data model migration | ✅ | `00006_sprint7_publish_package.sql` + shared types |
+| 7.2 Publish package generation API | ✅ | POST generate + GET list/detail/by-chapter |
+| 7.3 Field/checklist/mark-exported API | ✅ | PATCH fields/checklist + POST mark-exported |
+| 7.4 PublishPage web integration | ✅ | `usePublishData` + mock fallback |
+| 7.5 Safety & E2E regression tests | ✅ | `sprint7-smoke-api.ps1` (50), `smoke:web:publish` |
+| 7.6 Verification report | ✅ | `docs/40` + full smoke verification |
+
+Belum ada (sengaja — defer setelah hardening / Sprint 8):
+
+- KBM auto-post / platform OAuth
+- OpenRouter / AI generation production
+- Credit deduction / ledger
+- UI regenerate publish package / chapter picker
+- Export audit log table
+- Web E2E in GitHub Actions CI
+
+**Task berikutnya (disarankan):** Hardening pre-AI — audit logs, DB transaction wrappers, CI E2E strategy (`docs/40` §12, `docs/36`). Sprint 8 AI/OpenRouter setelah hardening.
 
 ---
 
@@ -317,12 +354,14 @@ Belum ada (sengaja — defer Sprint 7+):
 9. `docs/33-sprint-4-verification-report.md` — status penutupan Sprint 4
 10. `docs/35-sprint-5-verification-report.md` — status penutupan Sprint 5
 11. `docs/38-sprint-6-verification-report.md` — status penutupan Sprint 6
-12. `docs/36-non-blocking-technical-debt-and-deferred-items.md` — debt register (Task 5.8)
-13. `docs/37-sprint-6-chapter-summary-delta-canon-proposal-implementation-plan.md` — rencana Sprint 6
-14. `docs/34-sprint-5-safe-write-room-context-packet-implementation-plan.md` — rencana Sprint 5
-15. `docs/32-sprint-4-outline-planning-engine-implementation-plan.md` — rencana Sprint 4
-16. `docs/30-sprint-3-story-foundation-flow-implementation-plan.md` — rencana Sprint 3
-17. `docs/27-sprint-2-data-model-implementation-plan.md` — rencana Sprint 2
+12. `docs/40-sprint-7-verification-report.md` — status penutupan Sprint 7
+13. `docs/36-non-blocking-technical-debt-and-deferred-items.md` — debt register (Task 5.8)
+14. `docs/39-sprint-7-publish-package-kbm-export-implementation-plan.md` — rencana Sprint 7
+15. `docs/37-sprint-6-chapter-summary-delta-canon-proposal-implementation-plan.md` — rencana Sprint 6
+16. `docs/34-sprint-5-safe-write-room-context-packet-implementation-plan.md` — rencana Sprint 5
+17. `docs/32-sprint-4-outline-planning-engine-implementation-plan.md` — rencana Sprint 4
+18. `docs/30-sprint-3-story-foundation-flow-implementation-plan.md` — rencana Sprint 3
+19. `docs/27-sprint-2-data-model-implementation-plan.md` — rencana Sprint 2
 
 ### Untuk AI coding agent
 
@@ -337,12 +376,14 @@ Belum ada (sengaja — defer Sprint 7+):
 9. `docs/33-sprint-4-verification-report.md`
 10. `docs/35-sprint-5-verification-report.md`
 11. `docs/38-sprint-6-verification-report.md`
-12. `docs/36-non-blocking-technical-debt-and-deferred-items.md`
-13. `docs/37-sprint-6-chapter-summary-delta-canon-proposal-implementation-plan.md`
-14. `docs/34-sprint-5-safe-write-room-context-packet-implementation-plan.md`
-15. `docs/30-sprint-3-story-foundation-flow-implementation-plan.md`
-16. `docs/27-sprint-2-data-model-implementation-plan.md`
-17. Dokumen domain sesuai task.
+12. `docs/40-sprint-7-verification-report.md`
+13. `docs/36-non-blocking-technical-debt-and-deferred-items.md`
+14. `docs/39-sprint-7-publish-package-kbm-export-implementation-plan.md`
+15. `docs/37-sprint-6-chapter-summary-delta-canon-proposal-implementation-plan.md`
+16. `docs/34-sprint-5-safe-write-room-context-packet-implementation-plan.md`
+17. `docs/30-sprint-3-story-foundation-flow-implementation-plan.md`
+18. `docs/27-sprint-2-data-model-implementation-plan.md`
+19. Dokumen domain sesuai task.
 
 ---
 
