@@ -11,7 +11,7 @@ VibeNovel adalah **AI Serial Fiction Production OS** — bukan chatbot novel bia
 ```txt
 vibenovel-unified-blueprint/
 ├── apps/
-│   ├── web/          ✅ Frontend React — Sprint 1 UI + API integration (through Sprint 6)
+│   ├── web/          ✅ Frontend React — Sprint 1 UI + API integration (through Sprint 7 Task 7.4)
 │   └── api/          ✅ Backend API — Hono/Cloudflare Worker (Sprint 2–6)
 ├── packages/
 │   ├── core/         ⏳ Placeholder — story/AI engine (Sprint 4–6+)
@@ -25,7 +25,7 @@ vibenovel-unified-blueprint/
 
 | Folder | Status | Keterangan |
 |---|---|---|
-| `apps/web` | **Sprint 6 complete** | UI parity Stitch; foundation + outline + Write Room + Summary page API integration |
+| `apps/web` | **Sprint 7 Task 7.4** | UI parity Stitch; foundation + outline + Write Room + Summary + Publish page API integration |
 | `apps/api` | **Sprint 6 complete** | Sprint 2–6 APIs + write room + chapter summary/delta/approval |
 | `packages/shared` | **Implemented (Task 2.1, 4.1, 5.1, 6.1)** | Domain types, enums, write room + summary/delta contracts |
 | `packages/core` | Placeholder | Engine AI/story — nanti |
@@ -47,7 +47,7 @@ npm run dev:web    # frontend → http://localhost:5173
 npm run dev:api    # API lokal → http://127.0.0.1:8787
 ```
 
-**Web + API integration (Task 2.13, 3.6, 4.6, 5.5, 6.5):** salin `apps/web/.env.example` → `apps/web/.env.local`. Default `VITE_USE_MOCKS=true` (UI tetap mock). Set `VITE_USE_MOCKS=false` + login Supabase untuk API mode: dashboard/settings/foundation (2.13), intake/concepts/foundation flow (3.6), outline cerita generate/edit/approve/lock (4.6), ruang tulis session/beats/prose/context preview (5.5), serta ringkasan bab generate/delta/approve/proposal review (6.5).
+**Web + API integration (Task 2.13, 3.6, 4.6, 5.5, 6.5, 7.4):** salin `apps/web/.env.example` → `apps/web/.env.local`. Default `VITE_USE_MOCKS=true` (UI tetap mock). Set `VITE_USE_MOCKS=false` + login Supabase untuk API mode: dashboard/settings/foundation (2.13), intake/concepts/foundation flow (3.6), outline cerita generate/edit/approve/lock (4.6), ruang tulis session/beats/prose/context preview (5.5), ringkasan bab generate/delta/approve/proposal review (6.5), serta paket publish load/generate/edit/checklist/mark-exported (7.4).
 
 ### Perintah root
 

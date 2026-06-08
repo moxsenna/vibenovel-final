@@ -1,6 +1,10 @@
 export { PublishActionSection } from "./PublishActionSection";
 export { PublishChecklistCard } from "./PublishChecklistCard";
+export { PublishChecklistPanel } from "./PublishChecklistPanel";
 export { PublishCopyFieldCard } from "./PublishCopyFieldCard";
+export { PublishEditableField } from "./PublishEditableField";
+export { PublishIntegrationNotice } from "./PublishIntegrationNotice";
 export { PublishMobilePreview } from "./PublishMobilePreview";
 export { PublishPageHeader } from "./PublishPageHeader";
 export { PublishTagsCard } from "./PublishTagsCard";
+export { PublishWorkflowActions } from "./PublishWorkflowActions";

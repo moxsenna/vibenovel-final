@@ -1,93 +1,213 @@
 import {
   PublishActionSection,
-  PublishChecklistCard,
-  PublishCopyFieldCard,
+  PublishChecklistPanel,
+  PublishEditableField,
+  PublishIntegrationNotice,
   PublishMobilePreview,
   PublishPageHeader,
   PublishTagsCard,
+  PublishWorkflowActions,
 } from "@/components/publish";
-import { mockPublishPackage } from "@/mocks/publishPackage";
+import { usePublishData } from "@/hooks/usePublishData";
+import { uiValueForField } from "@/lib/publish-mappers";
 
 /**
- * Paket Publish — Sprint 1 Task 1.13 (+ 1.17 desktop 2-col polish)
- * Source: stitch-reference/paket_publish_bab_kbm_optimized
- * Content: Bab 1 Makan Malam yang Dingin
- * Wrapped by AppShell via router layout.
+ * Paket Publish — Sprint 1 layout + Sprint 7 API integration (Task 7.4)
+ * Mock fallback when VITE_USE_MOCKS=true or API unavailable.
  */
 export function PublishPage() {
-  const pkg = mockPublishPackage;
+  const {
+    pkg,
+    loading,
+    apiMode,
+    hasPackage,
+    isExported,
+    isReadonly,
+    summaryApproved,
+    genre,
+    generating,
+    savingField,
+    savingChecklist,
+    markingExported,
+    notice,
+    workflowNotice,
+    actionError,
+    generatePackageAction,
+    saveFieldAction,
+    toggleChecklistItem,
+    markExportedAction,
+  } = usePublishData();
+
   const { pageCopy } = pkg;
-  const teaserDisplay = `"${pkg.teaser}"`;
+  const editable = apiMode && hasPackage && !isExported;
+  const showPackageContent = !apiMode || hasPackage;
+
+  if (loading) {
+    return (
+      <div className="flex flex-1 items-center justify-center p-lg">
+        <p className="font-body-md text-body-md text-muted-text">Memuat paket publish…</p>
+      </div>
+    );
+  }
 
   return (
     <div className="mx-auto flex w-full max-w-detail flex-col gap-lg">
+      <PublishIntegrationNotice message={notice} />
+      <PublishIntegrationNotice message={workflowNotice} />
+      <PublishIntegrationNotice message={actionError} />
+
       <PublishPageHeader
         badgeLabel={pageCopy.badgeLabel}
         title={pageCopy.title}
         subtitle={pageCopy.subtitle}
       />
 
-      <div className="grid grid-cols-1 gap-lg lg:grid-cols-12 lg:items-start">
-        <div className="flex flex-col gap-md lg:col-span-7">
-          <PublishCopyFieldCard
-            label={pageCopy.titleLabel}
-            icon="title"
-            value={pkg.title}
-          />
+      <PublishWorkflowActions
+        apiMode={apiMode}
+        hasPackage={hasPackage}
+        summaryApproved={summaryApproved}
+        isExported={isExported}
+        generating={generating}
+        markingExported={markingExported}
+        onGenerate={() => void generatePackageAction()}
+        onMarkExported={() => void markExportedAction()}
+      />
 
-          <PublishCopyFieldCard
-            label={pageCopy.teaserLabel}
-            icon="electric_bolt"
-            value={teaserDisplay}
-            italic
-          />
+      {showPackageContent ? (
+        <div className="grid grid-cols-1 gap-lg lg:grid-cols-12 lg:items-start">
+          <div className="flex flex-col gap-md lg:col-span-7">
+            <PublishEditableField
+              fieldKey="displayTitle"
+              label={pageCopy.titleLabel}
+              icon="title"
+              value={uiValueForField(pkg, "displayTitle")}
+              editable={editable}
+              saving={savingField === "displayTitle"}
+              multiline={false}
+              onSave={(field, value) => void saveFieldAction(field, value)}
+            />
 
-          <PublishCopyFieldCard
-            label={pageCopy.blurbLabel}
-            icon="description"
-            value={pkg.blurb}
-          />
+            <PublishEditableField
+              fieldKey="teaser"
+              label={pageCopy.teaserLabel}
+              icon="electric_bolt"
+              value={uiValueForField(pkg, "teaser")}
+              copyValue={`"${pkg.teaser}"`}
+              editable={editable}
+              saving={savingField === "teaser"}
+              italic
+              onSave={(field, value) => void saveFieldAction(field, value)}
+            />
 
-          <PublishCopyFieldCard
-            label={pageCopy.captionLabel}
-            icon="chat"
-            value={pkg.caption}
-            preWrap
-          />
+            <PublishEditableField
+              fieldKey="shortSynopsis"
+              label={pageCopy.blurbLabel}
+              icon="description"
+              value={uiValueForField(pkg, "shortSynopsis")}
+              editable={editable}
+              saving={savingField === "shortSynopsis"}
+              onSave={(field, value) => void saveFieldAction(field, value)}
+            />
 
-          <PublishCopyFieldCard
-            label={pageCopy.commentBaitLabel}
-            icon="forum"
-            value={pkg.commentBait}
-          />
+            <PublishEditableField
+              fieldKey="caption"
+              label={pageCopy.captionLabel}
+              icon="chat"
+              value={uiValueForField(pkg, "caption")}
+              editable={editable}
+              saving={savingField === "caption"}
+              preWrap
+              onSave={(field, value) => void saveFieldAction(field, value)}
+            />
 
-          <PublishCopyFieldCard
-            label={pageCopy.nextChapterLabel}
-            icon="fast_forward"
-            value={pkg.nextChapterTeaser}
-            accentBorder
-          />
+            <PublishEditableField
+              fieldKey="readerQuestion"
+              label={pageCopy.commentBaitLabel}
+              icon="forum"
+              value={uiValueForField(pkg, "readerQuestion")}
+              editable={editable}
+              saving={savingField === "readerQuestion"}
+              onSave={(field, value) => void saveFieldAction(field, value)}
+            />
+
+            <PublishEditableField
+              fieldKey="nextChapterTeaser"
+              label={pageCopy.nextChapterLabel}
+              icon="fast_forward"
+              value={uiValueForField(pkg, "nextChapterTeaser")}
+              editable={editable}
+              saving={savingField === "nextChapterTeaser"}
+              accentBorder
+              onSave={(field, value) => void saveFieldAction(field, value)}
+            />
+          </div>
+
+          <div className="flex flex-col gap-md lg:col-span-5">
+            {editable ? (
+              <>
+                <PublishEditableField
+                  fieldKey="tags"
+                  label={pageCopy.tagsLabel}
+                  icon="tag"
+                  value={uiValueForField(pkg, "tags")}
+                  editable
+                  saving={savingField === "tags"}
+                  onSave={(field, value) => void saveFieldAction(field, value)}
+                />
+                <PublishEditableField
+                  fieldKey="genre"
+                  label="Genre"
+                  icon="category"
+                  value={uiValueForField(pkg, "genre", genre)}
+                  editable
+                  saving={savingField === "genre"}
+                  multiline={false}
+                  onSave={(field, value) => void saveFieldAction(field, value)}
+                />
+              </>
+            ) : (
+              <PublishTagsCard label={pageCopy.tagsLabel} tags={pkg.tags} />
+            )}
+
+            <PublishChecklistPanel
+              title={pageCopy.checklistTitle}
+              items={pkg.checklist}
+              interactive={editable}
+              saving={savingChecklist}
+              onToggle={(itemId) => void toggleChecklistItem(itemId)}
+            />
+
+            <PublishEditableField
+              fieldKey="mobilePreviewExcerpt"
+              label={pageCopy.mobilePreviewTitle}
+              icon="smartphone"
+              value={uiValueForField(pkg, "mobilePreviewExcerpt")}
+              editable={editable}
+              saving={savingField === "mobilePreviewExcerpt"}
+              onSave={(field, value) => void saveFieldAction(field, value)}
+            />
+
+            <PublishMobilePreview title={pageCopy.mobilePreviewTitle} preview={pkg.mobilePreview} />
+
+            <PublishActionSection
+              dashboardCta={pageCopy.dashboardCta}
+              summaryCta={pageCopy.summaryCta}
+              nextChapterCta={pageCopy.nextChapterCta}
+              nextChapterHint={pageCopy.nextChapterHint}
+              dashboardRoute={pkg.dashboardRoute}
+              summaryRoute={pkg.summaryRoute}
+              outlineRoute={pkg.outlineRoute}
+              compact
+            />
+          </div>
         </div>
+      ) : null}
 
-        <div className="flex flex-col gap-md lg:col-span-5">
-          <PublishTagsCard label={pageCopy.tagsLabel} tags={pkg.tags} />
-
-          <PublishChecklistCard title={pageCopy.checklistTitle} items={pkg.checklist} />
-
-          <PublishMobilePreview title={pageCopy.mobilePreviewTitle} preview={pkg.mobilePreview} />
-
-          <PublishActionSection
-            dashboardCta={pageCopy.dashboardCta}
-            summaryCta={pageCopy.summaryCta}
-            nextChapterCta={pageCopy.nextChapterCta}
-            nextChapterHint={pageCopy.nextChapterHint}
-            dashboardRoute={pkg.dashboardRoute}
-            summaryRoute={pkg.summaryRoute}
-            outlineRoute={pkg.outlineRoute}
-            compact
-          />
-        </div>
-      </div>
+      {isReadonly && isExported ? (
+        <p className="font-body-sm text-body-sm text-muted-text">
+          Paket publish siap disalin. Status diekspor hanya penanda manual di VibeNovel.
+        </p>
+      ) : null}
     </div>
   );
 }

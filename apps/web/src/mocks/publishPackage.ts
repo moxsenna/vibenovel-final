@@ -2,7 +2,7 @@ import type { PublishPackage } from "@/types";
 import { DEMO_PROJECT_ID } from "./projects";
 import { ROUTES } from "@/routes/paths";
 
-/** Bab 1: Makan Malam yang Dingin — Sprint 1 typed mock. TODO: Sprint 7+ publish package API */
+/** Bab 1: Makan Malam yang Dingin — Sprint 1 typed mock; API mode via usePublishData (Task 7.4). */
 export const mockPublishPackage: PublishPackage = {
   projectId: DEMO_PROJECT_ID,
   chapterNumber: 1,
