@@ -434,6 +434,8 @@ Belum ada (sengaja — defer setelah hardening / Sprint 8):
 | 10.28 AI founder test mode | ✅ **GO** | [`docs/90`](docs/90-ai-founder-test-mode-report.md) — production AI ON (founder test); payment OFF |
 | 10.29 Founder browser E2E | ✅ **GO** | [`docs/91-founder-browser-e2e`](docs/91-founder-browser-e2e-story-workflow-report.md) — Write Room AI from UI; prose persists; credit UI in assistant panel |
 | 10.29 Remove misleading mock flow | ✅ **GO** | [`docs/91-mock-flow`](docs/91-remove-misleading-mock-flow-report.md) — production authed flow no longer falls back to Sprint 1 mock; honest locked states |
+| 10.30a Remove initial mock hook states + CreditIndicator + routing | ✅ **GO** | [`docs/93`](docs/93-remove-initial-mock-hook-states-credit-route-report.md) — Phase 0 audit fix; real credits wired; CTA routes aligned |
+
 
 ## Sprint 11 — staging readiness (COMPLETE)
 
