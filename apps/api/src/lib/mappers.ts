@@ -26,6 +26,11 @@ import type {
   CreditBalance,
   CreditLedgerDirection,
   CreditLedgerEntry,
+  CreditTopupOrder,
+  CreditTopupOrderStatus,
+  CreditTopupProduct,
+  PaymentWebhookEvent,
+  PaymentWebhookProcessingStatus,
   DetectedSignal,
   Fact,
   IntakeMessage,
@@ -1152,6 +1157,151 @@ export function mapPublishPackageRow(row: PublishPackageRow): PublishPackage {
     metadata: parseJsonObject(row.metadata) as PublishPackageMetadata,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
+  };
+}
+
+// --- Sprint 10: credit topup (payment records — no balance mutation) ---
+
+export interface CreditTopupProductRow {
+  id: string;
+  slug: string;
+  name: string;
+  description: string | null;
+  price_idr: number;
+  credits: number;
+  bonus_credits: number;
+  is_active: boolean;
+  sort_order: number;
+  metadata: JsonObject | unknown;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CreditTopupOrderRow {
+  id: string;
+  user_id: string;
+  product_id: string;
+  provider: string;
+  provider_invoice_id: string | null;
+  provider_transaction_id: string | null;
+  payment_url: string | null;
+  amount_idr: number;
+  credits_to_grant: number;
+  status: string;
+  idempotency_key: string;
+  provider_payload_safe: JsonObject | unknown;
+  paid_at: string | null;
+  expires_at: string | null;
+  metadata: JsonObject | unknown;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CreditTopupOrderSummary {
+  id: string;
+  productSlug?: string;
+  productName?: string;
+  amountIdr: number;
+  creditsToGrant: number;
+  status: CreditTopupOrderStatus;
+  provider: string;
+  providerInvoiceId: string | null;
+  providerTransactionId: string | null;
+  paymentUrl: string | null;
+  expiresAt: string | null;
+  createdAt: string;
+}
+
+export function mapCreditTopupProductRow(row: CreditTopupProductRow): CreditTopupProduct {
+  return {
+    id: row.id,
+    slug: row.slug,
+    name: row.name,
+    description: row.description,
+    priceIdr: row.price_idr,
+    credits: row.credits,
+    bonusCredits: row.bonus_credits,
+    isActive: row.is_active,
+    sortOrder: row.sort_order,
+    metadata: parseJsonObject(row.metadata),
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
+export function mapCreditTopupOrderRow(row: CreditTopupOrderRow): CreditTopupOrder {
+  return {
+    id: row.id,
+    userId: row.user_id,
+    productId: row.product_id,
+    provider: row.provider,
+    providerInvoiceId: row.provider_invoice_id,
+    providerTransactionId: row.provider_transaction_id,
+    paymentUrl: row.payment_url,
+    amountIdr: row.amount_idr,
+    creditsToGrant: row.credits_to_grant,
+    status: row.status as CreditTopupOrderStatus,
+    idempotencyKey: row.idempotency_key,
+    providerPayloadSafe: parseJsonObject(row.provider_payload_safe),
+    paidAt: row.paid_at,
+    expiresAt: row.expires_at,
+    metadata: parseJsonObject(row.metadata),
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
+export function mapCreditTopupOrderSummary(
+  order: CreditTopupOrder,
+  extras?: { productSlug?: string; productName?: string },
+): CreditTopupOrderSummary {
+  return {
+    id: order.id,
+    productSlug: extras?.productSlug,
+    productName: extras?.productName,
+    amountIdr: order.amountIdr,
+    creditsToGrant: order.creditsToGrant,
+    status: order.status,
+    provider: order.provider,
+    providerInvoiceId: order.providerInvoiceId,
+    providerTransactionId: order.providerTransactionId,
+    paymentUrl: order.paymentUrl,
+    expiresAt: order.expiresAt,
+    createdAt: order.createdAt,
+  };
+}
+
+export interface PaymentWebhookEventRow {
+  id: string;
+  provider: string;
+  provider_event_id: string | null;
+  provider_transaction_id: string | null;
+  provider_invoice_id: string | null;
+  event_type: string | null;
+  payload_hash: string;
+  payload_safe_json: JsonObject | unknown;
+  processed_at: string | null;
+  processing_status: string;
+  error_message_safe: string | null;
+  metadata: JsonObject | unknown;
+  created_at: string;
+}
+
+export function mapPaymentWebhookEventRow(row: PaymentWebhookEventRow): PaymentWebhookEvent {
+  return {
+    id: row.id,
+    provider: row.provider,
+    providerEventId: row.provider_event_id,
+    providerTransactionId: row.provider_transaction_id,
+    providerInvoiceId: row.provider_invoice_id,
+    eventType: row.event_type,
+    payloadHash: row.payload_hash,
+    payloadSafeJson: parseJsonObject(row.payload_safe_json),
+    processedAt: row.processed_at,
+    processingStatus: row.processing_status as PaymentWebhookProcessingStatus,
+    errorMessageSafe: row.error_message_safe,
+    metadata: parseJsonObject(row.metadata),
+    createdAt: row.created_at,
   };
 }
 

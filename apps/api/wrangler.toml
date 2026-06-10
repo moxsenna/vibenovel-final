@@ -14,3 +14,17 @@ ALLOWED_ORIGINS = "http://localhost:5173,http://localhost:5174,http://localhost:
 [dev]
 port = 8787
 local_protocol = "http"
+
+# Task 11.1 — staging Mode A (safe default). Secrets via: wrangler secret put <NAME> --env staging
+[env.staging]
+name = "vibenovel-api-staging"
+
+[env.staging.vars]
+APP_ENV = "staging"
+ALLOWED_ORIGINS = "https://vibenovel-web-staging.pages.dev"
+CREDIT_TOPUP_ENABLED = "false"
+PAYMENT_PROVIDER = "mock"
+PAYMENT_PROVIDER_MOCK = "true"
+PAYMENT_PROVIDER_MOCK_MODE = "success"
+AI_GENERATION_ENABLED = "false"
+AI_PROVIDER_MOCK = "true"

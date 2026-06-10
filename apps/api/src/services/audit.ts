@@ -7,7 +7,7 @@ import { sanitizeAuditMetadata, sanitizeAuditSnapshot } from "./audit-snapshot.j
 export type { AuditAction, AuditEntityType };
 
 export interface WriteAuditLogInput {
-  userId: string;
+  userId?: string | null;
   projectId?: string | null;
   action: AuditAction;
   entityType?: AuditEntityType;
@@ -28,7 +28,7 @@ export async function writeAuditLog(
   const afterData = input.afterData ? sanitizeAuditSnapshot(input.afterData) : null;
 
   const { error } = await admin.from("audit_logs").insert({
-    user_id: input.userId,
+    user_id: input.userId ?? null,
     project_id: input.projectId ?? null,
     action: input.action,
     entity_type: input.entityType ?? null,

@@ -2,20 +2,33 @@
   "name": "@vibenovel/api",
   "private": true,
   "version": "0.1.0",
-  "description": "VibeNovel API — Hono on Cloudflare Workers (Sprint 2+)",
+  "description": "VibeNovel API — Hono on Cloudflare Workers + Node (Sprint 2+)",
   "type": "module",
   "scripts": {
     "dev": "wrangler dev",
+    "dev:node": "tsx src/node-server.ts",
     "build": "wrangler deploy --dry-run --outdir=dist",
-    "typecheck": "tsc --noEmit"
+    "build:node": "tsc -p tsconfig.node.json",
+    "start:node": "node dist-node/node-server.js",
+    "deploy:staging": "wrangler deploy --env staging",
+    "typecheck": "tsc --noEmit && tsc -p tsconfig.node.json --noEmit",
+    "test:duitku-signature": "tsx scripts/duitku-callback-signature.test.mts",
+    "test:atomic-grant": "tsx scripts/atomic-grant-rpc.test.mts",
+    "test:atomic-grant-hosted": "tsx scripts/atomic-grant-hosted-staging.test.mts",
+    "test:hosted-atomic-grant-probe": "tsx scripts/probe-hosted-atomic-grant.mts"
   },
   "dependencies": {
+    "@hono/node-server": "^1.13.7",
     "@supabase/supabase-js": "^2.49.1",
     "@vibenovel/shared": "*",
-    "hono": "^4.6.12"
+    "hono": "^4.6.12",
+    "ws": "^8.18.0"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20241127.0",
+    "@types/node": "^22.10.1",
+    "@types/ws": "^8.5.13",
+    "tsx": "^4.19.2",
     "typescript": "^5.6.3",
     "wrangler": "^3.94.0"
   }

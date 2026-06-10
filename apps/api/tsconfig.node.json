@@ -1,13 +1,14 @@
 {
   "compilerOptions": {
     "target": "ES2022",
-    "module": "ESNext",
-    "moduleResolution": "Bundler",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
     "lib": ["ES2022"],
-    "types": ["@cloudflare/workers-types"],
+    "types": ["node"],
     "strict": true,
     "skipLibCheck": true,
-    "noEmit": true,
+    "outDir": "dist-node",
+    "rootDir": "src",
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
@@ -15,6 +16,5 @@
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true
   },
-  "include": ["src"],
-  "exclude": ["src/node-server.ts", "src/node-bindings.ts"]
+  "include": ["src"]
 }

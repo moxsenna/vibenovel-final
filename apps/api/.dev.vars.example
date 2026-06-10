@@ -26,3 +26,30 @@ ALLOWED_ORIGINS=http://localhost:5173,http://localhost:5174,http://localhost:517
 # AI_CREDIT_COST_PROSE_BEAT=10
 # AI_CREDIT_COST_PROSE_REWRITE=8
 # AI_CREDIT_COST_PUBLISH_COPY=5
+
+# Sprint 10 payment topup (Task 10.2 — names only; never commit values)
+# Default: topup disabled. For local sprint10 smoke set enabled + mock and restart dev:api.
+# CREDIT_TOPUP_ENABLED=false
+# PAYMENT_PROVIDER=mock
+# PAYMENT_PROVIDER_MOCK=true
+# PAYMENT_PROVIDER_MOCK_MODE=success
+# PAYMENT_RETURN_BASE_URL=http://localhost:5173
+# MAYAR_API_KEY=
+# MAYAR_BASE_URL=https://api.mayar.club/hl/v1
+# MAYAR_ENV=sandbox
+# MAYAR_REDIRECT_BASE_URL=http://localhost:5173
+# PAYMENT_TIMEOUT_MS=30000
+
+# Sprint 10 Duitku POP (Task 10.10 — names only; never commit values)
+# PAYMENT_PROVIDER=duitku
+# DUITKU_MERCHANT_CODE=
+# DUITKU_MERCHANT_KEY=
+# DUITKU_ENV=sandbox
+# DUITKU_BASE_URL=https://api-sandbox.duitku.com
+# DUITKU_CALLBACK_URL=http://127.0.0.1:8787/api/payments/duitku/callback
+# DUITKU_RETURN_URL=http://localhost:5173
+
+# Sprint 10.12 Duitku callback smoke fixture (Task 10.12 — local development only)
+# When real Duitku keys are unset, development auto-enables fixture credentials for callback smoke.
+# Optional explicit override:
+# DUITKU_SMOKE_CALLBACK_FIXTURE=true

@@ -32,7 +32,7 @@ apps/api/
       facts.ts         # CRUD /api/projects/:id/facts (soft deprecate)
       speech-rules.ts  # CRUD /api/projects/:id/speech-rules
       ai-proposals.ts  # AI proposal queue lifecycle
-      credits.ts       # GET /api/credits/balance — read-only
+      credits.ts       # balance + topup products/checkout (Task 10.2)
       intake.ts        # GET/POST intake, messages, signals (Task 3.2)
       concepts.ts      # GET/POST/PATCH concepts, generate, select (Task 3.3)
       outline.ts       # GET outline bundle, generate, chapters, loops, reveals, approve/lock (Task 4.2–4.5)
@@ -41,6 +41,12 @@ apps/api/
     services/
       profile.ts       # getOrCreateProfileForAuthUser
       credit.ts        # read-only credit_balances
+      credit-topup.ts  # topup catalog + checkout shell (Task 10.2)
+      payment-provider.ts      # mock/Mayar/Duitku provider boundary (Task 10.2/10.10)
+      payment-provider-types.ts
+      mayar-client.ts          # Mayar invoice create — Worker-only
+      duitku-pop-client.ts     # Duitku POP createInvoice — Worker-only (Task 10.10)
+      mock-payment-provider.ts # deterministic local checkout smoke
       project.ts       # project CRUD + default project_settings on create
       project-settings.ts  # settings read/upsert + validation
       foundation.ts    # story_foundations bundle + upsert
@@ -1260,11 +1266,68 @@ npm run build:api
 | `MAYAR_ENV` | Task 10.2+ | `sandbox` \| `production` |
 | `MAYAR_REDIRECT_BASE_URL` | Task 10.2+ | Web origin for Mayar `redirectUrl` |
 | `CREDIT_TOPUP_ENABLED` | Task 10.2+ | Default **false** — master gate for checkout |
-| `PAYMENT_PROVIDER_MOCK` | Task 10.2+ smoke | Default **true** in local smoke — no Mayar network |
+| `PAYMENT_PROVIDER_MOCK` | Task 10.2+ smoke | Default **true** in local smoke — no provider network |
+| `PAYMENT_PROVIDER` | Task 10.10 | `mock` \| `mayar` \| `duitku` when mock off (default mayar) |
+| `PAYMENT_RETURN_BASE_URL` | Task 10.10 | Optional generic web return base |
+| `DUITKU_MERCHANT_CODE` | Task 10.10 | Server only — never client |
+| `DUITKU_MERCHANT_KEY` | Task 10.10 | Server only — never client |
+| `DUITKU_ENV` | Task 10.10 | `sandbox` \| `production` |
+| `DUITKU_BASE_URL` | Task 10.10 | POP sandbox: `https://api-sandbox.duitku.com` |
+| `DUITKU_CALLBACK_URL` | Task 10.10+ | Future callback route (Task 10.12) |
+| `DUITKU_RETURN_URL` | Task 10.10 | Web return origin for Duitku `returnUrl` |
 
-### Payment topup schema (Task 10.1 — no routes yet)
+### Payment topup checkout shell (Task 10.2)
 
-Tables `credit_topup_products`, `credit_topup_orders`, `payment_webhook_events` (migration `00009`). Seed catalog only. Checkout/webhook/grant deferred Task 10.2–10.3. Topup grant will use `credit_ledger.direction=credit` + `reason=credit_topup`.
+**Routes:**
+
+| Method | Path | Auth | Gate |
+|---|---|---|---|
+| GET | `/api/credits/topup/products` | Yes | Always — active catalog only |
+| POST | `/api/credits/topup/checkout` | Yes | `CREDIT_TOPUP_ENABLED=true` else `503 TOPUP_DISABLED` |
+
+**Checkout body:** `{ "productSlug": "starter", "idempotencyKey": "..." }` or `Idempotency-Key` header. Client must **not** send `amountIdr`, `credits`, `provider*`, `paymentUrl`, `userId`, or API keys — rejected `400 BAD_REQUEST`.
+
+**Flow:** create `credit_topup_orders` row `pending` → provider invoice (mock or Mayar) → update `payment_url` + provider ids → audit `credit_topup_checkout_created` + `payment_invoice_created`. **No** `credit_balances` mutation, **no** `credit_ledger` row, **no** webhook.
+
+**Idempotency:** same `user_id` + `idempotency_key` with existing pending order + `payment_url` → replay same checkout (`idempotentReplay: true`). Existing order without `payment_url` → `409 CONFLICT` (use new key). Provider failure leaves order `pending` without `payment_url`.
+
+**Mock provider:** `PAYMENT_PROVIDER_MOCK=true` — deterministic `mock_inv_*` / `mock_trx_*` ids; `paymentUrl` → `http://localhost:5173/credits/topup/mock-return?orderId=...`. Modes: `success` \| `fail_provider` \| `invalid_response`.
+
+**Mayar live:** when `PAYMENT_PROVIDER_MOCK=false` and `PAYMENT_PROVIDER=mayar` (default) and `MAYAR_API_KEY` set. `POST {MAYAR_BASE_URL}/invoice/create`.
+
+**Duitku POP (Task 10.10):** when `PAYMENT_PROVIDER_MOCK=false` and `PAYMENT_PROVIDER=duitku` and `DUITKU_MERCHANT_CODE` + `DUITKU_MERCHANT_KEY` set. `POST {DUITKU_BASE_URL}/api/merchant/createInvoice` with HMAC headers.
+
+**Sandbox mobile:** placeholder `081000000000` in sandbox/mock mode when profile has no phone; production requires `user_metadata.mobile`/`phone` or `400 MOBILE_REQUIRED`.
+
+**Duitku callback (Task 10.12):** `POST /api/payments/duitku/callback` — form-urlencoded, MD5 signature, grants via `grantCreditsForPaymentSession`. Redirect never grants.
+
+**Health (Task 10.13):** `/api/health` exposes `hasDuitkuCallbackUrl` and `duitkuCallbackUrlIsPublic` (booleans only — never callback URL values).
+
+**Smoke:** `npm run smoke:api:sprint10` (baseline + mock grant). Duitku local: `npm run smoke:api:sprint10:duitku`. AWS staging: `npm run smoke:api:sprint10:duitku -- -ApiBaseUrl https://api-staging.narraza.web.id -StagingMode` (+ `-LiveCreate` / `-ExpectCallback`). See [`docs/59`](../../docs/59-duitku-sandbox-live-smoke-report.md) (local), [`docs/70`](../../docs/70-duitku-mode-b-live-sandbox-callback-report.md) (AWS Mode B — Task 10.13b).
+
+**Operator AWS Mode B (10.13b):** gitignored `.env.staging.duitku` (template `.env.staging.duitku.example`) → `npm run operator:aws:duitku:gate -- -Mode full -LiveCreate`. Rollback included. Sandbox callback: `https://api-staging.narraza.web.id/api/payments/duitku/callback`.
+
+### Payment webhook + credit grant (Task 10.3)
+
+**Route:**
+
+| Method | Path | Auth | Gate |
+|---|---|---|---|
+| POST | `/api/payments/mayar/webhook` | No (public) | `CREDIT_TOPUP_ENABLED=true` else `503 TOPUP_DISABLED` |
+
+**Flow:** parse/sanitize Mayar payload → insert/dedupe `payment_webhook_events` (`provider` + `payload_hash` unique) → on `payment.received` + paid status, resolve order via `extraData.orderId` or provider invoice/transaction id → `grantCreditsForPaymentSession` → `credit_ledger direction=credit` + `reason=credit_topup` + `credit_balances` update + order `paid`. Duplicate webhook returns `200` `{ ok: true, duplicate: true }` without second grant.
+
+**Idempotency:** `payload_hash` dedupe; order `paid` no-op; existing `credit_ledger` row with `metadata.orderId` no-op.
+
+**Multi-app routing (Task 10.3b):** Checkout `extraData` includes `app=vibenovel`, `flow=credit_topup`. Webhook ignores `app≠vibenovel` (`foreign_app_payload`) and legacy foreign payloads without a matching VibeNovel order (`legacy_no_vibenovel_order`). **Do not** point Mayar dashboard webhook away from Siklusio until Task 10.3c router is deployed — see `docs/50` §24.
+
+**Parser (Task 10.5):** Mayar docs treat `data.id` as webhook row id — invoice correlation uses `data.invoiceId` / `data.paymentLinkId` and `extraData.orderId` + `transactionId`. `payment.received` with missing `status` infers paid. See [`docs/51`](../../docs/51-mayar-sandbox-live-smoke-report.md).
+
+**Ops runbook (Task 10.6):** Local safe vs sandbox modes, rollback, paid-but-no-credit support SQL checklist — [`docs/52`](../../docs/52-sprint-10-payment-ops-and-safety-regression.md). Production payment **NOT PRODUCTION READY** (PARTIAL GO).
+
+**Deferred:** `GET /api/credits/topup/orders/:id` owner read (return page uses balance refresh); Mayar webhook HMAC; true Postgres RPC atomicity; live sandbox paid webhook capture; Siklusio staging router replay.
+
+Tables `credit_topup_products`, `credit_topup_orders`, `payment_webhook_events` (migration `00009`). Topup UI ✅ Task 10.4; admin dashboard out of scope.
 
 ## Not in Task 2.12
 
@@ -1273,7 +1336,124 @@ Tables `credit_topup_products`, `credit_topup_orders`, `payment_webhook_events` 
 - OpenRouter / AI generation
 - Credit deduction / ledger / top-up / payment
 - `PATCH /api/credits/*` or balance auto-create for new users
-- Cloudflare deploy
-- Frontend wired to real data
+- Cloudflare deploy (see staging plan below)
 
 See `docs/27-sprint-2-data-model-implementation-plan.md` Task 2.13+.
+
+## Staging deploy (Task 11.0 — plan only)
+
+**Full plan:** [`docs/60-sprint-11-staging-deploy-and-public-callback-plan.md`](../../docs/60-sprint-11-staging-deploy-and-public-callback-plan.md)
+
+| Item | Current | Staging target |
+|---|---|---|
+| Worker name | `vibenovel-api` (local dev) | `vibenovel-api-staging` ✅ deployed |
+| URL | `http://127.0.0.1:8787` | `https://vibenovel-api-staging.moxsenna.workers.dev` |
+| Config | `apps/api/wrangler.toml` | `[env.staging]` Mode A vars |
+| Secrets | `.dev.vars` (gitignored) | `wrangler secret put --env staging` — **BLOCKED** — see [`docs/67`](../../docs/67-hosted-supabase-staging-operator-gate-report.md) |
+| Database | Local Supabase | Hosted Supabase staging project (**required**) |
+
+**Deploy:** `npm run deploy:api:staging` from repo root.
+
+**Health smoke:** `npm run smoke:staging:health` (default CF staging URL; override with `-ApiBaseUrl`)
+
+**Full staging smoke:** `npm run smoke:staging` — cloud-agnostic orchestrator ([`docs/64`](../../docs/64-staging-smoke-harness-and-supabase-report.md))
+
+**Reports:** [`docs/64`](../../docs/64-staging-smoke-harness-and-supabase-report.md) (Task 11.2 harness), [`docs/62`](../../docs/62-staging-deploy-mode-a-report.md) (staging deploy), [`docs/61`](../../docs/61-roadmap-and-sprint-number-reconciliation.md) (sprint map)
+
+**Mode A (first deploy):** `CREDIT_TOPUP_ENABLED=false`, `PAYMENT_PROVIDER_MOCK=true`, `AI_GENERATION_ENABLED=false`.
+
+**Public callbacks (Mode B only):**
+
+- Duitku: `POST https://<api-staging>/api/payments/duitku/callback`
+- Mayar: `POST https://<api-staging>/api/payments/mayar/webhook`
+
+**Health preflight:** `hasDuitkuCallbackUrl`, `duitkuCallbackUrlIsPublic` — booleans only.
+
+**Smoke against staging:** `npm run smoke:staging` or `npm run smoke:api:sprint10:duitku -- -ApiBaseUrl "https://<api-staging>"` with `STAGING_SUPABASE_*` or `-SupabaseUrl`/`-SupabaseAnonKey`.
+
+**Production payment:** NOT ENABLED. Rollback: `CREDIT_TOPUP_ENABLED=false` + `PAYMENT_PROVIDER_MOCK=true`.
+
+## AWS staging (Task 11.3 — plan only)
+
+**Full plan:** [`docs/65-aws-staging-readiness-and-ec2-plan.md`](../../docs/65-aws-staging-readiness-and-ec2-plan.md)
+
+| Item | Cloudflare (current) | AWS EC2 (planned) |
+|---|---|---|
+| API runtime | Cloudflare Worker | Node + Hono on separate EC2 |
+| Instance | N/A | **Not Hermes** — dedicated `vibenovel` EC2 |
+| Deploy | `npm run deploy:api:staging` | Task 11.4: Docker Compose + Caddy |
+| Env injection | `wrangler secret` + vars | `/opt/vibenovel/.env.staging` (chmod 600) |
+| Database | Hosted Supabase (`jdxyhrnibmmwlbtbokqo`) | Same hosted Supabase |
+| Web | Cloudflare Pages | Pages unchanged; `VITE_API_URL` → AWS API |
+
+**Portability audit (summary):** Routes/services use `c.env` bindings only — no KV/R2/D1. Task 11.4 adds `node-server.ts` + `loadBindingsFromProcessEnv()`.
+
+**AWS smoke (Task 11.5 — after EC2 operator deploy):**
+
+```powershell
+npm run operator:aws:staging:smoke -- `
+  -ApiBaseUrl "https://api-staging.<domain>" `
+  -IncludeApiMode `
+  -TestEmail "staging-smoke@vibenovel.test" `
+  -CloudflareRegression
+```
+
+**Live endpoint (Task 11.5):** `http://13.212.245.32` — Docker on EC2 + Caddy HTTP. Report: [`docs/68`](../../docs/68-aws-ec2-api-staging-deploy-report.md).
+
+**Node 20 Docker:** `node-server.ts` polyfills `WebSocket` via `ws` for Supabase on Node &lt; 22.
+
+**Callback (Mode B):** `https://api-staging.narraza.web.id/api/payments/duitku/callback` — register in Duitku **sandbox** dashboard only; Task 10.13b **BLOCKED** until operator creds ([`docs/70`](../../docs/70-duitku-mode-b-live-sandbox-callback-report.md)).
+
+## Node runtime + Docker (Task 11.4 — implemented)
+
+**Report:** [`docs/66-aws-api-staging-adapter-and-docker-prep-report.md`](../../docs/66-aws-api-staging-adapter-and-docker-prep-report.md)
+
+### Runtime split
+
+| File | Role |
+|---|---|
+| `src/app.ts` | `createApp()` — shared Hono factory |
+| `src/index.ts` | Cloudflare Worker default export |
+| `src/node-server.ts` | Node listener (`@hono/node-server`) |
+| `src/node-bindings.ts` | `process.env` → `AppBindings` |
+
+### npm scripts
+
+| Script | Command |
+|---|---|
+| `dev:node` | `tsx src/node-server.ts` |
+| `build:node` | `tsc -p tsconfig.node.json` → `dist-node/` |
+| `start:node` | `node dist-node/node-server.js` |
+
+Root aliases: `npm run dev:api:node`, `npm run build:api:node`, `npm run start:api:node`
+
+### Mode A local Node
+
+```powershell
+# Copy .env.staging.example → .env.staging (gitignored) or set env vars
+npm run dev:api:node
+curl.exe -s http://localhost:8787/api/health
+```
+
+If `wrangler dev` uses port 8787: `$env:PORT="8790"` before `dev:api:node`.
+
+### Docker
+
+```powershell
+# From repo root
+cp .env.staging.example .env.staging
+docker build -f apps/api/Dockerfile -t vibenovel-api-staging .
+docker compose -f docker-compose.staging.yml up --build
+```
+
+Caddy template: `deploy/caddy/Caddyfile.staging.example`
+
+### Smoke
+
+```powershell
+npm run smoke:staging -- -TargetName "node-local" -ApiBaseUrl "http://localhost:8787" -HealthOnly
+```
+
+**Task 11.5:** EC2 deploy — **PARTIAL GO** ([`docs/68`](../../docs/68-aws-ec2-api-staging-deploy-report.md)).
+
+**Task 11.6:** HTTPS + web-to-AWS — **BLOCKED** ([`docs/69`](../../docs/69-aws-https-domain-and-web-to-aws-api-report.md)); `npm run operator:aws:https:gate -- -Domain <apex>`.
