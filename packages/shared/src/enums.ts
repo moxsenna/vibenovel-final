@@ -743,6 +743,8 @@ export type PaymentWebhookProcessingStatus =
 
 export const PAYMENT_PROVIDERS = {
   mayar: "mayar",
+  duitku: "duitku",
+  mock: "mock",
 } as const;
 export type PaymentProvider = (typeof PAYMENT_PROVIDERS)[keyof typeof PAYMENT_PROVIDERS];
 

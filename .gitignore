@@ -3,6 +3,8 @@ node_modules/
 
 # Build output
 dist/
+dist-node/
+**/dist-node/
 build/
 .wrangler/
 **/.wrangler/
@@ -11,6 +13,12 @@ build/
 .env
 .env.*
 !.env.example
+!.env.staging.example
+!.env.staging.duitku.example
+!.env.production.example
+.env.staging
+.env.staging.duitku
+.duitku-last-livecreate.json
 .dev.vars
 **/.dev.vars
 
