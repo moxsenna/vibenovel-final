@@ -1,0 +1,8 @@
+# Narraza production API — Caddy reverse proxy (Task 10.23 Mode A)
+# Copy to EC2 e.g. /etc/caddy/Caddyfile
+# API container listens on 127.0.0.1:8787 (docker-compose.production.yml).
+# DNS: A record api.narraza.web.id -> production EIP (not staging 13.212.245.32).
+
+api.narraza.web.id {
+	reverse_proxy 127.0.0.1:8787
+}

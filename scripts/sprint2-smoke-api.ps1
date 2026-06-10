@@ -104,12 +104,28 @@ function Add-StepResult {
   Write-Host ("[{0}] {1,-36} {2}" -f $Result, $Name, $safeDetail) -ForegroundColor $color
 }
 
+function Test-IsLocalSupabaseHost {
+  param([string]$Url)
+  if ([string]::IsNullOrWhiteSpace($Url)) { return $true }
+  try {
+    $h = ([Uri]$Url.Trim()).Host.ToLowerInvariant()
+    return ($h -eq "127.0.0.1" -or $h -eq "localhost" -or $h -eq "::1")
+  } catch { return $false }
+}
+
 function Resolve-SupabaseAnonKey {
   if (-not [string]::IsNullOrWhiteSpace($SupabaseAnonKey)) {
     return $SupabaseAnonKey.Trim()
   }
+  if (-not [string]::IsNullOrWhiteSpace($env:STAGING_SUPABASE_ANON_KEY)) {
+    return $env:STAGING_SUPABASE_ANON_KEY.Trim()
+  }
   if (-not [string]::IsNullOrWhiteSpace($env:SUPABASE_ANON_KEY)) {
     return $env:SUPABASE_ANON_KEY.Trim()
+  }
+
+  if (-not (Test-IsLocalSupabaseHost $SupabaseUrl)) {
+    throw "Hosted Supabase anon key required. Set STAGING_SUPABASE_ANON_KEY or pass -SupabaseAnonKey (never use local supabase status for remote URL)."
   }
 
   try {
@@ -196,27 +212,44 @@ try {
 # --- Auth guard ---
 Invoke-ApiExpectFailure -Name "GET /api/me no token" -Path "/api/me" -ExpectedStatus @(401)
 
-# --- Signup ---
+# --- Signup / login (fixed user may already exist; signup may omit access_token) ---
+$token = $null
+$authHeaders = @{ apikey = $anonKey; Authorization = "Bearer $anonKey" }
+$authBody = (@{ email = $TestEmail; password = $TestPassword } | ConvertTo-Json)
 try {
   $signup = Invoke-RestMethod `
     -Uri "$SupabaseUrl/auth/v1/signup" `
     -Method POST `
-    -Headers @{ apikey = $anonKey; Authorization = "Bearer $anonKey" } `
+    -Headers $authHeaders `
     -ContentType "application/json" `
-    -Body (@{ email = $TestEmail; password = $TestPassword } | ConvertTo-Json)
-  $token = $signup.access_token
-  if (-not $token) {
+    -Body $authBody
+  if ($signup.PSObject.Properties.Name -contains "access_token") {
+    $token = $signup.access_token
+  }
+} catch {
+  # existing user, rate limit, or confirmation required — fall through to password grant
+}
+
+if (-not $token) {
+  try {
     $signin = Invoke-RestMethod `
       -Uri "$SupabaseUrl/auth/v1/token?grant_type=password" `
       -Method POST `
-      -Headers @{ apikey = $anonKey; Authorization = "Bearer $anonKey" } `
+      -Headers $authHeaders `
       -ContentType "application/json" `
-      -Body (@{ email = $TestEmail; password = $TestPassword } | ConvertTo-Json)
-    $token = $signin.access_token
+      -Body $authBody
+    if ($signin.PSObject.Properties.Name -contains "access_token") {
+      $token = $signin.access_token
+    }
+  } catch {
+    Add-StepResult "signup/login" "FAIL" $_.Exception.Message
   }
-  Add-StepResult "signup/login" $(if ($token) { "PASS" } else { "FAIL" }) "email=$TestEmail"
-} catch {
-  Add-StepResult "signup/login" "FAIL" $_.Exception.Message
+}
+
+if ($token) {
+  Add-StepResult "signup/login" "PASS" "email=$TestEmail"
+} elseif (-not ($Results | Where-Object { $_.Test -eq "signup/login" })) {
+  Add-StepResult "signup/login" "FAIL" "no access_token"
 }
 
 if (-not $token) {

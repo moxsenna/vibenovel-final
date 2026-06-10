@@ -1,0 +1,29 @@
+# Narraza production API — Docker Compose (Task 10.23 Mode A)
+# Usage (from repo root on production EC2):
+#   cp .env.production.example .env.production   # fill on server only; never commit
+#   docker compose -f docker-compose.production.yml up -d --build
+#
+# Supabase hosted (no DB container). Caddy on host proxies :443 -> :8787.
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    env_file:
+      - .env.production
+    ports:
+      - "127.0.0.1:8787:8787"
+    restart: unless-stopped
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:8787/api/health').then((r)=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s

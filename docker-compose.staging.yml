@@ -1,0 +1,29 @@
+# VibeNovel API staging — Docker Compose (Task 11.4)
+# Usage (from repo root):
+#   cp .env.staging.example .env.staging   # fill secrets; never commit
+#   docker compose -f docker-compose.staging.yml up --build
+#
+# Supabase remains hosted (no DB container). Caddy on host proxies :443 → :8787.
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    env_file:
+      - .env.staging
+    ports:
+      - "127.0.0.1:8787:8787"
+    restart: unless-stopped
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:8787/api/health').then((r)=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s

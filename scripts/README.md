@@ -29,8 +29,32 @@ Run all commands from **repo root**. Windows/PowerShell primary.
 | `smoke:api:sprint7` | `sprint7-smoke-api.ps1` | Publish package generation/update/export safety (Task 7.5) | Same as API base |
 | `smoke:api:sprint8` | `sprint8-smoke-api.ps1` | AI prose beat generation safety (Task 8.4) | Same as API base; mock modes need AI env + restart `dev:api` |
 | `smoke:api:sprint9` | `sprint9-smoke-api.ps1` | AI prose rewrite (9.3) + publish copy (9.5) safety | Same as sprint8 mock env pattern |
-| `smoke:all:local` | `smoke-all-local.ps1` | Sprint 2/5/6/7/8/9 API + Sprint 3–9 web mock (13 phases) | All API + web prerequisites |
-| `smoke:all:local:full` | `smoke-all-local.ps1 -IncludeApiMode` | Same 13 phases + `-IncludeApiMode` on web wrappers (7–13) | + restart `dev:web` after `VITE_USE_MOCKS=false` |
+| `smoke:api:sprint10` | `sprint10-smoke-api.ps1` | Payment topup checkout (10.2) + webhook grant/idempotency (10.3) + multi-app router gate (10.3b) | `CREDIT_TOPUP_ENABLED=false` baseline; mock grant: `CREDIT_TOPUP_ENABLED=true` + `PAYMENT_PROVIDER_MOCK=true` + restart `dev:api`, then `-- -MockMode success` (includes `foreign_app_payload`, `legacy_no_vibenovel_order`) |
+| `smoke:api:sprint10:dual-app` | `sprint10-dual-app-smoke.ps1` | Cross-repo Siklusio router → VibeNovel grant (10.3d) | VibeNovel `dev:api` topup mock on; Siklusio `dev:backend` with `MAYAR_MULTI_APP_ROUTER_ENABLED=true` + `VIBENOVEL_MAYAR_WEBHOOK_URL=http://127.0.0.1:8787/api/payments/mayar/webhook` (both `.dev.vars` gitignored) |
+| `smoke:api:sprint10:mayar-live` | `sprint10-mayar-live-smoke.ps1` | Mayar sandbox live invoice create (10.5/10.8) | `CREDIT_TOPUP_ENABLED=true`, `PAYMENT_PROVIDER_MOCK=false`, `MAYAR_API_KEY` in gitignored `.dev.vars`, restart `dev:api`; never logs keys; report [`docs/54`](../docs/54-mayar-staging-live-execution-report.md) |
+| `smoke:api:sprint10:duitku` | `sprint10-duitku-smoke-api.ps1` | Duitku sandbox live + callback fixture (10.13/10.13b/10.18) | Precheck, fixture matrix, `-StagingMode` for AWS; optional `-LiveCreate` / `-ExpectCallback`; reports [`docs/59`](../docs/59-duitku-sandbox-live-smoke-report.md), [`docs/70`](../docs/70-duitku-mode-b-live-sandbox-callback-report.md), [`docs/76`](../docs/76-redeploy-staging-api-rpc-grant-integration-report.md) |
+| `operator:aws:duitku:gate` | `operator-aws-duitku-mode-b.ps1` | Duitku Mode B on AWS EC2 (10.13b) | `.env.staging.duitku` + sandbox dashboard callback; `-Mode full -LiveCreate` |
+| `operator:staging:atomic-grant` | `operator-verify-hosted-atomic-grant.ps1` | Hosted staging migration 00010 + RPC verify (10.17) | `.env.staging` hosted `SUPABASE_*`; report [`docs/75`](../docs/75-apply-migration-00010-hosted-staging-report.md) |
+| `operator:production:supabase:baseline` | `operator-production-supabase-baseline.ps1` | Production Supabase baseline migrations `00001`–`00009` only (10.21) | Gitignored `.env.production` (new account); excludes `00010`; restores staging CLI link; report [`docs/79`](../docs/79-production-supabase-baseline-setup-report.md) |
+| `operator:production:infra:unblock` | `operator-production-infra-unblock.ps1` | Production infra preflight (10.23a) | AWS/EC2/DNS/Pages gate; report [`docs/82`](../docs/82-production-infra-unblock-report.md) |
+| `operator:production:ec2:provision` | `operator-production-ec2-provision.ps1` | Provision EC2+EIP (10.23b) | Profile `narraza-deploy`; ≠ staging IP |
+| `operator:production:api-web:deploy` | `operator-production-api-web-deploy.ps1` | Production API/app Mode A preflight (10.23) | Homepage `narraza.web.id`, app `app.narraza.web.id`, API `api.narraza.web.id` |
+| `operator:production:aws:deploy` | `operator-production-aws-deploy.ps1` | Production EC2 API + Caddy + Pages (10.23/10.23b) | Requires `-Ec2Ip` (≠ staging), approval text, DNS `api` → EIP; use `-SkipWebDeploy` for API-only |
+| `operator:production:sync-env` | `operator-production-sync-env.ps1` | **Env-only:** copy `.env.production` → EC2 `/opt/vibenovel/.env.production` + docker restart | Gitignored local `.env.production`; no tarball; blocks `CREDIT_TOPUP_ENABLED=true`; used Task 10.28 AI founder test |
+| `task-10.28-founder-ai-test` | `task-10.28-founder-ai-test.ps1` | Founder credit seed + production `generate-prose` smoke (10.28) | Requires `.env.production`; never prints secrets; report [`docs/90`](../docs/90-ai-founder-test-mode-report.md) |
+| `task-10.29-founder-browser-e2e` | `task-10.29-founder-browser-e2e.ps1` | Production app Playwright E2E — routes + Write Room AI (10.29) | Sets smoke env from founder session; report [`docs/91`](../docs/91-founder-browser-e2e-story-workflow-report.md) |
+| `build:web:production` | `build-production-web.ps1` | Production app build from `.env.production` | `VITE_API_URL`, `VITE_APP_URL`, `VITE_PUBLIC_SITE_URL` |
+| `deploy:web:production` | `build-production-web.ps1` + wrangler Pages | Deploy `narraza-web-production` | `app.narraza.web.id` attached — verified Task 10.23c ([`docs/84`](../docs/84-production-app-custom-domain-verify-report.md)); do **not** attach apex dashboard |
+| `build:homepage:production` | `build-production-homepage.ps1` | Copy static homepage to `apps/homepage/dist` | Marketing site only — not dashboard |
+| `deploy:homepage:production` | build + wrangler Pages | Deploy `narraza-homepage-production` | Apex `narraza.web.id` — Task 10.24 ([`docs/85`](../docs/85-production-homepage-placeholder-report.md)) |
+| `operator:production:homepage:deploy` | `operator-production-homepage-deploy.ps1` | Build + deploy + verify homepage | Separate Pages project from app |
+
+**Private beta verification (Task 10.25):** [`docs/86`](../docs/86-private-beta-launch-readiness-audit.md) — curl homepage/app/API health; bundle audit; `https://app.narraza.web.id/login` for auth smoke.
+| `test:atomic-grant-hosted` | `atomic-grant-hosted-staging.test.mts` | Direct RPC idempotency on hosted staging | Requires migration 00010 applied |
+| `smoke:web:topup` | `sprint10-smoke-web.ps1` | Credit topup UI mock + optional API (10.4) | `dev:web`; API mode: `-- -IncludeApiMode` + `VITE_USE_MOCKS=false` + restart `dev:web` + `CREDIT_TOPUP_ENABLED=true` + `PAYMENT_PROVIDER_MOCK=true` on API |
+| `smoke:web:sprint10` | `sprint10-smoke-web.ps1` | Alias — same as `smoke:web:topup` | Same |
+| `smoke:all:local` | `smoke-all-local.ps1` | Sprint 2/5/6/7/8/9 API + Sprint 3–10 web mock (**14 phases**, Task 10.6) | All API + web prerequisites; dual-app/live Mayar **not** included |
+| `smoke:all:local:full` | `smoke-all-local.ps1 -IncludeApiMode` | Same 14 phases + `-IncludeApiMode` on web wrappers (7–14) | + restart `dev:web` after `VITE_USE_MOCKS=false` |
 
 **Optional (not in package.json):** `scripts/sprint4-smoke-api.ps1` — Sprint 4 outline API (20 steps).
 
@@ -681,12 +705,150 @@ npm run smoke:all:local
 
 **Sprint 9 closure:** [`docs/49-sprint-9-verification-report.md`](../docs/49-sprint-9-verification-report.md) + Task 9.9 addendum §14.
 
+**Sprint 10 closure:** [`docs/53-sprint-10-verification-report.md`](../docs/53-sprint-10-verification-report.md) — payment/topup smoke matrix, ops runbook [`docs/52`](../docs/52-sprint-10-payment-ops-and-safety-regression.md), Mayar live [`docs/51`](../docs/51-mayar-sandbox-live-smoke-report.md). Production payment **NOT READY**.
+
+**Task 10.8 live execution:** [`docs/54-mayar-staging-live-execution-report.md`](../docs/54-mayar-staging-live-execution-report.md) — `smoke:api:sprint10:mayar-live` precheck; live steps **BLOCKED** without `MAYAR_API_KEY` + public webhook URL.
+
+**Task 10.10 Duitku POP shell:** [`docs/56-duitku-pop-provider-adapter-shell.md`](../docs/56-duitku-pop-provider-adapter-shell.md) — adapter shell; see [`docs/57`](../docs/57-duitku-checkout-integration-report.md) for checkout integration (10.11). Callback grant deferred 10.12.
+
+**Task 11.0 staging deploy plan:** [`docs/60`](../docs/60-sprint-11-staging-deploy-and-public-callback-plan.md)
+
+**Task 11.0b roadmap reconciliation:** [`docs/61`](../docs/61-roadmap-and-sprint-number-reconciliation.md) — old `docs/26` vs actual sprints.
+
+**Task 11.1 staging deploy Mode A:** [`docs/62`](../docs/62-staging-deploy-mode-a-report.md) — **GO** deploy shell.
+
+| npm script | Purpose |
+|---|---|
+| `deploy:api:staging` | Deploy Worker `vibenovel-api-staging` |
+| `deploy:web:staging` | Deploy Pages `vibenovel-web-staging` (build web with staging `VITE_*` first) |
+| `smoke:staging:health` | Mode A health flags — `-ApiBaseUrl` overrideable; default CF staging URL |
+| `smoke:staging` | Portable staging orchestrator (Task 11.2) — health, web, CORS, optional auth/API-mode |
+
+**Staging URLs (defaults, overrideable):** API `https://vibenovel-api-staging.moxsenna.workers.dev` · Web `https://vibenovel-web-staging.pages.dev`
+
+**Report:** [`docs/64`](../docs/64-staging-smoke-harness-and-supabase-report.md)
+
+### Staging smoke (Task 11.2 — cloud-agnostic)
+
+```powershell
+# Full staging smoke (health + web + CORS; auth blocked until Supabase configured)
+npm run smoke:staging
+
+# Health only
+npm run smoke:staging -- -HealthOnly
+
+# AWS/VPS future target
+npm run smoke:staging -- -TargetName "aws-staging" `
+  -ApiBaseUrl "https://api-staging.example.com" `
+  -WebBaseUrl "https://web-staging.example.com"
+
+# Full API-mode (requires STAGING_SUPABASE_URL + STAGING_SUPABASE_ANON_KEY + Worker secrets)
+# Task 11.2b BLOCKED until operator completes docs/67 checklist
+npm run smoke:staging -- -IncludeApiMode -SupabaseUrl "<url>" -SupabaseAnonKey "<key>"
+```
+
+**Operator env vars (shell only, never commit):**
+
+| Variable | Purpose |
+|---|---|
+| `VIBENOVEL_STAGING_API_URL` | Default API override |
+| `VIBENOVEL_STAGING_WEB_URL` | Default web override |
+| `STAGING_SUPABASE_URL` | Hosted Supabase project URL |
+| `STAGING_SUPABASE_ANON_KEY` | Hosted anon key for auth smokes |
+
+**Individual scripts** still accept `-ApiBaseUrl` / `-WebBaseUrl`:
+
+```powershell
+npm run smoke:api:sprint10:duitku -- -ApiBaseUrl "https://<api-staging>"
+npm run smoke:web:topup -- -WebBaseUrl "https://<web-staging>" -ApiBaseUrl "https://<api-staging>" `
+  -IncludeApiMode -StagingMode -SupabaseUrl "<url>" -SupabaseAnonKey "<key>"
+```
+
+**Default `smoke:all:local` remains local-only** — do not point at staging without explicit operator setup.
+
+### AWS EC2 staging smoke (Task 11.5)
+
+After operator deploys Docker API on **separate EC2** (not Hermes):
+
+```powershell
+# Health + CORS + optional Cloudflare regression
+npm run operator:aws:staging:smoke -- `
+  -ApiBaseUrl "https://api-staging.<domain>" `
+  -HealthOnly `
+  -CloudflareRegression
+
+# GO FULL AWS API (hosted Supabase from .env.staging)
+npm run operator:aws:staging:smoke -- `
+  -ApiBaseUrl "https://api-staging.<domain>" `
+  -IncludeApiMode `
+  -TestEmail "staging-smoke@vibenovel.test" `
+  -CloudflareRegression
+```
+
+HTTP-only (no domain yet):
+
+```powershell
+npm run operator:aws:staging:smoke -- -ApiBaseUrl "http://<ec2-public-ip>" -HealthOnly
+```
+
+**Bootstrap on EC2:** `deploy/ec2/bootstrap-ubuntu.sh`, `deploy/ec2/deploy-app.sh`
+
+### AWS HTTPS + web-to-AWS gate (Task 11.6)
+
+After DNS A record `api-staging.<domain>` → `13.212.245.32`:
+
+```powershell
+npm run operator:aws:https:gate -- `
+  -Domain "<your-apex-domain>" `
+  -TestEmail "staging-smoke@vibenovel.test"
+```
+
+Automates: DNS verify → Caddy HTTPS → smoke → web rebuild (`VITE_API_URL`) → web-to-AWS smoke → Cloudflare API regression.
+
+**Report:** [`docs/69`](../docs/69-aws-https-domain-and-web-to-aws-api-report.md)
+
+**Reports:** [`docs/68`](../docs/68-aws-ec2-api-staging-deploy-report.md) (Task 11.5), [`docs/65`](../docs/65-aws-staging-readiness-and-ec2-plan.md) (plan)
+
+### Node / Docker local smoke (Task 11.4)
+
+```powershell
+npm run dev:api:node
+npm run smoke:staging -- -TargetName "node-local" -ApiBaseUrl "http://localhost:8787" -HealthOnly
+
+docker compose -f docker-compose.staging.yml up --build
+npm run smoke:staging -- -TargetName "docker-local" -ApiBaseUrl "http://localhost:8787" -HealthOnly
+```
+
+**Report:** [`docs/66`](../docs/66-aws-api-staging-adapter-and-docker-prep-report.md)
+
+### Duitku Mode B AWS gate (Task 10.13b)
+
+Prerequisites: Task 11.6 GO FULL; gitignored `.env.staging.duitku` with sandbox `DUITKU_MERCHANT_CODE` + `DUITKU_MERCHANT_KEY`; Duitku sandbox dashboard callback registered:
+
+```txt
+https://api-staging.narraza.web.id/api/payments/duitku/callback
+```
+
+```powershell
+npm run operator:aws:duitku:gate -- -Mode preflight
+npm run operator:aws:duitku:gate -- -Mode full -LiveCreate -TestEmail staging-smoke@vibenovel.test
+```
+
+Modes: `preflight` | `apply` | `smoke` | `rollback` | `full` (apply → smoke → rollback).
+
+AWS smoke only: `npm run smoke:api:sprint10:duitku -- -ApiBaseUrl https://api-staging.narraza.web.id -StagingMode -LiveCreate`
+
+**Report:** [`docs/70`](../docs/70-duitku-mode-b-live-sandbox-callback-report.md)
+
 ## Future scripts (not yet implemented)
 
 ```txt
 scripts/check-stitch-parity.ts
 scripts/typegen-from-schema.ts
 smoke:api:sprint4 npm alias (optional)
+smoke:staging full CI integration (post-11.2b Supabase gate)
+deploy/ec2/bootstrap-ubuntu.sh, deploy/ec2/deploy-app.sh (Task 11.5)
+operator:aws:staging:smoke (Task 11.5)
 ```
 
 Add new scripts only with a documented sprint task and update this README.

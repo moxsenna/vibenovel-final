@@ -1,0 +1,7 @@
+# VibeNovel API staging — Caddy reverse proxy (Task 11.4)
+# Copy to EC2 e.g. /etc/caddy/Caddyfile and replace placeholder domain.
+# API container listens on 127.0.0.1:8787 (docker-compose.staging.yml).
+
+api-staging.example.com {
+	reverse_proxy 127.0.0.1:8787
+}

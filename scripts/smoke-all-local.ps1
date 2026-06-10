@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-  Local smoke orchestrator — Sprint 2–9 API baseline + Sprint 3–9 web mock (Task 7.8.4 + 9.9).
+  Local smoke orchestrator — Sprint 2–9 API baseline + Sprint 3–10 web mock (Task 7.8.4 + 9.9 + 10.6).
 
 .DESCRIPTION
   Default (smoke:all:local) — safe env, no live provider:
@@ -14,7 +14,7 @@
       5. sprint8-smoke-api.ps1   (AI prose baseline — AI disabled default OK)
       6. sprint9-smoke-api.ps1   (Rewrite + publish copy baseline — AI disabled OK)
 
-    Web mock (phases 7–13):
+    Web mock (phases 7–14):
       7. sprint3-smoke-web.ps1   (intake/foundation)
       8. sprint4-smoke-web.ps1   (outline)
       9. sprint5-smoke-web.ps1   (write)
@@ -22,9 +22,10 @@
      11. sprint7-smoke-web.ps1   (publish)
      12. sprint8-smoke-web.ps1   (write AI mock)
      13. sprint9-smoke-web.ps1   (credit UI + rewrite + publish AI mock)
+     14. sprint10-smoke-web.ps1  (credit topup UI mock — Task 10.6; no live Mayar)
 
   Full (smoke:all:local:full, -IncludeApiMode):
-    Same API baseline (phases 1–6); web scripts 7–13 run with -IncludeApiMode where supported.
+    Same API baseline (phases 1–6); web scripts 7–14 run with -IncludeApiMode where supported.
     Does NOT auto-switch .env files — manual setup required:
 
       apps/web/.env.local: VITE_USE_MOCKS=false  → restart dev:web
@@ -175,15 +176,16 @@ $WebSuites = @(
   @{ Phase = 11; Name = "Web Sprint 7 (publish)"; Script = "sprint7-smoke-web.ps1" }
   @{ Phase = 12; Name = "Web Sprint 8 (write AI mock)"; Script = "sprint8-smoke-web.ps1" }
   @{ Phase = 13; Name = "Web Sprint 9 (credit/rewrite/publish AI mock)"; Script = "sprint9-smoke-web.ps1" }
+  @{ Phase = 14; Name = "Web Sprint 10 (credit topup mock)"; Script = "sprint10-smoke-web.ps1" }
 )
 
 Write-Host ""
-Write-Host "VibeNovel Local Smoke Suite (Task 7.8.4 + 9.9)" -ForegroundColor Cyan
+Write-Host "VibeNovel Local Smoke Suite (Task 7.8.4 + 9.9 + 10.6)" -ForegroundColor Cyan
 Write-Host "Mode:     $(if ($IncludeApiMode) { 'API baseline + web mock + web API-mode' } else { 'API baseline + web mock only (safe default)' })"
 Write-Host "API URL:  $ApiBaseUrl"
 Write-Host "Web URL:  $WebBaseUrl"
 Write-Host "Repo:     $RepoRoot"
-Write-Host "Phases:   $(if ($SkipApi -and $SkipWeb) { 'none (both skipped)' } elseif ($SkipApi) { 'web only (7-13)' } elseif ($SkipWeb) { 'API only (1-6)' } else { '1-13 (full suite)' })"
+Write-Host "Phases:   $(if ($SkipApi -and $SkipWeb) { 'none (both skipped)' } elseif ($SkipApi) { 'web only (7-14)' } elseif ($SkipWeb) { 'API only (1-6)' } else { '1-14 (full suite)' })"
 
 if ($IncludeApiMode) {
   Write-Host ""
@@ -249,7 +251,7 @@ Write-Host ("Totals: {0} PASS, {1} FAIL, {2} SKIP, {3} NOT RUN - elapsed {4}" -f
 
 if ($IncludeApiMode) {
   Write-Host ""
-  Write-Host "Full mode: phases 7–13 run mock steps plus -IncludeApiMode API Playwright where supported." -ForegroundColor DarkGray
+  Write-Host "Full mode: phases 7–14 run mock steps plus -IncludeApiMode API Playwright where supported." -ForegroundColor DarkGray
   Write-Host "AI mock success/fail/unsafe API modes are NOT in this orchestrator — run sprint8/9 smokes separately." -ForegroundColor DarkGray
 }
 

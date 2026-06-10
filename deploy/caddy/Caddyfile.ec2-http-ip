@@ -1,0 +1,5 @@
+# Temporary HTTP-only staging (no domain) — Task 11.5
+# Public :80 → API container on 127.0.0.1:8787
+:80 {
+	reverse_proxy 127.0.0.1:8787
+}
