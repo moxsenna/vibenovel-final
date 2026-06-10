@@ -54,7 +54,22 @@ export function useActiveProject(): ActiveProjectState {
       try {
         const projects = await fetchProjects(token, { includeArchived: true });
         if (cancelled) return;
-        const active = pickActiveProject(projects);
+
+        const match = window.location.pathname.match(/^\/projects\/([^/]+)/);
+        const routeProjectId = match ? match[1] : null;
+
+        let active: Project | null = null;
+        if (routeProjectId && routeProjectId !== "new") {
+          active = projects.find((p) => p.id === routeProjectId) ?? null;
+          if (!active) {
+            setProject(null);
+            setSource("none");
+            return;
+          }
+        } else {
+          active = pickActiveProject(projects);
+        }
+
         setProject(active);
         setSource(active ? "api" : "none");
       } catch {

@@ -24,11 +24,13 @@ import type {
 import { DEMO_PROJECT_ID } from "@/mocks/projects";
 import { mockStoryFoundation } from "@/mocks/storyFoundation";
 import { ROUTES } from "@/routes/paths";
+import { shouldUseMocks } from "@/lib/env";
 import {
   buildHonestProgressSteps,
   buildHonestRecentExcerpt,
   buildHonestRecentStatusLabel,
   INTAKE_STUB_ASSISTANT_LABEL,
+  resolveActiveProjectCta,
   resolveHonestProjectRoute,
 } from "@/lib/workflow-truth";
 import type { ModelTier, ModelTierOption, MonthlyUsage, UserSettings } from "@/types";
@@ -99,6 +101,7 @@ function formatRelativeTime(iso: string): string {
 }
 
 export function mapProjectToActiveCard(project: Project): DashboardActiveProject {
+  const cta = resolveActiveProjectCta(project);
   return {
     id: project.id,
     title: project.title,
@@ -107,8 +110,10 @@ export function mapProjectToActiveCard(project: Project): DashboardActiveProject
     lastEditedLabel: formatRelativeTime(project.lastEditedAt),
     statusBadge: STATUS_BADGES[project.status] ?? "Aktif",
     currentChapter: project.currentChapter,
-    writeRoute: resolveHonestProjectRoute(project),
+    writeRoute: cta.route,
     progressSteps: buildHonestProgressSteps(project),
+    ctaLabel: cta.label,
+    ctaDisabled: cta.disabled,
   };
 }
 
@@ -433,8 +438,7 @@ export function mapIntakeBundleToUi(
 }
 
 function isApiModeEnabled(): boolean {
-  const raw = import.meta.env.VITE_USE_MOCKS?.trim().toLowerCase();
-  return raw === "false";
+  return !shouldUseMocks();
 }
 
 export function mapApiConceptToUi(concept: ApiStoryConcept, projectId: string, index: number): StoryConcept {

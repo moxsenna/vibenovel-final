@@ -73,9 +73,31 @@ export function useSummaryData(): UseSummaryDataResult {
   const token = session?.access_token ?? null;
   const apiMode = !useMocks && Boolean(token);
 
-  const [summary, setSummary] = useState<ChapterSummary>(mockChapterSummary);
-  const [source, setSource] = useState<SummaryDataSource>("mock");
-  const [loading, setLoading] = useState(false);
+  const [summary, setSummary] = useState<ChapterSummary>(() => {
+    if (useMocks) return mockChapterSummary;
+    return {
+      ...mockChapterSummary,
+      projectId: routeProjectId ?? "unknown",
+      chapterNumber: 0,
+      chapterTitle: "",
+      synopsis: "",
+      newFacts: [],
+      characterChanges: [],
+      relationChanges: [],
+      miniVictories: [],
+      heldSecrets: [],
+      openLoops: [],
+      storyCheckNotes: [],
+      status: "draft",
+      pageCopy: {
+        ...mockChapterSummary.pageCopy,
+        subtitle: "Memuat ringkasan bab...",
+        statusReady: "Memuat...",
+      },
+    };
+  });
+  const [source, setSource] = useState<SummaryDataSource>(useMocks ? "mock" : "api");
+  const [loading, setLoading] = useState(apiMode);
   const [generating, setGenerating] = useState(false);
   const [extracting, setExtracting] = useState(false);
   const [approving, setApproving] = useState(false);

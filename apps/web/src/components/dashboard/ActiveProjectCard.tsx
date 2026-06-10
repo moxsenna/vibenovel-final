@@ -80,13 +80,23 @@ export function ActiveProjectCard({ project }: ActiveProjectCardProps) {
       </div>
 
       <div className="relative z-10 mt-auto flex justify-end">
-        <Link
-          to={project.writeRoute}
-          className="mt-4 inline-flex items-center gap-2 rounded-xl bg-primary px-6 py-3 font-label-md text-label-md text-on-primary shadow-md transition-colors hover:bg-primary-dark min-h-[44px]"
-        >
-          Lanjut Tulis Bab {project.currentChapter}
-          <Icon name="arrow_forward" size={18} />
-        </Link>
+        {project.ctaDisabled ? (
+          <button
+            disabled
+            className="mt-4 inline-flex items-center gap-2 rounded-xl bg-surface-container-highest px-6 py-3 font-label-md text-label-md text-muted-text shadow-none cursor-not-allowed min-h-[44px]"
+          >
+            {project.ctaLabel ?? "Langkah Terkunci"}
+            <Icon name="lock" size={18} />
+          </button>
+        ) : (
+          <Link
+            to={project.writeRoute}
+            className="mt-4 inline-flex items-center gap-2 rounded-xl bg-primary px-6 py-3 font-label-md text-label-md text-on-primary shadow-md transition-colors hover:bg-primary-dark min-h-[44px]"
+          >
+            {project.ctaLabel ?? `Lanjut Tulis Bab ${project.currentChapter}`}
+            <Icon name="arrow_forward" size={18} />
+          </Link>
+        )}
       </div>
     </div>
   );

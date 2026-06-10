@@ -193,9 +193,36 @@ export function usePublishData(): UsePublishDataResult {
   const token = session?.access_token ?? null;
   const apiMode = !useMocks && Boolean(token);
 
-  const [pkg, setPkg] = useState<PublishPackage>(mockPublishPackage);
-  const [source, setSource] = useState<PublishDataSource>("mock");
-  const [loading, setLoading] = useState(false);
+  const [pkg, setPkg] = useState<PublishPackage>(() => {
+    if (useMocks) return mockPublishPackage;
+    return {
+      ...mockPublishPackage,
+      projectId: routeProjectId ?? "unknown",
+      chapterNumber: 0,
+      chapterTitle: "",
+      title: "",
+      blurb: "",
+      teaser: "",
+      caption: "",
+      commentBait: "",
+      nextChapterTeaser: "",
+      tags: [],
+      checklist: mockPublishPackage.checklist.map((item) => ({ ...item, checked: false })),
+      mobilePreview: {
+        ...mockPublishPackage.mobilePreview,
+        chapterLabel: "Bab 0",
+        excerpt: "",
+      },
+      pageCopy: {
+        ...mockPublishPackage.pageCopy,
+        title: "Aset Publikasi",
+        subtitle: "Memuat paket publish...",
+        badgeLabel: "Memuat...",
+      },
+    };
+  });
+  const [source, setSource] = useState<PublishDataSource>(useMocks ? "mock" : "api");
+  const [loading, setLoading] = useState(apiMode);
   const [generating, setGenerating] = useState(false);
   const [savingField, setSavingField] = useState<string | null>(null);
   const [savingChecklist, setSavingChecklist] = useState(false);

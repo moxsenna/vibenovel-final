@@ -76,12 +76,20 @@ export function useOutlineData(): OutlineData {
   const token = session?.access_token ?? null;
   const apiMode = !useMocks && Boolean(token);
 
-  const [outline, setOutline] = useState<StoryOutline>(mockOutline);
+  const [outline, setOutline] = useState<StoryOutline>(() => {
+    if (useMocks) return mockOutline;
+    return mapOutlineBundleToUi(routeProjectId ?? "unknown", {
+      outlinePlan: null,
+      chapterOutlines: [],
+      openLoops: [],
+      plannedReveals: [],
+    });
+  });
   const [apiChapters, setApiChapters] = useState<ChapterOutline[]>([]);
   const [openLoops, setOpenLoops] = useState<UiOpenLoop[]>([]);
   const [reveals, setReveals] = useState<UiPlannedReveal[]>([]);
-  const [source, setSource] = useState<OutlineDataSource>("mock");
-  const [loading, setLoading] = useState(false);
+  const [source, setSource] = useState<OutlineDataSource>(useMocks ? "mock" : "api");
+  const [loading, setLoading] = useState(apiMode);
   const [generating, setGenerating] = useState(false);
   const [approving, setApproving] = useState(false);
   const [locking, setLocking] = useState(false);

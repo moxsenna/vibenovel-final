@@ -131,6 +131,39 @@ export function resolveHonestProjectRoute(project: Project): string {
   return ROUTES.project.write(project.id);
 }
 
+export interface ActiveProjectCta {
+  route: string;
+  label: string;
+  disabled: boolean;
+}
+
+export function resolveActiveProjectCta(project: Project): ActiveProjectCta {
+  const phase = project.workflowPhase ?? WORKFLOW_PHASES.intake;
+  const route = resolveHonestProjectRoute(project);
+
+  if (phase === WORKFLOW_PHASES.intake) {
+    return { route, label: "Lanjutkan Obrolan Intake", disabled: false };
+  }
+  if (phase === WORKFLOW_PHASES.concepts) {
+    return { route, label: "Pilih Arah Cerita", disabled: false };
+  }
+  if (phase === WORKFLOW_PHASES.foundation) {
+    return { route, label: "Lengkapi Fondasi Cerita", disabled: false };
+  }
+  if (phase === WORKFLOW_PHASES.foundation_locked) {
+    return { route, label: "Mulai Rencana Outline", disabled: false };
+  }
+  if (phase === WORKFLOW_PHASES.outline) {
+    return { route, label: "Sesuaikan & Kunci Outline", disabled: false };
+  }
+  if (phase === WORKFLOW_PHASES.outline_locked || phase === WORKFLOW_PHASES.writing) {
+    const chapterNum = project.currentChapter || 1;
+    return { route, label: `Lanjut Tulis Bab ${chapterNum}`, disabled: false };
+  }
+
+  return { route: "#", label: "Langkah Terkunci", disabled: true };
+}
+
 export interface NavLockState {
   foundation: boolean;
   outline: boolean;

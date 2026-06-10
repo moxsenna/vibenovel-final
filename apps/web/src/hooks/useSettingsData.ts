@@ -28,17 +28,44 @@ export interface SettingsData {
   handleSave: () => Promise<void>;
 }
 
+const emptySettings: UserSettings = {
+  displayName: "Memuat...",
+  email: "Memuat...",
+  planLabel: "Memuat...",
+  creditsRemaining: 0,
+  monthlyUsage: {
+    used: 0,
+    quota: 0,
+    percentUsed: 0,
+    resetLabel: "Memuat...",
+    infoMessage: "Memuat pemakaian kuota...",
+  },
+  modelTiers: mockSettings.modelTiers.map((t) => ({ ...t, isSelected: t.id === "seimbang" })),
+  writerPreferences: {
+    defaultLanguage: "Indonesia",
+    defaultOutputStyle: "Seimbang",
+    defaultFormat: "Format HP/KBM",
+  },
+  pageCopy: {
+    ...mockSettings.pageCopy,
+    subtitle: "Memuat pengaturan...",
+  },
+};
+
 export function useSettingsData(): SettingsData {
   const { session, loading: authLoading } = useAuth();
   const useMocks = shouldUseMocks();
   const token = session?.access_token ?? null;
 
-  const [settings, setSettings] = useState<UserSettings>(mockSettings);
+  const [settings, setSettings] = useState<UserSettings>(() => {
+    if (useMocks) return mockSettings;
+    return emptySettings;
+  });
   const [selectedTier, setSelectedTier] = useState<ModelTier>("seimbang");
   const [persistedTier, setPersistedTier] = useState<ModelTier>("seimbang");
   const [activeProjectId, setActiveProjectId] = useState<string | null>(null);
-  const [source, setSource] = useState<SettingsDataSource>("mock");
-  const [loading, setLoading] = useState(false);
+  const [source, setSource] = useState<SettingsDataSource>(useMocks ? "mock" : "api");
+  const [loading, setLoading] = useState(!useMocks && Boolean(token));
   const [saving, setSaving] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
@@ -127,7 +154,7 @@ export function useSettingsData(): SettingsData {
         setSource("api");
       } catch (error) {
         if (cancelled) return;
-        setSettings(allowMockFallback() ? mockSettings : mockSettings);
+        setSettings(allowMockFallback() ? mockSettings : emptySettings);
         setSelectedTier("seimbang");
         setPersistedTier("seimbang");
         setActiveProjectId(null);

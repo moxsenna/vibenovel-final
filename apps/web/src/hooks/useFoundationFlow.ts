@@ -64,10 +64,18 @@ export function useFoundationFlow(): FoundationFlowData {
   const token = session?.access_token ?? null;
   const apiMode = !useMocks && Boolean(token);
 
-  const [foundation, setFoundation] = useState<StoryFoundation>(mockStoryFoundation);
+  const [foundation, setFoundation] = useState<StoryFoundation>(() => {
+    if (useMocks) return mockStoryFoundation;
+    return mapFoundationBundleToUi(
+      routeProjectId ?? "unknown",
+      createEmptyApiFoundation(routeProjectId ?? "unknown"),
+      [],
+      [],
+    );
+  });
   const [proposals, setProposals] = useState<UiFoundationProposal[]>([]);
-  const [source, setSource] = useState<FoundationFlowSource>("mock");
-  const [loading, setLoading] = useState(false);
+  const [source, setSource] = useState<FoundationFlowSource>(useMocks ? "mock" : "api");
+  const [loading, setLoading] = useState(apiMode);
   const [generating, setGenerating] = useState(false);
   const [locking, setLocking] = useState(false);
   const [acceptingId, setAcceptingId] = useState<string | null>(null);

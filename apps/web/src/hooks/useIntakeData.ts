@@ -36,9 +36,17 @@ export function useIntakeData(): IntakeData {
   const token = authSession?.access_token ?? null;
   const apiMode = !useMocks && Boolean(token);
 
-  const [session, setSession] = useState<IntakeSession>(mockIntakeSession);
-  const [source, setSource] = useState<IntakeDataSource>("mock");
-  const [loading, setLoading] = useState(false);
+  const [session, setSession] = useState<IntakeSession>(() => {
+    if (useMocks) return mockIntakeSession;
+    return mapIntakeBundleToUi(
+      routeProjectId ?? "unknown",
+      createEmptyApiIntakeSession(routeProjectId ?? "unknown"),
+      [],
+      [],
+    );
+  });
+  const [source, setSource] = useState<IntakeDataSource>(useMocks ? "mock" : "api");
+  const [loading, setLoading] = useState(apiMode);
   const [sending, setSending] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [projectId, setProjectId] = useState<string | null>(null);

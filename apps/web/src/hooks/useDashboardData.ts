@@ -36,12 +36,16 @@ export function useDashboardData(): DashboardData {
   const useMocks = shouldUseMocks();
 
   const [activeProject, setActiveProject] = useState<DashboardActiveProject | null>(
-    mockDashboardActiveProject,
+    useMocks ? mockDashboardActiveProject : null
   );
-  const [recentProjects, setRecentProjects] = useState(mockDashboardRecentProjects);
-  const [usage, setUsage] = useState(mockDashboardUsage);
-  const [source, setSource] = useState<DataSource>("mock");
-  const [loading, setLoading] = useState(false);
+  const [recentProjects, setRecentProjects] = useState<DashboardRecentProject[]>(
+    useMocks ? mockDashboardRecentProjects : []
+  );
+  const [usage, setUsage] = useState<DashboardUsageSummary>(
+    useMocks ? mockDashboardUsage : { label: "Pemakaian AI Bulan Ini", used: 0, total: 0 }
+  );
+  const [source, setSource] = useState<DataSource>(useMocks ? "mock" : "api");
+  const [loading, setLoading] = useState(!useMocks);
   const [notice, setNotice] = useState<string | null>(null);
   const [isEmpty, setIsEmpty] = useState(false);
 

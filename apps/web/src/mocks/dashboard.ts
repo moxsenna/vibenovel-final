@@ -19,6 +19,8 @@ export interface DashboardActiveProject {
   currentChapter: number;
   writeRoute: string;
   progressSteps: DashboardProgressStep[];
+  ctaLabel?: string;
+  ctaDisabled?: boolean;
 }
 
 export interface DashboardRecentProject {
@@ -55,6 +57,8 @@ export const mockDashboardActiveProject: DashboardActiveProject = {
   statusBadge: "Sedang Diedit",
   currentChapter: 1,
   writeRoute: ROUTES.project.write(DEMO_PROJECT_ID),
+  ctaLabel: "Lanjut Tulis Bab 1",
+  ctaDisabled: false,
   progressSteps: [
     { id: "foundation", label: "Fondasi cerita selesai", status: "done" },
     { id: "outline", label: "Outline 10 bab siap", status: "done" },

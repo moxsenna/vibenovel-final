@@ -26,9 +26,17 @@ export function useFoundationData(): FoundationData {
   const useMocks = shouldUseMocks();
   const token = session?.access_token ?? null;
 
-  const [foundation, setFoundation] = useState<StoryFoundation>(mockStoryFoundation);
-  const [source, setSource] = useState<FoundationDataSource>("mock");
-  const [loading, setLoading] = useState(false);
+  const [foundation, setFoundation] = useState<StoryFoundation>(() => {
+    if (useMocks) return mockStoryFoundation;
+    return mapFoundationBundleToUi(
+      routeProjectId ?? "unknown",
+      createEmptyApiFoundation(routeProjectId ?? "unknown"),
+      [],
+      [],
+    );
+  });
+  const [source, setSource] = useState<FoundationDataSource>(useMocks ? "mock" : "api");
+  const [loading, setLoading] = useState(!useMocks && Boolean(token));
   const [notice, setNotice] = useState<string | null>(null);
 
   useEffect(() => {

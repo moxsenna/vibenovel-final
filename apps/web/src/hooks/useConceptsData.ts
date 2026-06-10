@@ -35,9 +35,9 @@ export function useConceptsData(): ConceptsData {
   const token = session?.access_token ?? null;
   const apiMode = !useMocks && Boolean(token);
 
-  const [concepts, setConcepts] = useState<StoryConcept[]>(mockConcepts);
-  const [source, setSource] = useState<ConceptsDataSource>("mock");
-  const [loading, setLoading] = useState(false);
+  const [concepts, setConcepts] = useState<StoryConcept[]>(useMocks ? mockConcepts : []);
+  const [source, setSource] = useState<ConceptsDataSource>(useMocks ? "mock" : "api");
+  const [loading, setLoading] = useState(apiMode);
   const [generating, setGenerating] = useState(false);
   const [selectingId, setSelectingId] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);

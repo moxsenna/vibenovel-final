@@ -168,9 +168,12 @@ export function useWriteRoomData(): UseWriteRoomDataResult {
   const token = session?.access_token ?? null;
   const apiMode = !useMocks && Boolean(token);
 
-  const [draft, setDraft] = useState<ChapterDraft>(mockChapterDraft);
-  const [source, setSource] = useState<WriteDataSource>("mock");
-  const [loading, setLoading] = useState(false);
+  const [draft, setDraft] = useState<ChapterDraft>(() => {
+    if (useMocks) return mockChapterDraft;
+    return createEmptyChapterDraft(routeProjectId ?? "unknown");
+  });
+  const [source, setSource] = useState<WriteDataSource>(useMocks ? "mock" : "api");
+  const [loading, setLoading] = useState(apiMode);
   const [saving, setSaving] = useState(false);
   const [buildingContext, setBuildingContext] = useState(false);
   const [generatingBeats, setGeneratingBeats] = useState(false);
