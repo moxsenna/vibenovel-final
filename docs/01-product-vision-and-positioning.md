@@ -1,8 +1,20 @@
 # 01 — Product Vision and Positioning
 
+## Brand
+
+| Item | Value |
+|---|---|
+| **Product name** | **Narraza** |
+| **Tagline** | Build long fiction without losing the plot. |
+| **Historical names** | VibeNovel, Novory — working titles during blueprint phase; retained in repo paths only |
+| **Staging domain** | `narraza.web.id` (temporary MVP) |
+| **Future production domain** | `narraza.id` |
+
 ## Product vision
 
-VibeNovel Core v2 adalah AI Serial Fiction Production OS untuk penulis serial mobile Indonesia, khususnya yang menulis untuk pola baca seperti KBM Apps.
+Narraza adalah AI Serial Fiction Production OS untuk penulis serial mobile Indonesia, khususnya yang menulis untuk pola baca seperti KBM Apps.
+
+> Dokumen historis di bawah masih menyebut "VibeNovel" — artinya sama dengan Narraza pada fase blueprint.
 
 Tujuan produk bukan hanya menghasilkan teks, tetapi membantu penulis:
 
@@ -21,12 +33,12 @@ Tujuan produk bukan hanya menghasilkan teks, tetapi membantu penulis:
 
 ```txt
 ChatGPT bisa membantu mulai cerita.
-VibeNovel membantu memproduksi serial panjang yang konsisten, terarah, dan siap dipoles untuk pembaca mobile.
+Narraza membantu memproduksi serial panjang yang konsisten, terarah, dan siap dipoles untuk pembaca mobile.
 ```
 
-## What VibeNovel is
+## What Narraza is
 
-VibeNovel adalah workspace produksi cerita serial:
+Narraza adalah workspace produksi cerita serial:
 
 1. Story Agent untuk brainstorming.
 2. Story Foundation/Fondasi Cerita.
@@ -35,9 +47,9 @@ VibeNovel adalah workspace produksi cerita serial:
 5. Cek otomatis untuk konsistensi, rahasia, format HP, dan potensi unlock.
 6. Paket publish untuk judul, teaser, caption, dan tags.
 
-## What VibeNovel is not
+## What Narraza is not
 
-VibeNovel bukan:
+Narraza bukan:
 
 - chatbot umum,
 - one-click novel generator,

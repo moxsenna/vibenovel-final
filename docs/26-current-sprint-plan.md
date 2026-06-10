@@ -1,8 +1,13 @@
 # VibeNovel — Current Sprint Plan
 
-Status: Current Working Plan  
-Last Updated: 2026-06-08  
-Purpose: Human-readable and agent-readable sprint plan for the rebuilt VibeNovel project.
+> **⚠️ Historical / Product Roadmap — NOT the current execution tracker**  
+> The “Current Status” section below (Task 1.17 next, Sprint 2 next, etc.) is **out of date** relative to the repo.  
+> **Do not** use this file to pick the next implementation task.  
+> **Source of truth for execution:** [README.md](../README.md), [docs/36](36-non-blocking-technical-debt-and-deferred-items.md), sprint closure reports, **[docs/61 — Roadmap & Sprint Number Reconciliation](61-roadmap-and-sprint-number-reconciliation.md)**, and **[docs/63 — Updated Product Roadmap After Sprint 11](63-updated-product-roadmap-after-sprint-11.md)**.
+
+Status: **Historical product roadmap** (retained for vision & deferred features)  
+Last Updated: 2026-06-08 (execution status superseded 2026-06-09 — see docs/61)  
+Purpose: Original human-readable product sprint plan for the rebuilt VibeNovel project.
 
 ---
 
@@ -61,20 +66,22 @@ Advanced control is opt-in.
 
 ## Current Status
 
+> **Superseded.** For actual implementation progress see [docs/61](61-roadmap-and-sprint-number-reconciliation.md) and [README.md](../README.md). Snapshot below reflects **2026-06-08 product plan only**.
+
 ```txt
 ✅ Sprint 0 — Blueprint, docs, rules, repo direction
 ✅ Sprint 1.1–1.16 — Stitch Frontend Parity completed and verified
-⏭️ Task 1.17 — Visual Polish After Manual Review
-⏭️ Sprint 1.5 — Legacy Audit + Problem Coverage Matrix
-⏭️ Sprint 2 — Data Model & Project Foundation
-⏭️ Sprint 3 — Intake, Concept, Foundation real flow
-⏭️ Sprint 4 — Planning + KBM Outline Engine
-⏭️ Sprint 5 — Safe Beat Writer MVP
-⏭️ Sprint 6 — Validator, Repair, Chapter Delta
-⏭️ Sprint 7 — Publish Package Production
-⏭️ Sprint 8 — Credit System & Cost Control
-⏭️ Sprint 9+ — Advanced, Draft Import, Voice, Analytics
+⏭️ Task 1.17 — Visual Polish After Manual Review  [historical — see docs/61]
+⏭️ Sprint 1.5 — Legacy Audit + Problem Coverage Matrix  [docs done — see docs/23–25]
+⏭️ Sprint 2 — Data Model & Project Foundation  [ACTUAL: closed — docs/29]
+⏭️ Sprint 3–7 — See docs/61 mapping  [ACTUAL: closed]
+⏭️ Sprint 8 — Credit System  [ACTUAL Sprint 8: AI+credits — closed docs/45]
+⏭️ Sprint 9 — Creator Mode  [ACTUAL Sprint 9: rewrite+credit UI — closed docs/49]
+⏭️ Sprint 10 — Draft Import  [ACTUAL Sprint 10: payment — closed docs/53]
+⏭️ Sprint 11 — Voice Learning  [ACTUAL Sprint 11: staging — docs/60/62]
 ```
+
+**Execution queue (2026-06-09):** Task 11.2 → 10.13b/10.8b → deferred Draft Import / Voice / Creator Mode per docs/61 §8.
 
 ---
 

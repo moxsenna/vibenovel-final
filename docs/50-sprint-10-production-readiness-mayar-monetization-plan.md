@@ -1,7 +1,7 @@
 # 50 — Sprint 10 Production Readiness & Mayar Monetization Plan
 
 **Sprint:** Sprint 10 — Production Readiness & Credit Topup (Mayar)  
-**Status:** Plan (Task 10.0 — docs only)  
+**Status:** Closed (Task 10.7 — [`docs/53`](53-sprint-10-verification-report.md))  
 **Date:** 8 Juni 2026  
 **Repo:** `vibenovel-unified-blueprint`  
 **Prerequisite:** [`docs/49-sprint-9-verification-report.md`](49-sprint-9-verification-report.md), [`docs/36-non-blocking-technical-debt-and-deferred-items.md`](36-non-blocking-technical-debt-and-deferred-items.md)
@@ -681,9 +681,9 @@ Add to `apps/api/src/env.ts` presence flags (names only in docs): `hasMayarApiKe
 
 ## 20. Next Recommended Task
 
-**Task 10.2 — Payment Provider Abstraction + Mayar Invoice Create Shell**
+**Task 10.7 — Sprint 10 verification report**
 
-`mayar-client.ts`, mock payment provider, `POST /api/credits/topup/checkout`, `GET /api/credits/topup/products` — no webhook grant yet.
+Task 10.6 ops runbook complete — see [`docs/52`](52-sprint-10-payment-ops-and-safety-regression.md). Production remains **NOT PRODUCTION READY** until Task 10.5 live gates complete.
 
 ---
 
@@ -693,11 +693,273 @@ Add to `apps/api/src/env.ts` presence flags (names only in docs): `hasMayarApiKe
 |---|---|
 | `00009_sprint10_payment_topup.sql` | ✅ 3 tables, 2 enums, audit extend, seed 4 packages |
 | Shared enums/types (`@vibenovel/shared`) | ✅ |
-| Checkout / webhook / grant service | **Not started** (10.2/10.3) |
-| Mayar HTTP | **Not started** |
+| Checkout / webhook / grant service | Checkout shell ✅ (10.2); webhook/grant ✅ (10.3) |
+| Mayar HTTP | Invoice create client ✅ (10.2); webhook receiver ✅ (10.3); live sandbox **10.5** |
 
 Work log: [`.agent-logs/sprint-10/task-10.1-mayar-payment-data-model-shared-types.md`](../.agent-logs/sprint-10/task-10.1-mayar-payment-data-model-shared-types.md)
 
 ---
 
-*Plan authored Task 10.0 — 8 Juni 2026. Task 10.1 schema complete.*
+## 22. Implementation Status — Task 10.2 (2026-06-08)
+
+| Deliverable | Status |
+|---|---|
+| Env bindings (`CREDIT_TOPUP_ENABLED`, `PAYMENT_PROVIDER_MOCK`, Mayar vars) | ✅ |
+| `payment-provider.ts` + types + mock + `mayar-client.ts` | ✅ |
+| `credit-topup.ts` service | ✅ |
+| `GET /api/credits/topup/products` | ✅ |
+| `POST /api/credits/topup/checkout` | ✅ — pending order + invoice metadata; no grant |
+| Audit writers (checkout + invoice) | ✅ |
+| `scripts/sprint10-smoke-api.ps1` | ✅ |
+| Webhook / grant / UI | Webhook + grant ✅ (10.3); UI ✅ (10.4) |
+
+Work log: [`.agent-logs/sprint-10/task-10.2-payment-provider-mayar-invoice-create-shell.md`](../.agent-logs/sprint-10/task-10.2-payment-provider-mayar-invoice-create-shell.md)
+
+---
+
+## 23. Implementation Status — Task 10.3 (2026-06-08)
+
+| Deliverable | Status |
+|---|---|
+| `POST /api/payments/mayar/webhook` | ✅ public; `TOPUP_DISABLED` when checkout disabled |
+| `mayar-webhook.ts` parser | ✅ tolerant `payment.received` + mock shape |
+| `payment-webhook-event.ts` persistence | ✅ `payload_hash` idempotency + audit |
+| `credit-topup-grant.ts` | ✅ `grantCreditsForPaymentSession` — ledger `credit` + balance + order `paid` |
+| `process-mayar-payment-webhook.ts` orchestrator | ✅ |
+| `scripts/sprint10-smoke-api.ps1` webhook cases | ✅ grant, duplicate, unknown order, amount mismatch, non-paid ignored |
+| UI / admin / live Mayar sandbox | UI ✅ (10.4); admin **not started**; live sandbox **10.5** |
+| Webhook signature verification | **Deferred** — pending Mayar docs/sandbox |
+| True DB RPC grant atomicity | **Deferred** — compensation runner documented |
+
+Work log: [`.agent-logs/sprint-10/task-10.3-mayar-webhook-idempotent-credit-grant.md`](../.agent-logs/sprint-10/task-10.3-mayar-webhook-idempotent-credit-grant.md)
+
+---
+
+---
+
+## 24. Mayar Multi-App Webhook Router Strategy (Task 10.3b addendum — 2026-06-08)
+
+### Context
+
+Mayar merchant account appears to support **one active webhook URL**. Siklusio production already registers:
+
+- `POST https://api.siklusio.web.id/api/payment/webhook`
+- Auth: `X-Callback-Token` = `MAYAR_WEBHOOK_TOKEN` (fail-closed)
+- Handles: premium registration, `checkout_sessions`, `ai_credit_topups`, Meta CAPI Purchase, WhatsApp autoresponder
+
+VibeNovel adds `POST /api/payments/mayar/webhook` (no shared token yet; topup gated by `CREDIT_TOPUP_ENABLED`).
+
+**Risk if dashboard switched to VibeNovel now:** Siklusio payments stop activating users / topups / CAPI / WhatsApp.
+
+### Siklusio audit summary (repo: `D:\Coding\remix_-siklusio`)
+
+| Item | Finding |
+|---|---|
+| Endpoint | `POST /api/payment/webhook` (+ `GET` verify) |
+| Auth | `X-Callback-Token` required; 401 if missing/invalid |
+| Paid events | `payment.received`, `payment.success`, `payment`, `purchase`, or `data.status=paid` |
+| Matching | `mayar_transaction_id` → `ai_credit_topups` OR `checkout_sessions`; fallback `email` + pending session |
+| extraData on invoice create | `{ noCustomer: email, idProd, productName }` — **no `app`/`flow`** |
+| Idempotency | Topup paid skip; session paid + CAPI sent skip; affiliate conversion unique |
+| Side effects | Auth activate, checkout `paid`, premium AI credits, Meta CAPI Purchase, Fonnte WhatsApp |
+
+Legacy PWA repo `D:\Coding\siklusio` is stub-only (dummy checkout) — **not** production webhook.
+
+### VibeNovel 10.3b patches (minimal)
+
+- Checkout `extraData`: `app=vibenovel`, `flow=credit_topup` (+ existing `orderId`, etc.)
+- Parser extracts `app`/`flow`; `resolveMayarWebhookRoute()` gate
+- `app≠vibenovel` → `ignored` (`foreign_app_payload`) — **no grant**
+- Legacy payloads without `app` and no VibeNovel order → `ignored` (`legacy_no_vibenovel_order`)
+- Grant path unchanged when `app=vibenovel` + order match
+
+### Target router diagram
+
+```mermaid
+flowchart TD
+  Mayar[Mayar payment.received] --> Router{Webhook Router}
+  Router -->|app=vibenovel flow=credit_topup| VN[VibeNovel grant handler]
+  Router -->|app=siklusio or legacy match| SK[Siklusio payment handler]
+  Router -->|unknown| Store[Store event / ignore / no grant]
+```
+
+### Option comparison
+
+| Option | Description | Pros | Cons | Recommendation |
+|---|---|---|---|---|
+| **A** | Mayar → VibeNovel; forward Siklusio | Single new URL for VibeNovel | **Siklusio depends on VibeNovel uptime** | ❌ Not for short-term |
+| **B** | Mayar stays Siklusio; forward `app=vibenovel` to VibeNovel | **No Siklusio production break** | VibeNovel depends on Siklusio forwarder | ✅ **Short-term (10.3c)** |
+| **C** | Dedicated `payments-router` worker | Clean multi-app, isolated blast radius | New deploy surface | ✅ **Long-term production** |
+
+### Immediate actions (no production change)
+
+1. **Keep** Mayar dashboard webhook on Siklusio URL.
+2. VibeNovel invoices already tag `app`/`flow` for future routing.
+3. Task **10.3c**: Siklusio forwarder OR dedicated router + dual-app smoke.
+4. Optional Siklusio patch: add `extraData.app=siklusio`, `flow=membership_purchase|ai_credit_topup` on invoice create.
+5. Task **10.4 Topup UI** deferred until 10.3c router safe.
+
+Work log: [`.agent-logs/sprint-10/task-10.3b-mayar-internal-webhook-router-compatibility.md`](../.agent-logs/sprint-10/task-10.3b-mayar-internal-webhook-router-compatibility.md)
+
+---
+
+## 25. Implementation Status — Task 10.3c (2026-06-08)
+
+| Deliverable | Status |
+|---|---|
+| Siklusio early router gate (`app=vibenovel`, `flow=credit_topup`) | ✅ `mayarWebhookRouter.ts` + controller hook |
+| Forwarder service | ✅ `vibenovelWebhookForwarder.ts` — POST, 15s timeout, safe headers/logs |
+| Fail-closed on forward error | ✅ HTTP 502 — no Siklusio DB/CAPI/WA/affiliate |
+| Env vars | ✅ `MAYAR_MULTI_APP_ROUTER_ENABLED` (default false), `VIBENOVEL_MAYAR_WEBHOOK_URL`, optional forward token |
+| Siklusio invoice `extraData.app`/`flow` | ✅ `app=siklusio`, `flow=membership_purchase|ai_credit_topup` |
+| Mayar dashboard URL | ✅ Unchanged — still Siklusio |
+| Siklusio unit tests | ✅ `vibenovelWebhookForward.test.ts` (forward, fail-closed, legacy, unknown app) |
+| Cross-repo E2E Siklusio → VibeNovel grant | ✅ Local PASS — Task 10.3d |
+
+Work log: [`.agent-logs/sprint-10/task-10.3c-siklusio-mayar-forwarder-vibenovel.md`](../.agent-logs/sprint-10/task-10.3c-siklusio-mayar-forwarder-vibenovel.md)
+
+---
+
+## 26. Implementation Status — Task 10.3d (2026-06-08)
+
+| Deliverable | Status |
+|---|---|
+| Cross-repo smoke script | ✅ `scripts/sprint10-dual-app-smoke.ps1` — `npm run smoke:api:sprint10:dual-app` |
+| Siklusio forward `routed=vibenovel` | ✅ HTTP 200 |
+| VibeNovel grant exactly once | ✅ balance +100, ledger `credit_topup` ×1, order `paid` |
+| Duplicate webhook idempotent | ✅ balance/ledger unchanged on replay |
+| Non-vibenovel payloads | ✅ not forwarded; VibeNovel events/ledger unchanged |
+| Forward failure 502 live test | **NOT RUN** — covered by 10.3c `vibenovelWebhookForward.test.ts` |
+| `X-VibeNovel-Forward-Token` validation on VibeNovel | **Deferred** — documented limitation |
+| Mayar dashboard URL | ✅ Unchanged |
+
+Work log: [`.agent-logs/sprint-10/task-10.3d-dual-app-staging-smoke-siklusio-router-vibenovel-grant.md`](../.agent-logs/sprint-10/task-10.3d-dual-app-staging-smoke-siklusio-router-vibenovel-grant.md)
+
+---
+
+## 27. Implementation Status — Task 10.4 (2026-06-08)
+
+| Deliverable | Status |
+|---|---|
+| `apps/web/src/services/credits.ts` | ✅ `fetchCreditTopupProducts`, `createCreditTopupCheckout`, `fetchCreditBalance`, `fetchApiHealthFlags`, safe error mapping |
+| `CreditTopupPage` `/credits/topup` | ✅ Package cards, balance card, checkout redirect, disabled/mock/login states |
+| `CreditTopupReturnPage` `/credits/topup/mock-return` + `/return` | ✅ Pending copy, Refresh Saldo — **no** client grant |
+| WritePage credit card link | ✅ Top up kredit when `creditTopupEnabled`; mock/disabled explanatory text |
+| `e2e/sprint10-topup-flow.spec.ts` | ✅ Mock fallback, API disabled, checkout redirect, webhook grant via test-only POST |
+| `scripts/sprint10-smoke-web.ps1` | ✅ `smoke:web:topup`, `smoke:web:sprint10` |
+| Frontend credit grant | ❌ **Never** — balance changes only after server webhook |
+| Admin dashboard | ❌ Not in scope |
+| Live Mayar sandbox | ❌ Deferred Task 10.5 |
+
+Work log: [`.agent-logs/sprint-10/task-10.4-credit-topup-ui.md`](../.agent-logs/sprint-10/task-10.4-credit-topup-ui.md)
+
+---
+
+## 28. Implementation Status — Task 10.5 (2026-06-08)
+
+| Deliverable | Status |
+|---|---|
+| `docs/51-mayar-sandbox-live-smoke-report.md` | ✅ PARTIAL GO report |
+| `scripts/sprint10-mayar-live-smoke.ps1` | ✅ `smoke:api:sprint10:mayar-live` |
+| Parser hardening (`mayar-webhook.ts`) | ✅ `data.id` not invoice; `payment.received` implicit paid |
+| Docs-shaped webhook regression | ✅ PASS in `smoke:api:sprint10` |
+| Live sandbox invoice create | **NOT RUN** — `hasMayarApiKey=false` locally |
+| Real network webhook capture | **NOT RUN** — no staging/tunnel |
+| Siklusio router live staging | **NOT RUN** |
+| Signature/HMAC | **Not in Mayar public docs** — idempotency + amount/order validation |
+
+Work log: [`.agent-logs/sprint-10/task-10.5-mayar-sandbox-live-smoke.md`](../.agent-logs/sprint-10/task-10.5-mayar-sandbox-live-smoke.md)
+
+---
+
+## 29. Implementation Status — Task 10.6 (2026-06-08)
+
+| Deliverable | Status |
+|---|---|
+| `docs/52-sprint-10-payment-ops-and-safety-regression.md` | ✅ Runbook A–D, support checklist, smoke matrix, safety assertions |
+| `scripts/smoke-all-local.ps1` | ✅ Phase 14 — `sprint10-smoke-web.ps1` (mock only) |
+| `GET /api/credits/topup/orders/:id` | **Deferred** — return page uses balance refresh |
+| Admin dashboard | **Not built** |
+| Production Mayar enable | **Blocked** — PARTIAL GO unchanged |
+
+Work log: [`.agent-logs/sprint-10/task-10.6-ops-minimal-payment-safety-regression.md`](../.agent-logs/sprint-10/task-10.6-ops-minimal-payment-safety-regression.md)
+
+---
+
+## 30. Implementation Status — Task 10.7 (2026-06-08)
+
+| Deliverable | Status |
+|---|---|
+| `docs/53-sprint-10-verification-report.md` | ✅ Official Sprint 10 closure report |
+| Sprint 10 closure decision | ✅ **YES** — no blockers for sprint closure |
+| Production payment status | **PARTIAL GO / NOT PRODUCTION READY** (unchanged) |
+| Smoke results | Cited from Task 10.6 — not re-run |
+| Next recommended task | **Task 10.8** — Mayar staging live execution |
+
+Work log: [`.agent-logs/sprint-10/task-10.7-sprint-10-verification-report.md`](../.agent-logs/sprint-10/task-10.7-sprint-10-verification-report.md)
+
+---
+
+## 31. Implementation Status — Task 10.8 (2026-06-08)
+
+| Deliverable | Status |
+|---|---|
+| `docs/54-mayar-staging-live-execution-report.md` | ✅ BLOCKED report |
+| Live sandbox invoice create | **NOT RUN** — `hasMayarApiKey=false`, `PAYMENT_PROVIDER_MOCK=true` |
+| GET invoice detail | **NOT RUN** |
+| Real `payment.received` webhook capture | **NOT RUN** — no public webhook URL |
+| Live grant + duplicate replay | **NOT RUN** |
+| Siklusio staging router replay | **NOT RUN** |
+| Mock/dual-app regression | **PASS** — sprint10 25/25, dual-app 13/13 |
+| Go/No-Go | **BLOCKED** — operator prerequisites missing |
+| Production payment | **NOT PRODUCTION READY** (unchanged) |
+
+Work log: [`.agent-logs/sprint-10/task-10.8-mayar-staging-live-execution.md`](../.agent-logs/sprint-10/task-10.8-mayar-staging-live-execution.md)
+
+---
+
+## 32. Feasibility Status — Task 10.9 (2026-06-08)
+
+| Deliverable | Status |
+|---|---|
+| `docs/55-duitku-provider-spike-and-migration-feasibility.md` | ✅ Duitku feasibility spike |
+| Integration recommendation | **Duitku POP** (quickest MVP topup) |
+| Schema migration needed | **No** — `provider text` supports `duitku` |
+| Mayar code removal | **No** — retained |
+| Siklusio router for VibeNovel topup | **Not needed** if Duitku chosen |
+| Production payment | **NOT READY** |
+
+Work log: [`.agent-logs/sprint-10/task-10.9-duitku-provider-spike-feasibility.md`](../.agent-logs/sprint-10/task-10.9-duitku-provider-spike-feasibility.md)
+
+---
+
+## 33. Implementation Status — Task 10.10 (2026-06-08)
+
+| Deliverable | Status |
+|---|---|
+| `duitku-pop-client.ts` | ✅ POP createInvoice + HMAC signature |
+| `PAYMENT_PROVIDER` selector | ✅ mock \| mayar \| duitku |
+| Duitku env + health booleans | ✅ |
+| Callback/grant | **Deferred** Task 10.12 |
+| `smoke:api:sprint10:duitku` | ✅ Precheck PASS |
+| Mayar/mock regression | ✅ |
+
+Work log: [`.agent-logs/sprint-10/task-10.10-duitku-pop-provider-env-adapter-shell.md`](../.agent-logs/sprint-10/task-10.10-duitku-pop-provider-env-adapter-shell.md)
+
+---
+
+## 34. Implementation Status — Task 10.13 (2026-06-09)
+
+| Deliverable | Status |
+|---|---|
+| Duitku sandbox live smoke report | ✅ [`docs/59`](59-duitku-sandbox-live-smoke-report.md) |
+| LiveCreate / payment / callback | **BLOCKED** — no credentials, no public callback URL |
+| Health `hasDuitkuCallbackUrl` / `duitkuCallbackUrlIsPublic` | ✅ |
+| Fixture callback regression | ✅ PASS 15/15 |
+| Production Duitku | **NOT READY** |
+
+Work log: [`.agent-logs/sprint-10/task-10.13-duitku-sandbox-live-smoke.md`](../.agent-logs/sprint-10/task-10.13-duitku-sandbox-live-smoke.md)
+
+---
+
+*Plan authored Task 10.0 — 8 Juni 2026. Task 10.13 Duitku sandbox live BLOCKED. Production payment NOT READY.*

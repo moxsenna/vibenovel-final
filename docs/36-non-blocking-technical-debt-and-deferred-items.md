@@ -5,7 +5,11 @@
 **Repo:** `vibenovel-unified-blueprint`  
 **Related:** [`docs/35-sprint-5-verification-report.md`](35-sprint-5-verification-report.md), [`docs/40-sprint-7-verification-report.md`](40-sprint-7-verification-report.md), [`docs/41-pre-ai-hardening-audit-transactions-ci-plan.md`](41-pre-ai-hardening-audit-transactions-ci-plan.md), [`scripts/README.md`](../scripts/README.md)
 
-Dokumen ini membedakan **blocker**, **non-blocking debt**, dan **deferred product scope**. Bukan sprint plan — gunakan sebagai checklist sebelum Sprint 6 dan sebelum AI/production deploy.
+Dokumen ini membedakan **blocker**, **non-blocking debt**, dan **deferred product scope**. Bukan sprint plan — gunakan sebagai checklist sebelum Sprint 6 dan sebelum AI/production deploy. **Updated product roadmap:** [`docs/63`](63-updated-product-roadmap-after-sprint-11.md) (Task 11.1c).
+
+**Brand (2026-06-09):** Product-facing brand = **Narraza** (*Build long fiction without losing the plot.*). VibeNovel/Novory = historical/repo names only. Staging domain `narraza.web.id` = temporary MVP; production target `narraza.id`.
+
+**Staging API (post 11.6):** `https://api-staging.narraza.web.id` — web `vibenovel-web-staging.pages.dev` points to AWS API.
 
 ---
 
@@ -175,7 +179,7 @@ Sprint 5 closed with **zero blockers**. Items below are non-blocking unless mark
 9. **No prose delete endpoint**; export audit via `publish_package_exported` ✅ (7.8.2).
 10. **Context Packet safety** — API/smoke only, not DB-enforced.
 11. **CI** — typecheck/build only; full smokes local-only — strategy in `docs/41` §5; **7.8.4–7.8.5**.
-12. **`smoke:all:local`** ✅ — **13 phases**: Sprint 2/5/6/7/8/9 API + Sprint 3–9 web mock (**7.8.4**, **8.6**, **9.9**). Full AI mock modes remain manual env restart. **`smoke:all:local:full`** API-mode local/manual only (not CI); orchestrator does not auto-switch env.
+12. **`smoke:all:local`** ✅ — **14 phases**: Sprint 2/5/6/7/8/9 API + Sprint 3–10 web mock (**7.8.4**, **8.6**, **9.9**, **10.6**). Full AI mock modes remain manual env restart. **`smoke:all:local:full`** API-mode local/manual only (not CI); orchestrator does not auto-switch env.
 13. **Seed GoTrue login quirk** — smokes use ephemeral signup.
 
 ---
@@ -211,7 +215,123 @@ Sprint 5 closed with **zero blockers**. Items below are non-blocking unless mark
 
 **Addressed Task 9.1:** `estimated_cost_usd` population via `model-cost-map.ts` (internal observability only; fixed `credit_cost` billing unchanged).
 
-**Addressed Task 9.2:** WritePage credit UI minimal (saldo/biaya kredit read-only; no topup; server authoritative billing).
+**Addressed Task 9.2:** WritePage credit UI minimal (saldo/biaya kredit read-only; server authoritative billing).
+
+**Addressed Task 10.4:** Credit topup UI (`/credits/topup`, checkout redirect, mock return pending, Refresh Saldo). No frontend grant; mock mode disables checkout; topup default off (`CREDIT_TOPUP_ENABLED=false`).
+
+**Addressed Task 10.5 (PARTIAL GO):** Mayar sandbox live smoke report [`docs/51`](51-mayar-sandbox-live-smoke-report.md). Parser: `data.id` is webhook row id (not invoice); live invoice/paid webhook capture deferred until operator adds sandbox key + staging tunnel. `smoke:api:sprint10:mayar-live`.
+
+**Addressed Task 10.6:** Payment ops runbook [`docs/52`](52-sprint-10-payment-ops-and-safety-regression.md). `smoke:all:local` **14 phases** (Sprint 10 web topup mock). Paid-but-no-credit SQL checklist docs-only. `GET /api/credits/topup/orders/:id` **deferred**. Production payment **NOT READY**.
+
+**Sprint 10 closed (Task 10.7):** [`docs/53-sprint-10-verification-report.md`](53-sprint-10-verification-report.md) — payment/topup foundation verified mock + dual-app local; Mayar live **PARTIAL GO**; production payment blocked.
+
+**Task 10.8 Mayar staging live execution:** [`docs/54-mayar-staging-live-execution-report.md`](54-mayar-staging-live-execution-report.md) — **BLOCKED** (`hasMayarApiKey=false`, no public webhook). Live invoice/webhook **NOT RUN**. Next: **Task 10.8b** (operator key + tunnel/staging) or **Task 11.0** (staging deploy plan).
+
+**Task 10.9 Duitku provider spike:** [`docs/55`](55-duitku-provider-spike-and-migration-feasibility.md) — Duitku **POP** feasible; Mayar retained.
+
+**Task 10.10 Duitku POP shell:** [`docs/56`](56-duitku-pop-provider-adapter-shell.md) — `PAYMENT_PROVIDER=duitku`, `duitku-pop-client.ts`, health flags, `smoke:api:sprint10:duitku`. Callback grant **deferred** 10.12. Production payment **NOT READY**.
+
+**Task 10.11 Duitku checkout integration:** [`docs/57`](57-duitku-checkout-integration-report.md) — checkout path verified via provider abstraction; no-credential safe fail; optional `-LiveCreate`. Sandbox live checkout **NOT RUN** without credentials.
+
+**Task 10.12 Duitku callback + grant:** [`docs/58`](58-duitku-callback-idempotent-grant-report.md) — `POST /api/payments/duitku/callback`, MD5 signature, `grantCreditsForPaymentSession`, fixture smoke matrix PASS. Live Duitku sandbox **NOT RUN**. Production payment **NOT READY**.
+
+**Task 10.13 Duitku sandbox live smoke:** [`docs/59`](59-duitku-sandbox-live-smoke-report.md) — **BLOCKED** (`hasDuitkuMerchantCode=false`, `hasDuitkuCallbackUrl=false`, `PAYMENT_PROVIDER_MOCK=true`). LiveCreate/payment/callback **NOT RUN**. Fixture regression PASS 15/15. Next: **Task 11.1** deploy + **10.13b** live smoke.
+
+**Task 11.0 Staging deploy plan:** [`docs/60`](60-sprint-11-staging-deploy-and-public-callback-plan.md) — architecture + env checklist.
+
+**Task 11.0b Roadmap reconciliation:** [`docs/61`](61-roadmap-and-sprint-number-reconciliation.md) — `docs/26` is **historical product roadmap**, not execution tracker; old Sprint 8–11 numbering ≠ actual Sprints 8–11. Agents must use README + docs/61.
+
+**Task 11.1c Updated product roadmap:** [`docs/63`](63-updated-product-roadmap-after-sprint-11.md) — merges `docs/26`/`docs/17` vision with actual state after Sprint 11; execution phases A–H; next task **11.2**.
+
+**Task 11.1 Staging deploy Mode A:** [`docs/62`](62-staging-deploy-mode-a-report.md) — **GO** API `vibenovel-api-staging` + Pages `vibenovel-web-staging`; health/CORS/web shell PASS. Hosted Supabase secrets **not set** — auth/full smoke blocked.
+
+**Task 11.2 Portable staging smoke harness:** [`docs/64`](64-staging-smoke-harness-and-supabase-report.md) — `npm run smoke:staging` cloud-agnostic (`-ApiBaseUrl`, `-WebBaseUrl`, `STAGING_SUPABASE_*`); phases A–C **PASS**; auth/API-mode **BLOCKED** (Worker Supabase pending). Next: **Task 11.2b** (operator) or **Task 11.4** (AWS adapter).
+
+**Task 11.3 AWS staging readiness plan:** [`docs/65`](65-aws-staging-readiness-and-ec2-plan.md) — separate EC2 from Hermes; recommend Docker Compose + Caddy; portability audit; env matrix; cost guard; **no AWS deploy**.
+
+**Task 11.4 AWS API adapter + Docker prep:** [`docs/66`](66-aws-api-staging-adapter-and-docker-prep-report.md) — `createApp()` split, `node-server.ts`, Dockerfile, `docker-compose.staging.yml`; Node + Docker health **PASS**; CF Worker **PASS**.
+
+**Task 11.2b Hosted Supabase operator gate:** [`docs/67`](67-hosted-supabase-staging-operator-gate-report.md) — superseded by operator session; Cloudflare staging **GO FULL** (`smoke:staging -IncludeApiMode` PASS, project `jdxyhrnibmmwlbtbokqo`).
+
+**Task 11.5 AWS EC2 API staging deploy:** [`docs/68`](68-aws-ec2-api-staging-deploy-report.md) — **PARTIAL GO** — EC2 `13.212.245.32`, Docker+Caddy HTTP, smoke PASS.
+
+**Task 11.6 AWS HTTPS + web-to-AWS:** [`docs/69`](69-aws-https-domain-and-web-to-aws-api-report.md) — **COMPLETE / GO FULL** — `api-staging.narraza.web.id`; web rebuild → AWS API; full smoke PASS. Script fixes: Caddyfile space before `{`, preflight HTTPS/SSH fallback, TLS 1.2, 20s LE wait.
+
+**Task 10.13b Duitku Mode B AWS live sandbox:** [`docs/70`](70-duitku-mode-b-live-sandbox-callback-report.md) — **GO** — LiveCreate + signed AWS HTTPS callback grant/idempotency/negatives PASS; BCA VA real callback verified in 10.13c; rollback Mode A PASS (2026-06-10).
+
+**Task 10.13c Duitku real callback signature debug:** [`docs/71`](71-duitku-real-callback-signature-debug-report.md) — **GO** — root cause: real Duitku uses 64-hex HMAC-SHA256 `HMAC_SHA256(merchantCode+amount+merchantOrderId, merchantKey)`; validator dual-supports 64-hex HMAC + 32-hex MD5 fixtures; BCA VA real callback + grant verified (order `b98dfc22-…`).
+
+**Task 10.14 Payment provider decision report:** [`docs/72`](72-payment-provider-decision-report.md) — **GO** — **Duitku POP BCA VA-first** recommended for MVP; **Mayar secondary/backlog**; production payment **NOT ENABLED**.
+
+**Task 10.15 Duitku production payment enable plan:** [`docs/73`](73-duitku-production-payment-enable-plan.md) — **GO** (plan only) — gated enable sequence, checklist, rollback, reconciliation/refund SOP drafts; production payment **still NOT ENABLED**; founder approval required before Phase 1+.
+
+**Task 10.16 Atomic grant DB RPC:** [`docs/74`](74-atomic-grant-db-rpc-report.md) — **GO** — `grant_paid_credit_topup_atomic` (`00010`); API grant path uses RPC; local/fixture smoke PASS.
+
+**Task 10.17 Apply migration 00010 hosted staging:** [`docs/75`](75-apply-migration-00010-hosted-staging-report.md) — **GO** — migration applied to `jdxyhrnibmmwlbtbokqo`; hosted RPC idempotency PASS; **production migration still pending**.
+
+**Task 10.18 Redeploy staging API + RPC grant E2E:** [`docs/76`](76-redeploy-staging-api-rpc-grant-integration-report.md) — **GO** — AWS API redeployed (`c505a82`); fixture callback grant via API → `grant_paid_credit_topup_atomic` PASS; duplicate/negatives PASS; Mode A restored.
+
+**Task 10.19 Production preflight + migration 00010 gate:** [`docs/77`](77-production-payment-preflight-migration-approval-gate.md) — **BLOCKED** — migration file ready; production Supabase **not identified**; `api.narraza.id` / `narraza.id` not deployed; explicit approval **not received**; production migration **not applied**.
+
+**Task 10.20 Production environment foundation plan:** [`docs/78`](78-production-environment-foundation-plan.md) — **GO** (plan only) — topology (Pages `narraza.id` + EC2 `api.narraza.id` + new Supabase); operator checklists; env matrix; Phases 0–9; **no production deployed**.
+
+**Task 10.21 Production Supabase baseline setup:** [`docs/79`](79-production-supabase-baseline-setup-report.md) — **GO** — prod `qjmb…njct`; `00001`–`00009` applied; `00010` not applied; staging `jdxyhrnibmmwlbtbokqo` untouched.
+
+**Task 10.22 Production API/web/DNS Mode A plan + preflight:** [`docs/80`](80-production-api-web-dns-mode-a-preflight-report.md) — **GO** — launch domain corrected to `narraza.web.id` / `api.narraza.web.id`.
+
+**Task 10.23 Production API/web Mode A deploy:** [`docs/81`](81-production-api-web-mode-a-deploy-report.md) — **PARTIAL GO** — approval received; Pages `narraza-web-production` deployed; API EC2/DNS pending; payment OFF.
+
+**Task 10.23a Production infra unblock:** [`docs/82`](82-production-infra-unblock-report.md) — **PARTIAL GO** — domain split (homepage / `app` / API); env corrected; AWS NoCredentials; EC2/DNS/API pending; payment OFF.
+
+**Task 10.23b Production EC2/API Mode A deploy:** [`docs/83`](83-production-ec2-api-mode-a-deploy-report.md) — **GO** — `https://api.narraza.web.id` HTTPS health Mode A PASS; staging PASS.
+
+**Task 10.23c Production app custom domain verify:** [`docs/84`](84-production-app-custom-domain-verify-report.md) — **GO** — `https://app.narraza.web.id` HTTP 200; bundles load; production API wired; staging regression PASS; apex homepage pending.
+
+**Task 10.24 Production homepage on narraza.web.id:** [`docs/85`](85-production-homepage-placeholder-report.md) — **GO** — `https://narraza.web.id` static landing live; app/API/staging PASS.
+
+**Task 10.25 Private beta launch readiness audit:** [`docs/86`](86-private-beta-launch-readiness-audit.md) — **GO** — payment-off beta path; `/login` page added; founder auth smoke gate.
+
+**Task 10.26 Real private-beta story flow:** [`docs/87`](87-real-private-beta-story-flow-report.md) — **GO** — founder verified create/intake persist.
+
+**Task 10.26b Founder story smoke:** [`docs/88`](88-founder-private-beta-story-smoke-report.md) — **GO** — founder verified full flow. OpenRouter key in local `.env.production`; EC2 API redeploy pending for live AI.
+
+**Task 10.27 Full repo audit vs sprint plan:** [`docs/89`](89-full-repo-audit-vs-sprint-plan.md) — **GO** — audit-only; stage = private beta without AI; next = 10.28 EC2 redeploy + gated AI test or 10.29 workflow E2E.
+
+**Task 10.28 AI founder test mode:** [`docs/90`](90-ai-founder-test-mode-report.md) — **GO** — production API `aiGenerationEnabled=true`; founder prose beat live OpenRouter verified; payment OFF. **Debt:** default hemat model `google/gemma-2-9b-it` 404 on OpenRouter — use `AI_MODEL_HEMAT=google/gemini-2.5-flash`; outline lock → `workflow_phase` may desync (manual patch used).
+
+**Task 10.29 Founder browser E2E:** [`docs/91-founder-browser-e2e`](91-founder-browser-e2e-story-workflow-report.md) — **GO** — Write Room UI triggers real AI prose; persistence + credit in assistant panel.
+
+**Task 10.29 Remove misleading mock flow:** [`docs/91-mock-flow`](91-remove-misleading-mock-flow-report.md) — **GO** — `allowMockFallback()` guard; dashboard progress from `workflowPhase`; write/summary/publish locked states replace silent Sprint 1 fallback. **Debt:** shell `CreditIndicator` still mock 1.250; sidebar active project vs route project may diverge → **10.30**.
+
+### Sprint 11 blocked (payment-related)
+
+| Item | Blocker | Unblock path |
+|---|---|---|
+| Production payment | Ops gates not met ([`docs/73`](73-duitku-production-payment-enable-plan.md) §5–§7, [`docs/72`](72-payment-provider-decision-report.md)) | Complete checklist §5; founder Go/No-Go; production live test; **do not enable prod dashboards** without approval |
+| Production callback on `narraza.id` | Final production domain not configured | Register production callback URL after domain ready |
+| Mayar live sandbox | No `MAYAR_API_KEY` + no public webhook URL + no live callback proof | Task **10.8b** backlog; do not enable production |
+| Domain `narraza.web.id` | Temporary staging/MVP | Migrate to `narraza.id` when product ready |
+
+**Unblocked (2026-06-10):** Duitku staging BCA VA path — Tasks 10.13b/10.13c **GO**; staging rolled back to Mode A safe (`creditTopupEnabled=false`, `paymentProviderMock=true`, `paymentProvider=mock`).
+
+### Sprint 11 deferred (fix later)
+
+| Item | Priority | Notes |
+|---|---|---|
+| Mayar live sandbox retry (10.8b) | P2 | **Backlog** — secondary provider; no live proof on Narraza staging ([`docs/72`](72-payment-provider-decision-report.md)) |
+| ShopeePay/SP retest post-HMAC fix | P2 | **Optional/backlog** — not required for MVP if BCA VA-first |
+| True DB RPC atomic grant | P1 | Staging **done** (10.16–10.18); production `00010` **BLOCKED** — no prod Supabase linked ([`docs/77`](77-production-payment-preflight-migration-approval-gate.md)) |
+| Refund/chargeback SOP | P2 | **Draft in docs/73 §10** — pending final founder approval |
+| Admin payment dashboard / reconciliation | P2 | **Deferred** — manual SOP in [`docs/73`](73-duitku-production-payment-enable-plan.md) §9 |
+| Production enable execution | P0 gate | **Gated** — docs/73 §7 Phases 0–11; founder approval only |
+| `GET /api/credits/topup/orders/:id` | P2 | Return page uses balance refresh |
+| CI E2E / automated staging smoke | P1 | Task 11.2 harness ✅; full staging blocked on Supabase |
+| Live AI spot checks on staging | P2 | Separate task (Mode C) |
+| Remote migration push / production deploy | Manual approval | Not Sprint 11 default |
+| `[env.staging]` wrangler + `deploy:staging` scripts | P1 | Task 11.1 |
+| Staging Supabase params in smoke scripts | P1 | ✅ Task 11.2 — `STAGING_SUPABASE_*`, `-StagingMode` |
+| Mayar webhook HMAC verification | P2 | Deferred since 10.5 |
+| Siklusio → VibeNovel staging router replay | P1 | Before prod router enable |
 
 **Addressed Task 9.3:** Prose rewrite API (`POST /ai/rewrite-prose`) — draft-only new prose version; `source=ai_generated` + metadata `generationType=prose_rewrite`.
 
@@ -235,7 +355,13 @@ Sprint 5 closed with **zero blockers**. Items below are non-blocking unless mark
 | CI API-mode E2E (write/rewrite/publish AI) | P1 | Before production |
 | Live rewrite / publish copy spot check (`google/gemini-2.5-flash`) | P2 | Optional manual (`-LiveSpotCheck`) |
 | Publish **Terapkan Semua** dedicated E2E | P2 | Nice-to-have |
-| Topup / payment / admin credit dashboard | P2 | **Sprint 10** — schema [`00009`](../../supabase/migrations/00009_sprint10_payment_topup.sql) Task 10.1 ✅; checkout/webhook Task 10.2+ |
+| Topup / payment / admin credit dashboard | P2 | **Sprint 10** — schema [`00009`](../../supabase/migrations/00009_sprint10_payment_topup.sql) Task 10.1 ✅; checkout 10.2 ✅; webhook/grant 10.3 ✅; topup UI 10.4 ✅; admin dashboard **deferred** |
+| Mayar webhook signature verification | P2 | Deferred — verify with Mayar docs/sandbox (Task 10.5) |
+| True DB RPC topup grant atomicity | P1 | Before production — compensation runner in 10.3 is interim |
+| Mayar multi-app webhook router (Siklusio + VibeNovel) | P1 | Task 10.3c ✅ forwarder; Task 10.3d ✅ local dual-app smoke PASS — enable `MAYAR_MULTI_APP_ROUTER_ENABLED` in **staging/prod** after ops Go/No-Go; Mayar dashboard stays on Siklusio |
+| Siklusio checkout `extraData.app` / `extraData.flow` tags | P2 | Task 10.3c ✅ — `app=siklusio`, `flow=membership_purchase|ai_credit_topup` on invoice create |
+| VibeNovel forward-token validation (`X-VibeNovel-Forward-Token`) | P2 | **Deferred** — VibeNovel webhook does not validate Siklusio forward token yet (10.3d documented) |
+| Siklusio → VibeNovel staging/prod replay smoke | P1 | Local E2E ✅ (10.3d); staging replay still required before prod router enable |
 | True DB RPC credit + attempt atomicity | P1 | Before production deploy |
 | Summary / delta AI | P2 | After validator mature |
 | Foundation / concept / outline AI | P2 | Post-MVP |
@@ -255,3 +381,19 @@ Sprint 5 closed with **zero blockers**. Items below are non-blocking unless mark
 - [`docs/47-live-openrouter-staging-smoke-report.md`](47-live-openrouter-staging-smoke-report.md)
 - [`scripts/README.md`](../scripts/README.md)
 - [`docs/17-roadmap-sprint-plan-mvp-to-full.md`](17-roadmap-sprint-plan-mvp-to-full.md)
+- [`docs/26-current-sprint-plan.md`](26-current-sprint-plan.md) — historical product roadmap (not execution tracker)
+- [`docs/61-roadmap-and-sprint-number-reconciliation.md`](61-roadmap-and-sprint-number-reconciliation.md) — old vs actual sprint map
+- [`docs/63-updated-product-roadmap-after-sprint-11.md`](63-updated-product-roadmap-after-sprint-11.md) — updated product + execution roadmap (Task 11.1c)
+- [`docs/72-payment-provider-decision-report.md`](72-payment-provider-decision-report.md) — Task 10.14 MVP provider decision (Duitku BCA VA-first)
+- [`docs/73-duitku-production-payment-enable-plan.md`](73-duitku-production-payment-enable-plan.md) — Task 10.15 gated production enable plan
+- [`docs/74-atomic-grant-db-rpc-report.md`](74-atomic-grant-db-rpc-report.md) — Task 10.16 atomic grant RPC
+- [`docs/75-apply-migration-00010-hosted-staging-report.md`](75-apply-migration-00010-hosted-staging-report.md) — Task 10.17 hosted staging migration apply
+- [`docs/76-redeploy-staging-api-rpc-grant-integration-report.md`](76-redeploy-staging-api-rpc-grant-integration-report.md) — Task 10.18 staging API redeploy + RPC E2E
+- [`docs/77-production-payment-preflight-migration-approval-gate.md`](77-production-payment-preflight-migration-approval-gate.md) — Task 10.19 production migration approval gate (BLOCKED)
+- [`docs/78-production-environment-foundation-plan.md`](78-production-environment-foundation-plan.md) — Task 10.20 production infra foundation plan
+- [`docs/79-production-supabase-baseline-setup-report.md`](79-production-supabase-baseline-setup-report.md) — Task 10.21 production Supabase baseline (GO)
+- [`docs/80-production-api-web-dns-mode-a-preflight-report.md`](80-production-api-web-dns-mode-a-preflight-report.md) — Task 10.22 production API/web/DNS Mode A plan (GO)
+- [`docs/81-production-api-web-mode-a-deploy-report.md`](81-production-api-web-mode-a-deploy-report.md) — Task 10.23 production API/web Mode A deploy (GO — superseded by 10.23b/10.23c)
+- [`docs/84-production-app-custom-domain-verify-report.md`](84-production-app-custom-domain-verify-report.md) — Task 10.23c production app custom domain verify (GO)
+- [`docs/85-production-homepage-placeholder-report.md`](85-production-homepage-placeholder-report.md) — Task 10.24 production homepage (GO)
+- [`docs/86-private-beta-launch-readiness-audit.md`](86-private-beta-launch-readiness-audit.md) — Task 10.25 private beta readiness (GO)
