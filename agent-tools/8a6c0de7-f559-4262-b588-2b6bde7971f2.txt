@@ -1,0 +1,1260 @@
+
+> siklusio-backend@0.1.0 test
+> node scripts/run-tests.mjs
+
+
+--- RUN D:\Coding\remix_-siklusio\backend\adminCrm.test.ts
+Idempotent payment override matched for key: manual_payment:lead-123:paid_manual:REF-123
+✔ non-admin receives 403 on CRM endpoints (31.6133ms)
+✔ manual payment override requires validation and is idempotent (24.7846ms)
+ℹ tests 2
+ℹ suites 0
+ℹ pass 2
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 14258.0074
+CRM Manual Payment WhatsApp autoresponder failed: {
+  message: 'TypeError: fetch failed',
+  details: 'TypeError: fetch failed\n' +
+    '\n' +
+    'Caused by: Error: getaddrinfo ENOTFOUND project.supabase.co (ENOTFOUND)\n' +
+    'Error: getaddrinfo ENOTFOUND project.supabase.co\n' +
+    '    at GetAddrInfoReqWrap.onlookupall [as oncomplete] (node:dns:122:26)',
+  hint: '',
+  code: ''
+}
+
+--- RUN D:\Coding\remix_-siklusio\backend\adminRouteAuth.test.ts
+--> [BACKEND] Received request /api/admin/users
+TypeError: profiles.map is not a function
+    at getAdminUsers (D:\Coding\remix_-siklusio\backend\src\controllers\admin.controller.ts:41:32)
+    at async dispatch (file:///D:/Coding/remix_-siklusio/node_modules/hono/dist/compose.js:22:17)
+    at async requireAdminMiddleware (D:\Coding\remix_-siklusio\backend\src\middlewares\auth.ts:61:3)
+    at async dispatch (file:///D:/Coding/remix_-siklusio/node_modules/hono/dist/compose.js:22:17)
+    at async dispatch (file:///D:/Coding/remix_-siklusio/node_modules/hono/dist/compose.js:22:17)
+    at async cors2 (file:///D:/Coding/remix_-siklusio/node_modules/hono/dist/middleware/cors/index.js:79:5)
+    at async dispatch (file:///D:/Coding/remix_-siklusio/node_modules/hono/dist/compose.js:22:17)
+    at async file:///D:/Coding/remix_-siklusio/node_modules/hono/dist/hono-base.js:306:25
+    at async TestContext.<anonymous> (D:\Coding\remix_-siklusio\backend\adminRouteAuth.test.ts:117:22)
+    at async Test.run (node:internal/test_runner/test:1208:7)
+--> [BACKEND] Received request GET /api/admin/coupons
+--> [BACKEND] GET /api/admin/affiliates
+✔ GET /api/admin/users rejects unauthenticated requests (20.0838ms)
+✔ GET /api/admin/users rejects authenticated non-admin requests (7.7385ms)
+✔ GET /api/admin/users allows authenticated admin requests (7.5986ms)
+✔ GET /api/admin/coupons rejects unauthenticated requests (0.4775ms)
+✔ GET /api/admin/coupons rejects authenticated non-admin requests (1.1557ms)
+✔ GET /api/admin/coupons allows authenticated admin requests (1.9476ms)
+✔ GET /api/admin/crm/summary rejects unauthenticated requests (0.3923ms)
+✔ GET /api/admin/crm/summary rejects authenticated non-admin requests (1.1401ms)
+✔ GET /api/admin/crm/summary allows authenticated admin requests (2.8779ms)
+✔ GET /api/admin/affiliates rejects unauthenticated requests (0.78ms)
+✔ GET /api/admin/affiliates rejects authenticated non-admin requests (1.0261ms)
+✔ GET /api/admin/affiliates allows authenticated admin requests (7043.5717ms)
+✔ GET /api/admin/whatsapp/settings rejects unauthenticated requests (0.9009ms)
+✔ GET /api/admin/whatsapp/settings rejects authenticated non-admin requests (1.2075ms)
+✔ GET /api/admin/whatsapp/settings allows authenticated admin requests (7033.2543ms)
+getAdminWhatsappSettings failed: {
+  message: 'Error: Unexpected fetch [redacted-url] GET',
+  details: 'Error: Unexpected fetch [redacted-url] GET\n' +
+    '    at <anonymous> (D:\\Coding\\remix_-siklusio\\backend\\adminRouteAuth.test.ts:55:11)\n' +
+    '    at <anonymous> (D:\\Coding\\remix_-siklusio\\node_modules\\@supabase\\supabase-js\\dist\\index.mjs:317:22)\n' +
+    '    at <anonymous> (D:\\Coding\\remix_-siklusio\\node_modules\\@supabase\\supabase-js\\dist\\index.mjs:342:10)\n' +
+    '    at async executeWithRetry (D:\\Coding\\remix_-siklusio\\node_modules\\@supabase\\postgrest-js\\src\\PostgrestBuilder.ts:317:17)\n' +
+    '    at async getAdminWhatsappSettings (D:\\Coding\\remix_-siklusio\\backend\\src\\controllers\\adminWhatsapp.controller.ts:44:29)\n' +
+    '    at async dispatch (file:///D:/Coding/remix_-siklusio/node_modules/hono/dist/compose.js:22:17)\n' +
+    '    at async requireAdminMiddleware (D:\\Coding\\remix_-siklusio\\backend\\src\\middlewares\\auth.ts:61:3)\n' +
+    '    at async dispatch (file:///D:/Coding/remix_-siklusio/node_modules/hono/dist/compose.js:22:17)\n' +
+    '    at async dispatch (file:///D:/Coding/remix_-siklusio/node_modules/hono/dist/compose.js:22:17)\n' +
+    '    at async cors2 (file:///D:/Coding/remix_-siklusio/node_modules/hono/dist/middleware/cors/index.js:79:5)',
+  hint: '',
+  code: ''
+}
+ℹ tests 15
+ℹ suites 0
+ℹ pass 15
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 14128.7013
+
+--- RUN D:\Coding\remix_-siklusio\backend\aiDailyGenerationCache.test.ts
+--> [BACKEND] Received request /api/generate-cycle-report
+DB Rate Limiter error, falling back to memory: {
+  message: 'Error: fetch should not be called for unauthenticated cycle report',
+  details: 'Error: fetch should not be called for unauthenticated cycle report\n' +
+    '    at globalThis.fetch (D:\\Coding\\remix_-siklusio\\backend\\aiDailyGenerationCache.test.ts:189:11)\n' +
+    '    at <anonymous> (D:\\Coding\\remix_-siklusio\\node_modules\\@supabase\\supabase-js\\dist\\index.mjs:317:22)\n' +
+    '    at <anonymous> (D:\\Coding\\remix_-siklusio\\node_modules\\@supabase\\supabase-js\\dist\\index.mjs:342:10)\n' +
+    '    at async executeWithRetry (D:\\Coding\\remix_-siklusio\\node_modules\\@supabase\\postgrest-js\\src\\PostgrestBuilder.ts:317:17)\n' +
+    '    at async <anonymous> (D:\\Coding\\remix_-siklusio\\backend\\src\\middlewares\\rateLimit.ts:264:50)\n' +
+    '    at async dispatch (file:///D:/Coding/remix_-siklusio/node_modules/hono/dist/compose.js:22:17)\n' +
+    '    at async cors2 (file:///D:/Coding/remix_-siklusio/node_modules/hono/dist/middleware/cors/index.js:79:5)\n' +
+    '    at async dispatch (file:///D:/Coding/remix_-siklusio/node_modules/hono/dist/compose.js:22:17)\n' +
+    '    at async file:///D:/Coding/remix_-siklusio/node_modules/hono/dist/hono-base.js:306:25\n' +
+    '    at async TestContext.<anonymous> (D:\\Coding\\remix_-siklusio\\backend\\aiDailyGenerationCache.test.ts:196:20)',
+  hint: '',
+  code: ''
+}
+--> [BACKEND] Received request /api/generate-habits-insight
+--> [BACKEND] Received request /api/generate-cycle-report
+--> [BACKEND] Calling OpenRouter API...
+--> [BACKEND] Received OpenRouter response.
+--> [BACKEND] Received request /api/generate-cycle-report
+--> [BACKEND] Calling OpenRouter API...
+--> [BACKEND] Received OpenRouter response.
+--> [BACKEND] Received request /api/generate-cycle-report
+--> [BACKEND] Returning cached cycle report for today.
+--> [BACKEND] Received request /api/generate-habits-insight
+--> [BACKEND] Calling OpenRouter API...
+--> [BACKEND] Received OpenRouter response.
+--> [BACKEND] Received request /api/generate-habits-insight
+--> [BACKEND] Calling OpenRouter API...
+DB Rate Limiter error, falling back to memory: {
+  message: 'Error: fetch should not be called for unauthenticated habits insight',
+  details: 'Error: fetch should not be called for unauthenticated habits insight\n' +
+    '    at globalThis.fetch (D:\\Coding\\remix_-siklusio\\backend\\aiDailyGenerationCache.test.ts:213:11)\n' +
+    '    at <anonymous> (D:\\Coding\\remix_-siklusio\\node_modules\\@supabase\\supabase-js\\dist\\index.mjs:317:22)\n' +
+    '    at <anonymous> (D:\\Coding\\remix_-siklusio\\node_modules\\@supabase\\supabase-js\\dist\\index.mjs:342:10)\n' +
+    '    at async executeWithRetry (D:\\Coding\\remix_-siklusio\\node_modules\\@supabase\\postgrest-js\\src\\PostgrestBuilder.ts:317:17)\n' +
+    '    at async <anonymous> (D:\\Coding\\remix_-siklusio\\backend\\src\\middlewares\\rateLimit.ts:264:50)\n' +
+    '    at async dispatch (file:///D:/Coding/remix_-siklusio/node_modules/hono/dist/compose.js:22:17)\n' +
+    '    at async cors2 (file:///D:/Coding/remix_-siklusio/node_modules/hono/dist/middleware/cors/index.js:79:5)\n' +
+    '    at async dispatch (file:///D:/Coding/remix_-siklusio/node_modules/hono/dist/compose.js:22:17)\n' +
+    '    at async file:///D:/Coding/remix_-siklusio/node_modules/hono/dist/hono-base.js:306:25\n' +
+    '    at async TestContext.<anonymous> (D:\\Coding\\remix_-siklusio\\backend\\aiDailyGenerationCache.test.ts:220:20)',
+  hint: '',
+  code: ''
+}
+--> [BACKEND] Received OpenRouter response.
+--> [BACKEND] Received request /api/generate-habits-insight
+--> [BACKEND] Returning cached habits insight for today.
+--> [BACKEND] Received request /api/generate-cycle-report
+--> [BACKEND] Calling OpenRouter API...
+--> [BACKEND] Received OpenRouter response.
+--> [BACKEND] Received request /api/generate-cycle-report
+--> [BACKEND] Calling OpenRouter API...
+--> [BACKEND] Received OpenRouter response.
+--> [BACKEND] Received request /api/generate-cycle-report
+--> [BACKEND] Calling OpenRouter API...
+--> [BACKEND] Received request /api/generate-habits-insight
+--> [BACKEND] Calling OpenRouter API...
+✔ generate-cycle-report rejects unauthenticated requests (29.8039ms)
+✔ generate-habits-insight rejects unauthenticated requests (2.348ms)
+✔ first cycle report calls provider and caches result (6.2009ms)
+✔ second same-day cycle report returns cached result without provider call (4.023ms)
+✔ first habits insight calls provider and caches result (2.682ms)
+✔ second same-day habits insight returns cached result without provider call (4.2661ms)
+✔ cycle report cache does not leak across users (9.2837ms)
+✔ provider failure does not cache cycle report success (5.8501ms)
+✔ provider failure does not cache habits insight success (2.4345ms)
+ℹ tests 9
+ℹ suites 0
+ℹ pass 9
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 74.7398
+
+--- RUN D:\Coding\remix_-siklusio\backend\avatarUpload.test.ts
+<-- [BACKEND] OpenRouter API Error / Exception:
+Error: Provider unavailable
+    at callOpenRouterJson (D:\Coding\remix_-siklusio\backend\src\ai\openRouter.ts:102:11)
+    at async generateCycleReport (D:\Coding\remix_-siklusio\backend\src\controllers\ai.reassurance.controller.ts:90:16)
+    at async dispatch (file:///D:/Coding/remix_-siklusio/node_modules/hono/dist/compose.js:22:17)
+    at async dispatch (file:///D:/Coding/remix_-siklusio/node_modules/hono/dist/compose.js:22:17)
+    at async cors2 (file:///D:/Coding/remix_-siklusio/node_modules/hono/dist/middleware/cors/index.js:79:5)
+    at async dispatch (file:///D:/Coding/remix_-siklusio/node_modules/hono/dist/compose.js:22:17)
+    at async file:///D:/Coding/remix_-siklusio/node_modules/hono/dist/hono-base.js:306:25
+    at async TestContext.<anonymous> (D:\Coding\remix_-siklusio\backend\aiDailyGenerationCache.test.ts:457:20)
+    at async Test.run (node:internal/test_runner/test:1208:7)
+    at async Test.processPendingSubtests (node:internal/test_runner/test:831:7)
+<-- [BACKEND] OpenRouter API Error / Exception:
+Error: Provider unavailable
+    at callOpenRouterJson (D:\Coding\remix_-siklusio\backend\src\ai\openRouter.ts:102:11)
+    at async generateHabitsInsight (D:\Coding\remix_-siklusio\backend\src\controllers\ai.reassurance.controller.ts:179:16)
+    at async dispatch (file:///D:/Coding/remix_-siklusio/node_modules/hono/dist/compose.js:22:17)
+    at async dispatch (file:///D:/Coding/remix_-siklusio/node_modules/hono/dist/compose.js:22:17)
+    at async cors2 (file:///D:/Coding/remix_-siklusio/node_modules/hono/dist/middleware/cors/index.js:79:5)
+    at async dispatch (file:///D:/Coding/remix_-siklusio/node_modules/hono/dist/compose.js:22:17)
+    at async file:///D:/Coding/remix_-siklusio/node_modules/hono/dist/hono-base.js:306:25
+    at async TestContext.<anonymous> (D:\Coding\remix_-siklusio\backend\aiDailyGenerationCache.test.ts:492:20)
+    at async Test.run (node:internal/test_runner/test:1208:7)
+    at async Test.processPendingSubtests (node:internal/test_runner/test:831:7)
+--> [BACKEND] Received request /api/upload-avatar
+--> [BACKEND] Received request /api/upload-avatar
+✔ avatar upload rejects non-image base64 before R2 upload (24.8745ms)
+✔ avatar upload rejects oversized avatar dimensions before R2 upload (1.8121ms)
+ℹ tests 2
+ℹ suites 0
+ℹ pass 2
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 32.6404
+
+--- RUN D:\Coding\remix_-siklusio\backend\checkoutRegister.test.ts
+--> [BACKEND] Received Mayar webhook notification
+DB Rate Limiter error, falling back to memory: {
+  message: 'Error: Unexpected fetch https://project.supabase.co/rest/v1/rpc/check_rate_limit',
+  details: 'Error: Unexpected fetch https://project.supabase.co/rest/v1/rpc/check_rate_limit\n' +
+    '    at globalThis.fetch (D:\\Coding\\remix_-siklusio\\backend\\checkoutRegister.test.ts:91:11)\n' +
+    '    at <anonymous> (D:\\Coding\\remix_-siklusio\\node_modules\\@supabase\\supabase-js\\dist\\index.mjs:317:22)\n' +
+    '    at <anonymous> (D:\\Coding\\remix_-siklusio\\node_modules\\@supabase\\supabase-js\\dist\\index.mjs:342:10)\n' +
+    '    at async executeWithRetry (D:\\Coding\\remix_-siklusio\\node_modules\\@supabase\\postgrest-js\\src\\PostgrestBuilder.ts:317:17)\n' +
+    '    at async <anonymous> (D:\\Coding\\remix_-siklusio\\backend\\src\\middlewares\\rateLimit.ts:264:50)\n' +
+    '    at async dispatch (file:///D:/Coding/remix_-siklusio/node_modules/hono/dist/compose.js:22:17)\n' +
+    '    at async cors2 (file:///D:/Coding/remix_-siklusio/node_modules/hono/dist/middleware/cors/index.js:79:5)\n' +
+    '    at async dispatch (file:///D:/Coding/remix_-siklusio/node_modules/hono/dist/compose.js:22:17)\n' +
+    '    at async file:///D:/Coding/remix_-siklusio/node_modules/hono/dist/hono-base.js:306:25\n' +
+    '    at async TestContext.<anonymous> (D:\\Coding\\remix_-siklusio\\backend\\checkoutRegister.test.ts:99:20)',
+  hint: '',
+  code: ''
+}
+--> Querying pending registration
+--> Activating existing pending Supabase Auth user: 11111111-1111-4111-8111-111111111111
+✔ paid checkout stores pending registration without plaintext password (58.199ms)
+--> Deleting pending registration record
+<-- Webhook processed successfully! User created ID: 11111111-1111-4111-8111-111111111111
+--> [BACKEND] Received request /api/checkout/register
+✔ payment webhook activates existing pending auth user instead of creating one from a password (11.1908ms)
+--> Creating Supabase Auth user immediately as pending...
+--> Inserting pending registration...
+--> Calling Mayar API to create payment link...
+--> [BACKEND] Received request /api/checkout/register
+✔ paid checkout does not return payment URL when checkout session insert fails (4.2367ms)
+--> Creating Supabase Auth user immediately as pending...
+--> Inserting pending registration...
+--> Calling Mayar API to create payment link...
+<-- Checkout request successful! Payment URL: [redacted-url]
+--> [BACKEND] Received request /api/checkout/register
+✔ checkout register ignores test_event_code when META_TEST_MODE_SECRET is missing (4.223ms)
+--> Creating Supabase Auth user immediately as pending...
+--> Inserting pending registration...
+--> Calling Mayar API to create payment link...
+<-- Checkout request successful! Payment URL: [redacted-url]
+--> [BACKEND] Received request /api/checkout/register
+✔ checkout register ignores test_event_code when test_secret does not match (3.4993ms)
+--> Creating Supabase Auth user immediately as pending...
+--> Inserting pending registration...
+--> Calling Mayar API to create payment link...
+<-- Checkout request successful! Payment URL: [redacted-url]
+--> [BACKEND] Received request /api/checkout/register
+✔ checkout register stores test_event_code only when test_secret matches META_TEST_MODE_SECRET (2.9897ms)
+--> Creating Supabase Auth user immediately as pending...
+✔ duplicate email returns existing client error without listUsers or downstream side effects (3.2018ms)
+CRM upsert failed during paid checkout registration: {
+  message: 'Error: Unexpected fetch [redacted-url]',
+  details: 'Error: Unexpected fetch [redacted-url]\n' +
+    '    at globalThis.fetch (D:\\Coding\\remix_-siklusio\\backend\\checkoutRegister.test.ts:91:11)\n' +
+    '    at <anonymous> (D:\\Coding\\remix_-siklusio\\node_modules\\@supabase\\supabase-js\\dist\\index.mjs:317:22)\n' +
+    '    at <anonymous> (D:\\Coding\\remix_-siklusio\\node_modules\\@supabase\\supabase-js\\dist\\index.mjs:342:10)\n' +
+    '    at async executeWithRetry (D:\\Coding\\remix_-siklusio\\node_modules\\@supabase\\postgrest-js\\src\\PostgrestBuilder.ts:317:17)\n' +
+    '    at async upsertAdminCrmLead (D:\\Coding\\remix_-siklusio\\backend\\src\\services\\adminCrm.ts:46:27)\n' +
+    '    at async processPaidCheckoutRegistration (D:\\Coding\\remix_-siklusio\\backend\\src\\services\\checkoutRegistrationService.ts:551:5)\n' +
+    '    at async checkoutRegister (D:\\Coding\\remix_-siklusio\\backend\\src\\controllers\\checkout.controller.ts:40:20)\n' +
+    '    at async dispatch (file:///D:/Coding/remix_-siklusio/node_modules/hono/dist/compose.js:22:17)\n' +
+    '    at async dispatch (file:///D:/Coding/remix_-siklusio/node_modules/hono/dist/compose.js:22:17)\n' +
+    '    at async cors2 (file:///D:/Coding/remix_-siklusio/node_modules/hono/dist/middleware/cors/index.js:79:5)',
+  hint: '',
+  code: ''
+}
+DB Rate Limiter error, falling back to memory: {
+  message: 'Error: Unexpected fetch https://project.supabase.co/rest/v1/rpc/check_rate_limit POST',
+  details: 'Error: Unexpected fetch https://project.supabase.co/rest/v1/rpc/check_rate_limit POST\n' +
+    '    at globalThis.fetch (D:\\Coding\\remix_-siklusio\\backend\\checkoutRegister.test.ts:237:11)\n' +
+    '    at <anonymous> (D:\\Coding\\remix_-siklusio\\node_modules\\@supabase\\supabase-js\\dist\\index.mjs:317:22)\n' +
+    '    at <anonymous> (D:\\Coding\\remix_-siklusio\\node_modules\\@supabase\\supabase-js\\dist\\index.mjs:342:10)\n' +
+    '    at async executeWithRetry (D:\\Coding\\remix_-siklusio\\node_modules\\@supabase\\postgrest-js\\src\\PostgrestBuilder.ts:317:17)\n' +
+    '    at async <anonymous> (D:\\Coding\\remix_-siklusio\\backend\\src\\middlewares\\rateLimit.ts:264:50)\n' +
+    '    at async dispatch (file:///D:/Coding/remix_-siklusio/node_modules/hono/dist/compose.js:22:17)\n' +
+    '    at async cors2 (file:///D:/Coding/remix_-siklusio/node_modules/hono/dist/middleware/cors/index.js:79:5)\n' +
+    '    at async dispatch (file:///D:/Coding/remix_-siklusio/node_modules/hono/dist/compose.js:22:17)\n' +
+    '    at async file:///D:/Coding/remix_-siklusio/node_modules/hono/dist/hono-base.js:306:25\n' +
+    '    at async TestContext.<anonymous> (D:\\Coding\\remix_-siklusio\\backend\\checkoutRegister.test.ts:244:20)',
+  hint: '',
+  code: ''
+}
+CRM upsert failed during Mayar webhook processing: {
+  message: 'Error: Unexpected fetch [redacted-url] POST',
+  details: 'Error: Unexpected fetch [redacted-url] POST\n' +
+    '    at globalThis.fetch (D:\\Coding\\remix_-siklusio\\backend\\checkoutRegister.test.ts:237:11)\n' +
+    '    at <anonymous> (D:\\Coding\\remix_-siklusio\\node_modules\\@supabase\\supabase-js\\dist\\index.mjs:317:22)\n' +
+    '    at <anonymous> (D:\\Coding\\remix_-siklusio\\node_modules\\@supabase\\supabase-js\\dist\\index.mjs:342:10)\n' +
+    '    at async executeWithRetry (D:\\Coding\\remix_-siklusio\\node_modules\\@supabase\\postgrest-js\\src\\PostgrestBuilder.ts:317:17)\n' +
+    '    at async upsertAdminCrmLead (D:\\Coding\\remix_-siklusio\\backend\\src\\services\\adminCrm.ts:46:27)\n' +
+    '    at async processMayarWebhookPremiumActivation (D:\\Coding\\remix_-siklusio\\backend\\src\\services\\paymentActivationService.ts:374:5)\n' +
+    '    at async handleMayarWebhook (D:\\Coding\\remix_-siklusio\\backend\\src\\controllers\\webhook.mayar.controller.ts:282:26)\n' +
+    '    at async dispatch (file:///D:/Coding/remix_-siklusio/node_modules/hono/dist/compose.js:22:17)\n' +
+    '    at async dispatch (file:///D:/Coding/remix_-siklusio/node_modules/hono/dist/compose.js:22:17)\n' +
+    '    at async cors2 (file:///D:/Coding/remix_-siklusio/node_modules/hono/dist/middleware/cors/index.js:79:5)',
+  hint: '',
+  code: ''
+}
+--> Meta env variables missing. Skipping CAPI but marking done.
+DB Rate Limiter error, falling back to memory: {
+  message: 'Error: Unexpected fetch https://project.supabase.co/rest/v1/rpc/check_rate_limit POST',
+  details: 'Error: Unexpected fetch https://project.supabase.co/rest/v1/rpc/check_rate_limit POST\n' +
+    '    at globalThis.fetch (D:\\Coding\\remix_-siklusio\\backend\\checkoutRegister.test.ts:350:11)\n' +
+    '    at <anonymous> (D:\\Coding\\remix_-siklusio\\node_modules\\@supabase\\supabase-js\\dist\\index.mjs:317:22)\n' +
+    '    at <anonymous> (D:\\Coding\\remix_-siklusio\\node_modules\\@supabase\\supabase-js\\dist\\index.mjs:342:10)\n' +
+    '    at async executeWithRetry (D:\\Coding\\remix_-siklusio\\node_modules\\@supabase\\postgrest-js\\src\\PostgrestBuilder.ts:317:17)\n' +
+    '    at async <anonymous> (D:\\Coding\\remix_-siklusio\\backend\\src\\middlewares\\rateLimit.ts:264:50)\n' +
+    '    at async dispatch (file:///D:/Coding/remix_-siklusio/node_modules/hono/dist/compose.js:22:17)\n' +
+    '    at async cors2 (file:///D:/Coding/remix_-siklusio/node_modules/hono/dist/middleware/cors/index.js:79:5)\n' +
+    '    at async dispatch (file:///D:/Coding/remix_-siklusio/node_modules/hono/dist/compose.js:22:17)\n' +
+    '    at async file:///D:/Coding/remix_-siklusio/node_modules/hono/dist/hono-base.js:306:25\n' +
+    '    at async TestContext.<anonymous> (D:\\Coding\\remix_-siklusio\\backend\\checkoutRegister.test.ts:357:20)',
+  hint: '',
+  code: ''
+}
+DB Insert checkout_session error: { message: 'insert failed' }
+DB Rate Limiter error, falling back to memory: {
+  message: 'Error: Unexpected fetch https://project.supabase.co/rest/v1/rpc/check_rate_limit',
+  details: 'Error: Unexpected fetch https://project.supabase.co/rest/v1/rpc/check_rate_limit\n' +
+    '    at globalThis.fetch (D:\\Coding\\remix_-siklusio\\backend\\checkoutRegister.test.ts:443:11)\n' +
+    '    at <anonymous> (D:\\Coding\\remix_-siklusio\\node_modules\\@supabase\\supabase-js\\dist\\index.mjs:317:22)\n' +
+    '    at <anonymous> (D:\\Coding\\remix_-siklusio\\node_modules\\@supabase\\supabase-js\\dist\\index.mjs:342:10)\n' +
+    '    at async executeWithRetry (D:\\Coding\\remix_-siklusio\\node_modules\\@supabase\\postgrest-js\\src\\PostgrestBuilder.ts:317:17)\n' +
+    '    at async <anonymous> (D:\\Coding\\remix_-siklusio\\backend\\src\\middlewares\\rateLimit.ts:264:50)\n' +
+    '    at async dispatch (file:///D:/Coding/remix_-siklusio/node_modules/hono/dist/compose.js:22:17)\n' +
+    '    at async cors2 (file:///D:/Coding/remix_-siklusio/node_modules/hono/dist/middleware/cors/index.js:79:5)\n' +
+    '    at async dispatch (file:///D:/Coding/remix_-siklusio/node_modules/hono/dist/compose.js:22:17)\n' +
+    '    at async file:///D:/Coding/remix_-siklusio/node_modules/hono/dist/hono-base.js:306:25\n' +
+    '    at async registerCheckoutWithMetaTestFields (D:\\Coding\\remix_-siklusio\\backend\\checkoutRegister.test.ts:450:20)',
+  hint: '',
+  code: ''
+}
+CRM upsert failed during paid checkout registration: {
+  message: 'Error: Unexpected fetch [redacted-url]',
+  details: 'Error: Unexpected fetch [redacted-url]\n' +
+    '    at globalThis.fetch (D:\\Coding\\remix_-siklusio\\backend\\checkoutRegister.test.ts:443:11)\n' +
+    '    at <anonymous> (D:\\Coding\\remix_-siklusio\\node_modules\\@supabase\\supabase-js\\dist\\index.mjs:317:22)\n' +
+    '    at <anonymous> (D:\\Coding\\remix_-siklusio\\node_modules\\@supabase\\supabase-js\\dist\\index.mjs:342:10)\n' +
+    '    at async executeWithRetry (D:\\Coding\\remix_-siklusio\\node_modules\\@supabase\\postgrest-js\\src\\PostgrestBuilder.ts:317:17)\n' +
+    '    at async upsertAdminCrmLead (D:\\Coding\\remix_-siklusio\\backend\\src\\services\\adminCrm.ts:46:27)\n' +
+    '    at async processPaidCheckoutRegistration (D:\\Coding\\remix_-siklusio\\backend\\src\\services\\checkoutRegistrationService.ts:551:5)\n' +
+    '    at async checkoutRegister (D:\\Coding\\remix_-siklusio\\backend\\src\\controllers\\checkout.controller.ts:40:20)\n' +
+    '    at async dispatch (file:///D:/Coding/remix_-siklusio/node_modules/hono/dist/compose.js:22:17)\n' +
+    '    at async dispatch (file:///D:/Coding/remix_-siklusio/node_modules/hono/dist/compose.js:22:17)\n' +
+    '    at async cors2 (file:///D:/Coding/remix_-siklusio/node_modules/hono/dist/middleware/cors/index.js:79:5)',
+  hint: '',
+  code: ''
+}
+DB Rate Limiter error, falling back to memory: {
+  message: 'Error: Unexpected fetch https://project.supabase.co/rest/v1/rpc/check_rate_limit',
+  details: 'Error: Unexpected fetch https://project.supabase.co/rest/v1/rpc/check_rate_limit\n' +
+    '    at globalThis.fetch (D:\\Coding\\remix_-siklusio\\backend\\checkoutRegister.test.ts:443:11)\n' +
+    '    at <anonymous> (D:\\Coding\\remix_-siklusio\\node_modules\\@supabase\\supabase-js\\dist\\index.mjs:317:22)\n' +
+    '    at <anonymous> (D:\\Coding\\remix_-siklusio\\node_modules\\@supabase\\supabase-js\\dist\\index.mjs:342:10)\n' +
+    '    at async executeWithRetry (D:\\Coding\\remix_-siklusio\\node_modules\\@supabase\\postgrest-js\\src\\PostgrestBuilder.ts:317:17)\n' +
+    '    at async <anonymous> (D:\\Coding\\remix_-siklusio\\backend\\src\\middlewares\\rateLimit.ts:264:50)\n' +
+    '    at async dispatch (file:///D:/Coding/remix_-siklusio/node_modules/hono/dist/compose.js:22:17)\n' +
+    '    at async cors2 (file:///D:/Coding/remix_-siklusio/node_modules/hono/dist/middleware/cors/index.js:79:5)\n' +
+    '    at async dispatch (file:///D:/Coding/remix_-siklusio/node_modules/hono/dist/compose.js:22:17)\n' +
+    '    at async file:///D:/Coding/remix_-siklusio/node_modules/hono/dist/hono-base.js:306:25\n' +
+    '    at async registerCheckoutWithMetaTestFields (D:\\Coding\\remix_-siklusio\\backend\\checkoutRegister.test.ts:450:20)',
+  hint: '',
+  code: ''
+}
+CRM upsert failed during paid checkout registration: {
+  message: 'Error: Unexpected fetch [redacted-url]',
+  details: 'Error: Unexpected fetch [redacted-url]\n' +
+    '    at globalThis.fetch (D:\\Coding\\remix_-siklusio\\backend\\checkoutRegister.test.ts:443:11)\n' +
+    '    at <anonymous> (D:\\Coding\\remix_-siklusio\\node_modules\\@supabase\\supabase-js\\dist\\index.mjs:317:22)\n' +
+    '    at <anonymous> (D:\\Coding\\remix_-siklusio\\node_modules\\@supabase\\supabase-js\\dist\\index.mjs:342:10)\n' +
+    '    at async executeWithRetry (D:\\Coding\\remix_-siklusio\\node_modules\\@supabase\\postgrest-js\\src\\PostgrestBuilder.ts:317:17)\n' +
+    '    at async upsertAdminCrmLead (D:\\Coding\\remix_-siklusio\\backend\\src\\services\\adminCrm.ts:46:27)\n' +
+    '    at async processPaidCheckoutRegistration (D:\\Coding\\remix_-siklusio\\backend\\src\\services\\checkoutRegistrationService.ts:551:5)\n' +
+    '    at async checkoutRegister (D:\\Coding\\remix_-siklusio\\backend\\src\\controllers\\checkout.controller.ts:40:20)\n' +
+    '    at async dispatch (file:///D:/Coding/remix_-siklusio/node_modules/hono/dist/compose.js:22:17)\n' +
+    '    at async dispatch (file:///D:/Coding/remix_-siklusio/node_modules/hono/dist/compose.js:22:17)\n' +
+    '    at async cors2 (file:///D:/Coding/remix_-siklusio/node_modules/hono/dist/middleware/cors/index.js:79:5)',
+  hint: '',
+  code: ''
+}
+DB Rate Limiter error, falling back to memory: {
+  message: 'Error: Unexpected fetch https://project.supabase.co/rest/v1/rpc/check_rate_limit',
+  details: 'Error: Unexpected fetch https://project.supabase.co/rest/v1/rpc/check_rate_limit\n' +
+    '    at globalThis.fetch (D:\\Coding\\remix_-siklusio\\backend\\checkoutRegister.test.ts:443:11)\n' +
+    '    at <anonymous> (D:\\Coding\\remix_-siklusio\\node_modules\\@supabase\\supabase-js\\dist\\index.mjs:317:22)\n' +
+    '    at <anonymous> (D:\\Coding\\remix_-siklusio\\node_modules\\@supabase\\supabase-js\\dist\\index.mjs:342:10)\n' +
+    '    at async executeWithRetry (D:\\Coding\\remix_-siklusio\\node_modules\\@supabase\\postgrest-js\\src\\PostgrestBuilder.ts:317:17)\n' +
+    '    at async <anonymous> (D:\\Coding\\remix_-siklusio\\backend\\src\\middlewares\\rateLimit.ts:264:50)\n' +
+    '    at async dispatch (file:///D:/Coding/remix_-siklusio/node_modules/hono/dist/compose.js:22:17)\n' +
+    '    at async cors2 (file:///D:/Coding/remix_-siklusio/node_modules/hono/dist/middleware/cors/index.js:79:5)\n' +
+    '    at async dispatch (file:///D:/Coding/remix_-siklusio/node_modules/hono/dist/compose.js:22:17)\n' +
+    '    at async file:///D:/Coding/remix_-siklusio/node_modules/hono/dist/hono-base.js:306:25\n' +
+    '    at async registerCheckoutWithMetaTestFields (D:\\Coding\\remix_-siklusio\\backend\\checkoutRegister.test.ts:450:20)',
+  hint: '',
+  code: ''
+}
+CRM upsert failed during paid checkout registration: {
+  message: 'Error: Unexpected fetch [redacted-url]',
+  details: 'Error: Unexpected fetch [redacted-url]\n' +
+    '    at globalThis.fetch (D:\\Coding\\remix_-siklusio\\backend\\checkoutRegister.test.ts:443:11)\n' +
+    '    at <anonymous> (D:\\Coding\\remix_-siklusio\\node_modules\\@supabase\\supabase-js\\dist\\index.mjs:317:22)\n' +
+    '    at <anonymous> (D:\\Coding\\remix_-siklusio\\node_modules\\@supabase\\supabase-js\\dist\\index.mjs:342:10)\n' +
+    '    at async executeWithRetry (D:\\Coding\\remix_-siklusio\\node_modules\\@supabase\\postgrest-js\\src\\PostgrestBuilder.ts:317:17)\n' +
+    '    at async upsertAdminCrmLead (D:\\Coding\\remix_-siklusio\\backend\\src\\services\\adminCrm.ts:46:27)\n' +
+    '    at async processPaidCheckoutRegistration (D:\\Coding\\remix_-siklusio\\backend\\src\\services\\checkoutRegistrationService.ts:551:5)\n' +
+    '    at async checkoutRegister (D:\\Coding\\remix_-siklusio\\backend\\src\\controllers\\checkout.controller.ts:40:20)\n' +
+    '    at async dispatch (file:///D:/Coding/remix_-siklusio/node_modules/hono/dist/compose.js:22:17)\n' +
+    '    at async dispatch (file:///D:/Coding/remix_-siklusio/node_modules/hono/dist/compose.js:22:17)\n' +
+    '    at async cors2 (file:///D:/Coding/remix_-siklusio/node_modules/hono/dist/middleware/cors/index.js:79:5)',
+  hint: '',
+  code: ''
+}
+Supabase auth user creation error: {
+  name: 'AuthApiError',
+  message: 'A user with this email address has already been registered',
+  stack: 'AuthApiError: A user with this email address has already been registered\n' +
+    '    at handleError (D:\\Coding\\remix_-siklusio\\node_modules\\@supabase\\auth-js\\src\\lib\\fetch.ts:139:9)\n' +
+    '    at async _handleRequest (D:\\Coding\\remix_-siklusio\\node_modules\\@supabase\\auth-js\\src\\lib\\fetch.ts:232:5)\n' +
+    '    at async _request (D:\\Coding\\remix_-siklusio\\node_modules\\@supabase\\auth-js\\src\\lib\\fetch.ts:194:16)\n' +
+    '    at async GoTrueAdminApi.createUser (D:\\Coding\\remix_-siklusio\\node_modules\\@supabase\\auth-js\\src\\GoTrueAdminApi.ts:495:14)\n' +
+    '    at async processPaidCheckoutRegistration (D:\\Coding\\remix_-siklusio\\backend\\src\\services\\checkoutRegistrationService.ts:456:48)\n' +
+    '    at async checkoutRegister (D:\\Coding\\remix_-siklusio\\backend\\src\\controllers\\checkout.controller.ts:40:20)\n' +
+    '    at async dispatch (file:///D:/Coding/remix_-siklusio/node_modules/hono/dist/compose.js:22:17)\n' +
+    '    at async dispatch (file:///D:/Coding/remix_-siklusio/node_modules/hono/dist/compose.js:22:17)\n' +
+    '    at async cors2 (file:///D:/Coding/remix_-siklusio/node_modules/hono/dist/middleware/cors/index.js:79:5)\n' +
+    '    at async dispatch (file:///D:/Coding/remix_-siklusio/node_modules/hono/dist/compose.js:22:17)'
+}
+ℹ tests 7
+ℹ suites 0
+ℹ pass 7
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 14554.8079
+Webhook Payment completed WhatsApp autoresponder failed: {
+  message: 'TypeError: fetch failed',
+  details: 'TypeError: fetch failed\n' +
+    '\n' +
+    'Caused by: Error: getaddrinfo ENOTFOUND project.supabase.co (ENOTFOUND)\n' +
+    'Error: getaddrinfo ENOTFOUND project.supabase.co\n' +
+    '    at GetAddrInfoReqWrap.onlookupall [as oncomplete] (node:dns:122:26)',
+  hint: '',
+  code: ''
+}
+
+--- RUN D:\Coding\remix_-siklusio\backend\cors.test.ts
+Registration WhatsApp autoresponder failed: {
+  message: 'TypeError: fetch failed',
+  details: 'TypeError: fetch failed\n' +
+    '\n' +
+    'Caused by: Error: getaddrinfo ENOTFOUND project.supabase.co (ENOTFOUND)\n' +
+    'Error: getaddrinfo ENOTFOUND project.supabase.co\n' +
+    '    at GetAddrInfoReqWrap.onlookupall [as oncomplete] (node:dns:122:26)',
+  hint: '',
+  code: ''
+}
+Registration WhatsApp autoresponder failed: {
+  message: 'TypeError: fetch failed',
+  details: 'TypeError: fetch failed\n' +
+    '\n' +
+    'Caused by: Error: getaddrinfo ENOTFOUND project.supabase.co (ENOTFOUND)\n' +
+    'Error: getaddrinfo ENOTFOUND project.supabase.co\n' +
+    '    at GetAddrInfoReqWrap.onlookupall [as oncomplete] (node:dns:122:26)',
+  hint: '',
+  code: ''
+}
+Registration WhatsApp autoresponder failed: {
+  message: 'TypeError: fetch failed',
+  details: 'TypeError: fetch failed\n' +
+    '\n' +
+    'Caused by: Error: getaddrinfo ENOTFOUND project.supabase.co (ENOTFOUND)\n' +
+    'Error: getaddrinfo ENOTFOUND project.supabase.co\n' +
+    '    at GetAddrInfoReqWrap.onlookupall [as oncomplete] (node:dns:122:26)',
+  hint: '',
+  code: ''
+}
+Registration WhatsApp autoresponder failed: {
+  message: 'TypeError: fetch failed',
+  details: 'TypeError: fetch failed\n' +
+    '\n' +
+    'Caused by: Error: getaddrinfo ENOTFOUND project.supabase.co (ENOTFOUND)\n' +
+    'Error: getaddrinfo ENOTFOUND project.supabase.co\n' +
+    '    at GetAddrInfoReqWrap.onlookupall [as oncomplete] (node:dns:122:26)',
+  hint: '',
+  code: ''
+}
+✔ CORS allows trusted Siklusio app origin (20.7054ms)
+✔ CORS does not allow untrusted browser origins (0.6213ms)
+ℹ tests 2
+ℹ suites 0
+ℹ pass 2
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 32.3406
+
+--- RUN D:\Coding\remix_-siklusio\backend\metaCapiWebhook.test.ts
+--> [BACKEND] Received Mayar webhook notification
+DB Rate Limiter error, falling back to memory: {
+  message: 'Error: Unexpected fetch https://project.supabase.co/rest/v1/rpc/check_rate_limit POST',
+  details: 'Error: Unexpected fetch https://project.supabase.co/rest/v1/rpc/check_rate_limit POST\n' +
+    '    at globalThis.fetch (D:\\Coding\\remix_-siklusio\\backend\\metaCapiWebhook.test.ts:105:11)\n' +
+    '    at <anonymous> (D:\\Coding\\remix_-siklusio\\node_modules\\@supabase\\supabase-js\\dist\\index.mjs:317:22)\n' +
+    '    at <anonymous> (D:\\Coding\\remix_-siklusio\\node_modules\\@supabase\\supabase-js\\dist\\index.mjs:342:10)\n' +
+    '    at async executeWithRetry (D:\\Coding\\remix_-siklusio\\node_modules\\@supabase\\postgrest-js\\src\\PostgrestBuilder.ts:317:17)\n' +
+    '    at async <anonymous> (D:\\Coding\\remix_-siklusio\\backend\\src\\middlewares\\rateLimit.ts:264:50)\n' +
+    '    at async dispatch (file:///D:/Coding/remix_-siklusio/node_modules/hono/dist/compose.js:22:17)\n' +
+    '    at async cors2 (file:///D:/Coding/remix_-siklusio/node_modules/hono/dist/middleware/cors/index.js:79:5)\n' +
+    '    at async dispatch (file:///D:/Coding/remix_-siklusio/node_modules/hono/dist/compose.js:22:17)\n' +
+    '    at async file:///D:/Coding/remix_-siklusio/node_modules/hono/dist/hono-base.js:306:25\n' +
+    '    at async TestContext.<anonymous> (D:\\Coding\\remix_-siklusio\\backend\\metaCapiWebhook.test.ts:112:20)',
+  hint: '',
+  code: ''
+}
+--> Querying pending registration
+Database query topup error: {
+  message: 'Error: Unexpected fetch [redacted-url] GET',
+  details: 'Error: Unexpected fetch [redacted-url] GET\n' +
+    '    at globalThis.fetch (D:\\Coding\\remix_-siklusio\\backend\\metaCapiWebhook.test.ts:105:11)\n' +
+    '    at <anonymous> (D:\\Coding\\remix_-siklusio\\node_modules\\@supabase\\supabase-js\\dist\\index.mjs:317:22)\n' +
+    '    at <anonymous> (D:\\Coding\\remix_-siklusio\\node_modules\\@supabase\\supabase-js\\dist\\index.mjs:342:10)\n' +
+    '    at async executeWithRetry (D:\\Coding\\remix_-siklusio\\node_modules\\@supabase\\postgrest-js\\src\\PostgrestBuilder.ts:317:17)\n' +
+    '    at async handleMayarWebhook (D:\\Coding\\remix_-siklusio\\backend\\src\\controllers\\webhook.mayar.controller.ts:141:48)\n' +
+    '    at async dispatch (file:///D:/Coding/remix_-siklusio/node_modules/hono/dist/compose.js:22:17)\n' +
+    '    at async dispatch (file:///D:/Coding/remix_-siklusio/node_modules/hono/dist/compose.js:22:17)\n' +
+    '    at async cors2 (file:///D:/Coding/remix_-siklusio/node_modules/hono/dist/middleware/cors/index.js:79:5)\n' +
+    '    at async dispatch (file:///D:/Coding/remix_-siklusio/node_modules/hono/dist/compose.js:22:17)\n' +
+    '    at async file:///D:/Coding/remix_-siklusio/node_modules/hono/dist/hono-base.js:306:25',
+  hint: '',
+  code: ''
+}
+--> Activating existing pending Supabase Auth user: 11111111-1111-4111-8111-111111111111
+--> CAPI Event Sent: Purchase | Event ID: purchase_tx-123 | test_event_code_present: true | test_event_code_source: dynamic
+--> Meta CAPI Success [Purchase]: purchase_tx-123
+--> Deleting pending registration record
+<-- Webhook processed successfully! User created ID: 11111111-1111-4111-8111-111111111111
+--> [BACKEND] Received Mayar webhook notification
+--> Webhook idempotency: checkout_session session-123 already paid and CAPI sent, skipping
+--> [BACKEND] Received Mayar webhook notification
+--> Webhook recovery: checkout_session session-123 is paid but CAPI not sent yet. Retrying CAPI...
+--> CAPI Event Sent: Purchase | Event ID: purchase_tx-123 | test_event_code_present: true | test_event_code_source: dynamic
+--> Meta CAPI Success [Purchase]: purchase_tx-123
+--> [BACKEND] Received Mayar webhook notification
+✔ Paid webhook with no affiliate still sends Purchase (7069.9393ms)
+✔ Paid webhook duplicate with purchase_capi_sent_at does not send again (3.4715ms)
+✔ Paid webhook duplicate with paid session but null purchase_capi_sent_at retries CAPI (2.9823ms)
+CRM upsert failed during Mayar webhook processing: {
+  message: 'Error: Unexpected fetch [redacted-url] POST',
+  details: 'Error: Unexpected fetch [redacted-url] POST\n' +
+    '    at globalThis.fetch (D:\\Coding\\remix_-siklusio\\backend\\metaCapiWebhook.test.ts:105:11)\n' +
+    '    at <anonymous> (D:\\Coding\\remix_-siklusio\\node_modules\\@supabase\\supabase-js\\dist\\index.mjs:317:22)\n' +
+    '    at <anonymous> (D:\\Coding\\remix_-siklusio\\node_modules\\@supabase\\supabase-js\\dist\\index.mjs:342:10)\n' +
+    '    at async executeWithRetry (D:\\Coding\\remix_-siklusio\\node_modules\\@supabase\\postgrest-js\\src\\PostgrestBuilder.ts:317:17)\n' +
+    '    at async upsertAdminCrmLead (D:\\Coding\\remix_-siklusio\\backend\\src\\services\\adminCrm.ts:46:27)\n' +
+    '    at async processMayarWebhookPremiumActivation (D:\\Coding\\remix_-siklusio\\backend\\src\\services\\paymentActivationService.ts:374:5)\n' +
+    '    at async handleMayarWebhook (D:\\Coding\\remix_-siklusio\\backend\\src\\controllers\\webhook.mayar.controller.ts:282:26)\n' +
+    '    at async dispatch (file:///D:/Coding/remix_-siklusio/node_modules/hono/dist/compose.js:22:17)\n' +
+    '    at async dispatch (file:///D:/Coding/remix_-siklusio/node_modules/hono/dist/compose.js:22:17)\n' +
+    '    at async cors2 (file:///D:/Coding/remix_-siklusio/node_modules/hono/dist/middleware/cors/index.js:79:5)',
+  hint: '',
+  code: ''
+}
+DB Rate Limiter error, falling back to memory: {
+  message: 'Error: Unexpected fetch https://project.supabase.co/rest/v1/rpc/check_rate_limit POST',
+  details: 'Error: Unexpected fetch https://project.supabase.co/rest/v1/rpc/check_rate_limit POST\n' +
+    '    at globalThis.fetch (D:\\Coding\\remix_-siklusio\\backend\\metaCapiWebhook.test.ts:191:11)\n' +
+    '    at <anonymous> (D:\\Coding\\remix_-siklusio\\node_modules\\@supabase\\supabase-js\\dist\\index.mjs:317:22)\n' +
+    '    at <anonymous> (D:\\Coding\\remix_-siklusio\\node_modules\\@supabase\\supabase-js\\dist\\index.mjs:342:10)\n' +
+    '    at async executeWithRetry (D:\\Coding\\remix_-siklusio\\node_modules\\@supabase\\postgrest-js\\src\\PostgrestBuilder.ts:317:17)\n' +
+    '    at async <anonymous> (D:\\Coding\\remix_-siklusio\\backend\\src\\middlewares\\rateLimit.ts:264:50)\n' +
+    '    at async dispatch (file:///D:/Coding/remix_-siklusio/node_modules/hono/dist/compose.js:22:17)\n' +
+    '    at async cors2 (file:///D:/Coding/remix_-siklusio/node_modules/hono/dist/middleware/cors/index.js:79:5)\n' +
+    '    at async dispatch (file:///D:/Coding/remix_-siklusio/node_modules/hono/dist/compose.js:22:17)\n' +
+    '    at async file:///D:/Coding/remix_-siklusio/node_modules/hono/dist/hono-base.js:306:25\n' +
+    '    at async TestContext.<anonymous> (D:\\Coding\\remix_-siklusio\\backend\\metaCapiWebhook.test.ts:198:20)',
+  hint: '',
+  code: ''
+}
+DB Rate Limiter error, falling back to memory: {
+  message: 'Error: Unexpected fetch https://project.supabase.co/rest/v1/rpc/check_rate_limit POST',
+  details: 'Error: Unexpected fetch https://project.supabase.co/rest/v1/rpc/check_rate_limit POST\n' +
+    '    at globalThis.fetch (D:\\Coding\\remix_-siklusio\\backend\\metaCapiWebhook.test.ts:269:11)\n' +
+    '    at <anonymous> (D:\\Coding\\remix_-siklusio\\node_modules\\@supabase\\supabase-js\\dist\\index.mjs:317:22)\n' +
+    '    at <anonymous> (D:\\Coding\\remix_-siklusio\\node_modules\\@supabase\\supabase-js\\dist\\index.mjs:342:10)\n' +
+    '    at async executeWithRetry (D:\\Coding\\remix_-siklusio\\node_modules\\@supabase\\postgrest-js\\src\\PostgrestBuilder.ts:317:17)\n' +
+    '    at async <anonymous> (D:\\Coding\\remix_-siklusio\\backend\\src\\middlewares\\rateLimit.ts:264:50)\n' +
+    '    at async dispatch (file:///D:/Coding/remix_-siklusio/node_modules/hono/dist/compose.js:22:17)\n' +
+    '    at async cors2 (file:///D:/Coding/remix_-siklusio/node_modules/hono/dist/middleware/cors/index.js:79:5)\n' +
+    '    at async dispatch (file:///D:/Coding/remix_-siklusio/node_modules/hono/dist/compose.js:22:17)\n' +
+    '    at async file:///D:/Coding/remix_-siklusio/node_modules/hono/dist/hono-base.js:306:25\n' +
+    '    at async TestContext.<anonymous> (D:\\Coding\\remix_-siklusio\\backend\\metaCapiWebhook.test.ts:276:20)',
+  hint: '',
+  code: ''
+}
+DB Rate Limiter error, falling back to memory: {
+  message: 'Error: Unexpected fetch https://project.supabase.co/rest/v1/rpc/check_rate_limit POST',
+  details: 'Error: Unexpected fetch https://project.supabase.co/rest/v1/rpc/check_rate_limit POST\n' +
+    '    at globalThis.fetch (D:\\Coding\\remix_-siklusio\\backend\\metaCapiWebhook.test.ts:385:11)\n' +
+    '    at <anonymous> (D:\\Coding\\remix_-siklusio\\node_modules\\@supabase\\supabase-js\\dist\\index.mjs:317:22)\n' +
+    '    at <anonymous> (D:\\Coding\\remix_-siklusio\\node_modules\\@supabase\\supabase-js\\dist\\index.mjs:342:10)\n' +
+    '    at async executeWithRetry (D:\\Coding\\remix_-siklusio\\node_modules\\@supabase\\postgrest-js\\src\\PostgrestBuilder.ts:317:17)\n' +
+    '    at async <anonymous> (D:\\Coding\\remix_-siklusio\\backend\\src\\middlewares\\rateLimit.ts:264:50)\n' +
+    '    at async dispatch (file:///D:/Coding/remix_-siklusio/node_modules/hono/dist/compose.js:22:17)\n' +
+    '    at async cors2 (file:///D:/Coding/remix_-siklusio/node_modules/hono/dist/middleware/cors/index.js:79:5)\n' +
+    '    at async dispatch (file:///D:/Coding/remix_-siklusio/node_modules/hono/dist/compose.js:22:17)\n' +
+    '    at async file:///D:/Coding/remix_-siklusio/node_modules/hono/dist/hono-base.js:306:25\n' +
+    '    at async TestContext.<anonymous> (D:\\Coding\\remix_-siklusio\\backend\\metaCapiWebhook.test.ts:392:20)',
+  hint: '',
+  code: ''
+}
+Database query topup error: {
+  message: 'Error: Unexpected fetch [redacted-url] GET',
+  details: 'Error: Unexpected fetch [redacted-url] GET\n' +
+    '    at globalThis.fetch (D:\\Coding\\remix_-siklusio\\backend\\metaCapiWebhook.test.ts:385:11)\n' +
+    '    at <anonymous> (D:\\Coding\\remix_-siklusio\\node_modules\\@supabase\\supabase-js\\dist\\index.mjs:317:22)\n' +
+    '    at <anonymous> (D:\\Coding\\remix_-siklusio\\node_modules\\@supabase\\supabase-js\\dist\\index.mjs:342:10)\n' +
+    '    at async executeWithRetry (D:\\Coding\\remix_-siklusio\\node_modules\\@supabase\\postgrest-js\\src\\PostgrestBuilder.ts:317:17)\n' +
+    '    at async handleMayarWebhook (D:\\Coding\\remix_-siklusio\\backend\\src\\controllers\\webhook.mayar.controller.ts:141:48)\n' +
+    '    at async dispatch (file:///D:/Coding/remix_-siklusio/node_modules/hono/dist/compose.js:22:17)\n' +
+    '    at async dispatch (file:///D:/Coding/remix_-siklusio/node_modules/hono/dist/compose.js:22:17)\n' +
+    '    at async cors2 (file:///D:/Coding/remix_-siklusio/node_modules/hono/dist/middleware/cors/index.js:79:5)\n' +
+    '    at async dispatch (file:///D:/Coding/remix_-siklusio/node_modules/hono/dist/compose.js:22:17)\n' +
+    '    at async file:///D:/Coding/remix_-siklusio/node_modules/hono/dist/hono-base.js:306:25',
+  hint: '',
+  code: ''
+}
+--> Querying pending registration
+Webhook Payment completed WhatsApp autoresponder failed: {
+  message: 'Error: Unexpected fetch [redacted-url] GET',
+  details: 'Error: Unexpected fetch [redacted-url] GET\n' +
+    '    at globalThis.fetch (D:\\Coding\\remix_-siklusio\\backend\\metaCapiWebhook.test.ts:385:11)\n' +
+    '    at <anonymous> (D:\\Coding\\remix_-siklusio\\node_modules\\@supabase\\supabase-js\\dist\\index.mjs:317:22)\n' +
+    '    at <anonymous> (D:\\Coding\\remix_-siklusio\\node_modules\\@supabase\\supabase-js\\dist\\index.mjs:342:10)\n' +
+    '    at runNextTicks (node:internal/process/task_queues:65:5)\n' +
+    '    at listOnTimeout (node:internal/timers:567:9)\n' +
+    '    at process.processTimers (node:internal/timers:541:7)\n' +
+    '    at async executeWithRetry (D:\\Coding\\remix_-siklusio\\node_modules\\@supabase\\postgrest-js\\src\\PostgrestBuilder.ts:317:17)\n' +
+    '    at async sendWhatsappAutoresponder (D:\\Coding\\remix_-siklusio\\backend\\src\\services\\fonnte.ts:172:50)',
+  hint: '',
+  code: ''
+}
+--> Activating existing pending Supabase Auth user: 11111111-1111-4111-8111-111111111111
+--> Deleting pending registration record
+<-- Webhook processed successfully! User created ID: 11111111-1111-4111-8111-111111111111
+--> [BACKEND] Received Mayar webhook notification
+✔ Meta env missing should not break paid activation (14052.3788ms)
+CRM upsert failed during Mayar webhook processing: {
+  message: 'Error: Unexpected fetch [redacted-url] POST',
+  details: 'Error: Unexpected fetch [redacted-url] POST\n' +
+    '    at globalThis.fetch (D:\\Coding\\remix_-siklusio\\backend\\metaCapiWebhook.test.ts:385:11)\n' +
+    '    at <anonymous> (D:\\Coding\\remix_-siklusio\\node_modules\\@supabase\\supabase-js\\dist\\index.mjs:317:22)\n' +
+    '    at <anonymous> (D:\\Coding\\remix_-siklusio\\node_modules\\@supabase\\supabase-js\\dist\\index.mjs:342:10)\n' +
+    '    at async executeWithRetry (D:\\Coding\\remix_-siklusio\\node_modules\\@supabase\\postgrest-js\\src\\PostgrestBuilder.ts:317:17)\n' +
+    '    at async upsertAdminCrmLead (D:\\Coding\\remix_-siklusio\\backend\\src\\services\\adminCrm.ts:46:27)\n' +
+    '    at async processMayarWebhookPremiumActivation (D:\\Coding\\remix_-siklusio\\backend\\src\\services\\paymentActivationService.ts:374:5)\n' +
+    '    at async handleMayarWebhook (D:\\Coding\\remix_-siklusio\\backend\\src\\controllers\\webhook.mayar.controller.ts:282:26)\n' +
+    '    at async dispatch (file:///D:/Coding/remix_-siklusio/node_modules/hono/dist/compose.js:22:17)\n' +
+    '    at async dispatch (file:///D:/Coding/remix_-siklusio/node_modules/hono/dist/compose.js:22:17)\n' +
+    '    at async cors2 (file:///D:/Coding/remix_-siklusio/node_modules/hono/dist/middleware/cors/index.js:79:5)',
+  hint: '',
+  code: ''
+}
+--> Meta env variables missing. Skipping CAPI but marking done.
+DB Rate Limiter error, falling back to memory: {
+  message: 'Error: Unexpected fetch https://project.supabase.co/rest/v1/rpc/check_rate_limit POST',
+  details: 'Error: Unexpected fetch https://project.supabase.co/rest/v1/rpc/check_rate_limit POST\n' +
+    '    at globalThis.fetch (D:\\Coding\\remix_-siklusio\\backend\\metaCapiWebhook.test.ts:510:11)\n' +
+    '    at <anonymous> (D:\\Coding\\remix_-siklusio\\node_modules\\@supabase\\supabase-js\\dist\\index.mjs:317:22)\n' +
+    '    at <anonymous> (D:\\Coding\\remix_-siklusio\\node_modules\\@supabase\\supabase-js\\dist\\index.mjs:342:10)\n' +
+    '    at async executeWithRetry (D:\\Coding\\remix_-siklusio\\node_modules\\@supabase\\postgrest-js\\src\\PostgrestBuilder.ts:317:17)\n' +
+    '    at async <anonymous> (D:\\Coding\\remix_-siklusio\\backend\\src\\middlewares\\rateLimit.ts:264:50)\n' +
+    '    at async dispatch (file:///D:/Coding/remix_-siklusio/node_modules/hono/dist/compose.js:22:17)\n' +
+    '    at async cors2 (file:///D:/Coding/remix_-siklusio/node_modules/hono/dist/middleware/cors/index.js:79:5)\n' +
+    '    at async dispatch (file:///D:/Coding/remix_-siklusio/node_modules/hono/dist/compose.js:22:17)\n' +
+    '    at async file:///D:/Coding/remix_-siklusio/node_modules/hono/dist/hono-base.js:306:25\n' +
+    '    at async TestContext.<anonymous> (D:\\Coding\\remix_-siklusio\\backend\\metaCapiWebhook.test.ts:517:20)',
+  hint: '',
+  code: ''
+}
+--> Querying pending registration
+Database query topup error: {
+  message: 'Error: Unexpected fetch [redacted-url] GET',
+  details: 'Error: Unexpected fetch [redacted-url] GET\n' +
+    '    at globalThis.fetch (D:\\Coding\\remix_-siklusio\\backend\\metaCapiWebhook.test.ts:510:11)\n' +
+    '    at <anonymous> (D:\\Coding\\remix_-siklusio\\node_modules\\@supabase\\supabase-js\\dist\\index.mjs:317:22)\n' +
+    '    at <anonymous> (D:\\Coding\\remix_-siklusio\\node_modules\\@supabase\\supabase-js\\dist\\index.mjs:342:10)\n' +
+    '    at async executeWithRetry (D:\\Coding\\remix_-siklusio\\node_modules\\@supabase\\postgrest-js\\src\\PostgrestBuilder.ts:317:17)\n' +
+    '    at async handleMayarWebhook (D:\\Coding\\remix_-siklusio\\backend\\src\\controllers\\webhook.mayar.controller.ts:141:48)\n' +
+    '    at async dispatch (file:///D:/Coding/remix_-siklusio/node_modules/hono/dist/compose.js:22:17)\n' +
+    '    at async dispatch (file:///D:/Coding/remix_-siklusio/node_modules/hono/dist/compose.js:22:17)\n' +
+    '    at async cors2 (file:///D:/Coding/remix_-siklusio/node_modules/hono/dist/middleware/cors/index.js:79:5)\n' +
+    '    at async dispatch (file:///D:/Coding/remix_-siklusio/node_modules/hono/dist/compose.js:22:17)\n' +
+    '    at async file:///D:/Coding/remix_-siklusio/node_modules/hono/dist/hono-base.js:306:25',
+  hint: '',
+  code: ''
+}
+--> Activating existing pending Supabase Auth user: 11111111-1111-4111-8111-111111111111
+--> CAPI Event Sent: Purchase | Event ID: purchase_tx-paid | test_event_code_present: false | test_event_code_source: none
+--> Meta CAPI Success [Purchase]: purchase_tx-paid
+--> Deleting pending registration record
+<-- Webhook processed successfully! User created ID: 11111111-1111-4111-8111-111111111111
+CRM upsert failed during Mayar webhook processing: {
+  message: 'Error: Unexpected fetch [redacted-url] POST',
+  details: 'Error: Unexpected fetch [redacted-url] POST\n' +
+    '    at globalThis.fetch (D:\\Coding\\remix_-siklusio\\backend\\metaCapiWebhook.test.ts:510:11)\n' +
+    '    at <anonymous> (D:\\Coding\\remix_-siklusio\\node_modules\\@supabase\\supabase-js\\dist\\index.mjs:317:22)\n' +
+    '    at <anonymous> (D:\\Coding\\remix_-siklusio\\node_modules\\@supabase\\supabase-js\\dist\\index.mjs:342:10)\n' +
+    '    at async executeWithRetry (D:\\Coding\\remix_-siklusio\\node_modules\\@supabase\\postgrest-js\\src\\PostgrestBuilder.ts:317:17)\n' +
+    '    at async upsertAdminCrmLead (D:\\Coding\\remix_-siklusio\\backend\\src\\services\\adminCrm.ts:46:27)\n' +
+    '    at async processMayarWebhookPremiumActivation (D:\\Coding\\remix_-siklusio\\backend\\src\\services\\paymentActivationService.ts:374:5)\n' +
+    '    at async handleMayarWebhook (D:\\Coding\\remix_-siklusio\\backend\\src\\controllers\\webhook.mayar.controller.ts:282:26)\n' +
+    '    at async dispatch (file:///D:/Coding/remix_-siklusio/node_modules/hono/dist/compose.js:22:17)\n' +
+    '    at async dispatch (file:///D:/Coding/remix_-siklusio/node_modules/hono/dist/compose.js:22:17)\n' +
+    '    at async cors2 (file:///D:/Coding/remix_-siklusio/node_modules/hono/dist/middleware/cors/index.js:79:5)',
+  hint: '',
+  code: ''
+}
+✔ Paid webhook updates only matched checkout session when same email has multiple pending sessions (7032.796ms)
+Webhook Payment completed WhatsApp autoresponder failed: {
+  message: 'TypeError: fetch failed',
+  details: 'TypeError: fetch failed\n' +
+    '\n' +
+    'Caused by: Error: getaddrinfo ENOTFOUND project.supabase.co (ENOTFOUND)\n' +
+    'Error: getaddrinfo ENOTFOUND project.supabase.co\n' +
+    '    at GetAddrInfoReqWrap.onlookupall [as oncomplete] (node:dns:122:26)',
+  hint: '',
+  code: ''
+}
+ℹ tests 5
+ℹ suites 0
+ℹ pass 5
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 42315.1609
+Webhook Payment completed WhatsApp autoresponder failed: {
+  message: 'TypeError: fetch failed',
+  details: 'TypeError: fetch failed\n' +
+    '\n' +
+    'Caused by: Error: getaddrinfo ENOTFOUND project.supabase.co (ENOTFOUND)\n' +
+    'Error: getaddrinfo ENOTFOUND project.supabase.co\n' +
+    '    at GetAddrInfoReqWrap.onlookupall [as oncomplete] (node:dns:122:26)',
+  hint: '',
+  code: ''
+}
+
+--- RUN D:\Coding\remix_-siklusio\backend\paymentActivationWorkflow.test.ts
+--> [BACKEND] Received Mayar webhook notification
+--> Querying pending registration
+--> Activating existing pending Supabase Auth user: 11111111-1111-4111-8111-111111111111
+--> Processing affiliate conversion for code: AFF10
+--> Affiliate conversion recorded: commission Rp 3700
+--> CAPI Event Sent: Purchase | Event ID: purchase_tx-dup-1 | test_event_code_present: true | test_event_code_source: dynamic
+--> Meta CAPI Success [Purchase]: purchase_tx-dup-1
+--> Deleting pending registration record
+<-- Webhook processed successfully! User created ID: 11111111-1111-4111-8111-111111111111
+--> [BACKEND] Received Mayar webhook notification
+--> Webhook idempotency: checkout_session session-paid already paid and CAPI sent, skipping
+--> [BACKEND] Received Mayar webhook notification
+--> Querying pending registration
+--> Activating existing pending Supabase Auth user: 11111111-1111-4111-8111-111111111111
+--> Processing affiliate conversion for code: AFF10
+--> Affiliate conversion recorded: commission Rp 3700
+--> CAPI Event Sent: Purchase | Event ID: purchase_tx-dup-1 | test_event_code_present: true | test_event_code_source: dynamic
+--> Meta CAPI Success [Purchase]: purchase_tx-dup-1
+--> Deleting pending registration record
+<-- Webhook processed successfully! User created ID: 11111111-1111-4111-8111-111111111111
+--> [BACKEND] Received Mayar webhook notification
+--> Webhook idempotency: checkout_session session-paid already paid and CAPI sent, skipping
+--> [BACKEND] Received Mayar webhook notification
+--> Querying pending registration
+--> Activating existing pending Supabase Auth user: 11111111-1111-4111-8111-111111111111
+--> Processing affiliate conversion for code: AFF10
+--> Affiliate conversion recorded: commission Rp 3700
+--> CAPI Event Sent: Purchase | Event ID: purchase_tx-dup-1 | test_event_code_present: true | test_event_code_source: dynamic
+--> Meta CAPI Success [Purchase]: purchase_tx-dup-1
+--> Deleting pending registration record
+<-- Webhook processed successfully! User created ID: 11111111-1111-4111-8111-111111111111
+--> [BACKEND] Received Mayar webhook notification
+--> Webhook idempotency: checkout_session session-paid already paid and CAPI sent, skipping
+--> [BACKEND] Received Mayar webhook notification
+--> Querying pending registration
+--> Activating existing pending Supabase Auth user: 11111111-1111-4111-8111-111111111111
+--> Processing affiliate conversion for code: AFF10
+--> Affiliate conversion recorded: commission Rp 3700
+--> CAPI Event Sent: Purchase | Event ID: purchase_tx-dup-1 | test_event_code_present: true | test_event_code_source: dynamic
+--> Meta CAPI Success [Purchase]: purchase_tx-dup-1
+--> Deleting pending registration record
+<-- Webhook processed successfully! User created ID: 11111111-1111-4111-8111-111111111111
+--> [BACKEND] Received Mayar webhook notification
+--> Webhook idempotency: checkout_session session-paid already paid and CAPI sent, skipping
+--> [BACKEND] Received Mayar webhook notification
+--> Webhook recovery: checkout_session session-paid is paid but CAPI not sent yet. Retrying CAPI...
+--> CAPI Event Sent: Purchase | Event ID: purchase_tx-dup-1 | test_event_code_present: true | test_event_code_source: dynamic
+--> Meta CAPI Success [Purchase]: purchase_tx-dup-1
+Supabase auth user activation error: { message: 'grant failed', code: 'PGRST500' }
+--> [BACKEND] Received Mayar webhook notification
+--> Querying pending registration
+--> Activating existing pending Supabase Auth user: 11111111-1111-4111-8111-111111111111
+--> [BACKEND] Received Mayar webhook notification
+--> Checkout session not found by transaction ID tx-fail-auth. Falling back to email...
+--> Querying pending registration
+--> Activating existing pending Supabase Auth user: 11111111-1111-4111-8111-111111111111
+✔ duplicate paid webhook does not double-grant premium credits (55.9515ms)
+✔ duplicate paid webhook does not double-create affiliate conversion (7.0214ms)
+✔ duplicate paid webhook does not call WhatsApp provider again after first success (5.7172ms)
+✔ paid webhook sends Meta CAPI once and recovery path only when purchase_capi_sent_at is null (6.4965ms)
+✔ admin manual premium activation does not send Meta CAPI Purchase (6.5124ms)
+✔ webhook premium credit grant failure returns 500 instead of false success (3.9453ms)
+✔ webhook auth activation failure returns 500 instead of false success (5.3894ms)
+Supabase auth user activation error: {
+  name: 'AuthApiError',
+  message: 'activation failed',
+  stack: 'AuthApiError: activation failed\n' +
+    '    at handleError (D:\\Coding\\remix_-siklusio\\node_modules\\@supabase\\auth-js\\src\\lib\\fetch.ts:139:9)\n' +
+    '    at async _handleRequest (D:\\Coding\\remix_-siklusio\\node_modules\\@supabase\\auth-js\\src\\lib\\fetch.ts:232:5)\n' +
+    '    at async _request (D:\\Coding\\remix_-siklusio\\node_modules\\@supabase\\auth-js\\src\\lib\\fetch.ts:194:16)\n' +
+    '    at async GoTrueAdminApi.updateUserById (D:\\Coding\\remix_-siklusio\\node_modules\\@supabase\\auth-js\\src\\GoTrueAdminApi.ts:801:14)\n' +
+    '    at async activatePendingAuthUser (D:\\Coding\\remix_-siklusio\\backend\\src\\services\\paymentActivationService.ts:91:48)\n' +
+    '    at async processMayarWebhookPremiumActivation (D:\\Coding\\remix_-siklusio\\backend\\src\\services\\paymentActivationService.ts:367:20)\n' +
+    '    at async handleMayarWebhook (D:\\Coding\\remix_-siklusio\\backend\\src\\controllers\\webhook.mayar.controller.ts:282:26)\n' +
+    '    at async dispatch (file:///D:/Coding/remix_-siklusio/node_modules/hono/dist/compose.js:22:17)\n' +
+    '    at async dispatch (file:///D:/Coding/remix_-siklusio/node_modules/hono/dist/compose.js:22:17)\n' +
+    '    at async cors2 (file:///D:/Coding/remix_-siklusio/node_modules/hono/dist/middleware/cors/index.js:79:5)'
+}
+ℹ tests 7
+ℹ suites 0
+ℹ pass 7
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 14314.527
+CRM Manual Payment WhatsApp autoresponder failed: {
+  message: 'TypeError: fetch failed',
+  details: 'TypeError: fetch failed\n' +
+    '\n' +
+    'Caused by: Error: getaddrinfo ENOTFOUND project.supabase.co (ENOTFOUND)\n' +
+    'Error: getaddrinfo ENOTFOUND project.supabase.co\n' +
+    '    at GetAddrInfoReqWrap.onlookupall [as oncomplete] (node:dns:122:26)',
+  hint: '',
+  code: ''
+}
+
+--- RUN D:\Coding\remix_-siklusio\backend\securityRoutes.test.ts
+--> [BACKEND] Received request /api/generate-calming-reassurance
+--> Webhook rejected: Webhook secret is not configured
+--> [BACKEND] Received Mayar webhook notification
+--> [BACKEND] Received Mayar webhook notification
+--> [BACKEND] Received request /api/generate-calming-reassurance
+--> [BACKEND] Received request /api/checkout/register
+✔ TWW calming reassurance requires an authenticated session before AI config (21.4949ms)
+✔ payment webhook refuses to process when webhook token is not configured (1.1371ms)
+✔ payment webhook rejects invalid callback token (0.6334ms)
+✔ payment webhook logs redact customer PII and payment URLs (1.0922ms)
+✔ AI endpoints reject repeated requests from the same client after rate limit is exceeded (0.9298ms)
+✔ checkout endpoints reject repeated requests from the same client after rate limit is exceeded (0.8471ms)
+ℹ tests 6
+ℹ suites 0
+ℹ pass 6
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 40.4711
+
+--- RUN D:\Coding\remix_-siklusio\backend\src\ai\cycleGuideApi.test.ts
+--> Webhook rejected: invalid or missing X-Callback-Token
+✔ buildCycleGuideSnapshot keeps only cycle guide context fields (1.0825ms)
+✔ buildCycleGuideMessages does not allow habit checklist generation (0.2507ms)
+ℹ tests 2
+ℹ suites 0
+ℹ pass 2
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 8.7257
+
+--- RUN D:\Coding\remix_-siklusio\backend\src\ai\habitCoachApi.test.ts
+✔ summarizeActivityHistory counts recent coach task completion (9.2619ms)
+✔ buildHabitCoachMessages keeps habit coach role separate from diagnosis (0.9517ms)
+✔ buildHabitCoachMessages tells AI to use cycleDays and avoid foundation duplicates (0.3023ms)
+✔ isValidHabitCoachWindow requires a seven-day continuous request window (0.6649ms)
+✔ hasDateRangeOverlap detects active plan conflicts (0.1507ms)
+✔ buildHabitCoachActiveOverlapConflict returns 409 payload with latest activeUntil (0.1874ms)
+✔ saveHabitCoachPlanWithCharge archives before charging replacement plans (1.0957ms)
+✔ saveHabitCoachPlanWithCharge does not charge when archive fails (1.1126ms)
+✔ saveHabitCoachPlanWithCharge cleans up and restores old plan when activation fails (0.3907ms)
+✔ saveHabitCoachPlanWithCharge cleans up and restores old plan when charge fails (0.4987ms)
+✔ saveHabitCoachPlanWithCharge fills underbuilt generated days before insert (0.2941ms)
+✔ shouldReplaceActivePlan only accepts literal true (0.1011ms)
+ℹ tests 12
+ℹ suites 0
+ℹ pass 12
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 22.7824
+
+--- RUN D:\Coding\remix_-siklusio\backend\src\ai\helpers.test.ts
+✔ parseOpenRouterJsonContent accepts fenced JSON (2.0986ms)
+✔ buildOpenRouterRequestBody orders primary model before fallbacks (0.5452ms)
+✔ buildOpenRouterRequestBody caps fallback routing to three models (0.2786ms)
+✔ validateRecipesGeneration accepts local Indonesian recipe payload (0.3706ms)
+✔ validateRecipesGeneration rejects payload without exactly two recipes (0.468ms)
+✔ buildRecipeCycleSnapshot keeps only recipe context fields (0.1656ms)
+✔ recipe credit charge payload should use saved generation id as reference (0.3607ms)
+✔ validateHabitCoachPlan rejects days with fewer than three personalized tasks (0.4835ms)
+✔ validateHabitCoachPlan rejects days with more than five personalized tasks (0.2938ms)
+✔ buildHabitCoachDayTasks prepends water and phase foundations (0.8026ms)
+✔ buildHabitCoachDayTasks picks phase foundations and filters duplicates (0.4664ms)
+✔ buildHabitCoachDayTasks fills underfilled days after duplicate filtering (0.2193ms)
+✔ buildHabitCoachDayTasks keeps saved totals between five and seven (0.1386ms)
+✔ buildHabitCoachDayTasks keeps personalized non-foundation drink tasks (0.1905ms)
+✔ validateCalmingReassurance requires structured letter sections with legacy fields (0.1765ms)
+✔ validateCalmingReassurance rejects legacy-only reassurance payload (0.1934ms)
+✔ getAiCreditBalance ensures a balance row before reading (0.2941ms)
+✔ grantPremiumInitialAiCredits skips users that already received the bonus (0.2747ms)
+ℹ tests 18
+ℹ suites 0
+ℹ pass 18
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 20.7828
+
+--- RUN D:\Coding\remix_-siklusio\backend\src\ai\modelPolicy.test.ts
+✔ free_included AI policy never includes the paid fallback model (1.7661ms)
+✔ paid AI policy keeps the paid fallback model (0.2428ms)
+✔ model policy falls back to defaults and dedupes repeated models (0.2577ms)
+ℹ tests 3
+ℹ suites 0
+ℹ pass 3
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 10.8857
+
+--- RUN D:\Coding\remix_-siklusio\backend\src\ai\safety.test.ts
+✔ aiSafetyEnvelope successfully wraps valid AI results (1.7352ms)
+✔ containsForbiddenWords flags unsafe medical claims (0.268ms)
+✔ aiSafetyEnvelope throws error on unsafe inputs (0.4773ms)
+✔ aiSafetyEnvelope successfully strips existing envelope fields before re-wrapping (0.1788ms)
+ℹ tests 4
+ℹ suites 0
+ℹ pass 4
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 12.6093
+
+--- RUN D:\Coding\remix_-siklusio\backend\src\logging\redaction.test.ts
+✔ redactLogValue removes PII, payment URLs, and secrets from nested log payloads (2.0881ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 1
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 9.0615
+
+--- RUN D:\Coding\remix_-siklusio\backend\src\middlewares\errorHandler.test.ts
+✔ errorHandler logs internally but returns a generic message to clients (19.7496ms)
+Hono server error: Error: secret database connection detail
+    at TestContext.<anonymous> (D:\Coding\remix_-siklusio\backend\src\middlewares\errorHandler.test.ts:17:16)
+    at Test.runInAsyncScope (node:async_hooks:227:14)
+    at Test.run (node:internal/test_runner/test:1201:25)
+    at Test.start (node:internal/test_runner/test:1096:17)
+    at startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 1
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 26.5808
+
+--- RUN D:\Coding\remix_-siklusio\backend\src\middlewares\rateLimit.test.ts
+✔ memory rate limiter blocks requests after the configured max until the window resets (1.6023ms)
+✔ resolveRateLimitRule matches only protected route groups (0.3327ms)
+✔ resolveRateLimitRule accepts environment overrides (0.9708ms)
+ℹ tests 3
+ℹ suites 0
+ℹ pass 3
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 18.3063
+
+--- RUN D:\Coding\remix_-siklusio\backend\src\payments\topupPackages.test.ts
+✔ resolveTopupPackage returns server-owned package values (1.0218ms)
+✔ resolveTopupPackage rejects unknown or malformed package ids (0.1512ms)
+ℹ tests 2
+ℹ suites 0
+ℹ pass 2
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 8.3989
+
+--- RUN D:\Coding\remix_-siklusio\backend\src\services\checkoutRegistrationService.test.ts
+✔ normalizeCouponCode trims and uppercases coupon input (1.1021ms)
+✔ normalizeAffiliateCodeInput trims and uppercases affiliate input (0.1872ms)
+✔ resolveValidatedTestEventCode returns code only when secret matches (0.1648ms)
+✔ applyCouponDiscount applies nominal and percentage discounts from base checkout amount (0.1628ms)
+✔ enforceMinimumPaidAmount keeps free checkout at zero and enforces minimum paid amount (0.1323ms)
+✔ isDuplicateEmailSignupError detects Supabase duplicate email signup errors (0.1447ms)
+✔ duplicateEmailFailure preserves existing duplicate email client response (0.7144ms)
+ℹ tests 7
+ℹ suites 0
+ℹ pass 7
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 13.4725
+
+--- RUN D:\Coding\remix_-siklusio\backend\src\services\checkoutTopupService.test.ts
+✔ buildTopupCustomerDetails prefers profile fields and falls back to email local-part (1.143ms)
+✔ buildTopupMayarProductFields uses server-owned package id and credits (0.1567ms)
+ℹ tests 2
+ℹ suites 0
+ℹ pass 2
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 7.9456
+
+--- RUN D:\Coding\remix_-siklusio\backend\src\services\paymentActivationService.test.ts
+✔ calculateAffiliateCommission returns zero for zero-amount orders when affiliate disallows it (0.6555ms)
+✔ calculateAffiliateCommission applies percentage commission (0.1229ms)
+✔ calculateAffiliateCommission applies flat commission (0.0834ms)
+✔ hasAffiliateConversionForTransaction returns true when conversion exists (0.1844ms)
+✔ hasAffiliateConversionForTransaction returns false when conversion does not exist (0.1672ms)
+ℹ tests 5
+ℹ suites 0
+ℹ pass 5
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 8.7416
+
+--- RUN D:\Coding\remix_-siklusio\backend\src\storage\avatarImage.test.ts
+✔ detectAvatarImage recognizes WebP, PNG, and JPEG signatures (2.1914ms)
+✔ detectAvatarImage rejects non-image bytes (0.1754ms)
+✔ isAvatarImageWithinPolicy rejects oversized dimensions (0.1798ms)
+✔ sanitizeAvatarImage strips PNG ancillary metadata chunks (0.3373ms)
+ℹ tests 4
+ℹ suites 0
+ℹ pass 4
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 10.1533
+
+--- RUN D:\Coding\remix_-siklusio\backend\topupCheckout.test.ts
+--> [BACKEND] Received request /api/checkout/topup
+DB Rate Limiter error, falling back to memory: {
+  message: 'Error: Unexpected fetch https://project.supabase.co/rest/v1/rpc/check_rate_limit POST',
+  details: 'Error: Unexpected fetch https://project.supabase.co/rest/v1/rpc/check_rate_limit POST\n' +
+    '    at globalThis.fetch (D:\\Coding\\remix_-siklusio\\backend\\topupCheckout.test.ts:62:11)\n' +
+    '    at <anonymous> (D:\\Coding\\remix_-siklusio\\node_modules\\@supabase\\supabase-js\\dist\\index.mjs:317:22)\n' +
+    '    at <anonymous> (D:\\Coding\\remix_-siklusio\\node_modules\\@supabase\\supabase-js\\dist\\index.mjs:342:10)\n' +
+    '    at async executeWithRetry (D:\\Coding\\remix_-siklusio\\node_modules\\@supabase\\postgrest-js\\src\\PostgrestBuilder.ts:317:17)\n' +
+    '    at async <anonymous> (D:\\Coding\\remix_-siklusio\\backend\\src\\middlewares\\rateLimit.ts:264:50)\n' +
+    '    at async dispatch (file:///D:/Coding/remix_-siklusio/node_modules/hono/dist/compose.js:22:17)\n' +
+    '    at async cors2 (file:///D:/Coding/remix_-siklusio/node_modules/hono/dist/middleware/cors/index.js:79:5)\n' +
+    '    at async dispatch (file:///D:/Coding/remix_-siklusio/node_modules/hono/dist/compose.js:22:17)\n' +
+    '    at async file:///D:/Coding/remix_-siklusio/node_modules/hono/dist/hono-base.js:306:25\n' +
+    '    at async TestContext.<anonymous> (D:\\Coding\\remix_-siklusio\\backend\\topupCheckout.test.ts:69:20)',
+  hint: '',
+  code: ''
+}
+--> Calling Mayar API to create topup link...
+--> [BACKEND] Received request /api/checkout/topup
+DB Rate Limiter error, falling back to memory: {
+  message: 'Error: Unexpected fetch https://project.supabase.co/rest/v1/rpc/check_rate_limit',
+  details: 'Error: Unexpected fetch https://project.supabase.co/rest/v1/rpc/check_rate_limit\n' +
+    '    at globalThis.fetch (D:\\Coding\\remix_-siklusio\\backend\\topupCheckout.test.ts:128:11)\n' +
+    '    at <anonymous> (D:\\Coding\\remix_-siklusio\\node_modules\\@supabase\\supabase-js\\dist\\index.mjs:317:22)\n' +
+    '    at <anonymous> (D:\\Coding\\remix_-siklusio\\node_modules\\@supabase\\supabase-js\\dist\\index.mjs:342:10)\n' +
+    '    at async executeWithRetry (D:\\Coding\\remix_-siklusio\\node_modules\\@supabase\\postgrest-js\\src\\PostgrestBuilder.ts:317:17)\n' +
+    '    at async <anonymous> (D:\\Coding\\remix_-siklusio\\backend\\src\\middlewares\\rateLimit.ts:264:50)\n' +
+    '    at async dispatch (file:///D:/Coding/remix_-siklusio/node_modules/hono/dist/compose.js:22:17)\n' +
+    '    at async cors2 (file:///D:/Coding/remix_-siklusio/node_modules/hono/dist/middleware/cors/index.js:79:5)\n' +
+    '    at async dispatch (file:///D:/Coding/remix_-siklusio/node_modules/hono/dist/compose.js:22:17)\n' +
+    '    at async file:///D:/Coding/remix_-siklusio/node_modules/hono/dist/hono-base.js:306:25\n' +
+    '    at async TestContext.<anonymous> (D:\\Coding\\remix_-siklusio\\backend\\topupCheckout.test.ts:135:20)',
+  hint: '',
+  code: ''
+}
+✔ topup checkout uses server-owned package price and credits (36.8336ms)
+✔ topup checkout rejects unknown package ids before payment creation (3.4691ms)
+ℹ tests 2
+ℹ suites 0
+ℹ pass 2
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 51.6758
+
+--- RUN D:\Coding\remix_-siklusio\backend\topupWebhook.test.ts
+--> [BACKEND] Received Mayar webhook notification
+DB Rate Limiter error, falling back to memory: {
+  message: 'Error: Unexpected fetch https://project.supabase.co/rest/v1/rpc/check_rate_limit POST',
+  details: 'Error: Unexpected fetch https://project.supabase.co/rest/v1/rpc/check_rate_limit POST\n' +
+    '    at globalThis.fetch (D:\\Coding\\remix_-siklusio\\backend\\topupWebhook.test.ts:70:11)\n' +
+    '    at <anonymous> (D:\\Coding\\remix_-siklusio\\node_modules\\@supabase\\supabase-js\\dist\\index.mjs:317:22)\n' +
+    '    at <anonymous> (D:\\Coding\\remix_-siklusio\\node_modules\\@supabase\\supabase-js\\dist\\index.mjs:342:10)\n' +
+    '    at async executeWithRetry (D:\\Coding\\remix_-siklusio\\node_modules\\@supabase\\postgrest-js\\src\\PostgrestBuilder.ts:317:17)\n' +
+    '    at async <anonymous> (D:\\Coding\\remix_-siklusio\\backend\\src\\middlewares\\rateLimit.ts:264:50)\n' +
+    '    at async dispatch (file:///D:/Coding/remix_-siklusio/node_modules/hono/dist/compose.js:22:17)\n' +
+    '    at async cors2 (file:///D:/Coding/remix_-siklusio/node_modules/hono/dist/middleware/cors/index.js:79:5)\n' +
+    '    at async dispatch (file:///D:/Coding/remix_-siklusio/node_modules/hono/dist/compose.js:22:17)\n' +
+    '    at async file:///D:/Coding/remix_-siklusio/node_modules/hono/dist/hono-base.js:306:25\n' +
+    '    at async TestContext.<anonymous> (D:\\Coding\\remix_-siklusio\\backend\\topupWebhook.test.ts:77:20)',
+  hint: '',
+  code: ''
+}
+--> Processing successful topup via atomic RPC for user: 11111111-1111-4111-8111-111111111111, credits: 300
+<-- Topup processed successfully! New balance: 300
+✔ topup webhook processes paid transaction through atomic RPC (35.4473ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 1
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 42.6265
+
+--- RUN D:\Coding\remix_-siklusio\backend\vibenovelWebhookForward.test.ts
+--> [BACKEND] Received Mayar webhook notification
+DB Rate Limiter error, falling back to memory: {
+  message: 'Error: Siklusio Supabase must not be called for VibeNovel payloads',
+  details: 'Error: Siklusio Supabase must not be called for VibeNovel payloads\n' +
+    '    at globalThis.fetch (D:\\Coding\\remix_-siklusio\\backend\\vibenovelWebhookForward.test.ts:50:13)\n' +
+    '    at <anonymous> (D:\\Coding\\remix_-siklusio\\node_modules\\@supabase\\supabase-js\\dist\\index.mjs:317:22)\n' +
+    '    at <anonymous> (D:\\Coding\\remix_-siklusio\\node_modules\\@supabase\\supabase-js\\dist\\index.mjs:342:10)\n' +
+    '    at async executeWithRetry (D:\\Coding\\remix_-siklusio\\node_modules\\@supabase\\postgrest-js\\src\\PostgrestBuilder.ts:317:17)\n' +
+    '    at async <anonymous> (D:\\Coding\\remix_-siklusio\\backend\\src\\middlewares\\rateLimit.ts:264:50)\n' +
+    '    at async dispatch (file:///D:/Coding/remix_-siklusio/node_modules/hono/dist/compose.js:22:17)\n' +
+    '    at async cors2 (file:///D:/Coding/remix_-siklusio/node_modules/hono/dist/middleware/cors/index.js:79:5)\n' +
+    '    at async dispatch (file:///D:/Coding/remix_-siklusio/node_modules/hono/dist/compose.js:22:17)\n' +
+    '    at async file:///D:/Coding/remix_-siklusio/node_modules/hono/dist/hono-base.js:306:25\n' +
+    '    at async TestContext.<anonymous> (D:\\Coding\\remix_-siklusio\\backend\\vibenovelWebhookForward.test.ts:60:20)',
+  hint: '',
+  code: ''
+}
+Forwarding Mayar webhook to VibeNovel { forwardId: 'siklusio-mayar-493fd7a835f5c184', routed: 'vibenovel' }
+VibeNovel forward succeeded { forwardId: 'siklusio-mayar-493fd7a835f5c184', status: 200 }
+--> [BACKEND] Received Mayar webhook notification
+✖ vibenovel webhook forwards once without Siklusio DB side effects (39.2272ms)
+Forwarding Mayar webhook to VibeNovel { forwardId: 'siklusio-mayar-493fd7a835f5c184', routed: 'vibenovel' }
+--> [BACKEND] Received Mayar webhook notification
+--> Processing successful topup via atomic RPC for user: 11111111-1111-4111-8111-111111111111, credits: 300
+<-- Topup processed successfully! New balance: 300
+--> [BACKEND] Received Mayar webhook notification
+--> Checkout session not found by transaction ID tx-unknown-1. Falling back to email...
+DB Rate Limiter error, falling back to memory: {
+  message: 'Error: Unexpected fetch https://project.supabase.co/rest/v1/rpc/check_rate_limit',
+  details: 'Error: Unexpected fetch https://project.supabase.co/rest/v1/rpc/check_rate_limit\n' +
+    '    at globalThis.fetch (D:\\Coding\\remix_-siklusio\\backend\\vibenovelWebhookForward.test.ts:93:11)\n' +
+    '    at <anonymous> (D:\\Coding\\remix_-siklusio\\node_modules\\@supabase\\supabase-js\\dist\\index.mjs:317:22)\n' +
+    '    at <anonymous> (D:\\Coding\\remix_-siklusio\\node_modules\\@supabase\\supabase-js\\dist\\index.mjs:342:10)\n' +
+    '    at async executeWithRetry (D:\\Coding\\remix_-siklusio\\node_modules\\@supabase\\postgrest-js\\src\\PostgrestBuilder.ts:317:17)\n' +
+    '    at async <anonymous> (D:\\Coding\\remix_-siklusio\\backend\\src\\middlewares\\rateLimit.ts:264:50)\n' +
+    '    at async dispatch (file:///D:/Coding/remix_-siklusio/node_modules/hono/dist/compose.js:22:17)\n' +
+    '    at async cors2 (file:///D:/Coding/remix_-siklusio/node_modules/hono/dist/middleware/cors/index.js:79:5)\n' +
+    '    at async dispatch (file:///D:/Coding/remix_-siklusio/node_modules/hono/dist/compose.js:22:17)\n' +
+    '    at async file:///D:/Coding/remix_-siklusio/node_modules/hono/dist/hono-base.js:306:25\n' +
+    '    at async TestContext.<anonymous> (D:\\Coding\\remix_-siklusio\\backend\\vibenovelWebhookForward.test.ts:100:20)',
+  hint: '',
+  code: ''
+}
+VibeNovel forward returned non-success status { forwardId: 'siklusio-mayar-493fd7a835f5c184', status: 500 }
+VibeNovel Mayar router forward failed (fail-closed) {
+  forwardId: 'siklusio-mayar-493fd7a835f5c184',
+  reason: 'vibenovel_forward_http_error'
+}
+DB Rate Limiter error, falling back to memory: {
+  message: 'Error: Unexpected fetch https://project.supabase.co/rest/v1/rpc/check_rate_limit POST',
+  details: 'Error: Unexpected fetch https://project.supabase.co/rest/v1/rpc/check_rate_limit POST\n' +
+    '    at globalThis.fetch (D:\\Coding\\remix_-siklusio\\backend\\vibenovelWebhookForward.test.ts:165:11)\n' +
+    '    at <anonymous> (D:\\Coding\\remix_-siklusio\\node_modules\\@supabase\\supabase-js\\dist\\index.mjs:317:22)\n' +
+    '    at <anonymous> (D:\\Coding\\remix_-siklusio\\node_modules\\@supabase\\supabase-js\\dist\\index.mjs:342:10)\n' +
+    '    at async executeWithRetry (D:\\Coding\\remix_-siklusio\\node_modules\\@supabase\\postgrest-js\\src\\PostgrestBuilder.ts:317:17)\n' +
+    '    at async <anonymous> (D:\\Coding\\remix_-siklusio\\backend\\src\\middlewares\\rateLimit.ts:264:50)\n' +
+    '    at async dispatch (file:///D:/Coding/remix_-siklusio/node_modules/hono/dist/compose.js:22:17)\n' +
+    '    at async cors2 (file:///D:/Coding/remix_-siklusio/node_modules/hono/dist/middleware/cors/index.js:79:5)\n' +
+    '    at async dispatch (file:///D:/Coding/remix_-siklusio/node_modules/hono/dist/compose.js:22:17)\n' +
+    '    at async file:///D:/Coding/remix_-siklusio/node_modules/hono/dist/hono-base.js:306:25\n' +
+    '    at async TestContext.<anonymous> (D:\\Coding\\remix_-siklusio\\backend\\vibenovelWebhookForward.test.ts:172:20)',
+  hint: '',
+  code: ''
+}
+DB Rate Limiter error, falling back to memory: {
+  message: 'Error: Unexpected fetch https://project.supabase.co/rest/v1/rpc/check_rate_limit POST',
+  details: 'Error: Unexpected fetch https://project.supabase.co/rest/v1/rpc/check_rate_limit POST\n' +
+    '    at globalThis.fetch (D:\\Coding\\remix_-siklusio\\backend\\vibenovelWebhookForward.test.ts:238:11)\n' +
+    '    at <anonymous> (D:\\Coding\\remix_-siklusio\\node_modules\\@supabase\\supabase-js\\dist\\index.mjs:317:22)\n' +
+    '    at <anonymous> (D:\\Coding\\remix_-siklusio\\node_modules\\@supabase\\supabase-js\\dist\\index.mjs:342:10)\n' +
+    '    at async executeWithRetry (D:\\Coding\\remix_-siklusio\\node_modules\\@supabase\\postgrest-js\\src\\PostgrestBuilder.ts:317:17)\n' +
+    '    at async <anonymous> (D:\\Coding\\remix_-siklusio\\backend\\src\\middlewares\\rateLimit.ts:264:50)\n' +
+    '    at async dispatch (file:///D:/Coding/remix_-siklusio/node_modules/hono/dist/compose.js:22:17)\n' +
+    '    at async cors2 (file:///D:/Coding/remix_-siklusio/node_modules/hono/dist/middleware/cors/index.js:79:5)\n' +
+    '    at async dispatch (file:///D:/Coding/remix_-siklusio/node_modules/hono/dist/compose.js:22:17)\n' +
+    '    at async file:///D:/Coding/remix_-siklusio/node_modules/hono/dist/hono-base.js:306:25\n' +
+    '    at async TestContext.<anonymous> (D:\\Coding\\remix_-siklusio\\backend\\vibenovelWebhookForward.test.ts:245:20)',
+  hint: '',
+  code: ''
+}
+✔ vibenovel forward failure returns 502 fail-closed (3.5076ms)
+✔ legacy Siklusio topup webhook is not forwarded when router is enabled (3.1801ms)
+--> Querying pending registration
+--> Webhook skipped: No pending registration found
+✔ unknown app payload does not forward to VibeNovel (7027.5648ms)
+ℹ tests 4
+ℹ suites 0
+ℹ pass 3
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 7077.2509
+
+✖ failing tests:
+
+test at backend\vibenovelWebhookForward.test.ts:1:468
+✖ vibenovel webhook forwards once without Siklusio DB side effects (39.2272ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  true !== false
+  
+      at TestContext.<anonymous> (D:\Coding\remix_-siklusio\backend\vibenovelWebhookForward.test.ts:82:10)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: true,
+    expected: false,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }

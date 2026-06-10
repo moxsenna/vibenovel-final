@@ -123,7 +123,9 @@ test.describe("Sprint 8 web smoke — write AI API mode", () => {
     await expect(page.getByText(/Saldo Kredit/i).first()).toBeVisible({ timeout: 15_000 });
     await expect(page.getByText(/Biaya Tulis Beat dengan AI/i).first()).toBeVisible();
     await expect(page.getByText(/kredit tersisa/i).first()).toBeVisible();
-    await expect(page.getByText(/Top up belum tersedia/i).first()).toBeVisible();
+    const topupDisabled = page.getByText(/Top up belum tersedia/i);
+    const topupLink = page.getByRole("link", { name: /Top up kredit/i });
+    await expect(topupDisabled.or(topupLink).first()).toBeVisible();
 
     await assertNoWriteAiLeaksInDom(page);
   });

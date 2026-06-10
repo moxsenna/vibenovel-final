@@ -1,0 +1,15 @@
+{
+    "sessionId":  "3fbf57a5-9937-4abb-a28c-77291a4c5251",
+    "beatId":  "6fbfff03-c9f0-4474-b189-928b5644a123",
+    "proseLen":  1831,
+    "userId":  "abdc5016-ac92-4219-acea-85df829e4334",
+    "projectId":  "c5a9f0fb-7f45-4c9f-b37f-4a2981adeba9",
+    "creditBefore":  50,
+    "prosePreview":  "Tangan Nadira cekatan bergerak di antara wajan dan cobek. Aroma tumis kangkung beradu dengan sambal terasi yang baru diulek. Semua sudah hafal di luar kepala, seolah semua bumbu punya tempatnya sendiri di memori ototnya.\n\nDia melirik jam di",
+    "versionId":  "9b1ef146-4b96-4747-b947-88ff89fa5f98",
+    "idempotencyKey":  "t1028-20260610141430",
+    "creditAfter":  45,
+    "creditCost":  5,
+    "versionSource":  "ai_generated",
+    "attemptStatus":  "succeeded"
+}

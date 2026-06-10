@@ -1,0 +1,521 @@
+
+> vibenovel@0.1.0 smoke:api:sprint10
+> powershell -ExecutionPolicy Bypass -File scripts/sprint10-smoke-api.ps1
+
+
+VibeNovel Sprint 10 Payment Topup API Smoke Test
+[PASS] signup/login                                         email=s10smoke-49322981@example.com
+[PASS] API ready poll                                       GET /api/health OK
+[PASS] GET /api/me                                          userId=e366f840-78aa-46f8-9316-3c4ab0001d16
+[PASS] health topup flags                                   enabled=True mock=True
+[PASS] POST checkout no token                               The remote server returned an error: (401) Unauthorized.
+[PASS] GET topup products                                   count=4
+[SKIP] checkout TOPUP_DISABLED                              CREDIT_TOPUP_ENABLED=true on server
+[SKIP] disabled no order created                            topup enabled
+[PASS] mock checkout success                                status=pending amount=39000
+[PASS] forbidden client price rejected                      code=BAD_REQUEST
+[PASS] idempotency replay                                   replay=True sameId=True
+[PASS] order pending in DB                                  pending=1
+[PASS] no balance mutation                                  after checkout only
+[PASS] no ledger credit_topup row                           before=0 after=0
+[PASS] audit checkout created                               count=1
+[PASS] audit invoice created                                count=1
+[PASS] webhook grant credits                                balance=100 ledger=1
+[PASS] webhook duplicate no double grant                    dup=True
+[PASS] audit webhook received                               count=1
+[PASS] audit webhook processed                              count=1
+[PASS] audit credit topup granted                           count=1
+[PASS] webhook unknown order no grant                       reason=order_not_found
+[PASS] webhook amount mismatch no grant                     reason=amount_mismatch
+[PASS] webhook non-paid ignored                             reason=event_not_payment_received
+[PASS] webhook foreign app ignored                          reason=foreign_app_payload
+[PASS] webhook legacy siklusio ignored                      reason=legacy_no_vibenovel_order
+[PASS] mayar docs-shaped webhook grant                      balance=200 ledger=2 granted=True reason=
+[NOT RUN] mock fail_provider checkout                          set PAYMENT_PROVIDER_MOCK_MODE=fail_provider + restart, run with -MockMode fail_provider
+[NOT RUN] fail_provider pending no paymentUrl                  requires fail_provider mode
+
+Summary: PASS=25 FAIL=0 SKIP/NOT RUN=4 TOTAL=29
+
+> vibenovel@0.1.0 smoke:web:topup
+> powershell -ExecutionPolicy Bypass -File scripts/sprint10-smoke-web.ps1
+
+
+VibeNovel Sprint 10 Web Smoke (Topup UI)
+[PASS] web server reachable                                 http://localhost:5173
+Microsoft Windows [Version 10.0.26200.8524]
+(c) Microsoft Corporation. All rights reserved.
+
+D:\Coding\vibenovel-unified-blueprint\apps\web>
+[PASS] mock mode topup UI                                   playwright exit 0
+[NOT RUN] api mode topup tests                                 pass -IncludeApiMode
+
+Summary: PASS=2 FAIL=0
+
+> vibenovel@0.1.0 smoke:api:sprint10:mayar-live
+> powershell -ExecutionPolicy Bypass -File scripts/sprint10-mayar-live-smoke.ps1
+
+
+Task 10.5 - Mayar Sandbox Live Smoke
+API: http://127.0.0.1:8787
+Never logs secrets.
+
+[PASS] API health                                           ok=true
+[PASS] env booleans                                         hasMayarApiKey=False creditTopupEnabled=True paymentProviderMock=True mayarEnv=sandbox
+[NOT RUN] live invoice create                                  PAYMENT_PROVIDER_MOCK=true - set false + restart dev:api
+[NOT RUN] live paid webhook grant                              requires real Mayar invoice + webhook
+[NOT RUN] live duplicate replay                                requires captured live payload
+[NOT RUN] siklusio router live                                 requires staging tunnel + router enabled
+[PASS] rollback probe health                                manual rollback documented in docs/51
+
+Summary: PASS=3 FAIL=0 NOT RUN/SKIP/PARTIAL=4
+
+Rollback: PAYMENT_PROVIDER_MOCK=true, optional CREDIT_TOPUP_ENABLED=false, restart dev:api
+Report: docs/51-mayar-sandbox-live-smoke-report.md
+
+> vibenovel@0.1.0 smoke:api:sprint10:dual-app
+> powershell -ExecutionPolicy Bypass -File scripts/sprint10-dual-app-smoke.ps1
+
+
+Task 10.3d - Dual-App Smoke (Siklusio to VibeNovel)
+[PASS] resolve siklusio webhook token                             token configured (not logged)
+[PASS] vibenovel api ready                                        topup=True mock=True
+[PASS] vibenovel env mode                                         mock success mode
+[PASS] siklusio webhook ready                                     GET verify OK
+[PASS] signup/login                                               email=s10dual-16693437@example.com
+[PASS] GET /api/me                                                userId=b59e5c63-8c53-4518-a0b6-08f5c57d9870
+[PASS] GET topup products                                         count=4
+[PASS] pending order checkout                                     orderId=e4d6affa-47be-41c2-81d9-b20b585c3b71
+[PASS] siklusio forward vibenovel                                 status=200 routed=vibenovel
+[PASS] vibenovel grant once                                       balanceBefore=0 balanceAfter=100 ledger=1 paidAt=True
+[PASS] vibenovel audit trail                                      processed=1 granted=1
+[PASS] duplicate webhook idempotent                               balance=100 ledger=1
+[PASS] non-vibenovel compatibility                                vnEvents=21->21 ledger=1->1
+[NOT RUN] forward failure 502                                        pass -RunForwardFailureTest to document; 10.3c unit test covers fail-closed
+
+Summary: PASS=13 FAIL=0 SKIP/NOT RUN=1 TOTAL=14
+
+> vibenovel@0.1.0 smoke:api
+> powershell -ExecutionPolicy Bypass -File scripts/sprint2-smoke-api.ps1
+
+
+VibeNovel Sprint 2 API Smoke Test
+API:      http://127.0.0.1:8787
+Supabase: http://127.0.0.1:54321
+Repo:     D:\Coding\vibenovel-unified-blueprint
+
+[PASS] resolve anon key                     source=env|cli
+[PASS] GET /health                          ok=True
+[PASS] GET /api/me no token                 Cannot send a content-body with this verb-type.
+[PASS] signup/login                         email=s2smoke-23053945@example.com
+[PASS] GET /api/projects                    count=0
+[PASS] POST /api/projects                   projectId=8dea8297-e50a-46c5-a280-bbaea4660dc2
+[PASS] GET/PUT settings                     qualityMode=terbaik
+[PASS] GET/PUT foundation                   premise_len=18
+[PASS] POST character                       characterId=82166e60-cf34-4141-aed7-51b7986742b9
+[PASS] POST fact source=user                factId=76c91118-b182-4795-9401-d45a733503ed
+[PASS] POST fact source=ai_direct           {"ok":false,"error":{"code":"BAD_REQUEST","message":"AI-origin facts must go through ai_proposals first"}}
+[PASS] POST speech rule user                ruleId=fe63e8e8-c09c-4617-9c76-ba1940cba463
+[PASS] POST speech rule ai_direct           {"ok":false,"error":{"code":"BAD_REQUEST","message":"AI-origin speech rules must go through ai_proposals first"}}
+[PASS] POST proposal high-risk              status=proposed
+[PASS] accept proposal status-only          status=accepted
+[PASS] GET credit balance                   balance=null
+[PASS] cross-user project 404               Cannot send a content-body with this verb-type.
+
+
+Step Test                        Result Detail                                                                         
+---- ----                        ------ ------                                                                         
+   1 resolve anon key            PASS   source=env|cli                                                                 
+   2 GET /health                 PASS   ok=True                                                                        
+   3 GET /api/me no token        PASS   Cannot send a content-body with this verb-type.                                
+   4 signup/login                PASS   email=s2smoke-23053945@example.com                                             
+   5 GET /api/projects           PASS   count=0                                                                        
+   6 POST /api/projects          PASS   projectId=8dea8297-e50a-46c5-a280-bbaea4660dc2                                 
+   7 GET/PUT settings            PASS   qualityMode=terbaik                                                            
+   8 GET/PUT foundation          PASS   premise_len=18                                                                 
+   9 POST character              PASS   characterId=82166e60-cf34-4141-aed7-51b7986742b9                               
+  10 POST fact source=user       PASS   factId=76c91118-b182-4795-9401-d45a733503ed                                    
+  11 POST fact source=ai_direct  PASS   {"ok":false,"error":{"code":"BAD_REQUEST","message":"AI-origin facts must go...
+  12 POST speech rule user       PASS   ruleId=fe63e8e8-c09c-4617-9c76-ba1940cba463                                    
+  13 POST speech rule ai_direct  PASS   {"ok":false,"error":{"code":"BAD_REQUEST","message":"AI-origin speech rules ...
+  14 POST proposal high-risk     PASS   status=proposed                                                                
+  15 accept proposal status-only PASS   status=accepted                                                                
+  16 GET credit balance          PASS   balance=null                                                                   
+  17 cross-user project 404      PASS   Cannot send a content-body with this verb-type.                                
+
+
+Summary: 17 PASS, 0 FAIL
+
+> vibenovel@0.1.0 smoke:api:sprint5
+> powershell -ExecutionPolicy Bypass -File scripts/sprint5-smoke-api.ps1
+
+
+VibeNovel Sprint 5 Write Room API Smoke Test
+[PASS] signup/login                                   email=s5smoke-89480139@example.com
+[PASS] POST context-packet no token                   The remote server returned an error: (401) Unauthorized.
+[PASS] POST /api/projects                             projectId=3538355c-d653-47e5-8faa-4f7d2474175c
+[PASS] bootstrap foundation locked                    
+[PASS] POST without outline_locked                    The remote server returned an error: (409) Conflict.
+[PASS] outline lock flow                              locked
+[PASS] POST context-packet ch1                        logId=ce4269a8-0e9f-4681-9f19-bcf533b6af9e
+[PASS] response preview-only leak guard               
+[PASS] ch1 response no ch2 title                      
+[PASS] ch1 response no ch2 summary                    
+[PASS] response has preview fields                    
+[PASS] GET preview by logId                           
+[PASS] GET preview redacted                           
+[PASS] DB packet_json leak guard                      
+[PASS] DB packet_json no ch2 title                    
+[PASS] DB packet_json no ch2 summary                  
+[PASS] DB packet_json no planning truth               
+[PASS] DB forbidden reveal label only                 
+[PASS] cross-user project 404                         The remote server returned an error: (404) Not Found.
+[PASS] canon counts unchanged                         
+[PASS] POST session no token                          The remote server returned an error: (401) Unauthorized.
+[PASS] POST writing session                           sessionId=aaa71c39-51b0-49ab-8627-2025906899fe
+[PASS] POST session idempotent                        
+[PASS] GET writing session                            beatsCount=0
+[PASS] GET beats before generate                      count=0
+[PASS] POST beats/generate                            count=5
+[PASS] POST beats/generate idempotent                 
+[PASS] PATCH beat status/direction                    
+[PASS] PATCH beat rejects proseText                   The remote server returned an error: (400) Bad Request.
+[PASS] PATCH session activeBeatId                     
+[PASS] POST prose no token                            The remote server returned an error: (401) Unauthorized.
+[PASS] POST prose without session                     The remote server returned an error: (409) Conflict.
+[PASS] resume session for prose                       
+[PASS] POST prose fictional secret allowed            
+[PASS] POST prose version 2                           v=044d87ff-9bf6-4370-a69b-6ce222d0c32b
+[PASS] prose response no packet_json                  
+[PASS] POST prose version 3                           
+[PASS] GET prose versions                             
+[PASS] GET prose version detail                       
+[PASS] contextPacketLogId linked                      
+[PASS] POST prose ai_generated rejected               The remote server returned an error: (400) Bad Request.
+[PASS] POST prose planningTruth rejected              The remote server returned an error: (400) Bad Request.
+[PASS] POST prose packet dump rejected                The remote server returned an error: (400) Bad Request.
+[PASS] prose save no canon mutation                   
+[PASS] POST ready-for-summary                         
+[PASS] ready_for_summary not summarized               status=ready_for_summary
+[PASS] canon unchanged after write flow               
+[PASS] ready_for_summary no fact mutation             
+[PASS] cross-user session 404                         The remote server returned an error: (404) Not Found.
+
+Summary: 49 PASS, 0 FAIL
+
+> vibenovel@0.1.0 smoke:api:sprint6
+> powershell -ExecutionPolicy Bypass -File scripts/sprint6-smoke-api.ps1
+
+
+VibeNovel Sprint 6 Chapter Summary API Smoke Test
+[PASS] signup/login                                     email=s6smoke-18579802@example.com
+[PASS] POST summary no token                            The remote server returned an error: (401) Unauthorized.
+[PASS] POST /api/projects                               projectId=3e7651b0-1fcf-4c00-b925-bd5c1c71b92f
+[PASS] generate before ready_for_summary                The remote server returned an error: (409) Conflict.
+[PASS] POST summary generate                            id=28db0660-2578-450b-b7d1-d1906c636180
+[PASS] summary has items                                count=7
+[PASS] summary response leak guard                      
+[PASS] GET summary list                                 
+[PASS] GET summary list leak guard                      
+[PASS] GET summary detail                               
+[PASS] GET summary detail leak guard                    
+[PASS] GET summary by chapter                           
+[PASS] regenerate=false idempotent                      
+[PASS] regenerate=true new version                      v=2
+[PASS] regenerate supersedes previous                   v1 current=False
+[PASS] no canon mutation                                
+[PASS] no ai_proposals created                          before=11 after=11
+[PASS] not summarized yet                               
+[PASS] POST delta extract no token                      The remote server returned an error: (401) Unauthorized.
+[PASS] extract before summary exists                    The remote server returned an error: (404) Not Found.
+[PASS] POST delta extract                               deltaId=439c1692-197a-4471-a6a3-596ecfc114a4
+[PASS] proposals created from delta                     count=2
+[PASS] delta/proposal leak guard                        
+[PASS] GET summary delta                                
+[PASS] GET delta leak guard                             
+[PASS] GET summary proposals                            
+[PASS] proposals response safe excerpt                  
+[PASS] proposals linked not accepted                    
+[PASS] delta regenerate blocked                         The remote server returned an error: (409) Conflict.
+[PASS] delta extract idempotent                         
+[PASS] audit chapter_delta_extracted                    count=1
+[PASS] audit summary_proposal_linked                    count=1
+[PASS] proposals remain proposed                        
+[PASS] delta proposals added                            before=11 after=13
+[PASS] no canon mutation after delta                    
+[PASS] cross-user summary list 404                      The remote server returned an error: (404) Not Found.
+[PASS] cross-user summary 404                           The remote server returned an error: (404) Not Found.
+[PASS] cross-user delta 404                             The remote server returned an error: (404) Not Found.
+[PASS] cross-user proposals 404                         The remote server returned an error: (404) Not Found.
+[PASS] POST approve no token                            The remote server returned an error: (401) Unauthorized.
+[PASS] accept before approve                            The remote server returned an error: (409) Conflict.
+[PASS] accept before approve stays proposed             expect=proposed/linked
+[PASS] POST approve summary                             
+[PASS] approve no canon mutation                        
+[PASS] approve response leak guard                      
+[PASS] approve proposalCounts no accept                 accepted=0
+[PASS] approve no auto-accept proposals                 
+[PASS] session completed after approve                  
+[PASS] writing state summarized                         
+[PASS] approve idempotent                               
+[PASS] audit chapter_summary_approved                   count=1
+[PASS] reveal accept without confirm                    The remote server returned an error: (409) Conflict.
+[PASS] reveal accept stays proposed                     expect=proposed/linked
+[PASS] audit canon_promotion_failed reveal              count=1
+[PASS] reject linked proposal                           reveal
+[PASS] reject no canon mutation                         
+[PASS] accept fact proposal                             
+[PASS] accept response leak guard                       
+[PASS] accept link status                               
+[PASS] fact creates confirmed canon                     before=3 after=4
+[PASS] accept idempotent                                
+[PASS] audit summary_proposal_accepted                  count=1
+[PASS] audit canon_promotion_applied                    count=1
+[PASS] reject accepted proposal                         The remote server returned an error: (409) Conflict.
+[PASS] reject accepted status unchanged                 expect=accepted/accepted
+[PASS] cross-user approve 404                           The remote server returned an error: (404) Not Found.
+[PASS] cross-user accept 404                            The remote server returned an error: (404) Not Found.
+[PASS] cross-user reject 404                            The remote server returned an error: (404) Not Found.
+
+Summary: 68 PASS, 0 FAIL
+
+Step Test                                 Result Detail                                                  
+---- ----                                 ------ ------                                                  
+   1 signup/login                         PASS   email=s6smoke-18579802@example.com                      
+   2 POST summary no token                PASS   The remote server returned an error: (401) Unauthorized.
+   3 POST /api/projects                   PASS   projectId=3e7651b0-1fcf-4c00-b925-bd5c1c71b92f          
+   4 generate before ready_for_summary    PASS   The remote server returned an error: (409) Conflict.    
+   5 POST summary generate                PASS   id=28db0660-2578-450b-b7d1-d1906c636180                 
+   6 summary has items                    PASS   count=7                                                 
+   7 summary response leak guard          PASS                                                           
+   8 GET summary list                     PASS                                                           
+   9 GET summary list leak guard          PASS                                                           
+  10 GET summary detail                   PASS                                                           
+  11 GET summary detail leak guard        PASS                                                           
+  12 GET summary by chapter               PASS                                                           
+  13 regenerate=false idempotent          PASS                                                           
+  14 regenerate=true new version          PASS   v=2                                                     
+  15 regenerate supersedes previous       PASS   v1 current=False                                        
+  16 no canon mutation                    PASS                                                           
+  17 no ai_proposals created              PASS   before=11 after=11                                      
+  18 not summarized yet                   PASS                                                           
+  19 POST delta extract no token          PASS   The remote server returned an error: (401) Unauthorized.
+  20 extract before summary exists        PASS   The remote server returned an error: (404) Not Found.   
+  21 POST delta extract                   PASS   deltaId=439c1692-197a-4471-a6a3-596ecfc114a4            
+  22 proposals created from delta         PASS   count=2                                                 
+  23 delta/proposal leak guard            PASS                                                           
+  24 GET summary delta                    PASS                                                           
+  25 GET delta leak guard                 PASS                                                           
+  26 GET summary proposals                PASS                                                           
+  27 proposals response safe excerpt      PASS                                                           
+  28 proposals linked not accepted        PASS                                                           
+  29 delta regenerate blocked             PASS   The remote server returned an error: (409) Conflict.    
+  30 delta extract idempotent             PASS                                                           
+  31 audit chapter_delta_extracted        PASS   count=1                                                 
+  32 audit summary_proposal_linked        PASS   count=1                                                 
+  33 proposals remain proposed            PASS                                                           
+  34 delta proposals added                PASS   before=11 after=13                                      
+  35 no canon mutation after delta        PASS                                                           
+  36 cross-user summary list 404          PASS   The remote server returned an error: (404) Not Found.   
+  37 cross-user summary 404               PASS   The remote server returned an error: (404) Not Found.   
+  38 cross-user delta 404                 PASS   The remote server returned an error: (404) Not Found.   
+  39 cross-user proposals 404             PASS   The remote server returned an error: (404) Not Found.   
+  40 POST approve no token                PASS   The remote server returned an error: (401) Unauthorized.
+  41 accept before approve                PASS   The remote server returned an error: (409) Conflict.    
+  42 accept before approve stays proposed PASS   expect=proposed/linked                                  
+  43 POST approve summary                 PASS                                                           
+  44 approve no canon mutation            PASS                                                           
+  45 approve response leak guard          PASS                                                           
+  46 approve proposalCounts no accept     PASS   accepted=0                                              
+  47 approve no auto-accept proposals     PASS                                                           
+  48 session completed after approve      PASS                                                           
+  49 writing state summarized             PASS                                                           
+  50 approve idempotent                   PASS                                                           
+  51 audit chapter_summary_approved       PASS   count=1                                                 
+  52 reveal accept without confirm        PASS   The remote server returned an error: (409) Conflict.    
+  53 reveal accept stays proposed         PASS   expect=proposed/linked                                  
+  54 audit canon_promotion_failed reveal  PASS   count=1                                                 
+  55 reject linked proposal               PASS   reveal                                                  
+  56 reject no canon mutation             PASS                                                           
+  57 accept fact proposal                 PASS                                                           
+  58 accept response leak guard           PASS                                                           
+  59 accept link status                   PASS                                                           
+  60 fact creates confirmed canon         PASS   before=3 after=4                                        
+  61 accept idempotent                    PASS                                                           
+  62 audit summary_proposal_accepted      PASS   count=1                                                 
+  63 audit canon_promotion_applied        PASS   count=1                                                 
+  64 reject accepted proposal             PASS   The remote server returned an error: (409) Conflict.    
+  65 reject accepted status unchanged     PASS   expect=accepted/accepted                                
+  66 cross-user approve 404               PASS   The remote server returned an error: (404) Not Found.   
+  67 cross-user accept 404                PASS   The remote server returned an error: (404) Not Found.   
+  68 cross-user reject 404                PASS   The remote server returned an error: (404) Not Found.   
+
+
+
+> vibenovel@0.1.0 smoke:api:sprint7
+> powershell -ExecutionPolicy Bypass -File scripts/sprint7-smoke-api.ps1
+
+
+VibeNovel Sprint 7 Publish Package API Smoke Test
+[PASS] signup/login                                     email=s7smoke-34970807@example.com
+[PASS] POST publish/generate no token                   The remote server returned an error: (401) Unauthorized.
+[PASS] POST /api/projects                               projectId=ee25a1f4-58cf-4612-9898-fa82792f77f8
+[PASS] POST summary generate                            id=19be035b-5a3f-4cee-9b02-fd332326cb0f
+[PASS] generate before summary approved                 The remote server returned an error: (409) Conflict.
+[PASS] POST approve summary                             
+[PASS] POST publish generate                            id=145ce12c-f234-4612-86a7-634403e371d8 created=201
+[PASS] generate after approved+summarized               status=ready
+[PASS] package has copy fields                          
+[PASS] publish generate leak guard                      
+[PASS] GET publish list                                 count=1
+[PASS] GET publish list leak guard                      
+[PASS] GET publish detail                               
+[PASS] GET publish detail leak guard                    
+[PASS] GET publish by chapter                           
+[PASS] regenerate=false idempotent                      
+[PASS] regenerate=true new version                      v=2
+[PASS] regenerate supersedes previous                   v1 current=False
+[PASS] no canon mutation                                facts/chars/speech/openLoops/reveals
+[PASS] summaries unchanged by publish                   before=1 after=1
+[PASS] no ai_proposals from publish                     before=13 after=13
+[PASS] next chapter teaser safe                         
+[PASS] PATCH fields no token                            The remote server returned an error: (401) Unauthorized.
+[PASS] PATCH fields updates copy                        
+[PASS] audit publish_package_updated                    count=1
+[PASS] PATCH fields rejects planningTruth               The remote server returned an error: (400) Bad Request.
+[PASS] PATCH fields rejects packet_json                 The remote server returned an error: (400) Bad Request.
+[PASS] PATCH fields rejects prose_text                  The remote server returned an error: (400) Bad Request.
+[PASS] PATCH fields rejects overclaim dijamin viral     The remote server returned an error: (400) Bad Request.
+[PASS] PATCH fields rejects overclaim pasti viral       The remote server returned an error: (400) Bad Request.
+[PASS] PATCH fields rejects overclaim dijamin unlock    The remote server returned an error: (400) Bad Request.
+[PASS] PATCH fields rejects overclaim pasti banyak pembaca The remote server returned an error: (400) Bad Request.
+[PASS] PATCH checklist updates ids                      
+[PASS] audit publish_checklist_updated                  count=1
+[PASS] PATCH checklist rejects unknown id               The remote server returned an error: (400) Bad Request.
+[PASS] PATCH checklist rejects duplicate id             The remote server returned an error: (400) Bad Request.
+[PASS] mark-exported sets status                        status=exported
+[PASS] mark-exported no canon mutation                  
+[PASS] mark-exported response leak guard                
+[PASS] mark-exported manual marker only                 exportTarget=kbm_manual_copy
+[PASS] audit publish_package_exported                   count=1
+[PASS] mark-exported no external URL                    
+[PASS] exported package fields locked                   The remote server returned an error: (409) Conflict.
+[PASS] exported package checklist locked                The remote server returned an error: (409) Conflict.
+[PASS] mark-exported idempotent                         
+[PASS] regenerate after exported keeps exported         v3=3
+[PASS] cross-user publish list 404                      The remote server returned an error: (404) Not Found.
+[PASS] cross-user publish detail 404                    The remote server returned an error: (404) Not Found.
+[PASS] cross-user publish by-chapter 404                The remote server returned an error: (404) Not Found.
+[PASS] cross-user PATCH fields 404                      The remote server returned an error: (404) Not Found.
+[PASS] cross-user PATCH checklist 404                   The remote server returned an error: (404) Not Found.
+[PASS] cross-user mark-exported 404                     The remote server returned an error: (404) Not Found.
+[PASS] no KBM autopost route in publish API             publish.ts static check
+
+Summary: 53 PASS, 0 FAIL
+
+Step Test                                                Result Detail                                                 
+---- ----                                                ------ ------                                                 
+   1 signup/login                                        PASS   email=s7smoke-34970807@example.com                     
+   2 POST publish/generate no token                      PASS   The remote server returned an error: (401) Unauthori...
+   3 POST /api/projects                                  PASS   projectId=ee25a1f4-58cf-4612-9898-fa82792f77f8         
+   4 POST summary generate                               PASS   id=19be035b-5a3f-4cee-9b02-fd332326cb0f                
+   5 generate before summary approved                    PASS   The remote server returned an error: (409) Conflict.   
+   6 POST approve summary                                PASS                                                          
+   7 POST publish generate                               PASS   id=145ce12c-f234-4612-86a7-634403e371d8 created=201    
+   8 generate after approved+summarized                  PASS   status=ready                                           
+   9 package has copy fields                             PASS                                                          
+  10 publish generate leak guard                         PASS                                                          
+  11 GET publish list                                    PASS   count=1                                                
+  12 GET publish list leak guard                         PASS                                                          
+  13 GET publish detail                                  PASS                                                          
+  14 GET publish detail leak guard                       PASS                                                          
+  15 GET publish by chapter                              PASS                                                          
+  16 regenerate=false idempotent                         PASS                                                          
+  17 regenerate=true new version                         PASS   v=2                                                    
+  18 regenerate supersedes previous                      PASS   v1 current=False                                       
+  19 no canon mutation                                   PASS   facts/chars/speech/openLoops/reveals                   
+  20 summaries unchanged by publish                      PASS   before=1 after=1                                       
+  21 no ai_proposals from publish                        PASS   before=13 after=13                                     
+  22 next chapter teaser safe                            PASS                                                          
+  23 PATCH fields no token                               PASS   The remote server returned an error: (401) Unauthori...
+  24 PATCH fields updates copy                           PASS                                                          
+  25 audit publish_package_updated                       PASS   count=1                                                
+  26 PATCH fields rejects planningTruth                  PASS   The remote server returned an error: (400) Bad Request.
+  27 PATCH fields rejects packet_json                    PASS   The remote server returned an error: (400) Bad Request.
+  28 PATCH fields rejects prose_text                     PASS   The remote server returned an error: (400) Bad Request.
+  29 PATCH fields rejects overclaim dijamin viral        PASS   The remote server returned an error: (400) Bad Request.
+  30 PATCH fields rejects overclaim pasti viral          PASS   The remote server returned an error: (400) Bad Request.
+  31 PATCH fields rejects overclaim dijamin unlock       PASS   The remote server returned an error: (400) Bad Request.
+  32 PATCH fields rejects overclaim pasti banyak pembaca PASS   The remote server returned an error: (400) Bad Request.
+  33 PATCH checklist updates ids                         PASS                                                          
+  34 audit publish_checklist_updated                     PASS   count=1                                                
+  35 PATCH checklist rejects unknown id                  PASS   The remote server returned an error: (400) Bad Request.
+  36 PATCH checklist rejects duplicate id                PASS   The remote server returned an error: (400) Bad Request.
+  37 mark-exported sets status                           PASS   status=exported                                        
+  38 mark-exported no canon mutation                     PASS                                                          
+  39 mark-exported response leak guard                   PASS                                                          
+  40 mark-exported manual marker only                    PASS   exportTarget=kbm_manual_copy                           
+  41 audit publish_package_exported                      PASS   count=1                                                
+  42 mark-exported no external URL                       PASS                                                          
+  43 exported package fields locked                      PASS   The remote server returned an error: (409) Conflict.   
+  44 exported package checklist locked                   PASS   The remote server returned an error: (409) Conflict.   
+  45 mark-exported idempotent                            PASS                                                          
+  46 regenerate after exported keeps exported            PASS   v3=3                                                   
+  47 cross-user publish list 404                         PASS   The remote server returned an error: (404) Not Found.  
+  48 cross-user publish detail 404                       PASS   The remote server returned an error: (404) Not Found.  
+  49 cross-user publish by-chapter 404                   PASS   The remote server returned an error: (404) Not Found.  
+  50 cross-user PATCH fields 404                         PASS   The remote server returned an error: (404) Not Found.  
+  51 cross-user PATCH checklist 404                      PASS   The remote server returned an error: (404) Not Found.  
+  52 cross-user mark-exported 404                        PASS   The remote server returned an error: (404) Not Found.  
+  53 no KBM autopost route in publish API                PASS   publish.ts static check                                
+
+
+
+> vibenovel@0.1.0 smoke:api:sprint8
+> powershell -ExecutionPolicy Bypass -File scripts/sprint8-smoke-api.ps1
+
+
+VibeNovel Sprint 8 Prose Beat Generation API Smoke Test
+[PASS] signup/login                                         email=s8smoke-82113102@example.com
+[PASS] API ready poll                                       GET /api/health OK
+[PASS] GET /api/me                                          userId=d032fea8-fd9e-4e5d-bb51-657d8de4bba8
+[PASS] health AI flags                                      enabled=False mock=True
+[PASS] POST /api/projects                                   projectId=7e696a09-0a31-406d-a3ae-9e6660092b9f
+[PASS] write session + beats                                session=48ee58eb-a291-4546-9656-22b552a9cd1d beat=a1bb6da2-72bd-48d6-9f10-cfb1cf04a841
+[PASS] POST generate-prose no token                         The remote server returned an error: (401) Unauthorized.
+[PASS] AI disabled 503                                      code=AI_DISABLED
+[NOT RUN] mock success path                                    set AI_GENERATION_ENABLED=true AI_PROVIDER_MOCK=true and restart dev:api
+[NOT RUN] insufficient credit                                  requires AI enabled
+[NOT RUN] mock fail_provider                                   requires AI_PROVIDER_MOCK_MODE=fail_provider + restart
+[NOT RUN] mock unsafe_output                                   requires AI_PROVIDER_MOCK_MODE=unsafe_output + restart
+[NOT RUN] reject client model                                  AI disabled
+
+Summary: PASS=8 FAIL=0 SKIP/NOT RUN=5 TOTAL=13
+
+> vibenovel@0.1.0 smoke:api:sprint9
+> powershell -ExecutionPolicy Bypass -File scripts/sprint9-smoke-api.ps1
+
+
+VibeNovel Sprint 9 AI API Smoke Test (rewrite + publish copy)
+[PASS] signup/login                                         email=s9smoke-5016558@example.com
+[PASS] API ready poll                                       GET /api/health OK
+[PASS] GET /api/me                                          userId=7bc29eb1-6136-41d4-b16f-0958614201ae
+[PASS] health AI flags                                      enabled=False mock=True
+[PASS] POST /api/projects                                   projectId=75938fc7-bdb2-4cf4-9764-79a8e02d7654
+[PASS] write session + beats                                session=ea877449-3689-47d5-8d57-88bf98e5b995 beat=64a1ac5b-c329-4a6c-a497-aeeb90769f57
+[PASS] POST rewrite-prose no token                          The remote server returned an error: (401) Unauthorized.
+[PASS] POST improve-publish-copy no token                   The remote server returned an error: (401) Unauthorized.
+[PASS] AI disabled 503 rewrite                              code=AI_DISABLED
+[PASS] AI disabled 503 publish copy                         code=AI_DISABLED
+[NOT RUN] rewrite before prose NO_PROSE_TO_REWRITE             requires AI enabled
+[NOT RUN] POST user prose seed                                 requires AI enabled
+[NOT RUN] mock success path                                    set AI_GENERATION_ENABLED=true AI_PROVIDER_MOCK=true and restart dev:api
+[NOT RUN] insufficient credit 402                              requires AI enabled
+[NOT RUN] mock fail_provider                                   requires AI_PROVIDER_MOCK_MODE=fail_provider + restart
+[NOT RUN] mock unsafe_output                                   requires AI_PROVIDER_MOCK_MODE=unsafe_output + restart
+[NOT RUN] cross-user rewrite 404                               requires AI enabled
+[NOT RUN] invalid rewriteMode 400                              requires AI enabled
+[NOT RUN] custom without instruction 400                       requires AI enabled
+[NOT RUN] reject client model                                  requires AI enabled
+[NOT RUN] publish copy tests                                   requires AI enabled
+
+Summary: PASS=10 FAIL=0 SKIP/NOT RUN=11 TOTAL=21
