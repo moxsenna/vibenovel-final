@@ -2,6 +2,7 @@ import {
   ActiveProjectCard,
   DashboardGreeting,
   NewProjectCta,
+  NoActiveProjectCard,
   RecentProjectsSection,
 } from "@/components/dashboard";
 import { IntegrationNotice } from "@/components/common/IntegrationNotice";
@@ -13,7 +14,7 @@ import { useDashboardData } from "@/hooks/useDashboardData";
  * Wrapped by AppShell via router layout.
  */
 export function DashboardPage() {
-  const { activeProject, recentProjects, usage, notice, loading } = useDashboardData();
+  const { activeProject, recentProjects, usage, notice, loading, isEmpty } = useDashboardData();
 
   return (
     <div className="flex w-full flex-col gap-xl">
@@ -21,7 +22,11 @@ export function DashboardPage() {
       <DashboardGreeting usage={usage} />
 
       <div className="grid grid-cols-1 gap-lg lg:grid-cols-3">
-        <ActiveProjectCard project={activeProject} />
+        {activeProject ? (
+          <ActiveProjectCard project={activeProject} />
+        ) : isEmpty ? (
+          <NoActiveProjectCard />
+        ) : null}
         <NewProjectCta />
       </div>
 

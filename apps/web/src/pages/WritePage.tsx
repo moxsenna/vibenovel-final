@@ -5,6 +5,8 @@ import {
   WriterMobileLayout,
 } from "@/components/writer";
 import { IntegrationNotice } from "@/components/common/IntegrationNotice";
+import { WorkflowLockedState } from "@/components/common/WorkflowLockedState";
+import { ROUTES } from "@/routes/paths";
 import { Button } from "@/components/ui";
 import { useWriteRoomData } from "@/hooks/useWriteRoomData";
 import { formatProseRewriteModeLabel } from "@/services/ai";
@@ -48,6 +50,8 @@ export function WritePage() {
     insufficientCredit,
     remainingAfterGenerate,
     showCreditUi,
+    creditTopupEnabled,
+    isMockMode,
     onGenerateAi,
     aiUnavailableReason,
     rewriteGenerating,
@@ -62,6 +66,9 @@ export function WritePage() {
     onRewriteProse,
     rewriteUnavailableReason,
     hasProseForRewrite,
+    lockedTitle,
+    lockedDescription,
+    source,
   } = useWriteRoomData();
 
   const activeBeat = draft.beats.find((beat) => beat.id === activeBeatId) ?? draft.beats[0];
@@ -71,6 +78,19 @@ export function WritePage() {
     return (
       <div className="flex flex-1 items-center justify-center p-lg">
         <p className="font-body-md text-body-md text-muted-text">Memuat ruang tulis…</p>
+      </div>
+    );
+  }
+
+  if ((source === "locked" || source === "error") && lockedTitle) {
+    return (
+      <div className="flex flex-1 flex-col gap-4 p-lg">
+        <IntegrationNotice message={notice} />
+        <WorkflowLockedState
+          title={lockedTitle}
+          description={lockedDescription ?? ""}
+          backRoute={ROUTES.dashboard}
+        />
       </div>
     );
   }
@@ -125,6 +145,8 @@ export function WritePage() {
     insufficientCredit,
     remainingAfterGenerate,
     showCreditUi,
+    creditTopupEnabled,
+    isMockMode,
     aiUnavailableReason,
     onRewriteProse: onRewriteProse ? () => void onRewriteProse() : undefined,
     rewriteGenerating,

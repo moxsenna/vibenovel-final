@@ -5,6 +5,11 @@ export function shouldUseMocks(): boolean {
   return true;
 }
 
+/** Mock Sprint 1 data may only load when explicit demo mode is on. */
+export function allowMockFallback(): boolean {
+  return shouldUseMocks();
+}
+
 export function getApiBaseUrl(): string {
   return import.meta.env.VITE_API_URL?.trim() || "http://127.0.0.1:8787";
 }

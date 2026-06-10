@@ -11,7 +11,9 @@ import {
   type UiOpenLoop,
   type UiPlannedReveal,
 } from "@/lib/api-mappers";
-import { shouldUseMocks } from "@/lib/env";
+import { allowMockFallback, shouldUseMocks } from "@/lib/env";
+import { apiErrorMessage } from "@/lib/hook-fallback";
+import { DEMO_MODE_LABEL } from "@/lib/workflow-truth";
 import { resolveProjectIdForRoute } from "@/lib/project-context";
 import type { OutlineChapterDraft } from "@/components/outline";
 import { mockOutline } from "@/mocks/outline";
@@ -25,7 +27,7 @@ import {
 } from "@/services/outline";
 import type { StoryOutline } from "@/types";
 
-export type OutlineDataSource = "mock" | "api" | "api-fallback";
+export type OutlineDataSource = "mock" | "api" | "error";
 
 function chapterNumberMap(chapters: ChapterOutline[]): Map<string, number> {
   return new Map(chapters.map((ch) => [ch.id, ch.chapterNumber]));
@@ -110,12 +112,23 @@ export function useOutlineData(): OutlineData {
     try {
       const resolvedId = await resolveProjectIdForRoute(routeProjectId, token);
       if (!resolvedId) {
-        setOutline(mockOutline);
+        if (allowMockFallback()) {
+          setOutline(mockOutline);
+          setSource("mock");
+          setNotice("Proyek tidak ditemukan. Menampilkan demo outline.");
+        } else {
+          setOutline(mapOutlineBundleToUi(routeProjectId ?? "unknown", {
+            outlinePlan: null,
+            chapterOutlines: [],
+            openLoops: [],
+            plannedReveals: [],
+          }));
+          setSource("error");
+          setNotice("Proyek tidak ditemukan.");
+        }
         setApiChapters([]);
         setOpenLoops([]);
         setReveals([]);
-        setSource("api-fallback");
-        setNotice("Proyek tidak ditemukan. Menampilkan mock outline.");
         return;
       }
 
@@ -124,16 +137,23 @@ export function useOutlineData(): OutlineData {
       applyBundle(resolvedId, bundle);
       setSource("api");
     } catch (error) {
-      setOutline(mockOutline);
+      if (allowMockFallback()) {
+        setOutline(mockOutline);
+        setSource("mock");
+        setNotice(apiErrorMessage(error, "API tidak tersedia. Menampilkan demo Sprint 1."));
+      } else {
+        setOutline(mapOutlineBundleToUi(routeProjectId ?? "unknown", {
+          outlinePlan: null,
+          chapterOutlines: [],
+          openLoops: [],
+          plannedReveals: [],
+        }));
+        setSource("error");
+        setNotice(apiErrorMessage(error, "API tidak tersedia."));
+      }
       setApiChapters([]);
       setOpenLoops([]);
       setReveals([]);
-      setSource("api-fallback");
-      setNotice(
-        error instanceof ApiClientError
-          ? `API tidak tersedia (${error.message}). Menampilkan mock Sprint 1.`
-          : "API tidak tersedia. Menampilkan mock Sprint 1.",
-      );
     } finally {
       setLoading(false);
     }
@@ -148,11 +168,7 @@ export function useOutlineData(): OutlineData {
       setOpenLoops([]);
       setReveals([]);
       setSource("mock");
-      setNotice(
-        useMocks
-          ? null
-          : "Masuk ke akun untuk membaca outline dari API. Menampilkan mock Sprint 1.",
-      );
+      setNotice(useMocks ? DEMO_MODE_LABEL : "Masuk ke akun untuk membaca outline dari API.");
       return;
     }
 

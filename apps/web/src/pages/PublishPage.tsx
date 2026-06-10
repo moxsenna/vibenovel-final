@@ -9,7 +9,9 @@ import {
   PublishTagsCard,
   PublishWorkflowActions,
 } from "@/components/publish";
+import { WorkflowLockedState } from "@/components/common/WorkflowLockedState";
 import { usePublishData } from "@/hooks/usePublishData";
+import { ROUTES } from "@/routes/paths";
 import { uiValueForField } from "@/lib/publish-mappers";
 
 /**
@@ -59,6 +61,9 @@ export function PublishPage() {
     applyPublishCopySuggestion,
     applyAllPublishCopySuggestions,
     dismissPublishCopySuggestion,
+    lockedTitle,
+    lockedDescription,
+    source,
   } = usePublishData();
 
   const { pageCopy } = pkg;
@@ -69,6 +74,19 @@ export function PublishPage() {
     return (
       <div className="flex flex-1 items-center justify-center p-lg">
         <p className="font-body-md text-body-md text-muted-text">Memuat paket publish…</p>
+      </div>
+    );
+  }
+
+  if ((source === "locked" || source === "error") && lockedTitle) {
+    return (
+      <div className="mx-auto flex w-full max-w-detail flex-col gap-lg p-lg">
+        <PublishIntegrationNotice message={notice} />
+        <WorkflowLockedState
+          title={lockedTitle}
+          description={lockedDescription ?? ""}
+          backRoute={ROUTES.dashboard}
+        />
       </div>
     );
   }

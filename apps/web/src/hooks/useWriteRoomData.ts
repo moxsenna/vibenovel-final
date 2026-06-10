@@ -4,7 +4,9 @@ import type { ChapterBeat, ChapterOutline, CreditBalance, WriterQualityMode } fr
 import { WRITER_QUALITY_MODES } from "@vibenovel/shared";
 import { useAuth } from "@/context/AuthContext";
 import { ApiClientError } from "@/lib/api";
-import { shouldUseMocks } from "@/lib/env";
+import { createEmptyChapterDraft } from "@/lib/empty-states";
+import { allowMockFallback, shouldUseMocks } from "@/lib/env";
+import { DEMO_MODE_LABEL } from "@/lib/workflow-truth";
 import { resolveProjectIdForRoute } from "@/lib/project-context";
 import { ROUTES } from "@/routes/paths";
 import { mockChapterDraft } from "@/mocks/chapter";
@@ -25,7 +27,7 @@ import {
   rewriteBeatProse,
   type ProseRewriteMode,
 } from "@/services/ai";
-import { fetchCreditBalance } from "@/services/credits";
+import { fetchApiHealthFlags, fetchCreditBalance } from "@/services/credits";
 import { fetchOutlineBundle } from "@/services/outline";
 import { fetchProjectSettings } from "@/services/settings";
 import {
@@ -42,7 +44,7 @@ import {
 } from "@/services/write";
 import type { Beat, BeatStatus, ChapterDraft } from "@/types";
 
-export type WriteDataSource = "mock" | "api" | "api-fallback";
+export type WriteDataSource = "mock" | "api" | "locked" | "error";
 
 export interface SafeContextPreview {
   chapterTitle: string;
@@ -137,6 +139,8 @@ export interface UseWriteRoomDataResult {
   insufficientCredit: boolean;
   remainingAfterGenerate: number | null;
   showCreditUi: boolean;
+  creditTopupEnabled: boolean | null;
+  isMockMode: boolean;
   onGenerateAi?: () => Promise<void>;
   aiUnavailableReason: string | null;
   rewriteGenerating: boolean;
@@ -152,6 +156,8 @@ export interface UseWriteRoomDataResult {
   onRewriteProse?: () => Promise<void>;
   rewriteUnavailableReason: string | null;
   hasProseForRewrite: boolean;
+  lockedTitle: string | null;
+  lockedDescription: string | null;
 }
 
 export function useWriteRoomData(): UseWriteRoomDataResult {
@@ -195,6 +201,8 @@ export function useWriteRoomData(): UseWriteRoomDataResult {
   const [creditBalance, setCreditBalance] = useState<CreditBalance | null>(null);
   const [creditLoading, setCreditLoading] = useState(false);
   const [creditError, setCreditError] = useState<string | null>(null);
+  const [creditTopupEnabled, setCreditTopupEnabled] = useState<boolean | null>(null);
+  const [aiGenerationEnabled, setAiGenerationEnabled] = useState<boolean | null>(null);
   const [rewriteGenerating, setRewriteGenerating] = useState(false);
   const [rewriteError, setRewriteError] = useState<string | null>(null);
   const [rewriteNotice, setRewriteNotice] = useState<string | null>(null);
@@ -202,30 +210,55 @@ export function useWriteRoomData(): UseWriteRoomDataResult {
     PROSE_REWRITE_MODES.improve_emotion,
   );
   const [rewriteInstruction, setRewriteInstruction] = useState("");
+  const [lockedTitle, setLockedTitle] = useState<string | null>(null);
+  const [lockedDescription, setLockedDescription] = useState<string | null>(null);
 
-  const applyMock = useCallback((message: string | null) => {
+  const applyBlocked = useCallback(
+    (kind: "locked" | "error", title: string, description: string) => {
+      const empty = createEmptyChapterDraft(routeProjectId ?? "unknown");
+      setDraft(empty);
+      setApiBeats([]);
+      setActiveBeatId("");
+      setProseByBeatId({});
+      setProseVersionIdByBeatId({});
+      setProseText("");
+      setSource(kind);
+      setLockedTitle(title);
+      setLockedDescription(description);
+      setNotice(null);
+      setNeedsGenerateBeats(false);
+      setContextPreview(null);
+      setPacketLogId(null);
+      setAiGenerating(false);
+      setAiError(null);
+      setAiNotice(null);
+      setCreditBalance(null);
+      setCreditLoading(false);
+      setCreditError(null);
+      setCreditTopupEnabled(null);
+      setRewriteGenerating(false);
+      setRewriteError(null);
+      setRewriteNotice(null);
+      setRewriteMode(PROSE_REWRITE_MODES.improve_emotion);
+      setRewriteInstruction("");
+    },
+    [routeProjectId],
+  );
+
+  const applyMockFallback = useCallback((message: string | null) => {
     setDraft(mockChapterDraft);
     setApiBeats([]);
     setActiveBeatId(mockChapterDraft.beats[0]?.id ?? "");
     setProseByBeatId({});
     setProseVersionIdByBeatId({});
     setProseText(mockChapterDraft.beats[0]?.prose ?? "");
-    setSource("api-fallback");
+    setSource("mock");
+    setLockedTitle(null);
+    setLockedDescription(null);
     setNotice(message);
     setNeedsGenerateBeats(false);
     setContextPreview(null);
     setPacketLogId(null);
-    setAiGenerating(false);
-    setAiError(null);
-    setAiNotice(null);
-    setCreditBalance(null);
-    setCreditLoading(false);
-    setCreditError(null);
-    setRewriteGenerating(false);
-    setRewriteError(null);
-    setRewriteNotice(null);
-    setRewriteMode(PROSE_REWRITE_MODES.improve_emotion);
-    setRewriteInstruction("");
   }, []);
 
   const refreshCreditBalance = useCallback(async () => {
@@ -242,6 +275,24 @@ export function useWriteRoomData(): UseWriteRoomDataResult {
       setCreditLoading(false);
     }
   }, [apiMode, token]);
+
+  useEffect(() => {
+    if (!apiMode) {
+      setCreditTopupEnabled(null);
+      setAiGenerationEnabled(null);
+      return;
+    }
+    let cancelled = false;
+    void fetchApiHealthFlags().then((flags) => {
+      if (!cancelled) {
+        setCreditTopupEnabled(flags.creditTopupEnabled);
+        setAiGenerationEnabled(flags.aiGenerationEnabled);
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [apiMode]);
 
   const rebuildDraft = useCallback(
     (
@@ -290,7 +341,15 @@ export function useWriteRoomData(): UseWriteRoomDataResult {
     try {
       const resolvedId = await resolveProjectIdForRoute(routeProjectId, token);
       if (!resolvedId) {
-        applyMock("Proyek tidak ditemukan. Menampilkan mock ruang tulis.");
+        if (allowMockFallback()) {
+          applyMockFallback("Proyek tidak ditemukan. Menampilkan demo Sprint 1.");
+        } else {
+          applyBlocked(
+            "error",
+            "Proyek tidak ditemukan",
+            "Proyek ini tidak ada atau Anda tidak memiliki akses.",
+          );
+        }
         return;
       }
 
@@ -307,15 +366,26 @@ export function useWriteRoomData(): UseWriteRoomDataResult {
 
       const bundle = await fetchOutlineBundle(resolvedId, token);
       if (!isOutlineLocked(bundle)) {
-        applyMock("Outline perlu dikunci dulu sebelum menulis. Menampilkan mock Sprint 1.");
+        applyBlocked(
+          "locked",
+          "Ruang Tulis belum tersedia",
+          "Outline real belum dibuat atau belum dikunci. Selesaikan fondasi dan kunci outline terlebih dahulu.",
+        );
         return;
       }
 
       const chapter = pickDefaultChapter(bundle.chapterOutlines);
       if (!chapter) {
-        applyMock("Belum ada bab di outline. Menampilkan mock ruang tulis.");
+        applyBlocked(
+          "locked",
+          "Belum ada bab di outline",
+          "Buat rencana bab di halaman Outline sebelum membuka ruang tulis.",
+        );
         return;
       }
+
+      setLockedTitle(null);
+      setLockedDescription(null);
 
       setChapterOutlineId(chapter.id);
 
@@ -359,15 +429,34 @@ export function useWriteRoomData(): UseWriteRoomDataResult {
       setSource("api");
       setNotice(null);
     } catch (error) {
-      applyMock(
-        error instanceof ApiClientError
-          ? `API tidak tersedia (${error.message}). Menampilkan mock Sprint 1.`
-          : "API tidak tersedia. Menampilkan mock Sprint 1.",
-      );
+      if (allowMockFallback()) {
+        applyMockFallback(
+          error instanceof ApiClientError
+            ? `API tidak tersedia (${error.message}). Menampilkan demo Sprint 1.`
+            : "API tidak tersedia. Menampilkan demo Sprint 1.",
+        );
+      } else {
+        applyBlocked(
+          "error",
+          "Ruang tulis tidak bisa dimuat",
+          error instanceof ApiClientError
+            ? `API tidak tersedia (${error.message}). Coba muat ulang.`
+            : "API tidak tersedia. Coba muat ulang.",
+        );
+      }
     } finally {
       setLoading(false);
     }
-  }, [apiMode, applyMock, loadProseForBeat, rebuildDraft, refreshCreditBalance, routeProjectId, token]);
+  }, [
+    apiMode,
+    applyBlocked,
+    applyMockFallback,
+    loadProseForBeat,
+    rebuildDraft,
+    refreshCreditBalance,
+    routeProjectId,
+    token,
+  ]);
 
   useEffect(() => {
     if (authLoading) return;
@@ -377,11 +466,9 @@ export function useWriteRoomData(): UseWriteRoomDataResult {
       setSource("mock");
       setActiveBeatId(mockChapterDraft.beats[0]?.id ?? "");
       setProseText(mockChapterDraft.beats[0]?.prose ?? "");
-      setNotice(
-        useMocks
-          ? null
-          : "Masuk ke akun untuk menulis dengan API. Menampilkan mock Sprint 1.",
-      );
+      setLockedTitle(null);
+      setLockedDescription(null);
+      setNotice(useMocks ? DEMO_MODE_LABEL : "Masuk ke akun untuk menulis dengan API.");
       return;
     }
 
@@ -810,9 +897,7 @@ export function useWriteRoomData(): UseWriteRoomDataResult {
       setWorkflowNotice(null);
       try {
         await markSessionReadyForSummary(projectId, sessionId, token);
-        setWorkflowNotice(
-          "Bab ditandai siap ringkasan. Halaman ringkasan Sprint 6 belum production — menampilkan mock.",
-        );
+        setWorkflowNotice("Bab ditandai siap ringkasan. Lanjut ke halaman Ringkasan Bab.");
       } catch (error) {
         setWorkflowNotice(
           error instanceof ApiClientError
@@ -853,8 +938,10 @@ export function useWriteRoomData(): UseWriteRoomDataResult {
     Boolean(activeProseVersionId) || proseText.trim().length > 0;
   const customInstructionOk =
     rewriteMode !== PROSE_REWRITE_MODES.custom || rewriteInstruction.trim().length > 0;
+  const aiEnabledForUi = aiGenerationEnabled !== false;
   const aiCanGenerate =
     source === "api" &&
+    aiEnabledForUi &&
     Boolean(activeBeatId) &&
     Boolean(sessionId) &&
     Boolean(chapterOutlineId) &&
@@ -862,6 +949,7 @@ export function useWriteRoomData(): UseWriteRoomDataResult {
     !insufficientCredit;
   const rewriteCanRun =
     source === "api" &&
+    aiEnabledForUi &&
     Boolean(activeBeatId) &&
     Boolean(sessionId) &&
     !needsGenerateBeats &&
@@ -871,20 +959,28 @@ export function useWriteRoomData(): UseWriteRoomDataResult {
     !rewriteGenerating;
   const aiUnavailableReason =
     source === "mock"
-      ? "Generasi AI hanya tersedia dalam mode API (bukan mock)."
-      : source === "api-fallback"
-        ? "Generasi AI tidak tersedia saat fallback mock aktif."
-        : needsGenerateBeats
-          ? "Buat daftar adegan terlebih dahulu."
-          : insufficientCredit
-            ? "Kredit tidak cukup untuk aksi ini."
-            : null;
+      ? "Generasi AI hanya tersedia dalam mode API (bukan demo)."
+      : source === "locked"
+        ? "Ruang tulis terkunci — selesaikan outline terlebih dahulu."
+        : source === "error"
+          ? "Generasi AI tidak tersedia saat data ruang tulis gagal dimuat."
+          : aiGenerationEnabled === false
+          ? "AI generation belum aktif di lingkungan ini."
+          : needsGenerateBeats
+            ? "Buat daftar adegan terlebih dahulu."
+            : insufficientCredit
+              ? "Kredit tidak cukup untuk aksi ini."
+              : null;
   const rewriteUnavailableReason =
     source === "mock"
-      ? "Perbaiki teks dengan AI hanya tersedia dalam mode API (bukan mock)."
-      : source === "api-fallback"
-        ? "Perbaiki teks tidak tersedia saat fallback mock aktif."
-        : needsGenerateBeats
+      ? "Perbaiki teks dengan AI hanya tersedia dalam mode API (bukan demo)."
+      : source === "locked"
+        ? "Ruang tulis terkunci — selesaikan outline terlebih dahulu."
+        : source === "error"
+          ? "Perbaiki teks tidak tersedia saat data ruang tulis gagal dimuat."
+          : aiGenerationEnabled === false
+          ? "AI generation belum aktif di lingkungan ini."
+          : needsGenerateBeats
           ? "Buat daftar adegan terlebih dahulu."
           : !hasProseForRewrite
             ? "Belum ada teks untuk diperbaiki."
@@ -937,6 +1033,8 @@ export function useWriteRoomData(): UseWriteRoomDataResult {
       insufficientCredit,
       remainingAfterGenerate,
       showCreditUi,
+      creditTopupEnabled,
+      isMockMode: useMocks,
       onGenerateAi: aiCanGenerate ? generateAiForActiveBeat : undefined,
       aiUnavailableReason,
       rewriteGenerating,
@@ -952,6 +1050,8 @@ export function useWriteRoomData(): UseWriteRoomDataResult {
       onRewriteProse: rewriteCanRun ? rewriteActiveBeatProse : undefined,
       rewriteUnavailableReason,
       hasProseForRewrite,
+      lockedTitle,
+      lockedDescription,
     }),
     [
       activeBeatId,
@@ -967,11 +1067,14 @@ export function useWriteRoomData(): UseWriteRoomDataResult {
       creditActionCostLabel,
       creditCostLabel,
       creditError,
+      creditTopupEnabled,
       creditLoading,
       creditRewriteCostLabel,
       draft,
       hasProseForRewrite,
       insufficientCredit,
+      lockedDescription,
+      lockedTitle,
       insufficientCreditRewrite,
       knownBalance,
       proseBeatCreditCost,
@@ -988,6 +1091,7 @@ export function useWriteRoomData(): UseWriteRoomDataResult {
       rewriteNotice,
       rewriteUnavailableReason,
       showCreditUi,
+      useMocks,
       editable,
       errorNotice,
       finishChapter,

@@ -12,6 +12,8 @@ import {
   SummaryWorkflowActions,
 } from "@/components/summary";
 import { IntegrationNotice } from "@/components/common/IntegrationNotice";
+import { WorkflowLockedState } from "@/components/common/WorkflowLockedState";
+import { ROUTES } from "@/routes/paths";
 import { useSummaryData } from "@/hooks/useSummaryData";
 
 /**
@@ -40,6 +42,9 @@ export function SummaryPage() {
     approveSummaryAction,
     acceptProposal,
     rejectProposal,
+    lockedTitle,
+    lockedDescription,
+    source,
   } = useSummaryData();
 
   const { pageCopy } = summary;
@@ -51,6 +56,19 @@ export function SummaryPage() {
     return (
       <div className="flex flex-1 items-center justify-center p-lg">
         <p className="font-body-md text-body-md text-muted-text">Memuat ringkasan bab…</p>
+      </div>
+    );
+  }
+
+  if ((source === "locked" || source === "error") && lockedTitle) {
+    return (
+      <div className="mx-auto flex w-full max-w-editor flex-col gap-lg p-lg">
+        <IntegrationNotice message={notice} />
+        <WorkflowLockedState
+          title={lockedTitle}
+          description={lockedDescription ?? ""}
+          backRoute={ROUTES.dashboard}
+        />
       </div>
     );
   }

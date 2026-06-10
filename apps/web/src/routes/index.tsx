@@ -11,9 +11,13 @@ import { WritePage } from "@/pages/WritePage";
 import { SummaryPage } from "@/pages/SummaryPage";
 import { PublishPage } from "@/pages/PublishPage";
 import { SettingsPage } from "@/pages/SettingsPage";
+import { CreditTopupPage } from "@/pages/CreditTopupPage";
+import { CreditTopupReturnPage } from "@/pages/CreditTopupReturnPage";
+import { LoginPage } from "@/pages/LoginPage";
 
 export const router = createBrowserRouter([
   { path: "/", element: <LandingPage /> },
+  { path: "/login", element: <LoginPage /> },
   {
     element: <AppShell />,
     children: [
@@ -27,6 +31,9 @@ export const router = createBrowserRouter([
       { path: "/projects/:id/summary", element: <SummaryPage /> },
       { path: "/projects/:id/publish", element: <PublishPage /> },
       { path: "/settings", element: <SettingsPage /> },
+      { path: "/credits/topup", element: <CreditTopupPage /> },
+      { path: "/credits/topup/mock-return", element: <CreditTopupReturnPage /> },
+      { path: "/credits/topup/return", element: <CreditTopupReturnPage /> },
     ],
   },
 ]);

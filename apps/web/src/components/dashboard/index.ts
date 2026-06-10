@@ -4,3 +4,4 @@ export { NewProjectCta } from "./NewProjectCta";
 export { RecentProjectCard } from "./RecentProjectCard";
 export { RecentProjectsSection } from "./RecentProjectsSection";
 export { DashboardEmptyState } from "./DashboardEmptyState";
+export { NoActiveProjectCard } from "./NoActiveProjectCard";

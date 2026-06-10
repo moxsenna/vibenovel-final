@@ -3,7 +3,8 @@ import { useParams } from "react-router-dom";
 import type { ChapterOutline, ChapterSummary as ApiChapterSummary } from "@vibenovel/shared";
 import { useAuth } from "@/context/AuthContext";
 import { ApiClientError } from "@/lib/api";
-import { shouldUseMocks } from "@/lib/env";
+import { allowMockFallback, shouldUseMocks } from "@/lib/env";
+import { DEMO_MODE_LABEL } from "@/lib/workflow-truth";
 import { mapApiSummaryToUi } from "@/lib/summary-mappers";
 import { resolveProjectIdForRoute } from "@/lib/project-context";
 import { mockChapterSummary } from "@/mocks/summary";
@@ -21,7 +22,7 @@ import {
 import { startWritingSession } from "@/services/write";
 import type { ChapterSummary } from "@/types";
 
-export type SummaryDataSource = "mock" | "api" | "api-fallback";
+export type SummaryDataSource = "mock" | "api" | "locked" | "error";
 
 function pickDefaultChapter(chapters: ChapterOutline[]): ChapterOutline | null {
   if (chapters.length === 0) return null;
@@ -33,10 +34,10 @@ function userFacingError(error: unknown): string {
     if (error.status === 409) return error.message;
     if (error.status === 400) return error.message;
     if (error.status === 404) return "Data ringkasan tidak ditemukan.";
-    if (error.status === 0) return "API tidak tersedia. Menampilkan mock Sprint 1.";
+    if (error.status === 0) return "API tidak tersedia. Coba muat ulang.";
     return "Terjadi kesalahan saat memuat ringkasan.";
   }
-  return "API tidak tersedia. Menampilkan mock Sprint 1.";
+  return "API tidak tersedia. Coba muat ulang.";
 }
 
 export interface UseSummaryDataResult {
@@ -61,6 +62,8 @@ export interface UseSummaryDataResult {
   approveSummaryAction: () => Promise<void>;
   acceptProposal: (proposalId: string) => Promise<void>;
   rejectProposal: (proposalId: string) => Promise<void>;
+  lockedTitle: string | null;
+  lockedDescription: string | null;
 }
 
 export function useSummaryData(): UseSummaryDataResult {
@@ -89,10 +92,14 @@ export function useSummaryData(): UseSummaryDataResult {
   const [hasDelta, setHasDelta] = useState(false);
   const [proposals, setProposals] = useState<LinkedProposalSummary[]>([]);
   const [actionProposalId, setActionProposalId] = useState<string | null>(null);
+  const [lockedTitle, setLockedTitle] = useState<string | null>(null);
+  const [lockedDescription, setLockedDescription] = useState<string | null>(null);
 
-  const applyMock = useCallback((message: string | null) => {
+  const applyMockFallback = useCallback((message: string | null) => {
     setSummary(mockChapterSummary);
-    setSource("api-fallback");
+    setSource("mock");
+    setLockedTitle(null);
+    setLockedDescription(null);
     setNotice(message);
     setApiSummary(null);
     setSummaryId(null);
@@ -100,6 +107,41 @@ export function useSummaryData(): UseSummaryDataResult {
     setHasDelta(false);
     setReadyForSummary(false);
   }, []);
+
+  const applyBlocked = useCallback(
+    (kind: "locked" | "error", title: string, description: string) => {
+      setSummary({
+        ...mockChapterSummary,
+        projectId: routeProjectId ?? "unknown",
+        chapterNumber: 0,
+        chapterTitle: "",
+        synopsis: "",
+        newFacts: [],
+        characterChanges: [],
+        relationChanges: [],
+        miniVictories: [],
+        heldSecrets: [],
+        openLoops: [],
+        storyCheckNotes: [],
+        status: "draft",
+        pageCopy: {
+          ...mockChapterSummary.pageCopy,
+          subtitle: description,
+          statusReady: title,
+        },
+      });
+      setSource(kind);
+      setLockedTitle(title);
+      setLockedDescription(description);
+      setNotice(null);
+      setApiSummary(null);
+      setSummaryId(null);
+      setProposals([]);
+      setHasDelta(false);
+      setReadyForSummary(false);
+    },
+    [routeProjectId],
+  );
 
   const applyApiSummary = useCallback(
     (apiRow: ApiChapterSummary, items: Parameters<typeof mapApiSummaryToUi>[1]) => {
@@ -133,15 +175,26 @@ export function useSummaryData(): UseSummaryDataResult {
     try {
       const resolvedId = await resolveProjectIdForRoute(routeProjectId, token);
       if (!resolvedId) {
-        applyMock("Proyek tidak ditemukan. Menampilkan mock ringkasan bab.");
+        if (allowMockFallback()) {
+          applyMockFallback("Proyek tidak ditemukan. Menampilkan demo ringkasan bab.");
+        } else {
+          applyBlocked("error", "Proyek tidak ditemukan", "Proyek ini tidak ada atau Anda tidak memiliki akses.");
+        }
         return;
       }
+
+      setLockedTitle(null);
+      setLockedDescription(null);
 
       setProjectId(resolvedId);
       const bundle = await fetchOutlineBundle(resolvedId, token);
       const chapter = pickDefaultChapter(bundle.chapterOutlines);
       if (!chapter) {
-        applyMock("Belum ada bab di outline. Menampilkan mock ringkasan bab.");
+        applyBlocked(
+          "locked",
+          "Ringkasan Bab belum tersedia",
+          "Belum ada bab di outline. Selesaikan outline dan ruang tulis terlebih dahulu.",
+        );
         return;
       }
 
@@ -201,11 +254,15 @@ export function useSummaryData(): UseSummaryDataResult {
         setHasDelta(false);
       }
     } catch (error) {
-      applyMock(userFacingError(error));
+      if (allowMockFallback()) {
+        applyMockFallback(userFacingError(error));
+      } else {
+        applyBlocked("error", "Ringkasan tidak bisa dimuat", userFacingError(error));
+      }
     } finally {
       setLoading(false);
     }
-  }, [apiMode, applyApiSummary, applyMock, routeProjectId, token]);
+  }, [apiMode, applyApiSummary, applyBlocked, applyMockFallback, routeProjectId, token]);
 
   useEffect(() => {
     if (authLoading) return;
@@ -213,11 +270,9 @@ export function useSummaryData(): UseSummaryDataResult {
     if (!apiMode) {
       setSummary(mockChapterSummary);
       setSource("mock");
-      setNotice(
-        useMocks
-          ? null
-          : "Masuk ke akun untuk ringkasan bab dengan API. Menampilkan mock Sprint 1.",
-      );
+      setLockedTitle(null);
+      setLockedDescription(null);
+      setNotice(useMocks ? DEMO_MODE_LABEL : "Masuk ke akun untuk ringkasan bab dengan API.");
       return;
     }
 
@@ -354,5 +409,7 @@ export function useSummaryData(): UseSummaryDataResult {
     approveSummaryAction,
     acceptProposal,
     rejectProposal,
+    lockedTitle,
+    lockedDescription,
   };
 }

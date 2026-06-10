@@ -1,9 +1,12 @@
 /** Centralized route paths — Sprint 1 skeleton */
 export const ROUTES = {
   landing: "/",
+  login: "/login",
   start: "/start",
   dashboard: "/dashboard",
   settings: "/settings",
+  creditTopup: "/credits/topup",
+  creditTopupMockReturn: "/credits/topup/mock-return",
   project: {
     intake: (id: string) => `/projects/${id}/intake`,
     concepts: (id: string) => `/projects/${id}/concepts`,

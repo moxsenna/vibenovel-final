@@ -3,14 +3,16 @@ import { useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { ApiClientError } from "@/lib/api";
 import { mapApiConceptToUi } from "@/lib/api-mappers";
-import { shouldUseMocks } from "@/lib/env";
+import { allowMockFallback, shouldUseMocks } from "@/lib/env";
+import { apiErrorMessage } from "@/lib/hook-fallback";
+import { DEMO_MODE_LABEL } from "@/lib/workflow-truth";
 import { resolveProjectIdForRoute } from "@/lib/project-context";
 import { CONCEPTS_PAGE_COPY, mockConcepts } from "@/mocks/concepts";
 import { fetchConcepts, generateConcepts, selectConcept } from "@/services/concepts";
 import { ROUTES } from "@/routes/paths";
 import type { StoryConcept } from "@/types";
 
-export type ConceptsDataSource = "mock" | "api" | "api-fallback";
+export type ConceptsDataSource = "mock" | "api" | "error";
 
 export interface ConceptsData {
   concepts: StoryConcept[];
@@ -50,9 +52,13 @@ export function useConceptsData(): ConceptsData {
     try {
       const resolvedId = await resolveProjectIdForRoute(routeProjectId, token);
       if (!resolvedId) {
-        setConcepts(mockConcepts);
-        setSource("api-fallback");
-        setNotice("Proyek tidak ditemukan. Menampilkan mock konsep.");
+        setConcepts(allowMockFallback() ? mockConcepts : []);
+        setSource(allowMockFallback() ? "mock" : "error");
+        setNotice(
+          allowMockFallback()
+            ? "Proyek tidak ditemukan. Menampilkan demo konsep."
+            : "Proyek tidak ditemukan.",
+        );
         return;
       }
 
@@ -67,13 +73,9 @@ export function useConceptsData(): ConceptsData {
       setConcepts(rows.map((c, i) => mapApiConceptToUi(c, resolvedId, i)));
       setSource("api");
     } catch (error) {
-      setConcepts(mockConcepts);
-      setSource("api-fallback");
-      setNotice(
-        error instanceof ApiClientError
-          ? `API tidak tersedia (${error.message}). Menampilkan mock Sprint 1.`
-          : "API tidak tersedia. Menampilkan mock Sprint 1.",
-      );
+      setConcepts(allowMockFallback() ? mockConcepts : []);
+      setSource(allowMockFallback() ? "mock" : "error");
+      setNotice(apiErrorMessage(error, "API tidak tersedia."));
     } finally {
       setLoading(false);
     }
@@ -85,11 +87,7 @@ export function useConceptsData(): ConceptsData {
     if (!apiMode) {
       setConcepts(mockConcepts);
       setSource("mock");
-      setNotice(
-        useMocks
-          ? null
-          : "Masuk ke akun untuk membaca konsep dari API. Menampilkan mock Sprint 1.",
-      );
+      setNotice(useMocks ? DEMO_MODE_LABEL : "Masuk ke akun untuk membaca konsep dari API.");
       return;
     }
 

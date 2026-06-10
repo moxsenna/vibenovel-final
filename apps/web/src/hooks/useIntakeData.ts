@@ -3,8 +3,11 @@ import { useParams } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { ApiClientError } from "@/lib/api";
 import { mapApiMessageToUi, mapApiSignalToUi, mapIntakeBundleToUi } from "@/lib/api-mappers";
-import { shouldUseMocks } from "@/lib/env";
+import { allowMockFallback, shouldUseMocks } from "@/lib/env";
+import { apiErrorMessage } from "@/lib/hook-fallback";
+import { DEMO_MODE_LABEL } from "@/lib/workflow-truth";
 import { resolveProjectIdForRoute } from "@/lib/project-context";
+import { createEmptyApiIntakeSession } from "@/lib/empty-states";
 import { mockIntakeSession } from "@/mocks/intake";
 import {
   extractIntakeSignals,
@@ -13,7 +16,7 @@ import {
 } from "@/services/intake";
 import type { IntakeSession } from "@/types";
 
-export type IntakeDataSource = "mock" | "api" | "api-fallback";
+export type IntakeDataSource = "mock" | "api" | "error";
 
 export interface IntakeData {
   session: IntakeSession;
@@ -49,9 +52,22 @@ export function useIntakeData(): IntakeData {
     try {
       const resolvedId = await resolveProjectIdForRoute(routeProjectId, token);
       if (!resolvedId) {
-        setSession(mockIntakeSession);
-        setSource("api-fallback");
-        setNotice("Proyek tidak ditemukan. Menampilkan mock intake.");
+        if (allowMockFallback()) {
+          setSession(mockIntakeSession);
+          setSource("mock");
+          setNotice("Proyek tidak ditemukan. Menampilkan demo intake.");
+        } else {
+          setSession(
+            mapIntakeBundleToUi(
+              routeProjectId ?? "unknown",
+              createEmptyApiIntakeSession(routeProjectId ?? "unknown"),
+              [],
+              [],
+            ),
+          );
+          setSource("error");
+          setNotice("Proyek tidak ditemukan.");
+        }
         return;
       }
 
@@ -62,13 +78,22 @@ export function useIntakeData(): IntakeData {
       );
       setSource("api");
     } catch (error) {
-      setSession(mockIntakeSession);
-      setSource("api-fallback");
-      setNotice(
-        error instanceof ApiClientError
-          ? `API tidak tersedia (${error.message}). Menampilkan mock Sprint 1.`
-          : "API tidak tersedia. Menampilkan mock Sprint 1.",
-      );
+      if (allowMockFallback()) {
+        setSession(mockIntakeSession);
+        setSource("mock");
+        setNotice(apiErrorMessage(error, "API tidak tersedia. Menampilkan demo Sprint 1."));
+      } else {
+        setSession(
+          mapIntakeBundleToUi(
+            routeProjectId ?? "unknown",
+            createEmptyApiIntakeSession(routeProjectId ?? "unknown"),
+            [],
+            [],
+          ),
+        );
+        setSource("error");
+        setNotice(apiErrorMessage(error, "API tidak tersedia."));
+      }
     } finally {
       setLoading(false);
     }
@@ -80,11 +105,7 @@ export function useIntakeData(): IntakeData {
     if (!apiMode) {
       setSession(mockIntakeSession);
       setSource("mock");
-      setNotice(
-        useMocks
-          ? null
-          : "Masuk ke akun untuk menyimpan obrolan intake ke API. Menampilkan mock Sprint 1.",
-      );
+      setNotice(useMocks ? DEMO_MODE_LABEL : "Masuk ke akun untuk menyimpan obrolan intake ke API.");
       return;
     }
 

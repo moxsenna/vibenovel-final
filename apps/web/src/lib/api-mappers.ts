@@ -24,6 +24,13 @@ import type {
 import { DEMO_PROJECT_ID } from "@/mocks/projects";
 import { mockStoryFoundation } from "@/mocks/storyFoundation";
 import { ROUTES } from "@/routes/paths";
+import {
+  buildHonestProgressSteps,
+  buildHonestRecentExcerpt,
+  buildHonestRecentStatusLabel,
+  INTAKE_STUB_ASSISTANT_LABEL,
+  resolveHonestProjectRoute,
+} from "@/lib/workflow-truth";
 import type { ModelTier, ModelTierOption, MonthlyUsage, UserSettings } from "@/types";
 import type { StoryFoundation as UiStoryFoundation } from "@/types/storyFoundation";
 import type {
@@ -66,12 +73,6 @@ const STATUS_BADGES: Record<string, string> = {
   published: "Diterbitkan",
 };
 
-const STATUS_LABELS: Record<string, string> = {
-  in_progress: "Sedang ditulis",
-  draft: "Draft",
-  published: "Diterbitkan",
-};
-
 const LANGUAGE_LABELS: Record<string, string> = {
   id: "Indonesia",
   en: "English",
@@ -97,19 +98,6 @@ function formatRelativeTime(iso: string): string {
   return `${weeks} minggu lalu`;
 }
 
-function buildProgressSteps(currentChapter: number): DashboardActiveProject["progressSteps"] {
-  return [
-    { id: "foundation", label: "Fondasi cerita selesai", status: "done" },
-    { id: "outline", label: "Outline siap", status: currentChapter >= 1 ? "done" : "pending" },
-    {
-      id: "chapter",
-      label: `Bab ${Math.max(1, currentChapter)} sedang ditulis`,
-      status: "current",
-    },
-    { id: "publish", label: "Paket publish belum dibuat", status: "pending" },
-  ];
-}
-
 export function mapProjectToActiveCard(project: Project): DashboardActiveProject {
   return {
     id: project.id,
@@ -119,8 +107,8 @@ export function mapProjectToActiveCard(project: Project): DashboardActiveProject
     lastEditedLabel: formatRelativeTime(project.lastEditedAt),
     statusBadge: STATUS_BADGES[project.status] ?? "Aktif",
     currentChapter: project.currentChapter,
-    writeRoute: ROUTES.project.write(project.id),
-    progressSteps: buildProgressSteps(project.currentChapter),
+    writeRoute: resolveHonestProjectRoute(project),
+    progressSteps: buildHonestProgressSteps(project),
   };
 }
 
@@ -128,23 +116,16 @@ export function mapProjectToRecentCard(
   project: Project,
   index: number,
 ): DashboardRecentProject {
-  const statusLabel =
-    project.currentChapter > 0
-      ? `Bab ${project.currentChapter}`
-      : STATUS_LABELS[project.status] ?? "Proyek";
-
   return {
     id: project.id,
     title: project.title,
     genre: project.genre ?? "Cerita",
     genreBadgeClass: GENRE_BADGE_CLASSES[index % GENRE_BADGE_CLASSES.length],
-    excerpt: project.genre
-      ? `Proyek ${project.genre} — lanjutkan dari terakhir kali Anda menulis.`
-      : "Lanjutkan proyek cerita Anda.",
+    excerpt: buildHonestRecentExcerpt(project),
     lastEditedLabel: formatRelativeTime(project.lastEditedAt),
-    statusLabel,
+    statusLabel: buildHonestRecentStatusLabel(project),
     bookmarked: project.isActive,
-    route: ROUTES.project.write(project.id),
+    route: resolveHonestProjectRoute(project),
   };
 }
 
@@ -294,7 +275,7 @@ export function mapFoundationBundleToUi(
     isLocked: f.isLocked,
   }));
 
-  const fallback = mockStoryFoundation;
+  const useDemoCopy = isApiModeEnabled() === false;
 
   return {
     projectId,
@@ -307,25 +288,53 @@ export function mapFoundationBundleToUi(
         foundation.readinessPercent >= 80
           ? "Sebagian besar fondasi sudah lengkap. Tinjau sebelum lanjut ke outline."
           : "Lengkapi bagian fondasi yang masih kosong sebelum lanjut.",
-      missingItems: fallback.readiness.missingItems,
+      missingItems: useDemoCopy ? mockStoryFoundation.readiness.missingItems : [],
     },
-    premise: foundation.premise || fallback.premise,
-    mainCharacters: mainCharacters.length > 0 ? mainCharacters : fallback.mainCharacters,
+    premise: foundation.premise || (useDemoCopy ? mockStoryFoundation.premise : "Belum diisi"),
+    mainCharacters:
+      mainCharacters.length > 0
+        ? mainCharacters
+        : useDemoCopy
+          ? mockStoryFoundation.mainCharacters
+          : [],
     supportingCharacters:
-      supportingCharacters.length > 0 ? supportingCharacters : fallback.supportingCharacters,
-    lockedFacts: lockedFacts.length > 0 ? lockedFacts : fallback.lockedFacts,
-    mainConflict: foundation.mainConflict || fallback.mainConflict,
+      supportingCharacters.length > 0
+        ? supportingCharacters
+        : useDemoCopy
+          ? mockStoryFoundation.supportingCharacters
+          : [],
+    lockedFacts:
+      lockedFacts.length > 0 ? lockedFacts : useDemoCopy ? mockStoryFoundation.lockedFacts : [],
+    mainConflict:
+      foundation.mainConflict || (useDemoCopy ? mockStoryFoundation.mainConflict : "Belum diisi"),
     readerPromiseItems: foundation.readerPromise
       ? splitReaderPromise(foundation.readerPromise)
-      : fallback.readerPromiseItems,
+      : useDemoCopy
+        ? mockStoryFoundation.readerPromiseItems
+        : ["Belum diisi"],
     storySecretsPreview:
-      foundation.storySecretsPreview ?? fallback.storySecretsPreview,
-    secretSchedule: fallback.secretSchedule,
+      foundation.storySecretsPreview ??
+      (useDemoCopy ? mockStoryFoundation.storySecretsPreview : "Belum diisi"),
+    secretSchedule: useDemoCopy ? mockStoryFoundation.secretSchedule : [],
     storyStyleTags:
-      foundation.styleTags.length > 0 ? foundation.styleTags : fallback.storyStyleTags,
+      foundation.styleTags.length > 0
+        ? foundation.styleTags
+        : useDemoCopy
+          ? mockStoryFoundation.storyStyleTags
+          : [],
     outlineRoute: ROUTES.project.outline(projectId),
     isLocked: foundation.isLocked,
-    pageCopy: fallback.pageCopy,
+    pageCopy: useDemoCopy
+      ? mockStoryFoundation.pageCopy
+      : {
+          title: "Fondasi Cerita",
+          subtitle:
+            "Bangun fondasi dari konsep terpilih. Bagian kosong ditandai jujur — belum diisi.",
+          warningTitle: "Catatan Beta",
+          warningBody: "Fondasi penuh belum dihasilkan otomatis untuk semua proyek.",
+          warningNote: "Lengkapi bagian yang masih kosong sebelum mengunci fondasi.",
+          lockCtaLabel: "Kunci Fondasi",
+        },
   };
 }
 
@@ -394,29 +403,32 @@ export function mapIntakeBundleToUi(
   messages: ApiIntakeMessage[],
   signals: ApiDetectedSignal[],
 ): IntakeSession {
+  const useDemoCopy = !isApiModeEnabled();
   const fallback = mockIntakeSession;
   const uiMessages =
-    messages.length > 0 ? messages.map(mapApiMessageToUi) : fallback.messages;
+    messages.length > 0 ? messages.map(mapApiMessageToUi) : useDemoCopy ? fallback.messages : [];
   const uiSignals =
-    signals.length > 0 ? signals.map(mapApiSignalToUi) : fallback.detectedSignals;
+    signals.length > 0 ? signals.map(mapApiSignalToUi) : useDemoCopy ? fallback.detectedSignals : [];
 
   return {
     projectId,
-    pageTitle: fallback.pageTitle,
-    introTitle: fallback.introTitle,
-    introSubtitle: fallback.introSubtitle,
+    pageTitle: useDemoCopy ? fallback.pageTitle : "Ceritakan Ide Anda",
+    introTitle: useDemoCopy ? fallback.introTitle : "Mulai dari ide mentah",
+    introSubtitle: useDemoCopy
+      ? fallback.introSubtitle
+      : "Ceritakan ide, konflik, atau suasana yang ingin Anda tulis.",
     messages: uiMessages,
-    progress: fallback.progress,
-    progressPercent: session.progressPercent ?? fallback.progressPercent,
+    progress: useDemoCopy ? fallback.progress : [],
+    progressPercent: session.progressPercent ?? (useDemoCopy ? fallback.progressPercent : 0),
     detectedSignals: uiSignals,
-    suggestedActions: fallback.suggestedActions,
+    suggestedActions: useDemoCopy ? fallback.suggestedActions : [],
     conceptsRoute: ROUTES.project.concepts(projectId),
-    inputPlaceholder: fallback.inputPlaceholder,
-    inputTip: isApiModeEnabled()
-      ? "Balasan dari server (stub). Pesan tersimpan ke API."
-      : fallback.inputTip,
-    ctaLabel: fallback.ctaLabel,
-    ctaHint: fallback.ctaHint,
+    inputPlaceholder: useDemoCopy ? fallback.inputPlaceholder : "Tulis ide cerita Anda di sini…",
+    inputTip: isApiModeEnabled() ? INTAKE_STUB_ASSISTANT_LABEL : fallback.inputTip,
+    ctaLabel: useDemoCopy ? fallback.ctaLabel : "Lanjut ke Konsep",
+    ctaHint: useDemoCopy
+      ? fallback.ctaHint
+      : "Lanjut setelah Anda merasa cukup banyak ide terkumpul.",
   };
 }
 
@@ -634,17 +646,18 @@ export function mapOutlineBundleToUi(
     plannedReveals: PlannedRevealPublic[];
   },
 ): StoryOutline {
+  const useDemoCopy = !isApiModeEnabled();
   const fallback = mockOutline;
   const plan = bundle.outlinePlan;
   const chapters = bundle.chapterOutlines.map(mapApiChapterToUi);
-  const total = plan?.targetChapterCount ?? (chapters.length || 10);
+  const total = plan?.targetChapterCount ?? (chapters.length || (useDemoCopy ? 10 : 0));
   const statusKey = plan?.status ?? "draft";
   const isLocked = statusKey === "locked";
 
   return {
     projectId,
-    seasonLabel: plan?.seasonLabel ?? fallback.seasonLabel,
-    arcSummary: plan?.arcSummary ?? fallback.arcSummary,
+    seasonLabel: plan?.seasonLabel ?? (useDemoCopy ? fallback.seasonLabel : "Belum dibuat"),
+    arcSummary: plan?.arcSummary ?? (useDemoCopy ? fallback.arcSummary : "Belum dibuat"),
     description:
       plan?.planningNotes?.trim() ||
       "Arah bab awal untuk membangun konflik dan daya tarik serial. Kamu bisa meninjau sebelum mulai menulis.",
@@ -663,15 +676,31 @@ export function mapOutlineBundleToUi(
       bundle.openLoops,
       bundle.plannedReveals,
     ),
-    pageCopy: {
-      ...fallback.pageCopy,
-      planBadge: isLocked
-        ? "Outline Terkunci"
-        : (PLAN_STATUS_LABELS[statusKey] ?? fallback.pageCopy.planBadge),
-      reviewNote: isLocked
-        ? "Outline sudah dikunci. Edit rencana bab tidak tersedia."
-        : fallback.pageCopy.reviewNote,
-    },
+    pageCopy: useDemoCopy
+      ? {
+          ...fallback.pageCopy,
+          planBadge: isLocked
+            ? "Outline Terkunci"
+            : (PLAN_STATUS_LABELS[statusKey] ?? fallback.pageCopy.planBadge),
+          reviewNote: isLocked
+            ? "Outline sudah dikunci. Edit rencana bab tidak tersedia."
+            : fallback.pageCopy.reviewNote,
+        }
+      : {
+          planBadge: isLocked
+            ? "Outline Terkunci"
+            : (PLAN_STATUS_LABELS[statusKey] ?? "Belum dibuat"),
+          startWritingCta: isLocked ? "Buka Ruang Tulis" : "Kunci outline dulu",
+          loadMoreCta: "Muat Bab Selanjutnya",
+          loadMoreHint: "Bab tambahan tersedia setelah rencana outline dibuat.",
+          reviewNote: isLocked
+            ? "Outline sudah dikunci. Edit rencana bab tidak tersedia."
+            : chapters.length > 0
+              ? "Tinjau rencana bab sebelum dikunci."
+              : "Belum ada rencana bab. Buat outline setelah fondasi dikunci.",
+          retentionTitle: "Petunjuk Daya Tarik Serial",
+          retentionSubtitle: "Ringkasan ringan — bukan skor otomatis.",
+        },
   };
 }
 

@@ -3,7 +3,9 @@ import type { WriterQualityMode } from "@vibenovel/shared";
 import { useAuth } from "@/context/AuthContext";
 import { ApiClientError } from "@/lib/api";
 import { mergeSettingsWithApi } from "@/lib/api-mappers";
-import { shouldUseMocks } from "@/lib/env";
+import { allowMockFallback, shouldUseMocks } from "@/lib/env";
+import { apiErrorMessage } from "@/lib/hook-fallback";
+import { DEMO_MODE_LABEL } from "@/lib/workflow-truth";
 import { mockSettings } from "@/mocks/settings";
 import { fetchCreditBalance } from "@/services/credits";
 import { fetchMe } from "@/services/me";
@@ -11,7 +13,7 @@ import { fetchProjectSettings, updateProjectSettings } from "@/services/settings
 import { fetchProjects, pickActiveProject } from "@/services/projects";
 import type { ModelTier, UserSettings } from "@/types";
 
-export type SettingsDataSource = "mock" | "api" | "api-fallback";
+export type SettingsDataSource = "mock" | "api" | "error";
 
 export interface SettingsData {
   settings: UserSettings;
@@ -50,11 +52,7 @@ export function useSettingsData(): SettingsData {
       setPersistedTier("seimbang");
       setActiveProjectId(null);
       setSource("mock");
-      setNotice(
-        useMocks
-          ? null
-          : "Masuk ke akun untuk menyimpan pengaturan ke API. Menampilkan mock Sprint 1.",
-      );
+      setNotice(useMocks ? DEMO_MODE_LABEL : "Masuk ke akun untuk menyimpan pengaturan ke API.");
       return;
     }
 
@@ -70,12 +68,31 @@ export function useSettingsData(): SettingsData {
         const active = pickActiveProject(projects);
         if (!active) {
           if (cancelled) return;
-          setSettings(mockSettings);
+          const [creditBalance, me] = await Promise.all([
+            fetchCreditBalance(token),
+            fetchMe(token),
+          ]);
+          if (cancelled) return;
+          const merged = mergeSettingsWithApi(
+            {
+              qualityMode: "seimbang",
+              defaultOutputStyle: "warm_emotional",
+              defaultFormat: "hp_kbm",
+              defaultLanguage: "id",
+            },
+            creditBalance,
+            {
+              displayName: me.profile.displayName,
+              email: me.profile.email,
+              planLabel: me.profile.planLabel,
+            },
+          );
+          setSettings(merged);
           setSelectedTier("seimbang");
           setPersistedTier("seimbang");
           setActiveProjectId(null);
-          setSource("api-fallback");
-          setNotice("Belum ada proyek aktif. Menampilkan mock pengaturan.");
+          setSource("api");
+          setNotice("Belum ada proyek aktif. Pengaturan penulis per-proyek akan aktif setelah Anda membuat proyek.");
           return;
         }
 
@@ -110,16 +127,12 @@ export function useSettingsData(): SettingsData {
         setSource("api");
       } catch (error) {
         if (cancelled) return;
-        setSettings(mockSettings);
+        setSettings(allowMockFallback() ? mockSettings : mockSettings);
         setSelectedTier("seimbang");
         setPersistedTier("seimbang");
         setActiveProjectId(null);
-        setSource("api-fallback");
-        setNotice(
-          error instanceof ApiClientError
-            ? `API tidak tersedia (${error.message}). Menampilkan mock Sprint 1.`
-            : "API tidak tersedia. Menampilkan mock Sprint 1.",
-        );
+        setSource(allowMockFallback() ? "mock" : "error");
+        setNotice(apiErrorMessage(error, "API tidak tersedia."));
       } finally {
         if (!cancelled) setLoading(false);
       }

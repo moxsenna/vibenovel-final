@@ -9,7 +9,8 @@ import type {
 import { WRITER_QUALITY_MODES } from "@vibenovel/shared";
 import { useAuth } from "@/context/AuthContext";
 import { ApiClientError } from "@/lib/api";
-import { shouldUseMocks } from "@/lib/env";
+import { allowMockFallback, shouldUseMocks } from "@/lib/env";
+import { DEMO_MODE_LABEL } from "@/lib/workflow-truth";
 import {
   mapApiPublishPackageToUi,
   type PublishEditableFieldKey,
@@ -43,7 +44,7 @@ import { fetchProjectSettings } from "@/services/settings";
 import { getSummaryByChapter } from "@/services/summary";
 import type { PublishPackage } from "@/types";
 
-export type PublishDataSource = "mock" | "api" | "api-fallback";
+export type PublishDataSource = "mock" | "api" | "locked" | "error";
 
 const OVERCLAIM_MESSAGE =
   "Copy ini terlalu menjanjikan hasil. Gunakan kalimat yang lebih aman.";
@@ -76,10 +77,10 @@ function userFacingError(error: unknown): string {
       return error.message;
     }
     if (error.status === 404) return "Paket publish tidak ditemukan.";
-    if (error.status === 0) return "API tidak tersedia. Menampilkan mock Sprint 1.";
+    if (error.status === 0) return "API tidak tersedia. Coba muat ulang.";
     return "Terjadi kesalahan saat memuat paket publish.";
   }
-  return "API tidak tersedia. Menampilkan mock Sprint 1.";
+  return "API tidak tersedia. Coba muat ulang.";
 }
 
 function emptyPublishShell(
@@ -181,6 +182,8 @@ export interface UsePublishDataResult {
   applyPublishCopySuggestion: (field: PublishCopyAiField) => Promise<void>;
   applyAllPublishCopySuggestions: () => Promise<void>;
   dismissPublishCopySuggestion: (field: PublishCopyAiField) => void;
+  lockedTitle: string | null;
+  lockedDescription: string | null;
 }
 
 export function usePublishData(): UsePublishDataResult {
@@ -222,6 +225,8 @@ export function usePublishData(): UsePublishDataResult {
   const [applyingSuggestionField, setApplyingSuggestionField] =
     useState<PublishCopyAiField | null>(null);
   const [applyingAllSuggestions, setApplyingAllSuggestions] = useState(false);
+  const [lockedTitle, setLockedTitle] = useState<string | null>(null);
+  const [lockedDescription, setLockedDescription] = useState<string | null>(null);
 
   const isExported = apiPkg?.status === "exported";
   const isReadonly = !apiMode || source !== "api" || isExported;
@@ -242,16 +247,55 @@ export function usePublishData(): UsePublishDataResult {
     setCreditError(null);
   }, []);
 
-  const applyMock = useCallback((message: string | null) => {
-    setPkg(mockPublishPackage);
-    setSource("api-fallback");
-    setNotice(message);
-    setApiPkg(null);
-    setPackageId(null);
-    setSummaryApproved(false);
-    setSummaryId(null);
-    resetPublishCopyAiState();
-  }, [resetPublishCopyAiState]);
+  const applyMockFallback = useCallback(
+    (message: string | null) => {
+      setPkg(mockPublishPackage);
+      setSource("mock");
+      setLockedTitle(null);
+      setLockedDescription(null);
+      setNotice(message);
+      setApiPkg(null);
+      setPackageId(null);
+      setSummaryApproved(false);
+      setSummaryId(null);
+      resetPublishCopyAiState();
+    },
+    [resetPublishCopyAiState],
+  );
+
+  const applyBlocked = useCallback(
+    (kind: "locked" | "error", title: string, description: string) => {
+      setPkg({
+        ...mockPublishPackage,
+        projectId: routeProjectId ?? "unknown",
+        chapterNumber: 0,
+        chapterTitle: "",
+        title: "",
+        blurb: "",
+        teaser: "",
+        caption: "",
+        commentBait: "",
+        nextChapterTeaser: "",
+        tags: [],
+        pageCopy: {
+          ...mockPublishPackage.pageCopy,
+          title,
+          subtitle: description,
+          badgeLabel: "Belum Tersedia",
+        },
+      });
+      setSource(kind);
+      setLockedTitle(title);
+      setLockedDescription(description);
+      setNotice(null);
+      setApiPkg(null);
+      setPackageId(null);
+      setSummaryApproved(false);
+      setSummaryId(null);
+      resetPublishCopyAiState();
+    },
+    [resetPublishCopyAiState, routeProjectId],
+  );
 
   const applyApiPackage = useCallback(
     (row: ApiPublishPackage) => {
@@ -301,15 +345,26 @@ export function usePublishData(): UsePublishDataResult {
     try {
       const resolvedId = await resolveProjectIdForRoute(routeProjectId, token);
       if (!resolvedId) {
-        applyMock("Proyek tidak ditemukan. Menampilkan mock paket publish.");
+        if (allowMockFallback()) {
+          applyMockFallback("Proyek tidak ditemukan. Menampilkan demo paket publish.");
+        } else {
+          applyBlocked("error", "Proyek tidak ditemukan", "Proyek ini tidak ada atau Anda tidak memiliki akses.");
+        }
         return;
       }
+
+      setLockedTitle(null);
+      setLockedDescription(null);
 
       setProjectId(resolvedId);
       const bundle = await fetchOutlineBundle(resolvedId, token);
       const chapter = pickDefaultChapter(bundle.chapterOutlines);
       if (!chapter) {
-        applyMock("Belum ada bab di outline. Menampilkan mock paket publish.");
+        applyBlocked(
+          "locked",
+          "Paket Publish belum tersedia",
+          "Belum ada bab yang siap dipublish. Selesaikan outline, ruang tulis, dan ringkasan bab terlebih dahulu.",
+        );
         return;
       }
 
@@ -334,11 +389,15 @@ export function usePublishData(): UsePublishDataResult {
         setPackageId(null);
       }
     } catch (error) {
-      applyMock(userFacingError(error));
+      if (allowMockFallback()) {
+        applyMockFallback(userFacingError(error));
+      } else {
+        applyBlocked("error", "Paket publish tidak bisa dimuat", userFacingError(error));
+      }
     } finally {
       setLoading(false);
     }
-  }, [apiMode, applyApiPackage, applyMock, routeProjectId, token]);
+  }, [apiMode, applyApiPackage, applyBlocked, applyMockFallback, routeProjectId, token]);
 
   useEffect(() => {
     if (authLoading) return;
@@ -347,11 +406,9 @@ export function usePublishData(): UsePublishDataResult {
       setPkg(mockPublishPackage);
       setSource("mock");
       resetPublishCopyAiState();
-      setNotice(
-        useMocks
-          ? null
-          : "Masuk ke akun untuk paket publish dengan API. Menampilkan mock Sprint 1.",
-      );
+      setLockedTitle(null);
+      setLockedDescription(null);
+      setNotice(useMocks ? DEMO_MODE_LABEL : "Masuk ke akun untuk paket publish dengan API.");
       return;
     }
 
@@ -717,5 +774,7 @@ export function usePublishData(): UsePublishDataResult {
     applyPublishCopySuggestion,
     applyAllPublishCopySuggestions,
     dismissPublishCopySuggestion,
+    lockedTitle,
+    lockedDescription,
   };
 }

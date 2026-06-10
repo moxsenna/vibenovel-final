@@ -13,7 +13,7 @@ export function DashboardEmptyState() {
         Belum ada proyek lain
       </h3>
       <p className="mt-sm max-w-md font-body-md text-body-md text-muted-text">
-        Mulai cerita baru atau lanjutkan proyek aktifmu dari kartu di atas.
+        Proyek tambahan akan muncul di sini setelah kamu membuat lebih dari satu cerita.
       </p>
       <Link to={ROUTES.start} className="mt-lg">
         <Button variant="primary" leftIcon={<Icon name="add" size={18} />}>

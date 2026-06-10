@@ -5,7 +5,9 @@ import {
   PROSE_REWRITE_MODES,
   type ProseRewriteMode,
 } from "@/services/ai";
+import { Link } from "react-router-dom";
 import { Button, Card, Icon } from "@/components/ui";
+import { ROUTES } from "@/routes/paths";
 
 const REWRITE_MODE_OPTIONS: ProseRewriteMode[] = [
   PROSE_REWRITE_MODES.improve_emotion,
@@ -37,6 +39,8 @@ export interface WriterAssistantPanelProps {
   remainingAfterGenerate?: number | null;
   remainingAfterRewrite?: number | null;
   showCreditUi?: boolean;
+  creditTopupEnabled?: boolean | null;
+  isMockMode?: boolean;
   aiUnavailableReason?: string | null;
   onRewriteProse?: () => void;
   rewriteGenerating?: boolean;
@@ -71,6 +75,8 @@ export function WriterAssistantPanel({
   remainingAfterGenerate = null,
   remainingAfterRewrite = null,
   showCreditUi = false,
+  creditTopupEnabled = null,
+  isMockMode = false,
   aiUnavailableReason = null,
   onRewriteProse,
   rewriteGenerating = false,
@@ -199,9 +205,22 @@ export function WriterAssistantPanel({
                     Kredit tidak cukup untuk aksi ini.
                   </p>
                 ) : null}
-                <p className="mt-2 font-body-sm text-body-sm text-muted-text">
-                  Top up belum tersedia di versi ini.
-                </p>
+                {isMockMode ? (
+                  <p className="mt-2 font-body-sm text-body-sm text-muted-text">
+                    Top up kredit memerlukan mode API (bukan mock).
+                  </p>
+                ) : creditTopupEnabled ? (
+                  <Link
+                    to={ROUTES.creditTopup}
+                    className="mt-2 inline-block font-body-sm text-body-sm text-primary underline-offset-2 hover:underline"
+                  >
+                    Top up kredit
+                  </Link>
+                ) : (
+                  <p className="mt-2 font-body-sm text-body-sm text-muted-text">
+                    Top up belum tersedia di versi ini.
+                  </p>
+                )}
               </Card>
             </div>
             <div className="h-px w-full bg-border/50" />

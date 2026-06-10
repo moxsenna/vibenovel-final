@@ -1,15 +1,17 @@
 import { useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
-import { ApiClientError } from "@/lib/api";
 import { mapFoundationBundleToUi, resolveApiProjectId } from "@/lib/api-mappers";
-import { shouldUseMocks } from "@/lib/env";
+import { createEmptyApiFoundation } from "@/lib/empty-states";
+import { allowMockFallback, shouldUseMocks } from "@/lib/env";
+import { apiErrorMessage } from "@/lib/hook-fallback";
+import { DEMO_MODE_LABEL } from "@/lib/workflow-truth";
 import { mockStoryFoundation } from "@/mocks/storyFoundation";
 import { fetchFoundationBundle } from "@/services/foundation";
 import { fetchProjects, pickActiveProject } from "@/services/projects";
 import type { StoryFoundation } from "@/types/storyFoundation";
 
-export type FoundationDataSource = "mock" | "api" | "api-fallback";
+export type FoundationDataSource = "mock" | "api" | "error";
 
 export interface FoundationData {
   foundation: StoryFoundation;
@@ -35,11 +37,7 @@ export function useFoundationData(): FoundationData {
     if (useMocks || !token) {
       setFoundation(mockStoryFoundation);
       setSource("mock");
-      setNotice(
-        useMocks
-          ? null
-          : "Masuk ke akun untuk membaca fondasi dari API. Menampilkan mock Sprint 1.",
-      );
+      setNotice(useMocks ? DEMO_MODE_LABEL : "Masuk ke akun untuk membaca fondasi dari API.");
       return;
     }
 
@@ -56,9 +54,22 @@ export function useFoundationData(): FoundationData {
 
         if (!projectId) {
           if (cancelled) return;
-          setFoundation(mockStoryFoundation);
-          setSource("api-fallback");
-          setNotice("Proyek tidak ditemukan. Menampilkan mock fondasi.");
+          if (allowMockFallback()) {
+            setFoundation(mockStoryFoundation);
+            setSource("mock");
+            setNotice("Proyek tidak ditemukan. Menampilkan demo fondasi.");
+          } else {
+            setFoundation(
+              mapFoundationBundleToUi(
+                routeProjectId ?? "unknown",
+                createEmptyApiFoundation(routeProjectId ?? "unknown"),
+                [],
+                [],
+              ),
+            );
+            setSource("error");
+            setNotice("Proyek tidak ditemukan.");
+          }
           return;
         }
 
@@ -76,13 +87,22 @@ export function useFoundationData(): FoundationData {
         setSource("api");
       } catch (error) {
         if (cancelled) return;
-        setFoundation(mockStoryFoundation);
-        setSource("api-fallback");
-        setNotice(
-          error instanceof ApiClientError
-            ? `API tidak tersedia (${error.message}). Menampilkan mock Sprint 1.`
-            : "API tidak tersedia. Menampilkan mock Sprint 1.",
-        );
+        if (allowMockFallback()) {
+          setFoundation(mockStoryFoundation);
+          setSource("mock");
+          setNotice(apiErrorMessage(error, "API tidak tersedia. Menampilkan demo Sprint 1."));
+        } else {
+          setFoundation(
+            mapFoundationBundleToUi(
+              routeProjectId ?? "unknown",
+              createEmptyApiFoundation(routeProjectId ?? "unknown"),
+              [],
+              [],
+            ),
+          );
+          setSource("error");
+          setNotice(apiErrorMessage(error, "API tidak tersedia."));
+        }
       } finally {
         if (!cancelled) setLoading(false);
       }
