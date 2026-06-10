@@ -101,7 +101,7 @@ Authenticated production no longer silently falls back to Sprint 1 mock pages wh
 
 - Intake agent replies — template/stub from API (labeled)
 - Concept/foundation/outline generators — deterministic/API templates where wired; not full public LLM launch
-- Shell credit badge — mock 1.250 until Task 10.30
+- Shell credit badge — mock 1.250 until Task 10.30 (resolved in Task 10.30a)
 - Publish — nav locked in private beta
 - Mock strings still in JS bundle (inactive in production authed flow)
 
