@@ -1,6 +1,7 @@
-# Basic CI — typecheck and build only (Task 2.15, Task 5.8)
+# CI — typecheck, lint, build, and auth/settings regression (Sprint 12 Task 12.6).
 # No secrets. No Supabase/Docker smoke in CI (local-only — see docs/36, scripts/README.md).
-# Local verification before Sprint 6: npm run smoke:all:local (requires supabase + dev:api + dev:web).
+# The E2E step runs only the self-contained auth-settings regression (mock + route-mocked
+# API mode) — it needs no real Supabase/network. Broader smoke stays local.
 
 name: CI
 
@@ -24,10 +25,21 @@ jobs:
           cache: npm
 
       - name: Install dependencies
-        run: npm ci
+        # The committed lockfile was generated on Windows and omits installable
+        # package records for Linux-only native optionals (@rollup/rollup-linux-x64-gnu,
+        # @esbuild/linux-x64), so both `npm ci` and `npm install` skip them on Linux
+        # runners and vite/rollup crash (npm/cli#4828). The documented fix is to drop
+        # the lockfile so npm fully re-resolves the host-platform optional. TODO:
+        # regenerate a cross-platform lockfile and restore `npm ci`.
+        run: |
+          rm -f package-lock.json
+          npm install --no-audit --no-fund
 
       - name: Typecheck
         run: npm run typecheck
+
+      - name: Lint
+        run: npm run lint
 
       - name: Build shared
         run: npm run build:shared
@@ -37,3 +49,50 @@ jobs:
 
       - name: Build API
         run: npm run build:api
+
+  e2e-regression:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+
+      - name: Install dependencies
+        # The committed lockfile was generated on Windows and omits installable
+        # package records for Linux-only native optionals (@rollup/rollup-linux-x64-gnu,
+        # @esbuild/linux-x64), so both `npm ci` and `npm install` skip them on Linux
+        # runners and vite/rollup crash (npm/cli#4828). The documented fix is to drop
+        # the lockfile so npm fully re-resolves the host-platform optional. TODO:
+        # regenerate a cross-platform lockfile and restore `npm ci`.
+        run: |
+          rm -f package-lock.json
+          npm install --no-audit --no-fund
+
+      - name: Build shared (vite dev needs @vibenovel/shared/dist)
+        run: npm run build:shared
+
+      - name: Install Playwright browser (chromium)
+        run: npx playwright install --with-deps chromium
+        working-directory: apps/web
+
+      - name: Run auth/settings regression (mock + route-mocked API mode)
+        # Supabase client must initialize for the token-refresh test. The URL ref
+        # matches the spec's storage key (sb-jdxyhrnibmmwlbtbokqo-auth-token); the
+        # anon key is a dummy — all auth/API endpoints are route-mocked by the spec.
+        env:
+          VITE_SUPABASE_URL: https://jdxyhrnibmmwlbtbokqo.supabase.co
+          VITE_SUPABASE_ANON_KEY: ci-e2e-dummy-anon-key-endpoints-are-route-mocked
+        run: |
+          npm run dev &
+          for i in $(seq 1 60); do curl -sf http://localhost:5173 >/dev/null 2>&1 && break; sleep 1; done
+          # Warm vite's on-demand compile for the routes under test, then run with
+          # retries to absorb cold-start flake on shared CI runners.
+          curl -sf http://localhost:5173/dashboard >/dev/null 2>&1 || true
+          curl -sf http://localhost:5173/settings >/dev/null 2>&1 || true
+          SMOKE_WEB_BASE_URL=http://localhost:5173 npx playwright test e2e/auth-settings-regression.spec.ts --retries=2
+        working-directory: apps/web

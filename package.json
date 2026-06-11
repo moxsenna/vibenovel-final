@@ -69,9 +69,18 @@
     "smoke:web:summary": "powershell -ExecutionPolicy Bypass -File scripts/sprint6-smoke-web.ps1",
     "smoke:web:publish": "powershell -ExecutionPolicy Bypass -File scripts/sprint7-smoke-web.ps1",
     "smoke:all:local": "powershell -ExecutionPolicy Bypass -File scripts/smoke-all-local.ps1",
-    "smoke:all:local:full": "powershell -ExecutionPolicy Bypass -File scripts/smoke-all-local.ps1 -IncludeApiMode"
+    "smoke:all:local:full": "powershell -ExecutionPolicy Bypass -File scripts/smoke-all-local.ps1 -IncludeApiMode",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix"
   },
   "engines": {
     "node": ">=18"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.4.1",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "globals": "^17.6.0",
+    "typescript-eslint": "^8.61.0"
   }
 }
