@@ -1,5 +1,14 @@
-/** Default true so Sprint 1 UI stays stable when API is offline. */
+/**
+ * Whether to render mock/demo data instead of calling the real API.
+ *
+ * Boundary lock (Sprint 12 Task 12.3c): a PRODUCTION build must NEVER serve
+ * mocks — even if `VITE_USE_MOCKS` is missing or accidentally set to "true",
+ * and regardless of any `__MOCK_OVERRIDE__`. Mocks are dev/test/demo only.
+ * In dev/test the default stays true so the Sprint 1 UI is stable offline.
+ */
 export function shouldUseMocks(): boolean {
+  if (import.meta.env.PROD) return false;
+
   const isTestOrDev = import.meta.env.MODE === "test" || import.meta.env.DEV;
   if (isTestOrDev && typeof window !== "undefined") {
     const override = (window as any).__MOCK_OVERRIDE__;
