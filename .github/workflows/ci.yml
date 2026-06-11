@@ -81,6 +81,12 @@ jobs:
         working-directory: apps/web
 
       - name: Run auth/settings regression (mock + route-mocked API mode)
+        # Supabase client must initialize for the token-refresh test. The URL ref
+        # matches the spec's storage key (sb-jdxyhrnibmmwlbtbokqo-auth-token); the
+        # anon key is a dummy — all auth/API endpoints are route-mocked by the spec.
+        env:
+          VITE_SUPABASE_URL: https://jdxyhrnibmmwlbtbokqo.supabase.co
+          VITE_SUPABASE_ANON_KEY: ci-e2e-dummy-anon-key-endpoints-are-route-mocked
         run: |
           npm run dev &
           for i in $(seq 1 60); do curl -sf http://localhost:5173 >/dev/null 2>&1 && break; sleep 1; done
