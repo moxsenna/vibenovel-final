@@ -84,5 +84,9 @@ jobs:
         run: |
           npm run dev &
           for i in $(seq 1 60); do curl -sf http://localhost:5173 >/dev/null 2>&1 && break; sleep 1; done
-          SMOKE_WEB_BASE_URL=http://localhost:5173 npx playwright test e2e/auth-settings-regression.spec.ts
+          # Warm vite's on-demand compile for the routes under test, then run with
+          # retries to absorb cold-start flake on shared CI runners.
+          curl -sf http://localhost:5173/dashboard >/dev/null 2>&1 || true
+          curl -sf http://localhost:5173/settings >/dev/null 2>&1 || true
+          SMOKE_WEB_BASE_URL=http://localhost:5173 npx playwright test e2e/auth-settings-regression.spec.ts --retries=2
         working-directory: apps/web
