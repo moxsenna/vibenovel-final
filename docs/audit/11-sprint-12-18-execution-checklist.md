@@ -31,10 +31,10 @@
 - [ ] Jika 401: identifikasi sumber key salah → perbaiki → rebuild/redeploy. (tergantung hasil login nyata)
 - [~] ✅ Verify: `/api/health` ok ✅; **login→`/api/me` happy-path belum diverifikasi** (perlu akun test). Code-side alignment ✅.
 
-### Task 12.2 — Verifikasi token refresh + retry end-to-end
-- [ ] Telusuri `apps/web/src/lib/api.ts` (`refreshAccessToken` + retry 401 sekali).
-- [ ] Jalankan E2E refresh: `cd apps/web && SMOKE_WEB_BASE_URL=<web> npx playwright test e2e/auth-settings-regression.spec.ts -g "refreshes a stale"`.
-- [ ] ✅ Verify: test refresh PASS; stale token → refresh → retry sukses.
+### Task 12.2 — Verifikasi token refresh + retry end-to-end ✅
+- [x] Telusuri `apps/web/src/lib/api.ts` — `refreshAccessToken()` + retry 401 `UNAUTHORIZED` sekali, lalu `clearLocalSession()` bila tetap invalid. Logika benar.
+- [x] Jalankan E2E refresh (`-g "refreshes a stale"`) terhadap dev server.
+- [x] ✅ Verify: test refresh **PASS** (stale token → refresh → retry sukses; 0 `API tidak tersedia`).
 
 ### Task 12.3 — Pastikan build prod tidak fallback ke mock
 - [ ] Konfirmasi `VITE_USE_MOCKS=false` di build prod (`build-production-web.ps1`).
@@ -346,7 +346,7 @@
 
 | Sprint | Status | Exit gate lulus? | Report |
 |---|---|---|---|
-| 12 Stabilization | 🔧 in progress (12.1 sebagian, 12.3b/12.3c ✅) | ☐ | docs/96 |
+| 12 Stabilization | 🔧 in progress — ✅ 12.2, 12.3b, 12.3c, 12.5, 12.6 · 🔧 12.1 (code ok, live-login pending) · ⛔ 12.4/12.7 (butuh akun test + DB) | ☐ | docs/96 |
 | 13 Real Generation | ☐ | ☐ | docs/97 |
 | 14 Safety Hardening | ☐ | ☐ (GATE AI non-founder) | docs/98 |
 | 15 Draft Import | ☐ | ☐ | docs/99 |
