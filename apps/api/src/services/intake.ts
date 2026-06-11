@@ -4,6 +4,8 @@ import {
   INTAKE_PHASES,
   INTAKE_SESSION_STATUSES,
   WORKFLOW_PHASES,
+  GENERATION_TYPES,
+  WRITER_QUALITY_MODES,
   type DetectedSignal,
   type DetectedSignalStatus,
   type DetectedSignalType,
@@ -13,6 +15,10 @@ import {
   type JsonObject,
 } from "@vibenovel/shared";
 import type { AppBindings } from "../env.js";
+import {
+  isAiGenerationEnabled,
+  isAiProviderMock,
+} from "../env.js";
 import {
   mapDetectedSignalRow,
   mapIntakeMessageRow,
@@ -24,6 +30,20 @@ import {
 import { createServiceRoleClient } from "../lib/supabase.js";
 import { AppError } from "../errors.js";
 import { getOwnedProjectRow } from "./project.js";
+import { generateWithModelRouter } from "./model-router.js";
+import {
+  debitCreditsForAttempt,
+  refundCreditsForAttempt,
+  CREDIT_LEDGER_REASONS,
+} from "./credit-ledger.js";
+import {
+  createGenerationAttempt,
+  markGenerationAttemptRunning,
+  markGenerationAttemptSucceeded,
+  markGenerationAttemptFailed,
+} from "./generation-attempt.js";
+import { generateCorrelationId } from "./audit-snapshot.js";
+import { computePromptHashFromMessages } from "./prose-generation-prompt.js";
 
 const SESSION_SELECT =
   "id, project_id, status, phase, progress_percent, summary, metadata, created_at, updated_at";
@@ -136,15 +156,6 @@ function buildAgentStubReply(userContent: string): string {
   return AGENT_STUB_DEFAULT;
 }
 
-function computeProgressAfterMessage(userMessageCount: number): number {
-  return Math.min(100, userMessageCount * 12);
-}
-
-function computePhaseAfterMessage(progressPercent: number): IntakePhase {
-  if (progressPercent >= 40) return INTAKE_PHASES.concept_generation;
-  if (progressPercent >= 20) return INTAKE_PHASES.signal_detection;
-  return INTAKE_PHASES.idea_collection;
-}
 
 async function setProjectWorkflowPhaseIfSafe(
   bindings: AppBindings,
@@ -440,61 +451,196 @@ export async function appendUserMessageForOwner(
     throw AppError.internal("Failed to save user message");
   }
 
-  const agentContent = buildAgentStubReply(content);
-  const { data: agentRow, error: agentError } = await admin
-    .from("intake_messages")
-    .insert({
-      project_id: projectId,
-      session_id: sessionRow.id,
-      role: INTAKE_MESSAGE_ROLES.agent,
-      content: agentContent,
-      metadata: { source: "deterministic_stub" },
-    })
-    .select(MESSAGE_SELECT)
-    .single();
+  const userMsgRow = userRow as IntakeMessageRow;
+  let agentContent = "";
+  let agentRow: IntakeMessageRow | null = null;
+  let attempt = null;
+  let debited = false;
+  const correlationId = generateCorrelationId();
 
-  if (agentError || !agentRow) {
-    console.error("intake_messages insert agent failed");
-    throw AppError.internal("Failed to save agent reply");
+  const useMock = isAiProviderMock(bindings);
+  const aiEnabled = isAiGenerationEnabled(bindings);
+
+  if (aiEnabled && !useMock) {
+    const historyMessages = await listMessagesForSession(bindings, projectId, sessionRow.id, RECENT_MESSAGE_LIMIT);
+
+    const systemPrompt =
+      "Kamu adalah asisten intake cerita pintar yang ramah, hangat, membimbing, ringkas, dan tidak robotik. " +
+      "Tugasmu adalah menganalisis ide cerita pengguna, memberikan tanggapan singkat yang mendukung, meringkas arah cerita yang terdeteksi secara alami, dan mengajukan SATU pertanyaan follow-up yang berguna untuk menggali detail cerita lebih lanjut (misalnya tentang tokoh, konflik, rahasia, janji pembaca, target pembaca, genre, atau nada emosional). " +
+      "Jangan membuat fakta cerita yang berlebihan di luar apa yang diceritakan pengguna. Jangan membocorkan plot masa depan. Jawab dalam bahasa Indonesia yang ramah bagi penulis pemula.";
+
+    const promptMessages = [
+      { role: "system" as const, content: systemPrompt },
+      ...historyMessages.map((m) => ({
+        role: m.role === "user" ? ("user" as const) : ("assistant" as const),
+        content: m.content,
+      })),
+      { role: "user" as const, content },
+    ];
+
+    const promptHash = await computePromptHashFromMessages(promptMessages);
+    const idempotencyKey = `intake-assistant-${projectId}-${crypto.randomUUID()}`;
+
+    attempt = await createGenerationAttempt(bindings, {
+      projectId,
+      userId: ownerId,
+      generationType: GENERATION_TYPES.publish_copy,
+      idempotencyKey,
+      creditCost: 1,
+      promptHash,
+      correlationId,
+      qualityMode: WRITER_QUALITY_MODES.hemat,
+      metadata: {
+        actualGenerationType: "intake_assistant",
+        billingAlias: "publish_copy",
+        task: "10.31a",
+      },
+    });
+
+    try {
+      await debitCreditsForAttempt(bindings, {
+        userId: ownerId,
+        projectId,
+        attemptId: attempt.id,
+        amount: 1,
+        reason: CREDIT_LEDGER_REASONS.generationDebit,
+        generationType: GENERATION_TYPES.publish_copy,
+        idempotencyKey,
+        correlationId,
+      });
+      debited = true;
+    } catch (err) {
+      await markGenerationAttemptFailed(bindings, {
+        attemptId: attempt.id,
+        userId: ownerId,
+        projectId,
+        errorCode: err instanceof AppError ? err.code : "DEBIT_FAILED",
+        errorMessage: err instanceof Error ? err.message : "Credit debit failed",
+        correlationId,
+      });
+      throw err;
+    }
+
+    attempt = await markGenerationAttemptRunning(bindings, attempt.id);
+
+    try {
+      const routerResult = await generateWithModelRouter(bindings, {
+        generationType: GENERATION_TYPES.publish_copy,
+        qualityMode: WRITER_QUALITY_MODES.hemat,
+        promptHash,
+        promptMessages,
+      });
+      agentContent = routerResult.text;
+
+      const { data: dbAgentRow, error: agentError } = await admin
+        .from("intake_messages")
+        .insert({
+          project_id: projectId,
+          session_id: sessionRow.id,
+          role: INTAKE_MESSAGE_ROLES.agent,
+          content: agentContent,
+          metadata: {
+            source: "openrouter",
+            attemptId: attempt.id,
+            model: routerResult.model,
+            provider: routerResult.provider,
+          },
+        })
+        .select(MESSAGE_SELECT)
+        .single();
+
+      if (agentError || !dbAgentRow) {
+        console.error("intake_messages insert agent failed");
+        throw AppError.internal("Failed to save agent reply");
+      }
+
+      agentRow = dbAgentRow as IntakeMessageRow;
+
+      await markGenerationAttemptSucceeded(bindings, {
+        attemptId: attempt.id,
+        userId: ownerId,
+        projectId,
+        provider: routerResult.provider,
+        model: routerResult.model,
+        inputTokens: routerResult.inputTokens,
+        outputTokens: routerResult.outputTokens,
+        outputEntityId: agentRow.id,
+        outputEntityType: "intake_message",
+        correlationId,
+      });
+    } catch (err) {
+      if (debited) {
+        try {
+          await refundCreditsForAttempt(bindings, {
+            userId: ownerId,
+            projectId,
+            attemptId: attempt.id,
+            amount: 1,
+            reason: CREDIT_LEDGER_REASONS.generationRefund,
+            generationType: GENERATION_TYPES.publish_copy,
+            idempotencyKey,
+            correlationId,
+          });
+        } catch (refundErr) {
+          console.error("credit refund failed:", refundErr);
+        }
+      }
+
+      await markGenerationAttemptFailed(bindings, {
+        attemptId: attempt.id,
+        userId: ownerId,
+        projectId,
+        errorCode: err instanceof AppError ? err.code : "AI_FAILED",
+        errorMessage: err instanceof Error ? err.message : "AI generation failed",
+        correlationId,
+      });
+      throw err;
+    }
+  } else {
+    agentContent = buildAgentStubReply(content);
+    const { data: dbAgentRow, error: agentError } = await admin
+      .from("intake_messages")
+      .insert({
+        project_id: projectId,
+        session_id: sessionRow.id,
+        role: INTAKE_MESSAGE_ROLES.agent,
+        content: agentContent,
+        metadata: { source: "deterministic_stub" },
+      })
+      .select(MESSAGE_SELECT)
+      .single();
+
+    if (agentError || !dbAgentRow) {
+      console.error("intake_messages insert agent failed");
+      throw AppError.internal("Failed to save agent reply");
+    }
+    agentRow = dbAgentRow as IntakeMessageRow;
   }
 
-  const { count, error: countError } = await admin
-    .from("intake_messages")
-    .select("id", { count: "exact", head: true })
-    .eq("session_id", sessionRow.id)
-    .eq("role", INTAKE_MESSAGE_ROLES.user);
-
-  if (countError) {
-    console.error("intake_messages count failed");
-    throw AppError.internal("Failed to update intake progress");
-  }
-
-  const userMessageCount = count ?? 1;
-  const progressPercent = computeProgressAfterMessage(userMessageCount);
-  const nextPhase = computePhaseAfterMessage(progressPercent);
+  await extractSignalsAndProgressInternal(
+    bindings,
+    projectId,
+    sessionRow.id,
+    userMsgRow.id,
+  );
 
   const { data: updatedSession, error: sessionError } = await admin
     .from("intake_sessions")
-    .update({
-      progress_percent: progressPercent,
-      phase: nextPhase,
-      status: INTAKE_SESSION_STATUSES.active,
-    })
+    .select(SESSION_SELECT)
     .eq("id", sessionRow.id)
     .eq("project_id", projectId)
-    .select(SESSION_SELECT)
     .single();
 
   if (sessionError || !updatedSession) {
-    console.error("intake_sessions progress update failed");
-    throw AppError.internal("Failed to update intake session");
+    console.error("intake_sessions reload failed");
+    throw AppError.internal("Failed to reload intake session");
   }
 
   await setProjectWorkflowPhaseIfSafe(bindings, projectId, WORKFLOW_PHASES.intake);
 
   return {
-    userMessage: mapIntakeMessageRow(userRow as IntakeMessageRow),
-    agentMessage: mapIntakeMessageRow(agentRow as IntakeMessageRow),
+    userMessage: mapIntakeMessageRow(userMsgRow),
+    agentMessage: mapIntakeMessageRow(agentRow),
     session: mapIntakeSessionRow(updatedSession as IntakeSessionRow),
   };
 }
@@ -527,55 +673,138 @@ function extractSignalsFromText(text: string): ExtractedSignalDraft[] {
   const lower = text.toLowerCase();
   const drafts: ExtractedSignalDraft[] = [];
 
-  if (/istri|suami|mertua|rumah tangga/.test(lower)) {
+  // Genre & Trope
+  if (/istri|suami|mertua|rumah tangga|keluarga|nikah|selingkuh|menantu/.test(lower)) {
     drafts.push({
       type: "genre",
       label: "Drama Rumah Tangga",
       value: "drama rumah tangga",
+      confidence: 0.9,
+    });
+  } else if (/akademi|sekolah|sihir|magis|fantasy|fantasi|kekuatan|murid|siswa/.test(lower)) {
+    drafts.push({
+      type: "genre",
+      label: "Fantasy Academy",
+      value: "fantasy academy",
+      confidence: 0.9,
+    });
+  }
+
+  // Protagonist
+  if (/istri|menantu/.test(lower)) {
+    drafts.push({
+      type: "protagonist",
+      label: "Protagonis: Istri",
+      value: "istri yang diremehkan",
       confidence: 0.85,
     });
+  } else if (/murid|siswa|anak sekolah|miskin/.test(lower)) {
     drafts.push({
-      type: "relationship_dynamic",
-      label: "Dinamika Keluarga",
-      value: "keluarga suami meremehkan istri",
+      type: "protagonist",
+      label: "Protagonis: Murid Miskin",
+      value: "murid miskin dengan kekuatan tersembunyi",
+      confidence: 0.85,
+    });
+  }
+
+  // Core Conflict
+  if (/remeh|hina|ejek|bully|rundung|tindas/.test(lower)) {
+    drafts.push({
+      type: "core_conflict",
+      label: "Konflik: Perundungan",
+      value: "diremehkan dan ditindas karena status",
+      confidence: 0.8,
+    });
+  } else if (/selingkuh|khianat|madu|mertua/.test(lower)) {
+    drafts.push({
+      type: "core_conflict",
+      label: "Konflik: Pengkhianatan Keluarga",
+      value: "pengkhianatan oleh suami atau keluarga terdekat",
       confidence: 0.8,
     });
   }
 
-  if (/balas dendam|bangkit|revenge/.test(lower)) {
+  // Tone
+  if (/balas dendam|bangkit|revenge|lawan|balas/.test(lower)) {
     drafts.push({
       type: "tone",
-      label: "Bangkit & Berani",
-      value: "bangkit dan berani",
-      confidence: 0.78,
+      label: "Nada: Kebangkitan & Pembalasan",
+      value: "balas dendam emosional / kebangkitan",
+      confidence: 0.85,
     });
+  } else if (/sedih|tangis|luka|kecewa|sakit|menderita/.test(lower)) {
     drafts.push({
-      type: "reader_promise",
-      label: "Revenge Emosional",
-      value: "balas dendam emosional yang memuaskan",
-      confidence: 0.75,
+      type: "tone",
+      label: "Nada: Melankolis Emosional",
+      value: "sedih dan emosional mendalam",
+      confidence: 0.8,
+    });
+  } else if (/sihir|ajaib|misteri/.test(lower)) {
+    drafts.push({
+      type: "tone",
+      label: "Nada: Penuh Keajaiban",
+      value: "penuh petualangan dan magis",
+      confidence: 0.8,
     });
   }
 
-  if (/rahasia|selingkuh|hamil|anak/.test(lower)) {
+  // Secret Candidate
+  if (/rahasia|sembunyi|ternyata|tersembunyi|kekuatan/.test(lower)) {
     drafts.push({
       type: "secret_candidate",
-      label: "Rahasia Besar",
-      value: "rahasia keluarga atau hubungan tersembunyi",
-      confidence: 0.82,
+      label: "Rahasia: Kekuatan Tersembunyi",
+      value: "memiliki kekuatan tersembunyi atau identitas asli",
+      confidence: 0.85,
+    });
+  } else if (/hamil|anak|kandung/.test(lower)) {
+    drafts.push({
+      type: "secret_candidate",
+      label: "Rahasia: Kehamilan",
+      value: "kehamilan yang dirahasiakan",
+      confidence: 0.85,
     });
   }
 
-  if (/kbm|pembaca wanita|rumah tangga|hp|serial/.test(lower)) {
+  // Reader Promise
+  if (/balas dendam|revenge|sukses|menang|tunjukkan|kaya/.test(lower)) {
+    drafts.push({
+      type: "reader_promise",
+      label: "Janji: Kepuasan Revenge",
+      value: "balas dendam elegan dan kebangkitan sukses",
+      confidence: 0.8,
+    });
+  } else if (/sihir|tanding|kuat|hebat/.test(lower)) {
+    drafts.push({
+      type: "reader_promise",
+      label: "Janji: Dominasi Sihir",
+      value: "perjalanan naik tingkat dan pengakuan kekuatan",
+      confidence: 0.8,
+    });
+  }
+
+  // Target Reader / Format
+  if (/kbm|hp|pembaca wanita|serial|online/.test(lower)) {
     drafts.push({
       type: "target_reader",
-      label: "Serial HP",
+      label: "Format: KBM / HP",
       value: "hp_serial",
-      confidence: 0.72,
+      confidence: 0.8,
     });
   }
 
   return drafts;
+}
+
+function computeProgressFromSignals(signals: Array<{ type: string; status?: string }>): number {
+  const activeSignals = signals.filter(s => s.status !== "dismissed");
+  const requiredTypes = ["genre", "protagonist", "core_conflict", "reader_promise", "target_reader", "secret_candidate", "tone"];
+  let count = 0;
+  for (const type of requiredTypes) {
+    if (activeSignals.some(s => s.type === type)) {
+      count++;
+    }
+  }
+  return Math.round((count / requiredTypes.length) * 100);
 }
 
 async function upsertDetectedSignal(
@@ -638,20 +867,19 @@ async function upsertDetectedSignal(
   return data as DetectedSignalRow;
 }
 
-export async function extractDetectedSignalsForOwner(
+async function extractSignalsAndProgressInternal(
   bindings: AppBindings,
-  ownerId: string,
   projectId: string,
-): Promise<{ sessionId: string; signals: DetectedSignal[] }> {
-  await getOwnedProjectRow(bindings, ownerId, projectId);
-  const sessionRow = await getOrCreateActiveSessionRow(bindings, projectId);
+  sessionId: string,
+  latestUserMessageId: string | null = null,
+): Promise<{ progressPercent: number; nextPhase: IntakePhase; signals: DetectedSignalRow[] }> {
   const admin = createServiceRoleClient(bindings);
 
   const { data: userMessages, error: messagesError } = await admin
     .from("intake_messages")
     .select(MESSAGE_SELECT)
     .eq("project_id", projectId)
-    .eq("session_id", sessionRow.id)
+    .eq("session_id", sessionId)
     .eq("role", INTAKE_MESSAGE_ROLES.user)
     .order("created_at", { ascending: true });
 
@@ -668,7 +896,7 @@ export async function extractDetectedSignalsForOwner(
     .from("detected_signals")
     .select(SIGNAL_SELECT)
     .eq("project_id", projectId)
-    .eq("session_id", sessionRow.id);
+    .eq("session_id", sessionId);
 
   if (existingError) {
     console.error("detected_signals select existing failed");
@@ -676,33 +904,54 @@ export async function extractDetectedSignalsForOwner(
   }
 
   const existing = (existingRows ?? []) as DetectedSignalRow[];
-  const latestUserMessageId = messages.length > 0 ? messages[messages.length - 1].id : null;
+  const sourceMessageId = latestUserMessageId || (messages.length > 0 ? messages[messages.length - 1].id : null);
 
   const upserted: DetectedSignalRow[] = [];
   for (const draft of drafts) {
     const row = await upsertDetectedSignal(
       bindings,
       projectId,
-      sessionRow.id,
+      sessionId,
       draft,
-      latestUserMessageId,
+      sourceMessageId,
       [...existing, ...upserted],
     );
     upserted.push(row);
   }
 
-  if (drafts.length > 0) {
-    const progressPercent = Math.max(sessionRow.progress_percent, 30);
-    await admin
-      .from("intake_sessions")
-      .update({
-        phase: INTAKE_PHASES.signal_detection,
-        progress_percent: progressPercent,
-      })
-      .eq("id", sessionRow.id)
-      .eq("project_id", projectId);
+  const allSignals = [...existing];
+  for (const u of upserted) {
+    const idx = allSignals.findIndex((s) => s.id === u.id);
+    if (idx >= 0) {
+      allSignals[idx] = u;
+    } else {
+      allSignals.push(u);
+    }
   }
 
+  const progressPercent = computeProgressFromSignals(allSignals);
+  const nextPhase = progressPercent >= 80 ? INTAKE_PHASES.concept_generation : INTAKE_PHASES.signal_detection;
+
+  await admin
+    .from("intake_sessions")
+    .update({
+      progress_percent: progressPercent,
+      phase: nextPhase,
+    })
+    .eq("id", sessionId)
+    .eq("project_id", projectId);
+
+  return { progressPercent, nextPhase, signals: allSignals };
+}
+
+export async function extractDetectedSignalsForOwner(
+  bindings: AppBindings,
+  ownerId: string,
+  projectId: string,
+): Promise<{ sessionId: string; signals: DetectedSignal[] }> {
+  await getOwnedProjectRow(bindings, ownerId, projectId);
+  const sessionRow = await getOrCreateActiveSessionRow(bindings, projectId);
+  await extractSignalsAndProgressInternal(bindings, projectId, sessionRow.id);
   const signals = await listSignalsForSession(bindings, projectId, sessionRow.id);
   return { sessionId: sessionRow.id, signals };
 }

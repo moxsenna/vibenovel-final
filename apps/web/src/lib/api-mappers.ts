@@ -42,6 +42,7 @@ import type {
   DetectedSignal,
   IntakeMessage,
   IntakeSession,
+  IntakeProgressItem,
   OutlineChapter,
   OutlineRetentionHint,
   StoryConcept,
@@ -402,6 +403,45 @@ export function mapApiSignalToUi(signal: ApiDetectedSignal): DetectedSignal {
   };
 }
 
+function buildHonestProgress(signals: ApiDetectedSignal[]): IntakeProgressItem[] {
+  const activeSignals = signals.filter((s) => s.status !== "dismissed");
+
+  const checklist = [
+    { type: "genre", label: "Genre Cerita", defaultVal: "Genre cerita belum terdeteksi." },
+    { type: "protagonist", label: "Tokoh Utama", defaultVal: "Protagonis belum terdeteksi." },
+    { type: "core_conflict", label: "Konflik Utama", defaultVal: "Konflik utama belum terdeteksi." },
+    { type: "reader_promise", label: "Janji Pembaca", defaultVal: "Janji pembaca belum terdeteksi." },
+    { type: "target_reader", label: "Target Pembaca & Format", defaultVal: "Format/Target pembaca belum terdeteksi." },
+    { type: "secret_candidate", label: "Rahasia Cerita", defaultVal: "Kandidat rahasia belum terdeteksi." },
+    { type: "tone", label: "Nada Emosional", defaultVal: "Nada cerita belum terdeteksi." },
+  ];
+
+  let hasFoundActive = false;
+
+  return checklist.map((item) => {
+    const signal = activeSignals.find((s) => s.type === item.type);
+
+    let status: IntakeProgressItem["status"] = "pending";
+    let detail = item.defaultVal;
+
+    if (signal) {
+      status = "done";
+      detail = signal.label || signal.value || "Terdeteksi";
+    } else if (!hasFoundActive) {
+      status = "active";
+      detail = "Menunggu deskripsi cerita...";
+      hasFoundActive = true;
+    }
+
+    return {
+      id: `step-${item.type}`,
+      label: item.label,
+      status,
+      detail,
+    };
+  });
+}
+
 export function mapIntakeBundleToUi(
   projectId: string,
   session: ApiIntakeSession,
@@ -423,7 +463,7 @@ export function mapIntakeBundleToUi(
       ? fallback.introSubtitle
       : "Ceritakan ide, konflik, atau suasana yang ingin Anda tulis.",
     messages: uiMessages,
-    progress: useDemoCopy ? fallback.progress : [],
+    progress: useDemoCopy ? fallback.progress : buildHonestProgress(signals),
     progressPercent: session.progressPercent ?? (useDemoCopy ? fallback.progressPercent : 0),
     detectedSignals: uiSignals,
     suggestedActions: useDemoCopy ? fallback.suggestedActions : [],

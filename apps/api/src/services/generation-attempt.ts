@@ -65,7 +65,7 @@ export interface GenerationAttemptSafeSummary {
 export interface CreateGenerationAttemptInput {
   projectId: string;
   userId: string;
-  chapterOutlineId: string;
+  chapterOutlineId?: string | null;
   beatId?: string | null;
   writingSessionId?: string | null;
   generationType: GenerationType;
@@ -194,7 +194,7 @@ export async function createGenerationAttempt(
     .insert({
       project_id: input.projectId,
       user_id: input.userId,
-      chapter_outline_id: input.chapterOutlineId,
+      chapter_outline_id: input.chapterOutlineId ?? null,
       beat_id: input.beatId ?? null,
       writing_session_id: input.writingSessionId ?? null,
       generation_type: input.generationType,
@@ -216,7 +216,7 @@ export async function createGenerationAttempt(
         409,
       );
     }
-    console.error("generation_attempts insert failed");
+    console.error("generation_attempts insert failed:", error);
     throw AppError.internal("Failed to create generation attempt");
   }
 

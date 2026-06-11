@@ -6,6 +6,8 @@ export interface SettingsUsageSectionProps {
   usedLabel: string;
   upgradeCta: string;
   usage: MonthlyUsage;
+  costEstimates?: Array<{ label: string; cost: number }>;
+  costEstimateTitle?: string;
   className?: string;
 }
 
@@ -14,6 +16,8 @@ export function SettingsUsageSection({
   usedLabel,
   upgradeCta,
   usage,
+  costEstimates = [],
+  costEstimateTitle = "Perkiraan biaya aksi",
   className = "",
 }: SettingsUsageSectionProps) {
   return (
@@ -60,6 +64,23 @@ export function SettingsUsageSection({
           style={{ width: `${usage.percentUsed}%` }}
         />
       </div>
+
+      {costEstimates.length > 0 ? (
+        <div className="mt-4 rounded-xl border border-border/60 bg-surface-soft p-4">
+          <p className="mb-3 font-label-sm text-label-sm uppercase tracking-wider text-muted-text">
+            {costEstimateTitle}
+          </p>
+          <div className="grid gap-2 sm:grid-cols-3">
+            {costEstimates.map((item) => (
+              <div key={item.label} className="rounded-lg bg-surface px-3 py-2">
+                <p className="font-label-sm text-label-sm text-on-surface">
+                  {item.label}: {item.cost} kredit
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : null}
 
       <div className="mt-4 flex flex-col gap-3 border-t border-border/50 pt-4 sm:flex-row sm:items-center sm:justify-between">
         <p className="flex items-center gap-2 font-body-sm text-body-sm text-on-surface-variant">

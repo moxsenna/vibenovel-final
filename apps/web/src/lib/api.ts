@@ -44,11 +44,23 @@ async function resolveAccessToken(explicit?: string | null): Promise<string | nu
   return data.session?.access_token ?? null;
 }
 
-export async function apiRequest<T>(
+async function refreshAccessToken(): Promise<string | null> {
+  if (!supabase) return null;
+  const { data, error } = await supabase.auth.refreshSession();
+  if (error) return null;
+  return data.session?.access_token ?? null;
+}
+
+async function clearLocalSession(): Promise<void> {
+  if (!supabase) return;
+  await supabase.auth.signOut({ scope: "local" });
+}
+
+async function sendRequest<T>(
   path: string,
-  options: ApiRequestOptions = {},
-): Promise<T> {
-  const token = await resolveAccessToken(options.token);
+  options: ApiRequestOptions,
+  token: string | null,
+): Promise<{ response: Response; payload: ApiBody<T> }> {
   const headers: Record<string, string> = {
     Accept: "application/json",
   };
@@ -77,6 +89,36 @@ export async function apiRequest<T>(
     payload = (await response.json()) as ApiBody<T>;
   } catch {
     throw new ApiClientError("PARSE_ERROR", "Invalid API response", response.status);
+  }
+
+  return { response, payload };
+}
+
+function isExpiredTokenError<T>(response: Response, payload: ApiBody<T>): boolean {
+  return (
+    response.status === 401 &&
+    !payload.ok &&
+    payload.error.code === "UNAUTHORIZED" &&
+    /invalid|expired/i.test(payload.error.message)
+  );
+}
+
+export async function apiRequest<T>(
+  path: string,
+  options: ApiRequestOptions = {},
+): Promise<T> {
+  const token = await resolveAccessToken(options.token);
+  let { response, payload } = await sendRequest<T>(path, options, token);
+
+  if (token && isExpiredTokenError(response, payload)) {
+    const refreshedToken = await refreshAccessToken();
+    if (refreshedToken && refreshedToken !== token) {
+      const retry = await sendRequest<T>(path, options, refreshedToken);
+      response = retry.response;
+      payload = retry.payload;
+    } else {
+      await clearLocalSession();
+    }
   }
 
   if (!payload.ok) {

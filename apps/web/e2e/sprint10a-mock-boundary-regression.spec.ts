@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-const SUPABASE_REF = "jdxyhrnibmmwlbtbokqo";
+const SUPABASE_REF = process.env.SMOKE_SUPABASE_REF?.trim() || "jdxyhrnibmmwlbtbokqo";
 const STORAGE_KEY = `sb-${SUPABASE_REF}-auth-token`;
 
 test.describe("Sprint 10a Regression — Mock Boundary, Credits, and Routing", () => {

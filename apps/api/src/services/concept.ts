@@ -2,12 +2,18 @@ import {
   STORY_CONCEPT_SOURCES,
   STORY_CONCEPT_STATUSES,
   WORKFLOW_PHASES,
+  GENERATION_TYPES,
+  WRITER_QUALITY_MODES,
   type JsonObject,
   type Project,
   type StoryConcept,
   type StoryConceptStatus,
 } from "@vibenovel/shared";
 import type { AppBindings } from "../env.js";
+import {
+  isAiGenerationEnabled,
+  isAiProviderMock,
+} from "../env.js";
 import {
   mapProjectRow,
   mapStoryConceptRow,
@@ -18,6 +24,21 @@ import {
 import { createServiceRoleClient } from "../lib/supabase.js";
 import { AppError } from "../errors.js";
 import { getOwnedProjectRow } from "./project.js";
+import { generateWithModelRouter } from "./model-router.js";
+import {
+  debitCreditsForAttempt,
+  refundCreditsForAttempt,
+  CREDIT_LEDGER_REASONS,
+} from "./credit-ledger.js";
+import {
+  createGenerationAttempt,
+  markGenerationAttemptRunning,
+  markGenerationAttemptSucceeded,
+  markGenerationAttemptFailed,
+} from "./generation-attempt.js";
+import { generateCorrelationId } from "./audit-snapshot.js";
+import { computePromptHashFromMessages } from "./prose-generation-prompt.js";
+import { listIntakeMessagesForOwner } from "./intake.js";
 
 const CONCEPT_SELECT =
   "id, project_id, title, short_pitch, reader_promise, core_conflict, genre, tone, target_reader, status, source, score, payload, created_at, updated_at";
@@ -420,8 +441,187 @@ export async function generateConceptsForOwner(
 
   const batchId = crypto.randomUUID();
   const ctx = await loadGenerationContext(bindings, projectRow, basedOnSignals);
-  const drafts = buildConceptDrafts(ctx, batchId);
-  const concepts = await insertConceptDrafts(bindings, projectId, drafts);
+  let concepts: StoryConcept[] = [];
+
+  const useMock = isAiProviderMock(bindings);
+  const aiEnabled = isAiGenerationEnabled(bindings);
+
+  if (aiEnabled && !useMock) {
+    const { messages } = await listIntakeMessagesForOwner(bindings, ownerId, projectId);
+    const userMessages = messages.filter((m) => m.role === "user");
+    if (userMessages.length === 0) {
+      throw AppError.badRequest("Tulis ide cerita Anda di obrolan intake terlebih dahulu sebelum membuat konsep.");
+    }
+    const combinedIntakeText = userMessages.map((m) => m.content).join("\n");
+
+    const systemPrompt =
+      "Kamu adalah asisten generator konsep cerita terpercaya. " +
+      "Tugasmu adalah menganalisis ide cerita pengguna dari chat intake dan menghasilkan tepat 3 usulan konsep cerita yang unik, kreatif, dan berbeda satu sama lain berdasarkan ide mentah tersebut.\n\n" +
+      "Format output wajib berupa valid JSON array berisi tepat 3 object dengan struktur:\n" +
+      "[\n" +
+      "  {\n" +
+      "    \"title\": \"Judul Konsep\",\n" +
+      "    \"shortPitch\": \"Deskripsi singkat cerita (pitch) sepanjang 2-3 kalimat...\",\n" +
+      "    \"readerPromise\": \"Apa yang dijanjikan cerita ini kepada pembaca...\",\n" +
+      "    \"coreConflict\": \"Konflik utama cerita...\",\n" +
+      "    \"genre\": \"Genre cerita (misal: Drama Rumah Tangga, Romance, Fantasy, dll.)\",\n" +
+      "    \"tone\": \"Nada emosional cerita...\",\n" +
+      "    \"targetReader\": \"Target pembaca/format (misal: hp_serial, desktop, dll.)\",\n" +
+      "    \"score\": 85.0,\n" +
+      "    \"payload\": {\n" +
+      "      \"badgeLabel\": \"Genre / Nada\",\n" +
+      "      \"badgeIcon\": \"auto_awesome\",\n" +
+      "      \"whyReadersCare\": \"Mengapa pembaca tertarik dengan konsep ini...\",\n" +
+      "      \"emotionalPromise\": \"Janji emosional...\",\n" +
+      "      \"riskNotes\": \"Catatan risiko atau rahasia...\",\n" +
+      "      \"decorativeAccent\": \"primary-soft\"\n" +
+      "    }\n" +
+      "  }\n" +
+      "]\n\n" +
+      "Aturan penting:\n" +
+      "- Jangan gunakan nama tokoh template seperti Nadira, Arman, Siska.\n" +
+      "- Konsep harus spesifik dan unik berdasarkan ide chat intake pengguna.\n" +
+      "- Setiap konsep harus memiliki fokus yang berbeda (misalnya satu lebih fokus ke drama emosional, satu ke rahasia masa lalu, satu ke perjuangan bangkit/balas dendam).\n" +
+      "- Jangan mengembalikan teks apapun selain JSON valid array tersebut.";
+
+    const promptMessages = [
+      { role: "system" as const, content: systemPrompt },
+      { role: "user" as const, content: `Berikut adalah chat intake penulis:\n\n${combinedIntakeText}` },
+    ];
+
+    const promptHash = await computePromptHashFromMessages(promptMessages);
+    const idempotencyKey = `concept-generation-${projectId}-${crypto.randomUUID()}`;
+    const correlationId = generateCorrelationId();
+
+    let attempt = await createGenerationAttempt(bindings, {
+      projectId,
+      userId: ownerId,
+      generationType: GENERATION_TYPES.publish_copy,
+      idempotencyKey,
+      creditCost: 3,
+      promptHash,
+      correlationId,
+      qualityMode: WRITER_QUALITY_MODES.hemat,
+      metadata: {
+        actualGenerationType: "concept_generation",
+        billingAlias: "publish_copy",
+        task: "10.31a",
+      },
+    });
+
+    let debited = false;
+    try {
+      await debitCreditsForAttempt(bindings, {
+        userId: ownerId,
+        projectId,
+        attemptId: attempt.id,
+        amount: 3,
+        reason: CREDIT_LEDGER_REASONS.generationDebit,
+        generationType: GENERATION_TYPES.publish_copy,
+        idempotencyKey,
+        correlationId,
+      });
+      debited = true;
+    } catch (err) {
+      await markGenerationAttemptFailed(bindings, {
+        attemptId: attempt.id,
+        userId: ownerId,
+        projectId,
+        errorCode: err instanceof AppError ? err.code : "DEBIT_FAILED",
+        errorMessage: err instanceof Error ? err.message : "Credit debit failed",
+        correlationId,
+      });
+      throw err;
+    }
+
+    attempt = await markGenerationAttemptRunning(bindings, attempt.id);
+
+    try {
+      const routerResult = await generateWithModelRouter(bindings, {
+        generationType: GENERATION_TYPES.publish_copy,
+        qualityMode: WRITER_QUALITY_MODES.hemat,
+        promptHash,
+        promptMessages,
+      });
+
+      let cleanText = routerResult.text.trim();
+      if (cleanText.startsWith("```json")) {
+        cleanText = cleanText.substring(7);
+      } else if (cleanText.startsWith("```")) {
+        cleanText = cleanText.substring(3);
+      }
+      if (cleanText.endsWith("```")) {
+        cleanText = cleanText.substring(0, cleanText.length - 3);
+      }
+      cleanText = cleanText.trim();
+
+      const parsed = JSON.parse(cleanText);
+      if (!Array.isArray(parsed) || parsed.length !== 3) {
+        throw new Error("AI did not return exactly 3 concepts");
+      }
+
+      const drafts: ConceptDraft[] = parsed.map((item) => ({
+        title: String(item.title || "Untitled Concept").trim(),
+        shortPitch: String(item.shortPitch || item.short_pitch || "").trim(),
+        readerPromise: String(item.readerPromise || item.reader_promise || "").trim(),
+        coreConflict: String(item.coreConflict || item.core_conflict || "").trim(),
+        genre: String(item.genre || "").trim(),
+        tone: String(item.tone || "").trim(),
+        targetReader: String(item.targetReader || item.target_reader || "hp_serial").trim(),
+        score: typeof item.score === "number" ? item.score : 80,
+        payload: {
+          ...(typeof item.payload === "object" && item.payload !== null ? item.payload : {}),
+          batchId,
+          generator: "openrouter",
+        },
+      }));
+
+      concepts = await insertConceptDrafts(bindings, projectId, drafts);
+
+      await markGenerationAttemptSucceeded(bindings, {
+        attemptId: attempt.id,
+        userId: ownerId,
+        projectId,
+        provider: routerResult.provider,
+        model: routerResult.model,
+        inputTokens: routerResult.inputTokens,
+        outputTokens: routerResult.outputTokens,
+        outputEntityId: concepts[0]?.id || "00000000-0000-0000-0000-000000000000",
+        outputEntityType: "story_concept",
+        correlationId,
+      });
+    } catch (err) {
+      if (debited) {
+        try {
+          await refundCreditsForAttempt(bindings, {
+            userId: ownerId,
+            projectId,
+            attemptId: attempt.id,
+            amount: 3,
+            reason: CREDIT_LEDGER_REASONS.generationRefund,
+            generationType: GENERATION_TYPES.publish_copy,
+            idempotencyKey,
+            correlationId,
+          });
+        } catch (refundErr) {
+          console.error("credit refund failed:", refundErr);
+        }
+      }
+
+      await markGenerationAttemptFailed(bindings, {
+        attemptId: attempt.id,
+        userId: ownerId,
+        projectId,
+        errorCode: err instanceof AppError ? err.code : "AI_FAILED",
+        errorMessage: err instanceof Error ? err.message : "AI concept generation failed",
+        correlationId,
+      });
+      throw err;
+    }
+  } else {
+    const drafts = buildConceptDrafts(ctx, batchId);
+    concepts = await insertConceptDrafts(bindings, projectId, drafts);
+  }
 
   await admin
     .from("projects")

@@ -303,6 +303,12 @@ Sprint 5 closed with **zero blockers**. Items below are non-blocking unless mark
 
 **Task 10.29 Remove misleading mock flow:** [`docs/91-mock-flow`](91-remove-misleading-mock-flow-report.md) — **GO** — `allowMockFallback()` guard; dashboard progress from `workflowPhase`; write/summary/publish locked states replace silent Sprint 1 fallback. **Debt:** shell `CreditIndicator` still mock 1.250; sidebar active project vs route project may diverge → **10.30**.
 
+**Task 10.30a Remove initial mock hook states + CreditIndicator + routing:** [`docs/93`](docs/93-remove-initial-mock-hook-states-credit-route-report.md) — **GO** — Phase 0 audit fix; real credits wired; CTA routes aligned.
+
+**Task 10.31a Real Intake Assistant and Concept Generator Pipeline:** [`docs/94`](docs/94-real-intake-assistant-concept-generator-report.md) — **GO** — OpenRouter intake chat & concept generator; credit balance authoritative debits; 7 signals progress tracked.
+
+**Task 10.31a-hotfix Fix Failed to Create Generation Attempt in Intake Assistant:** [`docs/95`](docs/95-hotfix-generation-attempt-intake-assistant.md) — **GO** — Resolved foreign key constraint violation on chapter_outline_id by making it optional/nullable on attempt creation.
+
 ### Sprint 11 blocked (payment-related)
 
 | Item | Blocker | Unblock path |
@@ -397,3 +403,7 @@ Sprint 5 closed with **zero blockers**. Items below are non-blocking unless mark
 - [`docs/84-production-app-custom-domain-verify-report.md`](84-production-app-custom-domain-verify-report.md) — Task 10.23c production app custom domain verify (GO)
 - [`docs/85-production-homepage-placeholder-report.md`](85-production-homepage-placeholder-report.md) — Task 10.24 production homepage (GO)
 - [`docs/86-private-beta-launch-readiness-audit.md`](86-private-beta-launch-readiness-audit.md) — Task 10.25 private beta readiness (GO)
+- [`docs/92-structural-repo-audit-mock-real-boundary.md`](92-structural-repo-audit-mock-real-boundary.md) — Task 10.30 structural audit
+- [`docs/93-remove-initial-mock-hook-states-credit-route-report.md`](93-remove-initial-mock-hook-states-credit-route-report.md) — Task 10.30a Phase 0 audit fix
+- [`docs/94-real-intake-assistant-concept-generator-report.md`](94-real-intake-assistant-concept-generator-report.md) — Task 10.31a real intake & concepts pipeline
+- [`docs/95-hotfix-generation-attempt-intake-assistant.md`](95-hotfix-generation-attempt-intake-assistant.md) — Task 10.31a-hotfix generation attempt fix

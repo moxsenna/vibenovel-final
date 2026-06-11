@@ -159,8 +159,8 @@ try {
 }
 if (-not $httpsHealth.ok) { throw "health ok=false" }
 $e = $httpsHealth.data.env
-if ($e.creditTopupEnabled -or -not $e.paymentProviderMock -or $e.paymentProvider -ne "mock" -or $e.aiGenerationEnabled) {
-  throw "production API not Mode A safe"
+if ($e.creditTopupEnabled -or -not $e.paymentProviderMock -or $e.paymentProvider -ne "mock" -or -not $e.aiGenerationEnabled) {
+  throw "production API not Mode A safe (aiGenerationEnabled must be true)"
 }
 Write-Host "PASS production API Mode A (appEnv=$($e.appEnv))" -ForegroundColor Green
 

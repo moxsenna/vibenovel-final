@@ -62,7 +62,7 @@ function Test-ModeAEnvFile {
   if ($env:CREDIT_TOPUP_ENABLED -eq "true") { return $false, "CREDIT_TOPUP_ENABLED=true" }
   if ($env:PAYMENT_PROVIDER -eq "duitku") { return $false, "PAYMENT_PROVIDER=duitku" }
   if ($env:PAYMENT_PROVIDER_MOCK -eq "false") { return $false, "PAYMENT_PROVIDER_MOCK=false" }
-  if ($env:AI_GENERATION_ENABLED -eq "true") { return $false, "AI_GENERATION_ENABLED=true" }
+  if ($env:AI_GENERATION_ENABLED -ne "true") { return $false, "AI_GENERATION_ENABLED must be true" }
   $origins = $env:ALLOWED_ORIGINS
   if ($origins -notmatch 'app\.narraza\.web\.id') { return $false, "ALLOWED_ORIGINS missing app.narraza.web.id" }
   if ($origins -notmatch 'narraza\.web\.id') { return $false, "ALLOWED_ORIGINS missing narraza.web.id" }
@@ -71,7 +71,7 @@ function Test-ModeAEnvFile {
 }
 
 Write-Host "Task 10.23/10.23a - Production API/app Mode A" -ForegroundColor Cyan
-Write-Host "Homepage: https://$ProductionHomepageHost (landing — not dashboard)"
+Write-Host "Homepage: https://$ProductionHomepageHost (landing - not dashboard)"
 Write-Host "App:      https://$ProductionAppHost"
 Write-Host "API:      https://$ProductionApiHost"
 Write-Host "Forbidden staging EC2: $StagingEc2Ip"

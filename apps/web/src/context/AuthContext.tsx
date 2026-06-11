@@ -71,8 +71,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const signOut = useCallback(async () => {
+    setSession(null);
+    setLoading(false);
     if (!supabase) return;
-    await supabase.auth.signOut();
+    await supabase.auth.signOut({ scope: "local" });
   }, []);
 
   const value = useMemo<AuthContextValue>(

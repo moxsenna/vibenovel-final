@@ -52,17 +52,47 @@ const emptySettings: UserSettings = {
   },
 };
 
+const LOCAL_QUALITY_MODE_KEY = "narraza.settings.qualityMode";
+const MODEL_TIERS: ModelTier[] = ["hemat", "seimbang", "terbaik"];
+const MODEL_TIER_SET = new Set<string>(MODEL_TIERS);
+
+function isModelTier(value: string | null | undefined): value is ModelTier {
+  return Boolean(value && MODEL_TIER_SET.has(value));
+}
+
+function readStoredQualityTier(): ModelTier {
+  if (typeof window === "undefined") return "seimbang";
+  const stored = window.localStorage.getItem(LOCAL_QUALITY_MODE_KEY);
+  return isModelTier(stored) ? stored : "seimbang";
+}
+
+function persistQualityTier(tier: ModelTier): void {
+  if (typeof window === "undefined") return;
+  window.localStorage.setItem(LOCAL_QUALITY_MODE_KEY, tier);
+}
+
+function applySelectedTier(settings: UserSettings, tier: ModelTier): UserSettings {
+  return {
+    ...settings,
+    modelTiers: settings.modelTiers.map((item) => ({
+      ...item,
+      isSelected: item.id === tier,
+    })),
+  };
+}
+
 export function useSettingsData(): SettingsData {
   const { session, loading: authLoading } = useAuth();
   const useMocks = shouldUseMocks();
   const token = session?.access_token ?? null;
 
   const [settings, setSettings] = useState<UserSettings>(() => {
-    if (useMocks) return mockSettings;
-    return emptySettings;
+    const tier = readStoredQualityTier();
+    if (useMocks) return applySelectedTier(mockSettings, tier);
+    return applySelectedTier(emptySettings, tier);
   });
-  const [selectedTier, setSelectedTier] = useState<ModelTier>("seimbang");
-  const [persistedTier, setPersistedTier] = useState<ModelTier>("seimbang");
+  const [selectedTier, setSelectedTier] = useState<ModelTier>(() => readStoredQualityTier());
+  const [persistedTier, setPersistedTier] = useState<ModelTier>(() => readStoredQualityTier());
   const [activeProjectId, setActiveProjectId] = useState<string | null>(null);
   const [source, setSource] = useState<SettingsDataSource>(useMocks ? "mock" : "api");
   const [loading, setLoading] = useState(!useMocks && Boolean(token));
@@ -74,9 +104,10 @@ export function useSettingsData(): SettingsData {
     if (authLoading) return;
 
     if (useMocks || !token) {
-      setSettings(mockSettings);
-      setSelectedTier("seimbang");
-      setPersistedTier("seimbang");
+      const tier = readStoredQualityTier();
+      setSettings(applySelectedTier(mockSettings, tier));
+      setSelectedTier(tier);
+      setPersistedTier(tier);
       setActiveProjectId(null);
       setSource("mock");
       setNotice(useMocks ? DEMO_MODE_LABEL : "Masuk ke akun untuk menyimpan pengaturan ke API.");
@@ -100,9 +131,10 @@ export function useSettingsData(): SettingsData {
             fetchMe(token),
           ]);
           if (cancelled) return;
+          const storedTier = readStoredQualityTier();
           const merged = mergeSettingsWithApi(
             {
-              qualityMode: "seimbang",
+              qualityMode: storedTier as WriterQualityMode,
               defaultOutputStyle: "warm_emotional",
               defaultFormat: "hp_kbm",
               defaultLanguage: "id",
@@ -114,9 +146,9 @@ export function useSettingsData(): SettingsData {
               planLabel: me.profile.planLabel,
             },
           );
-          setSettings(merged);
-          setSelectedTier("seimbang");
-          setPersistedTier("seimbang");
+          setSettings(applySelectedTier(merged, storedTier));
+          setSelectedTier(storedTier);
+          setPersistedTier(storedTier);
           setActiveProjectId(null);
           setSource("api");
           setNotice("Belum ada proyek aktif. Pengaturan penulis per-proyek akan aktif setelah Anda membuat proyek.");
@@ -154,9 +186,10 @@ export function useSettingsData(): SettingsData {
         setSource("api");
       } catch (error) {
         if (cancelled) return;
-        setSettings(allowMockFallback() ? mockSettings : emptySettings);
-        setSelectedTier("seimbang");
-        setPersistedTier("seimbang");
+        const tier = readStoredQualityTier();
+        setSettings(applySelectedTier(allowMockFallback() ? mockSettings : emptySettings, tier));
+        setSelectedTier(tier);
+        setPersistedTier(tier);
         setActiveProjectId(null);
         setSource(allowMockFallback() ? "mock" : "error");
         setNotice(apiErrorMessage(error, "API tidak tersedia."));
@@ -180,7 +213,9 @@ export function useSettingsData(): SettingsData {
     setSaveMessage(null);
 
     if (source !== "api" || !activeProjectId || !token) {
-      setSaveMessage("Pengaturan disimpan secara lokal (mock mode).");
+      persistQualityTier(selectedTier);
+      setSettings((prev) => applySelectedTier(prev, selectedTier));
+      setSaveMessage("Mode kualitas disimpan di perangkat ini.");
       setPersistedTier(selectedTier);
       return;
     }
@@ -193,6 +228,7 @@ export function useSettingsData(): SettingsData {
         token,
       );
       const tier = updated.qualityMode ?? updated.qualityTier;
+      persistQualityTier(tier);
       setPersistedTier(tier);
       setSelectedTier(tier);
       setSettings((prev) => ({

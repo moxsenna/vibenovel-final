@@ -1,7 +1,10 @@
-import { Outlet, useLocation } from "react-router-dom";
+import { Navigate, Outlet, useLocation } from "react-router-dom";
 import { CreditIndicator } from "./CreditIndicator";
 import { MobileHeader } from "./MobileHeader";
 import { Sidebar } from "./Sidebar";
+import { useAuth } from "@/context/AuthContext";
+import { shouldUseMocks } from "@/lib/env";
+import { ROUTES } from "@/routes/paths";
 
 /**
  * App workspace shell — Sprint 1 Task 1.3
@@ -9,7 +12,21 @@ import { Sidebar } from "./Sidebar";
  */
 export function AppShell() {
   const location = useLocation();
+  const { session, loading: authLoading } = useAuth();
+  const apiMode = !shouldUseMocks();
   const isWriteRoute = location.pathname.includes("/write");
+
+  if (apiMode && authLoading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background p-lg text-on-background">
+        <p className="font-body-md text-body-md text-muted-text">Memeriksa sesi...</p>
+      </div>
+    );
+  }
+
+  if (apiMode && !session) {
+    return <Navigate to={ROUTES.login} replace state={{ from: location.pathname }} />;
+  }
 
   return (
     <div

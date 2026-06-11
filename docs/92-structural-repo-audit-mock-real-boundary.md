@@ -1,7 +1,7 @@
 # Task 10.30 — Structural Repo Audit: Mock Leakage, Real Workflow Boundary, and Repair Plan
 
 ## Status
-**GO** (Audit & Repair Plan completed; Phase 0/Task 10.30a implemented and deployed to production)
+**GO** (Audit & Repair Plan completed; Phase 0/Task 10.30a and Phase 1/Task 10.31a implemented and deployed to production)
 
 ---
 

@@ -435,6 +435,8 @@ Belum ada (sengaja — defer setelah hardening / Sprint 8):
 | 10.29 Founder browser E2E | ✅ **GO** | [`docs/91-founder-browser-e2e`](docs/91-founder-browser-e2e-story-workflow-report.md) — Write Room AI from UI; prose persists; credit UI in assistant panel |
 | 10.29 Remove misleading mock flow | ✅ **GO** | [`docs/91-mock-flow`](docs/91-remove-misleading-mock-flow-report.md) — production authed flow no longer falls back to Sprint 1 mock; honest locked states |
 | 10.30a Remove initial mock hook states + CreditIndicator + routing | ✅ **GO** | [`docs/93`](docs/93-remove-initial-mock-hook-states-credit-route-report.md) — Phase 0 audit fix; real credits wired; CTA routes aligned |
+| 10.31a Real Intake Assistant and Concept Generator Pipeline | ✅ **GO** | [`docs/94`](docs/94-real-intake-assistant-concept-generator-report.md) — OpenRouter intake & concept generator; credit balance debited; 7 signals tracked |
+| 10.31a-hotfix Fix Failed to Create Generation Attempt in Intake Assistant | ✅ **GO** | [`docs/95`](docs/95-hotfix-generation-attempt-intake-assistant.md) — Fixed foreign key constraint failure by allowing chapter_outline_id to be nullable |
 
 
 ## Sprint 11 — staging readiness (COMPLETE)

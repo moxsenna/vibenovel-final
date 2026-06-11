@@ -10,6 +10,11 @@ import {
 } from "@/components/settings";
 import { IntegrationNotice } from "@/components/common/IntegrationNotice";
 import { useSettingsData } from "@/hooks/useSettingsData";
+import {
+  getProseBeatCreditCost,
+  getProseRewriteCreditCost,
+  getPublishCopyCreditCost,
+} from "@/services/ai";
 
 /**
  * Pengaturan Pemakaian — Sprint 1 Task 1.14 (+ Sprint 2 Task 2.13 API integration)
@@ -30,6 +35,11 @@ export function SettingsPage() {
   } = useSettingsData();
 
   const { pageCopy } = settings;
+  const costEstimates = [
+    { label: "Tulis Beat dengan AI", cost: getProseBeatCreditCost(selectedTier) },
+    { label: "Rewrite teks", cost: getProseRewriteCreditCost(selectedTier) },
+    { label: "Publish copy", cost: getPublishCopyCreditCost(selectedTier) },
+  ];
 
   return (
     <div className="mx-auto flex w-full max-w-detail flex-col gap-lg pb-8">
@@ -57,6 +67,7 @@ export function SettingsPage() {
           usedLabel={pageCopy.usageUsedLabel}
           upgradeCta={pageCopy.usageUpgradeCta}
           usage={settings.monthlyUsage}
+          costEstimates={costEstimates}
           className="h-full"
         />
       </div>
