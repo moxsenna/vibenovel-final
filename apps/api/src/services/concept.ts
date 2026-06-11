@@ -542,6 +542,11 @@ export async function generateConceptsForOwner(
         qualityMode: WRITER_QUALITY_MODES.hemat,
         promptHash,
         promptMessages,
+        // Concept gen returns a 3-object JSON array (with nested payload) that
+        // overflows the publish_copy alias cap (800) and gets truncated → invalid
+        // JSON. Give it real headroom + lower temperature for reliable structure.
+        maxOutputTokensOverride: 3000,
+        temperature: 0.4,
       });
 
       let cleanText = routerResult.text.trim();
@@ -555,9 +560,22 @@ export async function generateConceptsForOwner(
       }
       cleanText = cleanText.trim();
 
-      const parsed = JSON.parse(cleanText);
+      let parsed: unknown;
+      try {
+        parsed = JSON.parse(cleanText);
+      } catch {
+        throw new AppError(
+          "GENERATION_FAILED",
+          "AI mengembalikan format konsep yang tidak valid. Coba lagi.",
+          502,
+        );
+      }
       if (!Array.isArray(parsed) || parsed.length !== 3) {
-        throw new Error("AI did not return exactly 3 concepts");
+        throw new AppError(
+          "GENERATION_FAILED",
+          "AI tidak mengembalikan tepat 3 konsep. Coba lagi.",
+          502,
+        );
       }
 
       const drafts: ConceptDraft[] = parsed.map((item) => ({

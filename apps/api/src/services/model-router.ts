@@ -64,6 +64,9 @@ const GENERATION_TYPE_TOKEN_CAP: Record<GenerationType, number> = {
   [GENERATION_TYPES.summary_delta]: 1500,
 };
 
+/** Hard upper bound for any server-side maxOutputTokensOverride. */
+const MAX_OUTPUT_TOKENS_CEILING = 4000;
+
 function assertModelAllowlisted(model: string): string {
   const trimmed = model.trim();
   if (!MODEL_ALLOWLIST.has(trimmed)) {
@@ -139,6 +142,12 @@ function applyInputOverrides(
     next.maxOutputTokens = Math.min(
       next.maxOutputTokens,
       Math.max(1, Math.floor(input.maxOutputTokens)),
+    );
+  }
+  if (input.maxOutputTokensOverride !== undefined) {
+    next.maxOutputTokens = Math.min(
+      MAX_OUTPUT_TOKENS_CEILING,
+      Math.max(1, Math.floor(input.maxOutputTokensOverride)),
     );
   }
   if (input.temperature !== undefined) {
