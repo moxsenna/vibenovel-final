@@ -39,7 +39,15 @@ export interface ModelRouterGenerateInput {
   promptHash: string;
   promptMessages?: PromptMessage[];
   promptText?: string;
+  /** Lowers the resolved cap only (client-safe budget tightening). */
   maxOutputTokens?: number;
+  /**
+   * Server-only: replaces the resolved cap (may raise it, clamped to a hard
+   * ceiling). For trusted internal callers whose payload needs more headroom
+   * than the generation-type alias allows (e.g. multi-object JSON concept gen).
+   * Never plumb from client request bodies.
+   */
+  maxOutputTokensOverride?: number;
   temperature?: number;
   /** Redacted metadata only — no packet_json, planningTruth, or prose. */
   metadata?: JsonObject;
