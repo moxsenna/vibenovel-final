@@ -27,9 +27,9 @@
 ### Task 12.1 — Samakan Supabase project web↔API di produksi
 - [x] Decode ref dari `.env.production`: `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY` → **semua = `qjmbobvarspwvaalnjct`** (konsisten; bukan staging `jdxyhrnibmmwlbtbokqo`).
 - [x] Cek `scripts/build-production-web.ps1` — fallback `VITE_SUPABASE_ANON_KEY ← SUPABASE_ANON_KEY` (ref prod) + forbid staging ref. Plus hardening `apps/web/src/lib/supabase.ts` menerima publishable key (sudah deploy commit `8ed0435`).
-- [~] Reproduksi 1 login nyata di `https://app.narraza.web.id` → `/api/me` 200. **Belum dijalankan** — butuh akun test dari founder. (Sudah terverifikasi: `/api/health` ok, app serve bundle baru.)
-- [ ] Jika 401: identifikasi sumber key salah → perbaiki → rebuild/redeploy. (tergantung hasil login nyata)
-- [~] ✅ Verify: `/api/health` ok ✅; **login→`/api/me` happy-path belum diverifikasi** (perlu akun test). Code-side alignment ✅.
+- [x] Reproduksi 1 login nyata (akun test founder) → Supabase prod (`qjmbobvarspwvaalnjct`) mint access_token (exp 3600) → `GET https://api.narraza.web.id/api/me` **HTTP 200**, profil benar. Loop bug "Invalid or expired access token" **tertutup**.
+- [x] Tidak ada 401 di happy path — auth web↔API prod konsisten.
+- [x] ✅ Verify: login→`/api/me` 200 ✅. Surface authed lain juga 200: `/api/credits/balance` (saldo 4990), `/api/projects`, `/api/projects/:id/{concepts,foundation,outline}`. Konsep AI-real ("Luka yang Dibayar Mahal"); outline 10 bab + `planningTruthRedacted` aktif (catatan: outline masih pakai nama template → Sprint 13).
 
 ### Task 12.2 — Verifikasi token refresh + retry end-to-end ✅
 - [x] Telusuri `apps/web/src/lib/api.ts` — `refreshAccessToken()` + retry 401 `UNAUTHORIZED` sekali, lalu `clearLocalSession()` bila tetap invalid. Logika benar.
@@ -346,7 +346,7 @@
 
 | Sprint | Status | Exit gate lulus? | Report |
 |---|---|---|---|
-| 12 Stabilization | 🔧 in progress — ✅ 12.2, 12.3b, 12.3c, 12.5, 12.6 · 🔧 12.1 (code ok, live-login pending) · ⛔ 12.4/12.7 (butuh akun test + DB) | ☐ | docs/96 |
+| 12 Stabilization | 🔧 in progress — ✅ 12.1 (live-verified), 12.2, 12.3b, 12.3c, 12.5, 12.6 · 🔧 12.4/12.7 (butuh aksi mutating: lock outline + generate prose — tunggu izin founder) | ☐ | docs/96 |
 | 13 Real Generation | ☐ | ☐ | docs/97 |
 | 14 Safety Hardening | ☐ | ☐ (GATE AI non-founder) | docs/98 |
 | 15 Draft Import | ☐ | ☐ | docs/99 |
