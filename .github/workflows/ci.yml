@@ -25,14 +25,15 @@ jobs:
           cache: npm
 
       - name: Install dependencies
-        # `npm install` (not `npm ci`) on purpose: the committed lockfile was
-        # generated on Windows and omits the installable package record for
-        # Linux-only native optionals (e.g. @rollup/rollup-linux-x64-gnu,
-        # @esbuild/linux-x64). `npm ci` follows the lockfile strictly and skips
-        # them, breaking vite/rollup on Linux runners (npm/cli#4828). `npm install`
-        # re-resolves the host-platform optional at install time. Versions stay
-        # pinned by the lockfile for everything already recorded.
-        run: npm install --no-audit --no-fund
+        # The committed lockfile was generated on Windows and omits installable
+        # package records for Linux-only native optionals (@rollup/rollup-linux-x64-gnu,
+        # @esbuild/linux-x64), so both `npm ci` and `npm install` skip them on Linux
+        # runners and vite/rollup crash (npm/cli#4828). The documented fix is to drop
+        # the lockfile so npm fully re-resolves the host-platform optional. TODO:
+        # regenerate a cross-platform lockfile and restore `npm ci`.
+        run: |
+          rm -f package-lock.json
+          npm install --no-audit --no-fund
 
       - name: Typecheck
         run: npm run typecheck
@@ -62,14 +63,15 @@ jobs:
           cache: npm
 
       - name: Install dependencies
-        # `npm install` (not `npm ci`) on purpose: the committed lockfile was
-        # generated on Windows and omits the installable package record for
-        # Linux-only native optionals (e.g. @rollup/rollup-linux-x64-gnu,
-        # @esbuild/linux-x64). `npm ci` follows the lockfile strictly and skips
-        # them, breaking vite/rollup on Linux runners (npm/cli#4828). `npm install`
-        # re-resolves the host-platform optional at install time. Versions stay
-        # pinned by the lockfile for everything already recorded.
-        run: npm install --no-audit --no-fund
+        # The committed lockfile was generated on Windows and omits installable
+        # package records for Linux-only native optionals (@rollup/rollup-linux-x64-gnu,
+        # @esbuild/linux-x64), so both `npm ci` and `npm install` skip them on Linux
+        # runners and vite/rollup crash (npm/cli#4828). The documented fix is to drop
+        # the lockfile so npm fully re-resolves the host-platform optional. TODO:
+        # regenerate a cross-platform lockfile and restore `npm ci`.
+        run: |
+          rm -f package-lock.json
+          npm install --no-audit --no-fund
 
       - name: Install Playwright browser (chromium)
         run: npx playwright install --with-deps chromium
