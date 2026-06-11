@@ -360,20 +360,27 @@ function computeFoundationReadiness(
   });
   if (speechRuleOk || !relationshipHeavy) score += relationshipHeavy ? SUPPORT_WEIGHT : 0;
 
+  // Guard the real risk only: a high-risk secret written DIRECTLY into facts,
+  // bypassing the proposal queue (source !== accepted_proposal). An *accepted*
+  // high-risk proposal went through approval — the safe promotion path — so it
+  // must not penalise readiness. The old extra clause
+  // `secretProposals.every(p => p.status === "proposed")` made this check depend
+  // on activeStatuses, so the display readiness (proposed-only) and the lock
+  // readiness (proposed+accepted) diverged by 5 pts once a high-risk proposal was
+  // accepted — the UI said "siap dikunci" but lock 409'd. Reveal-to-reader
+  // protection is enforced downstream by the Reveal Gate / planned_reveals, not
+  // by blocking foundation lock.
   const highRiskSecretsInFacts = facts.some(
     (f) => f.category === "secret" && f.source !== "accepted_proposal",
   );
-  const secretProposals = activeProposals.filter(
-    (p) => p.proposal_type === "secret" || p.risk_level === "high",
-  );
-  const secretGuardOk = !highRiskSecretsInFacts && secretProposals.every((p) => p.status === "proposed");
+  const secretGuardOk = !highRiskSecretsInFacts;
   checks.push({
     key: "secret_guard",
-    label: "Rahasia high-risk tetap proposal",
+    label: "Rahasia high-risk tetap aman",
     status: secretGuardOk ? "pass" : "partial",
     reason: secretGuardOk
-      ? "Tidak ada rahasia high-risk langsung di facts."
-      : "Periksa rahasia — harus lewat accept proposal.",
+      ? "Tidak ada rahasia high-risk yang ditulis langsung ke facts."
+      : "Rahasia high-risk harus lewat proposal/accept, bukan ditulis langsung ke facts.",
   });
   if (secretGuardOk) score += SUPPORT_WEIGHT;
 
