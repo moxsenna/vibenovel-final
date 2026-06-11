@@ -71,7 +71,7 @@
 ### Task 12.6 — Perluas CI gate
 - [x] Edit `.github/workflows/ci.yml`: tambah step **Lint** (`npm run lint`) di job build + job baru **e2e-regression** (install chromium, start dev, run `auth-settings-regression`).
 - [x] CI gagal bila lint/regresi gagal (step non-zero → job merah).
-- [~] ✅ Verify: command penyusun sudah diverifikasi lokal (lint exit 0; e2e 3/3 PASS; build hijau). **Verify via push/PR run belum** (perlu push branch → cek Actions). Negatif-test (rusak 1 test → merah) dilakukan saat PR.
+- [x] ✅ Verify: **PR #1 CI HIJAU** — job `build` (typecheck+lint+build) PASS, job `e2e-regression` PASS. Sepanjang jalan menemukan & memperbaiki **CI yang sudah lama merah di `main`** (sejak ≥8 Jun): (1) npm/cli#4828 lockfile lintas-platform → `rm -f package-lock.json && npm install` di CI; (2) e2e butuh `build:shared` sebelum `vite dev`; (3) e2e butuh env Supabase dummy agar client init untuk test refresh-token; (4) warm-up route + `--retries=2`. TODO terpisah: regenerasi lockfile lintas-platform agar bisa kembali ke `npm ci`.
 
 ### Task 12.7 — Rerun seluruh E2E user-flow yang dilaporkan gagal
 - [ ] Rerun (API-mode bila perlu, pakai akun test + project seed 12.4):
