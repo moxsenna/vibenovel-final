@@ -57,7 +57,9 @@
 - [ ] (Opsional) Tambah assertion build/test yang gagal bila bundle prod mereferensikan `apps/web/src/mocks/*` — **ditunda** (nice-to-have; cukup ditegakkan saat 13.6b hapus mock).
 - [x] ✅ Verify: typecheck PASS; E2E `auth-settings-regression` 3/3 PASS (dev/test mock tetap jalan, prod terkunci). Bukti logika: Vite mengganti `import.meta.env.PROD`→`true` di `vite build` sehingga fungsi efektif `return false` lebih dulu.
 
-### Task 12.4 — Seed test project → `outline_locked`
+> ⚠️ **TEMUAN BARU (P0) — Concept generation 500 di produksi.** Dengan akun test, `POST /api/projects/:id/concepts/generate` **konsisten 500** (3x) untuk proyek baru. Penyebab: dengan AI ON (`AI_GENERATION_ENABLED=true`, `AI_PROVIDER_MOCK=false`) jalur masuk ke OpenRouter (`concept.ts:449`) dan gagal → refund kredit → rethrow 500. Proyek lama "Cerita Baru" ternyata `generator: deterministic_stub` → **jalur OpenRouter belum pernah sukses di prod**. Ini lapisan ke-2 di bawah laporan awal (auth sudah beres, tapi generasi tetap gagal). **Memblokir 12.4/12.7** (tak bisa capai `outline_locked`). Root cause pasti butuh log EC2 (akses ditolak tanpa approval) atau tes langsung key/model OpenRouter. → kandidat **hotfix / Sprint 13.1**.
+
+### Task 12.4 — Seed test project → `outline_locked`  ⛔ BLOCKED (concept-gen 500)
 - [ ] Buat skrip/seed yang membawa 1 project test sampai `workflow_phase=outline_locked` (foundation locked + outline locked).
 - [ ] Dokumentasikan cara pakai akun test untuk E2E write-room.
 - [ ] ✅ Verify: buka `/projects/<id>/write` → editor terbuka (bukan "Ruang Tulis belum tersedia").
