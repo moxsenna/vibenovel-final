@@ -73,6 +73,9 @@ jobs:
           rm -f package-lock.json
           npm install --no-audit --no-fund
 
+      - name: Build shared (vite dev needs @vibenovel/shared/dist)
+        run: npm run build:shared
+
       - name: Install Playwright browser (chromium)
         run: npx playwright install --with-deps chromium
         working-directory: apps/web
