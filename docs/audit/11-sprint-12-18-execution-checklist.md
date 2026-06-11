@@ -92,15 +92,16 @@
   - [~] **Mobile write room** — write session terbuka (API); render mobile UI belum dicek visual (butuh browser)
 - [x] ✅ Verify: semua flow inti **PASS** end-to-end di prod; sisa visual-mobile + outline-real → catatan Sprint 13.
 
-### Task 12.8 — Verification report
-- [ ] Tulis `docs/96-sprint-12-stabilization-report.md` (root cause auth, perbaikan, hasil E2E, sisa gap).
+### Task 12.8 — Verification report ✅
+- [x] Tulis [`docs/96-sprint-12-stabilization-report.md`](../96-sprint-12-stabilization-report.md) — scope, 12.1–12.7, 2 hotfix prod, hasil verifikasi, sisa gap, exit gate.
 
-**🚪 Exit Gate Sprint 12**
-- [ ] `typecheck` + `lint` hijau; CI hijau.
-- [ ] Happy-path authed prod: 0 `Invalid or expired access token`.
-- [ ] `auth-settings-regression` 3/3 PASS.
-- [ ] **Silent mock fallback mati di jalur authed (12.3b); mock terbukti tak bisa leak ke prod (12.3c)** — file mock belum dihapus (ditunda ke 13.6b).
-- [ ] Report `docs/96` ditulis. → **boleh lanjut Sprint 13**.
+**🚪 Exit Gate Sprint 12 — ✅ LULUS / CLOSED**
+- [x] `typecheck` + `lint` hijau; CI hijau (PR #1).
+- [x] Happy-path authed prod: 0 `Invalid or expired access token`.
+- [x] `auth-settings-regression` 3/3 PASS.
+- [x] **Silent mock fallback mati di jalur authed (12.3b); mock terbukti tak bisa leak ke prod (12.3c)** — file mock belum dihapus (ditunda ke 13.6b).
+- [x] Alur inti `intake → konsep → fondasi lock → outline lock → write → accept prose` verified live di prod (+2 hotfix #1/#2).
+- [x] Report `docs/96` ditulis. → **Sprint 12 CLOSED; boleh lanjut Sprint 13.**
 
 ---
 
@@ -353,7 +354,7 @@
 
 | Sprint | Status | Exit gate lulus? | Report |
 |---|---|---|---|
-| 12 Stabilization | ✅ inti tuntas — 12.1/12.2/12.3b/12.3c/12.4/12.5/12.6/12.7 done (+2 hotfix prod: concept-gen #1, foundation lock #2). Sisa: 12.8 report; mobile-write visual + outline-real → Sprint 13 | 🔧 (12.8 report) | docs/96 |
+| 12 Stabilization | ✅ **CLOSED** — 12.1–12.8 done (+2 hotfix prod: concept-gen #1, foundation lock #2). Sisa (mobile-write visual + outline/foundation real) → Sprint 13 | ✅ lulus | [docs/96](../96-sprint-12-stabilization-report.md) |
 | 13 Real Generation | ☐ | ☐ | docs/97 |
 | 14 Safety Hardening | ☐ | ☐ (GATE AI non-founder) | docs/98 |
 | 15 Draft Import | ☐ | ☐ | docs/99 |
