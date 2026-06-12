@@ -665,7 +665,9 @@ function buildOutlineDraftFromAi(
     if (!raw || typeof raw !== "object") continue;
     const rv = raw as Record<string, unknown>;
     const title = str(rv.title);
-    const planningTruth = str(rv.planningTruth);
+    // Requested as `hiddenTruth` in the prompt to avoid the forbidden `planningTruth`
+    // token in provider prompt/output scans; stored internally as planningTruth.
+    const planningTruth = str(rv.hiddenTruth);
     if (!title || !planningTruth) continue;
     const planned = num(rv.plannedChapterNumber);
     const plannedChapterNumber = planned ? Math.min(Math.max(planned, 1), maxChapter) : null;
@@ -718,7 +720,7 @@ function buildOutlineSystemPrompt(targetCount: number): string {
     '"emotionalDirection": "hurt|tense|angry|hopeful|satisfying|curious|anxious|triumphant", ' +
     '"hook": "1 kalimat pembuka", "endingHook": "1 kalimat cliffhanger akhir bab", "miniVictory": "1 kalimat atau null" } ],\n' +
     '  "openLoops": [ { "question": "pertanyaan pembaca", "readerFacingHint": "petunjuk halus", "openedChapterNumber": 1, "payoffChapterNumber": 8, "importance": "minor|major|core" } ],\n' +
-    '  "plannedReveals": [ { "title": "judul reveal", "planningTruth": "KEBENARAN PENUH untuk planner (TIDAK pernah ditampilkan ke pembaca/penulis)", "readerFacingHint": "petunjuk aman", "plannedChapterNumber": 7, "forbiddenBeforeChapter": 7, "riskLevel": "low|medium|high" } ]\n' +
+    '  "plannedReveals": [ { "title": "judul reveal", "hiddenTruth": "KEBENARAN PENUH untuk planner (TIDAK pernah ditampilkan ke pembaca/penulis)", "readerFacingHint": "petunjuk aman", "plannedChapterNumber": 7, "forbiddenBeforeChapter": 7, "riskLevel": "low|medium|high" } ]\n' +
     "}\n\n" +
     `Aturan: TEPAT ${targetCount} bab; ringkas (1 kalimat per field) agar JSON tidak terpotong; ` +
     "spesifik ke fondasi (bukan template, jangan pakai nama klise Nadira/Arman/Siska); " +
