@@ -112,12 +112,12 @@
 - [ ] Konfirmasi env AI: `AI_GENERATION_ENABLED=true`, `AI_PROVIDER_MOCK=false`, OpenRouter key ada (staging dulu).
 - [ ] Baca `services/foundation-proposal.ts`, `outline-generator.ts`, `concept.ts`, `model-router.ts`, `prose-generation-prompt.ts`.
 
-### Task 13.1 — Real foundation proposal generation (ganti `foundation_stub_batch`)
-- [ ] Identifikasi titik stub di `services/foundation-proposal.ts`.
-- [ ] Tambah jalur OpenRouter (lewat `model-router`) untuk menghasilkan fondasi dari sinyal intake/ide user.
-- [ ] Pastikan output **tetap** masuk `ai_proposals` (bukan canon langsung); debit kredit + refund bila gagal.
-- [ ] Fallback deterministik hanya saat AI nonaktif (jelas ditandai).
-- [ ] ✅ Verify: 2 ide berbeda → fondasi berbeda & spesifik; row `ai_proposals` terbuat; canon tidak berubah tanpa approval.
+### Task 13.1 — Real foundation proposal generation (ganti `foundation_stub_batch`) ✅ DEPLOYED+VERIFIED (PR #4)
+- [x] Jalur OpenRouter di `services/foundation-proposal.ts` (credit-gated 3 kredit, refund bila gagal); stub jadi fallback AI-off.
+- [x] Output → `ai_proposals` (bukan canon langsung); marker `foundation_ai_batch` dikenali dedup/list/regenerate.
+- [x] AI JSON → payload proposal yang sama persis dengan stub → promosi canon tak berubah.
+- [x] ✅ Verify live (ide "barista tuli thriller"): konsep + 13 proposal fondasi AI spesifik (protagonist "Aruna", bukan template); accept-all → **foundation LOCKED** (promosi Aruna + 6 fakta ke canon, tanpa char/fakta manual).
+- [~] Catatan: `GET /foundation/readiness` (proposed-only) **turun** setelah accept (tak kredit `accepted`) walau lock sukses → UX readiness perlu disamakan (follow-up Sprint 13).
 
 ### Task 13.2 — Real outline generation dari locked foundation (ganti `outline_stub_deterministic`)
 - [ ] Identifikasi stub di `services/outline-generator.ts`.
@@ -355,7 +355,7 @@
 | Sprint | Status | Exit gate lulus? | Report |
 |---|---|---|---|
 | 12 Stabilization | ✅ **CLOSED** — 12.1–12.8 done (+2 hotfix prod: concept-gen #1, foundation lock #2). Sisa (mobile-write visual + outline/foundation real) → Sprint 13 | ✅ lulus | [docs/96](../96-sprint-12-stabilization-report.md) |
-| 13 Real Generation | ☐ | ☐ | docs/97 |
+| 13 Real Generation | 🔧 13.1 ✅ DEPLOYED+VERIFIED (foundation AI, PR #4); 13.2 outline AI next; +readiness-UX follow-up | ☐ | docs/97 |
 | 14 Safety Hardening | ☐ | ☐ (GATE AI non-founder) | docs/98 |
 | 15 Draft Import | ☐ | ☐ | docs/99 |
 | 16 Creator Mode | ☐ | ☐ | docs/100 |
