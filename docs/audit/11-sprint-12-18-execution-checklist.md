@@ -119,11 +119,11 @@
 - [x] ✅ Verify live (ide "barista tuli thriller"): konsep + 13 proposal fondasi AI spesifik (protagonist "Aruna", bukan template); accept-all → **foundation LOCKED** (promosi Aruna + 6 fakta ke canon, tanpa char/fakta manual).
 - [~] Catatan: `GET /foundation/readiness` (proposed-only) **turun** setelah accept (tak kredit `accepted`) walau lock sukses → UX readiness perlu disamakan (follow-up Sprint 13).
 
-### Task 13.2 — Real outline generation dari locked foundation (ganti `outline_stub_deterministic`)
-- [ ] Identifikasi stub di `services/outline-generator.ts`.
-- [ ] Tambah jalur AI: input = fondasi terkunci + concept terpilih → 10 bab dengan hook/ending/miniVictory/chapterFunction/emotionalDirection.
-- [ ] Validasi jumlah bab & kelengkapan field; simpan ke `outline_plans`/`chapter_outlines`.
-- [ ] ✅ Verify: outline real dari foundation locked; tiap bab punya hook & ending bermakna (bukan placeholder).
+### Task 13.2 — Real outline generation dari locked foundation ✅ DEPLOYED+VERIFIED (PR #5)
+- [x] Jalur AI di `outline-generator.ts` (`generateOutlineDraftWithAi`, credit-gated 3 kredit, refund) menggantikan `outline_stub_deterministic`; stub jadi fallback AI-off + fallback bila AI balas < min bab.
+- [x] AI JSON → `OutlineGenerationDraft` dengan validasi enum ketat (chapterFunction/emotionalDirection/importance/riskLevel); markers diturunkan dari field; budget 4000 token + temp 0.4 + 502 bersih saat parse gagal.
+- [x] Safety: reveal diminta sbg `hiddenTruth` (bukan token terlarang `planningTruth`), disimpan internal sbg `planning_truth`. **Verify live:** API outline `planningTruthRedacted:true`, baris reveal **tanpa** field `planningTruth` → planner-only tak bocor.
+- [x] ✅ Verify live (foundation "barista tuli"): **10 bab spesifik** ("Bisikan di Balik Busa"…"Panggilan Terakhir", bukan template), enum valid, semua endingHook + 4 mini victory; 3 open loops; 2 reveals (`forbiddenBefore=8`). **Sekalian menutup Task 13.5 (reveal schedule planner-only).**
 
 ### Task 13.3 — Perbaiki billing alias concept generation
 - [ ] Di `services/concept.ts`, ganti alias `publish_copy` → generation type eksplisit untuk concept (tambah enum bila perlu di `packages/shared`).
@@ -355,7 +355,7 @@
 | Sprint | Status | Exit gate lulus? | Report |
 |---|---|---|---|
 | 12 Stabilization | ✅ **CLOSED** — 12.1–12.8 done (+2 hotfix prod: concept-gen #1, foundation lock #2). Sisa (mobile-write visual + outline/foundation real) → Sprint 13 | ✅ lulus | [docs/96](../96-sprint-12-stabilization-report.md) |
-| 13 Real Generation | 🔧 13.1 ✅ DEPLOYED+VERIFIED (foundation AI, PR #4); 13.2 outline AI next; +readiness-UX follow-up | ☐ | docs/97 |
+| 13 Real Generation | 🔧 13.1 ✅ + 13.2 ✅ + 13.5 ✅ DEPLOYED+VERIFIED (foundation+outline AI, PR #4/#5). Sisa: 13.3 concept billing alias, 13.4 specificity guard (sebagian via prompt), 13.6 smoke, readiness-UX follow-up, deploy-script health-check fix | ☐ | docs/97 |
 | 14 Safety Hardening | ☐ | ☐ (GATE AI non-founder) | docs/98 |
 | 15 Draft Import | ☐ | ☐ | docs/99 |
 | 16 Creator Mode | ☐ | ☐ | docs/100 |
