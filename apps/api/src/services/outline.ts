@@ -5,7 +5,7 @@ import {
   type OpenLoop,
   type OutlinePlan,
 } from "@vibenovel/shared";
-import type { AppBindings } from "../env.js";
+import { isAiGenerationEnabled, isAiProviderMock, type AppBindings } from "../env.js";
 import {
   mapChapterOutlineRow,
   mapOpenLoopRow,
@@ -25,6 +25,7 @@ import {
   GENERATOR_MARKER,
   OUTLINE_PLAN_STATUS_GENERATED,
   generateOutlineDraft,
+  generateOutlineDraftWithAi,
 } from "./outline-generator.js";
 import { loadOutlineCanonSnapshot } from "./outline-snapshot.js";
 import { getOwnedProjectRow } from "./project.js";
@@ -473,11 +474,20 @@ export async function generateOutlineForOwner(
     await deleteOutlineChildren(bindings, existingPlan.id);
   }
 
-  const draft = generateOutlineDraft(snapshot, {
-    targetChapterCount: input.targetChapterCount,
-    seasonLabel: input.seasonLabel,
-    arcSummary: input.arcSummary,
-  });
+  // Real AI when generation is enabled and not in provider-mock mode; the
+  // deterministic stub remains the honest AI-off/offline fallback.
+  const useAi = isAiGenerationEnabled(bindings) && !isAiProviderMock(bindings);
+  const draft = useAi
+    ? await generateOutlineDraftWithAi(bindings, ownerId, projectId, snapshot, {
+        targetChapterCount: input.targetChapterCount,
+        seasonLabel: input.seasonLabel,
+        arcSummary: input.arcSummary,
+      })
+    : generateOutlineDraft(snapshot, {
+        targetChapterCount: input.targetChapterCount,
+        seasonLabel: input.seasonLabel,
+        arcSummary: input.arcSummary,
+      });
 
   const planRow = await persistOutlineDraft(
     bindings,
