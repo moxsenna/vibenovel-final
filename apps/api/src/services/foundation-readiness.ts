@@ -441,8 +441,11 @@ export async function getFoundationReadinessForOwner(
     speechRules,
     relationshipHeavy,
     {
-      activeStatuses: new Set(["proposed"]),
-      acceptedCountsAsReady: false,
+      // Credit `accepted` proposals too (same as the lock readiness) so the
+      // displayed readiness does NOT drop after the user accepts proposals and
+      // `canLock` honestly predicts whether the lock will succeed.
+      activeStatuses: new Set(["proposed", "accepted"]),
+      acceptedCountsAsReady: true,
       persist: true,
     },
   );
