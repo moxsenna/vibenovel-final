@@ -3,11 +3,13 @@ import {
   CHAPTER_FUNCTIONS,
   CHAPTER_OUTLINE_STATUSES,
   FACT_IMPORTANCE,
+  GENERATION_TYPES,
   OPEN_LOOP_STATUSES,
   OUTLINE_PLAN_STATUSES,
   PLANNED_REVEAL_STATUSES,
   REVEAL_RISK_LEVELS,
   RETENTION_MARKER_TYPES,
+  WRITER_QUALITY_MODES,
   type ChapterEmotion,
   type ChapterFunction,
   type ChapterOutlineMarker,
@@ -16,6 +18,22 @@ import {
   type RevealRiskLevel,
 } from "@vibenovel/shared";
 import type { OutlineCanonSnapshot } from "./outline-snapshot.js";
+import type { AppBindings } from "../env.js";
+import { AppError } from "../errors.js";
+import { generateWithModelRouter } from "./model-router.js";
+import {
+  CREDIT_LEDGER_REASONS,
+  debitCreditsForAttempt,
+  refundCreditsForAttempt,
+} from "./credit-ledger.js";
+import {
+  createGenerationAttempt,
+  markGenerationAttemptFailed,
+  markGenerationAttemptRunning,
+  markGenerationAttemptSucceeded,
+} from "./generation-attempt.js";
+import { generateCorrelationId } from "./audit-snapshot.js";
+import { computePromptHashFromMessages } from "./prose-generation-prompt.js";
 
 export const GENERATOR_MARKER = "outline_stub_deterministic";
 
@@ -530,6 +548,335 @@ export function generateOutlineDraft(
     openLoops,
     plannedReveals,
   };
+}
+
+// --- Sprint 13.2: real AI outline generation ---
+
+const OUTLINE_AI_CREDIT_COST = 3;
+const CHAPTER_FUNCTION_SET = new Set<string>(Object.values(CHAPTER_FUNCTIONS));
+const CHAPTER_EMOTION_SET = new Set<string>(Object.values(CHAPTER_EMOTIONS));
+const FACT_IMPORTANCE_SET = new Set<string>(Object.values(FACT_IMPORTANCE));
+const REVEAL_RISK_SET = new Set<string>(Object.values(REVEAL_RISK_LEVELS));
+
+function str(value: unknown, fallback = ""): string {
+  return typeof value === "string" && value.trim() ? value.trim() : fallback;
+}
+
+function num(value: unknown): number | null {
+  return typeof value === "number" && Number.isFinite(value) ? Math.floor(value) : null;
+}
+
+function stripOutlineFences(text: string): string {
+  let t = text.trim();
+  if (t.startsWith("```json")) t = t.slice(7);
+  else if (t.startsWith("```")) t = t.slice(3);
+  if (t.endsWith("```")) t = t.slice(0, -3);
+  return t.trim();
+}
+
+/** Markers derived from chapter fields (keeps AI output small + enum-safe). */
+function deriveMarkers(ch: {
+  hook: string;
+  endingHook: string;
+  miniVictory: string | null;
+  chapterFunction: ChapterFunction;
+}): ChapterOutlineMarker[] {
+  const markers: ChapterOutlineMarker[] = [];
+  if (ch.hook) markers.push({ type: RETENTION_MARKER_TYPES.hook, label: "Hook" });
+  if (ch.miniVictory) markers.push({ type: RETENTION_MARKER_TYPES.mini_victory, label: "Mini Victory" });
+  if (ch.endingHook) markers.push({ type: RETENTION_MARKER_TYPES.cliffhanger, label: "Cliffhanger" });
+  if (ch.chapterFunction === CHAPTER_FUNCTIONS.reveal)
+    markers.push({ type: RETENTION_MARKER_TYPES.secret_hint, label: "Secret" });
+  if (markers.length === 0) markers.push({ type: RETENTION_MARKER_TYPES.hook, label: "Hook" });
+  return markers;
+}
+
+/** Maps AI JSON to OutlineGenerationDraft with strict enum validation. */
+function buildOutlineDraftFromAi(
+  parsed: Record<string, unknown>,
+  snapshot: OutlineCanonSnapshot,
+  targetCount: number,
+): OutlineGenerationDraft {
+  const rawChapters = Array.isArray(parsed.chapters) ? parsed.chapters : [];
+  const chapters: ChapterDraft[] = [];
+  for (let i = 0; i < Math.min(rawChapters.length, targetCount); i += 1) {
+    const raw = rawChapters[i];
+    if (!raw || typeof raw !== "object") continue;
+    const c = raw as Record<string, unknown>;
+    const chapterFunction = (CHAPTER_FUNCTION_SET.has(str(c.chapterFunction))
+      ? str(c.chapterFunction)
+      : CHAPTER_FUNCTIONS.setup) as ChapterFunction;
+    const emotionalDirection = (CHAPTER_EMOTION_SET.has(str(c.emotionalDirection))
+      ? str(c.emotionalDirection)
+      : CHAPTER_EMOTIONS.curious) as ChapterEmotion;
+    const miniVictoryRaw = str(c.miniVictory);
+    const miniVictory =
+      miniVictoryRaw && miniVictoryRaw.toLowerCase() !== "null" ? miniVictoryRaw : null;
+    const base = {
+      title: str(c.title, `Bab ${i + 1}`).slice(0, 200),
+      summary: str(c.summary).slice(0, 600),
+      purpose: str(c.purpose).slice(0, 400),
+      chapterFunction,
+      emotionalDirection,
+      hook: str(c.hook).slice(0, 400),
+      endingHook: str(c.endingHook).slice(0, 400),
+      miniVictory: miniVictory ? miniVictory.slice(0, 400) : null,
+    };
+    chapters.push({
+      chapterNumber: i + 1,
+      ...base,
+      markers: deriveMarkers(base),
+    });
+  }
+
+  // Fall back to deterministic chapters if AI returned too few (keeps a valid plan).
+  if (chapters.length < Math.min(2, targetCount)) {
+    return generateOutlineDraft(snapshot, { targetChapterCount: targetCount });
+  }
+  const maxChapter = chapters.length;
+
+  const rawLoops = Array.isArray(parsed.openLoops) ? parsed.openLoops.slice(0, MAX_OPEN_LOOP_COUNT) : [];
+  const openLoops: OpenLoopDraft[] = [];
+  for (const raw of rawLoops) {
+    if (!raw || typeof raw !== "object") continue;
+    const l = raw as Record<string, unknown>;
+    const question = str(l.question);
+    if (!question) continue;
+    const opened = Math.min(Math.max(num(l.openedChapterNumber) ?? 1, 1), maxChapter);
+    const payoffRaw = num(l.payoffChapterNumber);
+    const payoff = payoffRaw && payoffRaw > opened ? Math.min(payoffRaw, maxChapter) : null;
+    openLoops.push({
+      question: question.slice(0, 300),
+      readerFacingHint: str(l.readerFacingHint).slice(0, 300),
+      openedChapterNumber: opened,
+      payoffChapterNumber: payoff,
+      status: OPEN_LOOP_STATUSES.opened,
+      importance: (FACT_IMPORTANCE_SET.has(str(l.importance))
+        ? str(l.importance)
+        : FACT_IMPORTANCE.major) as FactImportance,
+    });
+  }
+
+  const rawReveals = Array.isArray(parsed.plannedReveals)
+    ? parsed.plannedReveals.slice(0, MAX_PLANNED_REVEAL_COUNT)
+    : [];
+  const plannedReveals: PlannedRevealDraft[] = [];
+  for (const raw of rawReveals) {
+    if (!raw || typeof raw !== "object") continue;
+    const rv = raw as Record<string, unknown>;
+    const title = str(rv.title);
+    const planningTruth = str(rv.planningTruth);
+    if (!title || !planningTruth) continue;
+    const planned = num(rv.plannedChapterNumber);
+    const plannedChapterNumber = planned ? Math.min(Math.max(planned, 1), maxChapter) : null;
+    const forbidden = num(rv.forbiddenBeforeChapter);
+    plannedReveals.push({
+      title: title.slice(0, 200),
+      // planner-only — stored in planned_reveals.planning_truth; never sent raw to writer.
+      planningTruth: planningTruth.slice(0, 600),
+      readerFacingHint: str(rv.readerFacingHint).slice(0, 300),
+      plannedChapterNumber,
+      forbiddenBeforeChapter: Math.min(
+        Math.max(forbidden ?? plannedChapterNumber ?? maxChapter, 1),
+        maxChapter,
+      ),
+      status: "planned",
+      riskLevel: (REVEAL_RISK_SET.has(str(rv.riskLevel))
+        ? str(rv.riskLevel)
+        : REVEAL_RISK_LEVELS.medium) as RevealRiskLevel,
+      relatedFactId: null,
+      relatedProposalId: null,
+    });
+  }
+
+  const seasonLabel = str(parsed.seasonLabel) || defaultSeasonLabel(maxChapter);
+  const arcSummary = str(parsed.arcSummary) || defaultArcSummary(snapshot);
+
+  return {
+    seasonLabel,
+    arcSummary,
+    retentionSummary: computeRetentionSummary(chapters, openLoops.length),
+    planningNotes: `Generated by ${GENERATOR_MARKER_AI} — planner-only, not prose. Source concept: ${snapshot.concept.title}.`,
+    chapters,
+    openLoops,
+    plannedReveals,
+  };
+}
+
+const GENERATOR_MARKER_AI = "outline_ai_generator";
+
+function buildOutlineSystemPrompt(targetCount: number): string {
+  return (
+    "Kamu adalah perancang outline serial fiksi mobile (KBM). Berdasarkan fondasi cerita terkunci, " +
+    `rancang outline ${targetCount} bab sebagai SATU object JSON valid:\n` +
+    "{\n" +
+    '  "seasonLabel": "label musim singkat",\n' +
+    '  "arcSummary": "1-2 kalimat arc keseluruhan",\n' +
+    `  "chapters": [ exactly ${targetCount} item, urut bab 1..${targetCount}, masing-masing: ` +
+    '{ "title": "judul bab", "summary": "1 kalimat", "purpose": "1 kalimat fungsi naratif", ' +
+    '"chapterFunction": "setup|conflict|escalation|emotional_turn|mini_victory|reveal|cliffhanger|payoff|transition", ' +
+    '"emotionalDirection": "hurt|tense|angry|hopeful|satisfying|curious|anxious|triumphant", ' +
+    '"hook": "1 kalimat pembuka", "endingHook": "1 kalimat cliffhanger akhir bab", "miniVictory": "1 kalimat atau null" } ],\n' +
+    '  "openLoops": [ { "question": "pertanyaan pembaca", "readerFacingHint": "petunjuk halus", "openedChapterNumber": 1, "payoffChapterNumber": 8, "importance": "minor|major|core" } ],\n' +
+    '  "plannedReveals": [ { "title": "judul reveal", "planningTruth": "KEBENARAN PENUH untuk planner (TIDAK pernah ditampilkan ke pembaca/penulis)", "readerFacingHint": "petunjuk aman", "plannedChapterNumber": 7, "forbiddenBeforeChapter": 7, "riskLevel": "low|medium|high" } ]\n' +
+    "}\n\n" +
+    `Aturan: TEPAT ${targetCount} bab; ringkas (1 kalimat per field) agar JSON tidak terpotong; ` +
+    "spesifik ke fondasi (bukan template, jangan pakai nama klise Nadira/Arman/Siska); " +
+    "buat tiap bab punya hook & endingHook kuat; sisipkan mini victory berkala; " +
+    "3-4 open loops dengan payoff terjadwal; 2-3 planned reveals dengan planningTruth penuh tapi readerFacingHint aman; " +
+    "JANGAN kembalikan teks selain JSON valid."
+  );
+}
+
+export async function generateOutlineDraftWithAi(
+  bindings: AppBindings,
+  ownerId: string,
+  projectId: string,
+  snapshot: OutlineCanonSnapshot,
+  options: { targetChapterCount: number; seasonLabel?: string; arcSummary?: string },
+): Promise<OutlineGenerationDraft> {
+  const f = snapshot.foundation;
+  const charLines = snapshot.characters
+    .slice(0, 12)
+    .map((c) => `- ${c.name} (${c.role}): ${c.description}`)
+    .join("\n");
+  const factLines = snapshot.facts
+    .slice(0, 20)
+    .map((fact) => `- ${fact.text}`)
+    .join("\n");
+  const foundationText = [
+    `Premis: ${f.premise}`,
+    `Konflik utama: ${f.main_conflict}`,
+    `Janji pembaca: ${f.reader_promise}`,
+    `Genre: ${f.genre ?? ""}`,
+    `Tone: ${f.tone ?? ""}`,
+    `Target pembaca: ${f.target_reader ?? ""}`,
+    `Konsep: ${snapshot.concept.title}`,
+  ].join("\n");
+
+  const promptMessages = [
+    { role: "system" as const, content: buildOutlineSystemPrompt(options.targetChapterCount) },
+    {
+      role: "user" as const,
+      content: `Fondasi terkunci:\n${foundationText}\n\nTokoh:\n${charLines || "(tidak ada)"}\n\nFakta canon:\n${factLines || "(tidak ada)"}`,
+    },
+  ];
+
+  const promptHash = await computePromptHashFromMessages(promptMessages);
+  const idempotencyKey = `outline-generation-${projectId}-${crypto.randomUUID()}`;
+  const correlationId = generateCorrelationId();
+
+  let attempt = await createGenerationAttempt(bindings, {
+    projectId,
+    userId: ownerId,
+    generationType: GENERATION_TYPES.publish_copy,
+    idempotencyKey,
+    creditCost: OUTLINE_AI_CREDIT_COST,
+    promptHash,
+    correlationId,
+    qualityMode: WRITER_QUALITY_MODES.hemat,
+    metadata: { actualGenerationType: "outline_generation", billingAlias: "publish_copy", task: "13.2" },
+  });
+
+  let debited = false;
+  try {
+    await debitCreditsForAttempt(bindings, {
+      userId: ownerId,
+      projectId,
+      attemptId: attempt.id,
+      amount: OUTLINE_AI_CREDIT_COST,
+      reason: CREDIT_LEDGER_REASONS.generationDebit,
+      generationType: GENERATION_TYPES.publish_copy,
+      idempotencyKey,
+      correlationId,
+    });
+    debited = true;
+  } catch (err) {
+    await markGenerationAttemptFailed(bindings, {
+      attemptId: attempt.id,
+      userId: ownerId,
+      projectId,
+      errorCode: err instanceof AppError ? err.code : "DEBIT_FAILED",
+      errorMessage: err instanceof Error ? err.message : "Credit debit failed",
+      correlationId,
+    });
+    throw err;
+  }
+
+  attempt = await markGenerationAttemptRunning(bindings, attempt.id);
+
+  try {
+    const routerResult = await generateWithModelRouter(bindings, {
+      generationType: GENERATION_TYPES.publish_copy,
+      qualityMode: WRITER_QUALITY_MODES.hemat,
+      promptHash,
+      promptMessages,
+      maxOutputTokensOverride: 4000,
+      temperature: 0.4,
+    });
+
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(stripOutlineFences(routerResult.text));
+    } catch {
+      throw new AppError("GENERATION_FAILED", "AI mengembalikan format outline yang tidak valid. Coba lagi.", 502);
+    }
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+      throw new AppError("GENERATION_FAILED", "AI tidak mengembalikan outline yang valid. Coba lagi.", 502);
+    }
+
+    const draft = buildOutlineDraftFromAi(
+      parsed as Record<string, unknown>,
+      snapshot,
+      options.targetChapterCount,
+    );
+    const finalDraft: OutlineGenerationDraft = {
+      ...draft,
+      seasonLabel: options.seasonLabel?.trim() || draft.seasonLabel,
+      arcSummary: options.arcSummary?.trim() || draft.arcSummary,
+    };
+
+    await markGenerationAttemptSucceeded(bindings, {
+      attemptId: attempt.id,
+      userId: ownerId,
+      projectId,
+      provider: routerResult.provider,
+      model: routerResult.model,
+      inputTokens: routerResult.inputTokens,
+      outputTokens: routerResult.outputTokens,
+      outputEntityId: "00000000-0000-0000-0000-000000000000",
+      outputEntityType: "outline_plan",
+      correlationId,
+    });
+
+    return finalDraft;
+  } catch (err) {
+    if (debited) {
+      try {
+        await refundCreditsForAttempt(bindings, {
+          userId: ownerId,
+          projectId,
+          attemptId: attempt.id,
+          amount: OUTLINE_AI_CREDIT_COST,
+          reason: CREDIT_LEDGER_REASONS.generationRefund,
+          generationType: GENERATION_TYPES.publish_copy,
+          idempotencyKey,
+          correlationId,
+        });
+      } catch (refundErr) {
+        console.error("credit refund failed:", refundErr);
+      }
+    }
+    await markGenerationAttemptFailed(bindings, {
+      attemptId: attempt.id,
+      userId: ownerId,
+      projectId,
+      errorCode: err instanceof AppError ? err.code : "AI_FAILED",
+      errorMessage: err instanceof Error ? err.message : "AI outline generation failed",
+      correlationId,
+    });
+    throw err;
+  }
 }
 
 export const OUTLINE_PLAN_STATUS_GENERATED = OUTLINE_PLAN_STATUSES.generated;
