@@ -476,6 +476,8 @@ Belum ada (sengaja — defer setelah hardening / Sprint 8):
 
 Payment ([`docs/73`](docs/73-duitku-production-payment-enable-plan.md) §7) remains **blocked**.
 
+**Sprint 12 — Production Story-Flow Stabilization ✅ CLOSED** ([`docs/96`](docs/96-sprint-12-stabilization-report.md)): auth/session prod alignment verified live (login → `/api/me` 200); mock boundary locked for prod builds (`env.ts` PROD guard); ESLint + CI gate (lint + e2e regression, CI back to green); full pipeline `intake → 3 AI concepts → foundation lock → outline lock → write room → accept AI prose` verified **end-to-end in production**. Two P0 prod bugs found & hotfixed live: **concept-gen 500** (800-token cap truncated the 3-concept JSON) and **foundation readiness/lock inconsistency** (`secret_guard` penalised accepted proposals). **Deferred to Sprint 13:** real foundation/outline generators (still deterministic stub), mobile write-room visual check, AI per-user cost cap.
+
 **Node API local:** `npm run dev:api:node` · **Docker:** `docker compose -f docker-compose.staging.yml up --build`
 
 **Payment provider decision (10.14):** **Duitku POP, BCA VA-first** for MVP. Mayar secondary/backlog. See [`docs/72`](docs/72-payment-provider-decision-report.md).
