@@ -355,7 +355,7 @@
 | Sprint | Status | Exit gate lulus? | Report |
 |---|---|---|---|
 | 12 Stabilization | ✅ **CLOSED** — 12.1–12.8 done (+2 hotfix prod: concept-gen #1, foundation lock #2). Sisa (mobile-write visual + outline/foundation real) → Sprint 13 | ✅ lulus | [docs/96](../96-sprint-12-stabilization-report.md) |
-| 13 Real Generation | 🔧 13.1 ✅ + 13.2 ✅ + 13.5 ✅ DEPLOYED+VERIFIED (foundation+outline AI, PR #4/#5). Sisa: 13.3 concept billing alias, 13.4 specificity guard (sebagian via prompt), 13.6 smoke, readiness-UX follow-up, deploy-script health-check fix | ☐ | docs/97 |
+| 13 Real Generation | 🔧 ✅ 13.1 foundation AI, 13.2 outline AI, 13.5 reveals, readiness-UX (no drop after accept), deploy-script health-check — semua DEPLOYED+VERIFIED (PR #4/#5 + main). Verified 3 ide berbeda (barista tuli, mercusuar, dll) konsisten spesifik. Sisa minor: 13.3 concept billing alias (cosmetic), 13.4 post-check specificity (sudah via prompt), 13.6 smoke specs, 13.7 report (docs/97) | ☐ | docs/97 |
 | 14 Safety Hardening | ☐ | ☐ (GATE AI non-founder) | docs/98 |
 | 15 Draft Import | ☐ | ☐ | docs/99 |
 | 16 Creator Mode | ☐ | ☐ | docs/100 |
