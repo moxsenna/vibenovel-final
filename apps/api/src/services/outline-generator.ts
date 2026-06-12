@@ -725,7 +725,7 @@ function buildOutlineSystemPrompt(targetCount: number): string {
     `Aturan: TEPAT ${targetCount} bab; ringkas (1 kalimat per field) agar JSON tidak terpotong; ` +
     "spesifik ke fondasi (bukan template, jangan pakai nama klise Nadira/Arman/Siska); " +
     "buat tiap bab punya hook & endingHook kuat; sisipkan mini victory berkala; " +
-    "3-4 open loops dengan payoff terjadwal; 2-3 planned reveals dengan planningTruth penuh tapi readerFacingHint aman; " +
+    "3-4 open loops dengan payoff terjadwal; 2-3 planned reveals dengan hiddenTruth penuh tapi readerFacingHint aman; " +
     "JANGAN kembalikan teks selain JSON valid."
   );
 }
