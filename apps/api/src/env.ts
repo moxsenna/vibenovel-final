@@ -62,6 +62,8 @@ export interface EnvPresenceFlags {
   hasOpenRouterApiKey: boolean;
   creditTopupEnabled: boolean;
   paymentProviderMock: boolean;
+  appEnv: string;
+  paymentProvider: string;
 }
 
 const DEFAULT_APP_ENV = "development";
@@ -325,6 +327,8 @@ export function getEnvPresenceFlags(bindings: AppBindings): EnvPresenceFlags {
     hasOpenRouterApiKey: hasOpenRouterApiKey(bindings),
     creditTopupEnabled: isCreditTopupEnabled(bindings),
     paymentProviderMock: isPaymentProviderMock(bindings),
+    appEnv: getAppEnv(bindings),
+    paymentProvider: getPaymentProvider(bindings),
   };
 }
 

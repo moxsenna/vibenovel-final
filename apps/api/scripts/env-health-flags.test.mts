@@ -29,12 +29,18 @@ const expectedKeys = [
   "hasOpenRouterApiKey",
   "creditTopupEnabled",
   "paymentProviderMock",
+  "appEnv",
+  "paymentProvider",
 ].sort();
 
 assert.deepEqual(Object.keys(flags).sort(), expectedKeys);
 
 for (const [key, value] of Object.entries(flags)) {
-  assert.equal(typeof value, "boolean", `${key} must be a boolean`);
+  if (key === "appEnv" || key === "paymentProvider") {
+    assert.equal(typeof value, "string", `${key} must be a string`);
+  } else {
+    assert.equal(typeof value, "boolean", `${key} must be a boolean`);
+  }
 }
 
 assert.equal(flags.hasSupabaseUrl, true);
@@ -45,5 +51,7 @@ assert.equal(flags.aiProviderMock, false);
 assert.equal(flags.hasOpenRouterApiKey, true);
 assert.equal(flags.creditTopupEnabled, false);
 assert.equal(flags.paymentProviderMock, true);
+assert.equal(flags.appEnv, "development");
+assert.equal(flags.paymentProvider, "duitku");
 
-console.log("PASS env health flags are safe booleans only");
+console.log("PASS env health flags expose safe deployment fields");
