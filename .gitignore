@@ -52,3 +52,6 @@ npm-debug.log*
 # Editor (optional — uncomment if team prefers)
 # .vscode/
 # .idea/
+
+# Graphify output
+graphify-out/
