@@ -44,6 +44,12 @@ export const WRITER_QUALITY_MODES = {
 } as const;
 export type WriterQualityMode = (typeof WRITER_QUALITY_MODES)[keyof typeof WRITER_QUALITY_MODES];
 
+export const CREATOR_MODES = {
+  simple: "simple",
+  advanced: "advanced",
+} as const;
+export type CreatorMode = (typeof CREATOR_MODES)[keyof typeof CREATOR_MODES];
+
 export const DEFAULT_LANGUAGES = {
   id: "id",
   en: "en",

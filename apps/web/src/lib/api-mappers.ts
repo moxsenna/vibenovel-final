@@ -13,6 +13,7 @@ import type {
   Project,
   StoryConcept as ApiStoryConcept,
   StoryFoundation,
+  CreatorMode,
   WriterQualityMode,
 } from "@vibenovel/shared";
 import type { PlannedRevealPublic } from "@/services/outline";
@@ -206,6 +207,7 @@ export interface ApiSettingsInput {
   qualityMode: WriterQualityMode;
   defaultOutputStyle: string;
   defaultFormat: string;
+  creatorMode?: CreatorMode;
   defaultLanguage?: string | null;
 }
 
@@ -223,6 +225,7 @@ export function mergeSettingsWithApi(
     creditsRemaining: creditBalance?.balance ?? base.creditsRemaining,
     monthlyUsage: mapCreditToMonthlyUsage(creditBalance),
     modelTiers: buildModelTiers(apiSettings.qualityMode),
+    creatorMode: apiSettings.creatorMode ?? "simple",
     writerPreferences: {
       defaultLanguage:
         apiSettings.defaultLanguage != null

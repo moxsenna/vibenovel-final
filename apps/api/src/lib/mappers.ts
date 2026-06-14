@@ -141,6 +141,7 @@ export interface ProjectSettingsRow {
   output_style_preference: string;
   default_format: string;
   target_length_band: string | null;
+  creator_mode: string;
   created_at: string;
   updated_at: string;
 }
@@ -162,6 +163,7 @@ export function mapProjectSettingsRow(row: ProjectSettingsRow): ProjectSettings 
       OUTPUT_STYLE_LABELS[row.output_style_preference] ?? row.output_style_preference,
     defaultFormat: row.default_format as ProjectSettings["defaultFormat"],
     targetLengthBand: row.target_length_band as ProjectSettings["targetLengthBand"],
+    creatorMode: row.creator_mode as ProjectSettings["creatorMode"],
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -173,6 +175,7 @@ export interface ProjectSettingsResponse extends ProjectSettings {
   outputStylePreference: string;
   mobileFormatPreference: ProjectSettings["defaultFormat"];
   targetLengthPlan: ProjectSettings["targetLengthBand"];
+  creatorMode: ProjectSettings["creatorMode"];
 }
 
 export function mapProjectSettingsResponse(row: ProjectSettingsRow): ProjectSettingsResponse {
@@ -1304,4 +1307,3 @@ export function mapPaymentWebhookEventRow(row: PaymentWebhookEventRow): PaymentW
     createdAt: row.created_at,
   };
 }
-

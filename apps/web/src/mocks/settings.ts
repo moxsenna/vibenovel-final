@@ -39,6 +39,7 @@ export const mockSettings: UserSettings = {
       isSelected: false,
     },
   ],
+  creatorMode: "simple",
   writerPreferences: {
     defaultLanguage: "Indonesia",
     defaultOutputStyle: "Narasi hangat & emosional",

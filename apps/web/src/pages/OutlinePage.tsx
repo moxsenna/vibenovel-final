@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { IntegrationNotice } from "@/components/common/IntegrationNotice";
 import {
+  OutlineAdvancedControls,
   OutlineChapterCard,
   OutlineChapterEditor,
   OutlineLoadMoreButton,
@@ -34,6 +35,9 @@ export function OutlinePage() {
     hasApiOutline,
     needsGenerate,
     isLocked,
+    creatorMode,
+    advancedControls,
+    updateAdvancedControl,
     getChapterDraft,
     updateChapterDraft,
     generateOutlinePlan,
@@ -87,6 +91,14 @@ export function OutlinePage() {
         onApprove={approveOutlinePlan}
         onLock={lockOutlinePlan}
       />
+
+      {creatorMode === "advanced" ? (
+        <OutlineAdvancedControls
+          values={advancedControls}
+          disabled={generating || isLocked}
+          onChange={updateAdvancedControl}
+        />
+      ) : null}
 
       <OutlineProgressCard
         progress={outline.progress}

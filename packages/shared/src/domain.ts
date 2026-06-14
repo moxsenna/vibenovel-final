@@ -26,6 +26,7 @@ import type {
   CreditLedgerDirection,
   CreditTopupOrderStatus,
   CreditTopupProductSlug,
+  CreatorMode,
   PaymentProvider,
   PaymentWebhookProcessingStatus,
   GenerationStatus,
@@ -105,6 +106,8 @@ export interface ProjectSettings extends Timestamps {
   defaultFormat: MobileFormatPreference;
   /** Placeholder for Sprint 4 length planner. */
   targetLengthBand: TargetLengthPlan | null;
+  /** Sprint 16 creator mode; simple remains the default writer experience. */
+  creatorMode: CreatorMode;
 }
 
 // --- Story foundation ---

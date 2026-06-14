@@ -1,4 +1,5 @@
 export type ModelTier = "hemat" | "seimbang" | "terbaik";
+export type CreatorMode = "simple" | "advanced";
 
 export interface ModelTierOption {
   id: ModelTier;
@@ -7,6 +8,12 @@ export interface ModelTierOption {
   badgeLabel: string;
   badgeVariant: "neutral" | "primary" | "success";
   isSelected: boolean;
+}
+
+export interface CreatorModeOption {
+  id: CreatorMode;
+  label: string;
+  description: string;
 }
 
 export interface MonthlyUsage {
@@ -53,6 +60,7 @@ export interface UserSettings {
   creditsRemaining: number;
   monthlyUsage: MonthlyUsage;
   modelTiers: ModelTierOption[];
+  creatorMode: CreatorMode;
   writerPreferences: WriterPreferences;
   pageCopy: SettingsPageCopy;
 }

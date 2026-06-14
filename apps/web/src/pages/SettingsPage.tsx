@@ -1,4 +1,5 @@
 import {
+  CreatorModeSection,
   SettingsAccountSection,
   SettingsActionSection,
   SettingsCreditCard,
@@ -26,6 +27,8 @@ export function SettingsPage() {
     settings,
     selectedTier,
     setSelectedTier,
+    selectedCreatorMode,
+    setSelectedCreatorMode,
     notice,
     saveMessage,
     loading,
@@ -82,6 +85,11 @@ export function SettingsPage() {
         />
 
         <div className="flex flex-col gap-6">
+          <CreatorModeSection
+            selectedMode={selectedCreatorMode}
+            onSelectMode={setSelectedCreatorMode}
+          />
+
           <SettingsAccountSection
             title={pageCopy.accountSectionTitle}
             displayNameLabel={pageCopy.displayNameLabel}

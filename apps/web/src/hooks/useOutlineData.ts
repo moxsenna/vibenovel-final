@@ -15,9 +15,9 @@ import { allowMockFallback, shouldUseMocks } from "@/lib/env";
 import { apiErrorMessage } from "@/lib/hook-fallback";
 import { DEMO_MODE_LABEL } from "@/lib/workflow-truth";
 import { resolveProjectIdForRoute } from "@/lib/project-context";
-import type { OutlineChapterDraft } from "@/components/outline";
+import type { OutlineAdvancedControlValues, OutlineChapterDraft } from "@/components/outline";
 import { mockOutline } from "@/mocks/outline";
-import type { ChapterOutline } from "@vibenovel/shared";
+import type { ChapterOutline, CreatorMode } from "@vibenovel/shared";
 import {
   approveOutline,
   fetchOutlineBundle,
@@ -25,9 +25,17 @@ import {
   lockOutline,
   patchChapterOutline,
 } from "@/services/outline";
+import { fetchProjectSettings } from "@/services/settings";
 import type { StoryOutline } from "@/types";
 
 export type OutlineDataSource = "mock" | "api" | "error";
+
+const DEFAULT_ADVANCED_CONTROLS: OutlineAdvancedControlValues = {
+  chapterCount: 10,
+  revealDensity: "sedang",
+  retentionIntensity: "seimbang",
+  proseStyleTarget: "hangat emosional",
+};
 
 function chapterNumberMap(chapters: ChapterOutline[]): Map<string, number> {
   return new Map(chapters.map((ch) => [ch.id, ch.chapterNumber]));
@@ -60,6 +68,12 @@ export interface OutlineData {
   isLocked: boolean;
   projectId: string | null;
   apiChapters: ChapterOutline[];
+  creatorMode: CreatorMode;
+  advancedControls: OutlineAdvancedControlValues;
+  updateAdvancedControl: <K extends keyof OutlineAdvancedControlValues>(
+    key: K,
+    value: OutlineAdvancedControlValues[K],
+  ) => void;
   getChapterDraft: (chapterId: string) => OutlineChapterDraft | null;
   updateChapterDraft: (chapterId: string, field: keyof OutlineChapterDraft, value: string) => void;
   generateOutlinePlan: () => Promise<void>;
@@ -98,6 +112,9 @@ export function useOutlineData(): OutlineData {
   const [workflowNotice, setWorkflowNotice] = useState<string | null>(null);
   const [projectId, setProjectId] = useState<string | null>(null);
   const [drafts, setDrafts] = useState<Record<string, OutlineChapterDraft>>({});
+  const [creatorMode, setCreatorMode] = useState<CreatorMode>("simple");
+  const [advancedControls, setAdvancedControls] =
+    useState<OutlineAdvancedControlValues>(DEFAULT_ADVANCED_CONTROLS);
 
   const applyBundle = useCallback(
     (resolvedId: string, bundle: Awaited<ReturnType<typeof fetchOutlineBundle>>) => {
@@ -141,8 +158,12 @@ export function useOutlineData(): OutlineData {
       }
 
       setProjectId(resolvedId);
-      const bundle = await fetchOutlineBundle(resolvedId, token);
+      const [bundle, settings] = await Promise.all([
+        fetchOutlineBundle(resolvedId, token),
+        fetchProjectSettings(resolvedId, token),
+      ]);
       applyBundle(resolvedId, bundle);
+      setCreatorMode(settings.creatorMode ?? "simple");
       setSource("api");
     } catch (error) {
       if (allowMockFallback()) {
@@ -162,6 +183,7 @@ export function useOutlineData(): OutlineData {
       setApiChapters([]);
       setOpenLoops([]);
       setReveals([]);
+      setCreatorMode("simple");
     } finally {
       setLoading(false);
     }
@@ -176,6 +198,7 @@ export function useOutlineData(): OutlineData {
       setOpenLoops([]);
       setReveals([]);
       setSource("mock");
+      setCreatorMode("simple");
       setNotice(useMocks ? DEMO_MODE_LABEL : "Masuk ke akun untuk membaca outline dari API.");
       return;
     }
@@ -189,7 +212,11 @@ export function useOutlineData(): OutlineData {
     setGenerating(true);
     setWorkflowNotice(null);
     try {
-      const result = await generateOutline(projectId, token, {});
+      const body =
+        creatorMode === "advanced"
+          ? { targetChapterCount: advancedControls.chapterCount }
+          : {};
+      const result = await generateOutline(projectId, token, body);
       applyBundle(projectId, result);
       setSource("api");
       setNotice(null);
@@ -203,7 +230,17 @@ export function useOutlineData(): OutlineData {
     } finally {
       setGenerating(false);
     }
-  }, [apiMode, applyBundle, projectId, token]);
+  }, [advancedControls.chapterCount, apiMode, applyBundle, creatorMode, projectId, token]);
+
+  const updateAdvancedControl = useCallback(
+    <K extends keyof OutlineAdvancedControlValues>(
+      key: K,
+      value: OutlineAdvancedControlValues[K],
+    ) => {
+      setAdvancedControls((prev) => ({ ...prev, [key]: value }));
+    },
+    [],
+  );
 
   const approveOutlinePlan = useCallback(async () => {
     if (!apiMode || !token || !projectId) return;
@@ -365,6 +402,9 @@ export function useOutlineData(): OutlineData {
       isLocked,
       projectId,
       apiChapters,
+      creatorMode,
+      advancedControls,
+      updateAdvancedControl,
       getChapterDraft,
       updateChapterDraft,
       generateOutlinePlan,
@@ -391,6 +431,9 @@ export function useOutlineData(): OutlineData {
       isLocked,
       projectId,
       apiChapters,
+      creatorMode,
+      advancedControls,
+      updateAdvancedControl,
       getChapterDraft,
       updateChapterDraft,
       generateOutlinePlan,

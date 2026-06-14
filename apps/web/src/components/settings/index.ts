@@ -1,6 +1,7 @@
 export { SettingsAccountSection } from "./SettingsAccountSection";
 export { SettingsActionSection } from "./SettingsActionSection";
 export { SettingsCreditCard } from "./SettingsCreditCard";
+export { CreatorModeSection } from "./CreatorModeSection";
 export { SettingsPageHeader } from "./SettingsPageHeader";
 export { SettingsQualityModeSection } from "./SettingsQualityModeSection";
 export { SettingsSprintNote } from "./SettingsSprintNote";
