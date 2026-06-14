@@ -4,6 +4,7 @@ import { LandingPage } from "@/pages/LandingPage";
 import { StartProjectPage } from "@/pages/StartProjectPage";
 import { DashboardPage } from "@/pages/DashboardPage";
 import { IntakePage } from "@/pages/IntakePage";
+import { DraftImportPage } from "@/pages/DraftImportPage";
 import { ConceptsPage } from "@/pages/ConceptsPage";
 import { FoundationPage } from "@/pages/FoundationPage";
 import { OutlinePage } from "@/pages/OutlinePage";
@@ -24,6 +25,7 @@ export const router = createBrowserRouter([
       { path: "/start", element: <StartProjectPage /> },
       { path: "/dashboard", element: <DashboardPage /> },
       { path: "/projects/:id/intake", element: <IntakePage /> },
+      { path: "/projects/:id/import-draft", element: <DraftImportPage /> },
       { path: "/projects/:id/concepts", element: <ConceptsPage /> },
       { path: "/projects/:id/foundation", element: <FoundationPage /> },
       { path: "/projects/:id/outline", element: <OutlinePage /> },

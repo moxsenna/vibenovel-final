@@ -18,6 +18,7 @@ import { registerWriteRoutes } from "./write.js";
 import { registerSummaryRoutes } from "./summary.js";
 import { registerPublishRoutes } from "./publish.js";
 import { registerAiRoutes } from "./ai.js";
+import { registerDraftImportRoutes } from "./draft-import.js";
 
 export function registerRoutes(app: Hono<AppEnv>): void {
   registerHealthRoutes(app);
@@ -38,4 +39,5 @@ export function registerRoutes(app: Hono<AppEnv>): void {
   registerSummaryRoutes(app);
   registerPublishRoutes(app);
   registerAiRoutes(app);
+  registerDraftImportRoutes(app);
 }

@@ -9,6 +9,7 @@ export const ROUTES = {
   creditTopupMockReturn: "/credits/topup/mock-return",
   project: {
     intake: (id: string) => `/projects/${id}/intake`,
+    importDraft: (id: string) => `/projects/${id}/import-draft`,
     concepts: (id: string) => `/projects/${id}/concepts`,
     foundation: (id: string) => `/projects/${id}/foundation`,
     outline: (id: string) => `/projects/${id}/outline`,
@@ -23,6 +24,7 @@ export const PLACEHOLDER_ROUTES = [
   { path: ROUTES.start, label: "Mulai Proyek Baru", stitch: "mulai_proyek_baru_polished" },
   { path: ROUTES.dashboard, label: "Dashboard Penulis", stitch: "dashboard_penulis_refined" },
   { path: ROUTES.project.intake(":id"), label: "Chat Story Agent Intake", stitch: "beri_tahu_ide_ceritamu_refined" },
+  { path: ROUTES.project.importDraft(":id"), label: "Import Draft", stitch: "draft_import_continuation" },
   { path: ROUTES.project.concepts(":id"), label: "Pilihan Konsep Cerita", stitch: "pilihan_konsep_cerita_refined" },
   { path: ROUTES.project.foundation(":id"), label: "Fondasi Cerita", stitch: "fondasi_cerita_refined" },
   { path: ROUTES.project.outline(":id"), label: "Outline Cerita", stitch: "outline_cerita_natural_terms" },

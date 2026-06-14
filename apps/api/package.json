@@ -16,6 +16,7 @@
     "test:planning-output-specificity": "tsx scripts/planning-output-specificity.test.mts",
     "test:write-room-contracts": "tsx scripts/write-room-contracts.test.mts",
     "test:sprint14-safety": "tsx scripts/sprint14-safety-contracts.test.mts",
+    "test:draft-import": "tsx scripts/draft-import-contracts.test.mts",
     "test:health-env-flags": "tsx scripts/env-health-flags.test.mts",
     "test:duitku-signature": "tsx scripts/duitku-callback-signature.test.mts",
     "test:atomic-grant": "tsx scripts/atomic-grant-rpc.test.mts",
