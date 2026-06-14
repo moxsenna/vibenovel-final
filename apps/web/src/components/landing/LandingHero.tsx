@@ -39,7 +39,7 @@ export function LandingHero() {
 
       <div className="flex w-full flex-col items-center justify-center gap-4 sm:w-auto sm:flex-row">
         <Link
-          to={ROUTES.start}
+          to={`${ROUTES.login}?mode=signup`}
           className="group flex w-full items-center justify-center gap-2 rounded-xl bg-primary-container px-8 py-4 font-label-md text-label-md text-on-primary shadow-[0_8px_24px_rgba(159,79,104,0.2)] transition-all hover:bg-primary-dark sm:w-auto min-h-[44px]"
         >
           <span>Mulai Tulis Cerita</span>

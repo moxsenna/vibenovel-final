@@ -15,13 +15,13 @@ export function LandingHeader() {
       </Link>
       <div className="flex items-center gap-4">
         <Link
-          to={ROUTES.dashboard}
+          to={ROUTES.login}
           className="hidden font-label-md text-label-md text-on-surface-variant transition-colors hover:text-primary md:block"
         >
           Masuk
         </Link>
         <Link
-          to={ROUTES.start}
+          to={`${ROUTES.login}?mode=signup`}
           className="font-label-md text-label-md rounded-lg bg-primary-container px-4 py-2 text-on-primary transition-colors hover:bg-primary-dark"
         >
           Daftar

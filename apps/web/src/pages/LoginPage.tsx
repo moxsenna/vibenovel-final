@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { Button, Card } from "@/components/ui";
 import { useAuth } from "@/context/AuthContext";
 import { shouldUseMocks } from "@/lib/env";
@@ -11,7 +11,17 @@ type AuthMode = "signin" | "signup";
 export function LoginPage() {
   const { session, loading, signIn, signUp, isConfigured } = useAuth();
   const navigate = useNavigate();
-  const [mode, setMode] = useState<AuthMode>("signin");
+  const [searchParams] = useSearchParams();
+  const paramMode = searchParams.get("mode");
+  const [mode, setMode] = useState<AuthMode>(
+    paramMode === "signup" ? "signup" : "signin"
+  );
+
+  useEffect(() => {
+    if (paramMode === "signup" || paramMode === "signin") {
+      setMode(paramMode);
+    }
+  }, [paramMode]);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
