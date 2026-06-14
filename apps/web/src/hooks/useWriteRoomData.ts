@@ -102,6 +102,90 @@ function pickDefaultChapter(chapters: ChapterOutline[]): ChapterOutline | null {
   return chapters.find((ch) => ch.chapterNumber === 1) ?? chapters[0] ?? null;
 }
 
+function missingGateList(details: unknown): string[] {
+  if (!details || typeof details !== "object" || Array.isArray(details)) {
+    return [];
+  }
+  const missing = (details as { missing?: unknown }).missing;
+  if (!Array.isArray(missing)) return [];
+  return missing.filter((item): item is string => typeof item === "string");
+}
+
+function writeRoomGateCopy(missing: string[]): { title: string; description: string } | null {
+  const set = new Set(missing);
+
+  if (set.has("foundation_locked")) {
+    return {
+      title: "Fondasi belum dikunci",
+      description:
+        "Kunci fondasi cerita terlebih dahulu agar ruang tulis memakai premis, konflik, dan janji pembaca yang stabil.",
+    };
+  }
+
+  if (
+    set.has("outline_locked") ||
+    set.has("outline_plan_locked") ||
+    set.has("outline_plan")
+  ) {
+    return {
+      title: "Outline belum dikunci",
+      description:
+        "Kunci outline di halaman Outline sebelum membuka ruang tulis dan membuat sesi menulis.",
+    };
+  }
+
+  if (
+    set.has("chapter_outline") ||
+    set.has("chapter_outline_required") ||
+    set.has("chapter_outlines")
+  ) {
+    return {
+      title: "Belum ada bab di outline",
+      description: "Buat rencana bab di halaman Outline sebelum membuka ruang tulis.",
+    };
+  }
+
+  return null;
+}
+
+function writeRoomErrorCopy(error: ApiClientError): { title: string; description: string } {
+  const gateCopy = writeRoomGateCopy(missingGateList(error.details));
+  if (gateCopy) return gateCopy;
+
+  if (error.code === "INSUFFICIENT_CREDIT" || error.status === 402) {
+    return {
+      title: "Kredit tidak cukup",
+      description:
+        "Saldo kredit belum cukup untuk aksi AI di ruang tulis. Top up kredit atau gunakan mode hemat.",
+    };
+  }
+
+  if (error.code === "AI_DISABLED" || error.code === "AI_NOT_CONFIGURED") {
+    return {
+      title: "AI belum aktif",
+      description:
+        "Generator AI belum aktif di lingkungan ini. Ruang tulis tetap aman, tetapi generasi prose belum bisa dipakai.",
+    };
+  }
+
+  if (
+    error.code === "AI_PROVIDER_ERROR" ||
+    error.code === "AI_PROVIDER_TIMEOUT" ||
+    error.code === "AI_PROVIDER_RATE_LIMITED"
+  ) {
+    return {
+      title: "AI provider tidak tersedia",
+      description:
+        "Layanan AI sedang tidak tersedia. Coba lagi setelah provider pulih; kredit dikembalikan jika sudah terpotong.",
+    };
+  }
+
+  return {
+    title: "Ruang tulis tidak bisa dimuat",
+    description: `API tidak tersedia (${error.message}). Coba muat ulang.`,
+  };
+}
+
 export interface UseWriteRoomDataResult {
   draft: ChapterDraft;
   source: WriteDataSource;
@@ -369,20 +453,31 @@ export function useWriteRoomData(): UseWriteRoomDataResult {
 
       const bundle = await fetchOutlineBundle(resolvedId, token);
       if (!isOutlineLocked(bundle)) {
+        const copy = writeRoomGateCopy(
+          bundle.outlinePlan ? ["outline_plan_locked"] : ["outline_plan"],
+        ) ?? {
+          title: "Outline belum dikunci",
+          description:
+            "Kunci outline di halaman Outline sebelum membuka ruang tulis dan membuat sesi menulis.",
+        };
         applyBlocked(
           "locked",
-          "Ruang Tulis belum tersedia",
-          "Outline real belum dibuat atau belum dikunci. Selesaikan fondasi dan kunci outline terlebih dahulu.",
+          copy.title,
+          copy.description,
         );
         return;
       }
 
       const chapter = pickDefaultChapter(bundle.chapterOutlines);
       if (!chapter) {
+        const copy = writeRoomGateCopy(["chapter_outline"]) ?? {
+          title: "Belum ada bab di outline",
+          description: "Buat rencana bab di halaman Outline sebelum membuka ruang tulis.",
+        };
         applyBlocked(
           "locked",
-          "Belum ada bab di outline",
-          "Buat rencana bab di halaman Outline sebelum membuka ruang tulis.",
+          copy.title,
+          copy.description,
         );
         return;
       }
@@ -439,12 +534,20 @@ export function useWriteRoomData(): UseWriteRoomDataResult {
             : "API tidak tersedia. Menampilkan demo Sprint 1.",
         );
       } else {
-        applyBlocked(
-          "error",
-          "Ruang tulis tidak bisa dimuat",
+        const missing =
+          error instanceof ApiClientError ? missingGateList(error.details) : [];
+        const gateCopy = writeRoomGateCopy(missing);
+        const copy =
           error instanceof ApiClientError
-            ? `API tidak tersedia (${error.message}). Coba muat ulang.`
-            : "API tidak tersedia. Coba muat ulang.",
+            ? writeRoomErrorCopy(error)
+            : {
+                title: "Ruang tulis tidak bisa dimuat",
+                description: "API tidak tersedia. Coba muat ulang.",
+              };
+        applyBlocked(
+          gateCopy ? "locked" : "error",
+          copy.title,
+          copy.description,
         );
       }
     } finally {

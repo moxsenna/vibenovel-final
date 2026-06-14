@@ -21,6 +21,7 @@ import type { OutlineCanonSnapshot } from "./outline-snapshot.js";
 import type { AppBindings } from "../env.js";
 import { AppError } from "../errors.js";
 import { generateWithModelRouter } from "./model-router.js";
+import { getCreditCostForGeneration } from "./ai-credit-policy.js";
 import {
   CREDIT_LEDGER_REASONS,
   debitCreditsForAttempt,
@@ -34,6 +35,7 @@ import {
 } from "./generation-attempt.js";
 import { generateCorrelationId } from "./audit-snapshot.js";
 import { computePromptHashFromMessages } from "./prose-generation-prompt.js";
+import { assertPlanningOutputSpecificToProject } from "./planning-output-specificity.js";
 
 export const GENERATOR_MARKER = "outline_stub_deterministic";
 
@@ -552,7 +554,6 @@ export function generateOutlineDraft(
 
 // --- Sprint 13.2: real AI outline generation ---
 
-const OUTLINE_AI_CREDIT_COST = 3;
 const CHAPTER_FUNCTION_SET = new Set<string>(Object.values(CHAPTER_FUNCTIONS));
 const CHAPTER_EMOTION_SET = new Set<string>(Object.values(CHAPTER_EMOTIONS));
 const FACT_IMPORTANCE_SET = new Set<string>(Object.values(FACT_IMPORTANCE));
@@ -767,32 +768,33 @@ export async function generateOutlineDraftWithAi(
   const promptHash = await computePromptHashFromMessages(promptMessages);
   const idempotencyKey = `outline-generation-${projectId}-${crypto.randomUUID()}`;
   const correlationId = generateCorrelationId();
+  const generationType = GENERATION_TYPES.outline_generation;
+  const qualityMode = WRITER_QUALITY_MODES.hemat;
+  const creditCost = getCreditCostForGeneration({ generationType, qualityMode });
 
   let attempt = await createGenerationAttempt(bindings, {
     projectId,
     userId: ownerId,
-    generationType: GENERATION_TYPES.publish_copy,
+    generationType,
     idempotencyKey,
-    creditCost: OUTLINE_AI_CREDIT_COST,
+    creditCost,
     promptHash,
     correlationId,
-    qualityMode: WRITER_QUALITY_MODES.hemat,
-    metadata: { actualGenerationType: "outline_generation", billingAlias: "publish_copy", task: "13.2" },
+    qualityMode,
+    metadata: { task: "13.2" },
   });
 
-  let debited = false;
   try {
     await debitCreditsForAttempt(bindings, {
       userId: ownerId,
       projectId,
       attemptId: attempt.id,
-      amount: OUTLINE_AI_CREDIT_COST,
+      amount: creditCost,
       reason: CREDIT_LEDGER_REASONS.generationDebit,
-      generationType: GENERATION_TYPES.publish_copy,
+      generationType,
       idempotencyKey,
       correlationId,
     });
-    debited = true;
   } catch (err) {
     await markGenerationAttemptFailed(bindings, {
       attemptId: attempt.id,
@@ -809,11 +811,10 @@ export async function generateOutlineDraftWithAi(
 
   try {
     const routerResult = await generateWithModelRouter(bindings, {
-      generationType: GENERATION_TYPES.publish_copy,
-      qualityMode: WRITER_QUALITY_MODES.hemat,
+      generationType,
+      qualityMode,
       promptHash,
       promptMessages,
-      maxOutputTokensOverride: 4000,
       temperature: 0.4,
     });
 
@@ -826,6 +827,7 @@ export async function generateOutlineDraftWithAi(
     if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
       throw new AppError("GENERATION_FAILED", "AI tidak mengembalikan outline yang valid. Coba lagi.", 502);
     }
+    assertPlanningOutputSpecificToProject(parsed, "outline");
 
     const draft = buildOutlineDraftFromAi(
       parsed as Record<string, unknown>,
@@ -853,21 +855,19 @@ export async function generateOutlineDraftWithAi(
 
     return finalDraft;
   } catch (err) {
-    if (debited) {
-      try {
-        await refundCreditsForAttempt(bindings, {
-          userId: ownerId,
-          projectId,
-          attemptId: attempt.id,
-          amount: OUTLINE_AI_CREDIT_COST,
-          reason: CREDIT_LEDGER_REASONS.generationRefund,
-          generationType: GENERATION_TYPES.publish_copy,
-          idempotencyKey,
-          correlationId,
-        });
-      } catch (refundErr) {
-        console.error("credit refund failed:", refundErr);
-      }
+    try {
+      await refundCreditsForAttempt(bindings, {
+        userId: ownerId,
+        projectId,
+        attemptId: attempt.id,
+        amount: creditCost,
+        reason: CREDIT_LEDGER_REASONS.generationRefund,
+        generationType,
+        idempotencyKey,
+        correlationId,
+      });
+    } catch (refundErr) {
+      console.error("credit refund failed:", refundErr);
     }
     await markGenerationAttemptFailed(bindings, {
       attemptId: attempt.id,

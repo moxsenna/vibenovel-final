@@ -212,7 +212,8 @@ export function mapAiGenerationErrorCode(code: string): string {
       return "Kredit tidak cukup.";
     case "AI_PROVIDER_ERROR":
     case "AI_PROVIDER_TIMEOUT":
-      return "AI sedang bermasalah. Kredit dikembalikan jika sudah terpotong.";
+    case "AI_PROVIDER_RATE_LIMITED":
+      return "AI provider sedang tidak tersedia. Kredit dikembalikan jika sudah terpotong.";
     case "AI_OUTPUT_UNSAFE":
       return "Output AI ditolak oleh pemeriksaan keamanan.";
     case "GENERATION_IN_PROGRESS":

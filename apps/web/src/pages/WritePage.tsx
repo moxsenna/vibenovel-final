@@ -194,9 +194,22 @@ export function WritePage() {
         activeBeatId={activeBeatId}
         onSelectBeat={(id) => void onSelectBeat(id)}
         {...editorProps}
+        aiError={aiError}
+        aiNotice={aiNotice}
+        aiUnavailableReason={aiUnavailableReason}
+        creditActionCostLabel={creditActionCostLabel}
+        creditRewriteCostLabel={creditRewriteCostLabel}
+        qualityModeLabel={qualityModeLabel}
+        creditLoading={creditLoading}
+        creditError={creditError}
+        remainingAfterGenerate={remainingAfterGenerate}
+        remainingAfterRewrite={remainingAfterRewrite}
         insufficientCreditRewrite={insufficientCreditRewrite}
         onRewriteProse={onRewriteProse ? () => void onRewriteProse() : undefined}
         rewriteGenerating={rewriteGenerating}
+        rewriteNotice={rewriteNotice}
+        rewriteError={rewriteError}
+        rewriteUnavailableReason={rewriteUnavailableReason}
         rewriteModeLabel={formatProseRewriteModeLabel(rewriteMode)}
         hasProseForRewrite={hasProseForRewrite}
       />

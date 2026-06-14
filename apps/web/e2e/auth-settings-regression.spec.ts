@@ -45,6 +45,74 @@ test.describe("auth and settings regressions", () => {
 
     await expect(page).toHaveURL(/\/login$/);
     await expect(page.getByText("Halo, Penulis!")).toHaveCount(0);
+    await expect(page.getByRole("link", { name: "Lanjut ke dashboard" })).toHaveCount(0);
+  });
+
+  test("logs out, clears dashboard content, and keeps dashboard blocked", async ({ page }) => {
+    await forceApiMode(page);
+    await injectSession(page, "logout-access-token");
+
+    await page.route("**/api/credits/balance", async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          ok: true,
+          data: {
+            creditBalance: {
+              id: "credit-logout-regression",
+              userId: sessionUser.id,
+              balance: 4993,
+              monthlyQuota: 1000,
+              monthlyUsed: 0,
+              resetAt: null,
+              source: "test",
+              updatedAt: new Date().toISOString(),
+            },
+          },
+        }),
+      });
+    });
+
+    await page.route("**/api/projects*", async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          ok: true,
+          data: [
+            {
+              id: "project-logout-regression",
+              title: "Logout Regression Project",
+              entryPath: "no_idea",
+              workflowPhase: "outline_locked",
+              status: "in_progress",
+              currentChapter: 1,
+              genre: "Drama",
+              isActive: true,
+              lastEditedAt: new Date().toISOString(),
+              createdAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString(),
+            },
+          ],
+        }),
+      });
+    });
+
+    await page.goto("/dashboard");
+    await expect(page.getByRole("heading", { name: "Halo, Penulis!" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Logout Regression Project" })).toBeVisible();
+
+    await page.getByRole("button", { name: "Keluar dari akun" }).click();
+
+    await expect(page).toHaveURL(/\/login$/);
+    await expect(page.getByText("Halo, Penulis!")).toHaveCount(0);
+    await expect(page.getByText("Logout Regression Project")).toHaveCount(0);
+    await expect(page.getByRole("link", { name: "Lanjut ke dashboard" })).toHaveCount(0);
+
+    await page.goto("/dashboard");
+    await expect(page).toHaveURL(/\/login$/);
+    await expect(page.getByText("Halo, Penulis!")).toHaveCount(0);
   });
 
   test("refreshes a stale access token and retries the failed API request once", async ({ page }) => {

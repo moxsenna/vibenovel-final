@@ -24,6 +24,7 @@ import { createServiceRoleClient } from "../lib/supabase.js";
 import { AppError } from "../errors.js";
 import { getOwnedProjectRow } from "./project.js";
 import { generateWithModelRouter } from "./model-router.js";
+import { getCreditCostForGeneration } from "./ai-credit-policy.js";
 import {
   CREDIT_LEDGER_REASONS,
   debitCreditsForAttempt,
@@ -38,6 +39,7 @@ import {
 import { generateCorrelationId } from "./audit-snapshot.js";
 import { computePromptHashFromMessages } from "./prose-generation-prompt.js";
 import { listIntakeMessagesForOwner } from "./intake.js";
+import { assertPlanningOutputSpecificToProject } from "./planning-output-specificity.js";
 
 const PROPOSAL_SELECT =
   "id, project_id, proposal_type, status, risk_level, source, title, payload, review_note, reviewed_at, reviewed_by, merged_into_id, result_fact_id, result_character_id, created_at, updated_at";
@@ -64,7 +66,6 @@ const GENERATOR_MARKER = "foundation_stub_batch";
 const GENERATOR_MARKER_AI = "foundation_ai_batch";
 /** Both stub and AI batches belong to the foundation flow (dedup/list/regenerate). */
 const FOUNDATION_GENERATOR_MARKERS = new Set<string>([GENERATOR_MARKER, GENERATOR_MARKER_AI]);
-const FOUNDATION_AI_CREDIT_COST = 3;
 
 interface ProposalDraft {
   proposalType: AiProposalType;
@@ -631,36 +632,35 @@ async function generateFoundationDraftsWithAi(
   const promptHash = await computePromptHashFromMessages(promptMessages);
   const idempotencyKey = `foundation-generation-${projectId}-${crypto.randomUUID()}`;
   const correlationId = generateCorrelationId();
+  const generationType = GENERATION_TYPES.foundation_proposal;
+  const qualityMode = WRITER_QUALITY_MODES.hemat;
+  const creditCost = getCreditCostForGeneration({ generationType, qualityMode });
 
   let attempt = await createGenerationAttempt(bindings, {
     projectId,
     userId: ownerId,
-    generationType: GENERATION_TYPES.publish_copy,
+    generationType,
     idempotencyKey,
-    creditCost: FOUNDATION_AI_CREDIT_COST,
+    creditCost,
     promptHash,
     correlationId,
-    qualityMode: WRITER_QUALITY_MODES.hemat,
+    qualityMode,
     metadata: {
-      actualGenerationType: "foundation_proposal",
-      billingAlias: "publish_copy",
       task: "13.1",
     },
   });
 
-  let debited = false;
   try {
     await debitCreditsForAttempt(bindings, {
       userId: ownerId,
       projectId,
       attemptId: attempt.id,
-      amount: FOUNDATION_AI_CREDIT_COST,
+      amount: creditCost,
       reason: CREDIT_LEDGER_REASONS.generationDebit,
-      generationType: GENERATION_TYPES.publish_copy,
+      generationType,
       idempotencyKey,
       correlationId,
     });
-    debited = true;
   } catch (err) {
     await markGenerationAttemptFailed(bindings, {
       attemptId: attempt.id,
@@ -677,11 +677,10 @@ async function generateFoundationDraftsWithAi(
 
   try {
     const routerResult = await generateWithModelRouter(bindings, {
-      generationType: GENERATION_TYPES.publish_copy,
-      qualityMode: WRITER_QUALITY_MODES.hemat,
+      generationType,
+      qualityMode,
       promptHash,
       promptMessages,
-      maxOutputTokensOverride: 3000,
       temperature: 0.4,
     });
 
@@ -698,6 +697,7 @@ async function generateFoundationDraftsWithAi(
     if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
       throw new AppError("GENERATION_FAILED", "AI tidak mengembalikan fondasi yang valid. Coba lagi.", 502);
     }
+    assertPlanningOutputSpecificToProject(parsed, "fondasi");
 
     const drafts = buildProposalDraftsFromAi(
       parsed as Record<string, unknown>,
@@ -720,21 +720,19 @@ async function generateFoundationDraftsWithAi(
 
     return drafts;
   } catch (err) {
-    if (debited) {
-      try {
-        await refundCreditsForAttempt(bindings, {
-          userId: ownerId,
-          projectId,
-          attemptId: attempt.id,
-          amount: FOUNDATION_AI_CREDIT_COST,
-          reason: CREDIT_LEDGER_REASONS.generationRefund,
-          generationType: GENERATION_TYPES.publish_copy,
-          idempotencyKey,
-          correlationId,
-        });
-      } catch (refundErr) {
-        console.error("credit refund failed:", refundErr);
-      }
+    try {
+      await refundCreditsForAttempt(bindings, {
+        userId: ownerId,
+        projectId,
+        attemptId: attempt.id,
+        amount: creditCost,
+        reason: CREDIT_LEDGER_REASONS.generationRefund,
+        generationType,
+        idempotencyKey,
+        correlationId,
+      });
+    } catch (refundErr) {
+      console.error("credit refund failed:", refundErr);
     }
     await markGenerationAttemptFailed(bindings, {
       attemptId: attempt.id,

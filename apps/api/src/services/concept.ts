@@ -25,6 +25,7 @@ import { createServiceRoleClient } from "../lib/supabase.js";
 import { AppError } from "../errors.js";
 import { getOwnedProjectRow } from "./project.js";
 import { generateWithModelRouter } from "./model-router.js";
+import { getCreditCostForGeneration } from "./ai-credit-policy.js";
 import {
   debitCreditsForAttempt,
   refundCreditsForAttempt,
@@ -39,6 +40,7 @@ import {
 import { generateCorrelationId } from "./audit-snapshot.js";
 import { computePromptHashFromMessages } from "./prose-generation-prompt.js";
 import { listIntakeMessagesForOwner } from "./intake.js";
+import { assertPlanningOutputSpecificToProject } from "./planning-output-specificity.js";
 
 const CONCEPT_SELECT =
   "id, project_id, title, short_pitch, reader_promise, core_conflict, genre, tone, target_reader, status, source, score, payload, created_at, updated_at";
@@ -441,7 +443,7 @@ export async function generateConceptsForOwner(
 
   const batchId = crypto.randomUUID();
   const ctx = await loadGenerationContext(bindings, projectRow, basedOnSignals);
-  let concepts: StoryConcept[] = [];
+  let concepts: StoryConcept[];
 
   const useMock = isAiProviderMock(bindings);
   const aiEnabled = isAiGenerationEnabled(bindings);
@@ -492,36 +494,35 @@ export async function generateConceptsForOwner(
     const promptHash = await computePromptHashFromMessages(promptMessages);
     const idempotencyKey = `concept-generation-${projectId}-${crypto.randomUUID()}`;
     const correlationId = generateCorrelationId();
+    const generationType = GENERATION_TYPES.concept_generation;
+    const qualityMode = WRITER_QUALITY_MODES.hemat;
+    const creditCost = getCreditCostForGeneration({ generationType, qualityMode });
 
     let attempt = await createGenerationAttempt(bindings, {
       projectId,
       userId: ownerId,
-      generationType: GENERATION_TYPES.publish_copy,
+      generationType,
       idempotencyKey,
-      creditCost: 3,
+      creditCost,
       promptHash,
       correlationId,
-      qualityMode: WRITER_QUALITY_MODES.hemat,
+      qualityMode,
       metadata: {
-        actualGenerationType: "concept_generation",
-        billingAlias: "publish_copy",
         task: "10.31a",
       },
     });
 
-    let debited = false;
     try {
       await debitCreditsForAttempt(bindings, {
         userId: ownerId,
         projectId,
         attemptId: attempt.id,
-        amount: 3,
+        amount: creditCost,
         reason: CREDIT_LEDGER_REASONS.generationDebit,
-        generationType: GENERATION_TYPES.publish_copy,
+        generationType,
         idempotencyKey,
         correlationId,
       });
-      debited = true;
     } catch (err) {
       await markGenerationAttemptFailed(bindings, {
         attemptId: attempt.id,
@@ -538,14 +539,10 @@ export async function generateConceptsForOwner(
 
     try {
       const routerResult = await generateWithModelRouter(bindings, {
-        generationType: GENERATION_TYPES.publish_copy,
-        qualityMode: WRITER_QUALITY_MODES.hemat,
+        generationType,
+        qualityMode,
         promptHash,
         promptMessages,
-        // Concept gen returns a 3-object JSON array (with nested payload) that
-        // overflows the publish_copy alias cap (800) and gets truncated → invalid
-        // JSON. Give it real headroom + lower temperature for reliable structure.
-        maxOutputTokensOverride: 3000,
         temperature: 0.4,
       });
 
@@ -577,6 +574,7 @@ export async function generateConceptsForOwner(
           502,
         );
       }
+      assertPlanningOutputSpecificToProject(parsed, "konsep");
 
       const drafts: ConceptDraft[] = parsed.map((item) => ({
         title: String(item.title || "Untitled Concept").trim(),
@@ -607,23 +605,21 @@ export async function generateConceptsForOwner(
         outputEntityId: concepts[0]?.id || "00000000-0000-0000-0000-000000000000",
         outputEntityType: "story_concept",
         correlationId,
-      });
-    } catch (err) {
-      if (debited) {
-        try {
-          await refundCreditsForAttempt(bindings, {
-            userId: ownerId,
-            projectId,
-            attemptId: attempt.id,
-            amount: 3,
-            reason: CREDIT_LEDGER_REASONS.generationRefund,
-            generationType: GENERATION_TYPES.publish_copy,
-            idempotencyKey,
-            correlationId,
-          });
-        } catch (refundErr) {
-          console.error("credit refund failed:", refundErr);
-        }
+    });
+  } catch (err) {
+      try {
+        await refundCreditsForAttempt(bindings, {
+          userId: ownerId,
+          projectId,
+          attemptId: attempt.id,
+          amount: creditCost,
+          reason: CREDIT_LEDGER_REASONS.generationRefund,
+          generationType,
+          idempotencyKey,
+          correlationId,
+        });
+      } catch (refundErr) {
+        console.error("credit refund failed:", refundErr);
       }
 
       await markGenerationAttemptFailed(bindings, {

@@ -56,6 +56,7 @@
     "smoke:api:sprint10:dual-app": "powershell -ExecutionPolicy Bypass -File scripts/sprint10-dual-app-smoke.ps1",
     "smoke:api:sprint10:mayar-live": "powershell -ExecutionPolicy Bypass -File scripts/sprint10-mayar-live-smoke.ps1",
     "smoke:api:sprint10:duitku": "powershell -ExecutionPolicy Bypass -File scripts/sprint10-duitku-smoke-api.ps1",
+    "smoke:api:sprint14": "powershell -ExecutionPolicy Bypass -File scripts/sprint14-safety-smoke-api.ps1",
     "smoke:web:topup": "powershell -ExecutionPolicy Bypass -File scripts/sprint10-smoke-web.ps1",
     "smoke:web:sprint10": "powershell -ExecutionPolicy Bypass -File scripts/sprint10-smoke-web.ps1",
     "smoke:web": "powershell -ExecutionPolicy Bypass -File scripts/sprint3-smoke-web.ps1",

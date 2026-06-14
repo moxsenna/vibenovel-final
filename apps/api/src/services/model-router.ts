@@ -58,11 +58,20 @@ const QUALITY_MAX_OUTPUT_TOKENS: Record<WriterQualityMode, number> = {
 };
 
 const GENERATION_TYPE_TOKEN_CAP: Record<GenerationType, number> = {
+  [GENERATION_TYPES.concept_generation]: 3000,
+  [GENERATION_TYPES.foundation_proposal]: 3000,
+  [GENERATION_TYPES.outline_generation]: 4000,
   [GENERATION_TYPES.prose_beat]: 2000,
   [GENERATION_TYPES.prose_rewrite]: 2000,
   [GENERATION_TYPES.publish_copy]: 800,
   [GENERATION_TYPES.summary_delta]: 1500,
 };
+
+const PLANNING_GENERATION_TYPES = new Set<GenerationType>([
+  GENERATION_TYPES.concept_generation,
+  GENERATION_TYPES.foundation_proposal,
+  GENERATION_TYPES.outline_generation,
+]);
 
 /** Hard upper bound for any server-side maxOutputTokensOverride. */
 const MAX_OUTPUT_TOKENS_CEILING = 4000;
@@ -120,7 +129,9 @@ export function resolveModelForGeneration(
   const model = pickAllowlistedModel(bindings, input.qualityMode);
   const qualityCap = QUALITY_MAX_OUTPUT_TOKENS[input.qualityMode];
   const typeCap = GENERATION_TYPE_TOKEN_CAP[input.generationType];
-  const maxOutputTokens = Math.min(qualityCap, typeCap);
+  const maxOutputTokens = PLANNING_GENERATION_TYPES.has(input.generationType)
+    ? typeCap
+    : Math.min(qualityCap, typeCap);
 
   const useMock = isAiProviderMock(bindings);
 

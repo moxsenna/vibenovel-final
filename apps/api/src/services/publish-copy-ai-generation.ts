@@ -22,6 +22,7 @@ import {
   refundCreditsForAttempt,
 } from "./credit-ledger.js";
 import { getCreditCostForGeneration } from "./ai-credit-policy.js";
+import { assertAiGenerationAllowedForOwner } from "./ai-rate-limit.js";
 import { calculateEstimatedCostUsd } from "./model-cost-map.js";
 import { generateWithModelRouter } from "./model-router.js";
 import { getOwnedProjectRow } from "./project.js";
@@ -46,6 +47,11 @@ import {
   type GenerationAttemptCostEstimateMetadata,
   type GenerationAttemptSafeSummary,
 } from "./generation-attempt.js";
+import {
+  assertAiOutputUsable,
+  persistValidationReportBestEffort,
+  validateAiOutput,
+} from "./output-validator.js";
 
 const PACKAGE_SELECT =
   "id, project_id, chapter_outline_id, chapter_summary_id, chapter_number, chapter_title, status, package_version, is_current, display_title, teaser, short_synopsis, caption, reader_question, next_chapter_teaser, tags, genre, mobile_preview_excerpt, checklist_json, safety_flags, generator_version, exported_at, metadata, created_at, updated_at";
@@ -504,6 +510,13 @@ export async function improvePublishCopyForOwner(
     qualityMode: body.qualityMode,
   });
 
+  await assertAiGenerationAllowedForOwner(bindings, {
+    userId: ownerId,
+    projectId,
+    generationType: GENERATION_TYPES.publish_copy,
+    requestedCreditCost: creditCost,
+  });
+
   const correlationId = generateCorrelationId();
   let attempt = await createGenerationAttempt(bindings, {
     projectId,
@@ -585,6 +598,16 @@ export async function improvePublishCopyForOwner(
   let suggestions: PublishCopySuggestions;
   try {
     suggestions = parsePublishCopyModelOutput(providerResult.text, body.fields);
+    const validationReport = validateAiOutput({
+      outputText: Object.values(suggestions).filter(Boolean).join("\n"),
+    });
+    await persistValidationReportBestEffort(bindings, {
+      projectId,
+      userId: ownerId,
+      generationAttemptId: attempt.id,
+      report: validationReport,
+    });
+    assertAiOutputUsable(validationReport);
   } catch (err) {
     if (debited) {
       await handleProviderFailure(bindings, {

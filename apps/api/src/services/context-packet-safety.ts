@@ -3,6 +3,40 @@ import { AppError } from "../errors.js";
 
 export const PACKET_MAX_BYTES = 64 * 1024;
 
+const FORBIDDEN_CONCEPT_STOPWORDS = new Set([
+  "ada",
+  "agar",
+  "akan",
+  "atau",
+  "awal",
+  "bab",
+  "baru",
+  "belum",
+  "bukan",
+  "dan",
+  "dari",
+  "dengan",
+  "dia",
+  "ini",
+  "itu",
+  "jadi",
+  "karena",
+  "lagi",
+  "lebih",
+  "melihat",
+  "nama",
+  "pada",
+  "penuh",
+  "saja",
+  "sebagai",
+  "sebelum",
+  "sedang",
+  "setelah",
+  "tidak",
+  "untuk",
+  "yang",
+]);
+
 const FORBIDDEN_KEY_PATTERNS = [
   /planningTruth/i,
   /planning_truth/i,
@@ -59,7 +93,7 @@ export function extractForbiddenConcepts(title: string, hint: string | null): st
   const tokens = raw
     .split(/[\s,;:.!?()[\]{}'"–—-]+/)
     .map((t) => t.trim())
-    .filter((t) => t.length >= 3);
+    .filter((t) => t.length >= 3 && !FORBIDDEN_CONCEPT_STOPWORDS.has(t));
   return [...new Set(tokens)].slice(0, 12);
 }
 

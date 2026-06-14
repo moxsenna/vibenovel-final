@@ -74,6 +74,10 @@ function Resolve-SupabaseAnonKey {
 
 function Resolve-ServiceRoleKey {
   if ($script:ServiceRoleKey) { return $script:ServiceRoleKey }
+  if (-not [string]::IsNullOrWhiteSpace($env:SUPABASE_SERVICE_ROLE_KEY)) {
+    $script:ServiceRoleKey = $env:SUPABASE_SERVICE_ROLE_KEY.Trim()
+    return $script:ServiceRoleKey
+  }
   Push-Location $RepoRoot
   try {
     foreach ($line in (& supabase status -o env 2>$null)) {
@@ -503,8 +507,29 @@ try {
   $token = $signup.access_token
   Add-StepResult "signup/login" $(if ($token) { "PASS" } else { "FAIL" }) "email=$TestEmail"
 } catch {
-  Add-StepResult "signup/login" "FAIL" $_.Exception.Message
-  exit 1
+  $signupError = $_.Exception.Message
+  try {
+    $signin = Invoke-RestMethod -Uri "$SupabaseUrl/auth/v1/token?grant_type=password" -Method POST `
+      -Headers @{ apikey = $anonKey; Authorization = "Bearer $anonKey" } -ContentType "application/json" `
+      -Body (@{ email = $TestEmail; password = $TestPassword } | ConvertTo-Json)
+    $token = $signin.access_token
+    Add-StepResult "signup/login" $(if ($token) { "PASS" } else { "FAIL" }) "email=$TestEmail mode=login"
+  } catch {
+    try {
+      $srk = Resolve-ServiceRoleKey
+      Invoke-RestMethod -Uri "$SupabaseUrl/auth/v1/admin/users" -Method POST `
+        -Headers @{ apikey = $srk; Authorization = "Bearer $srk" } -ContentType "application/json" `
+        -Body (@{ email = $TestEmail; password = $TestPassword; email_confirm = $true } | ConvertTo-Json) | Out-Null
+      $signin = Invoke-RestMethod -Uri "$SupabaseUrl/auth/v1/token?grant_type=password" -Method POST `
+        -Headers @{ apikey = $anonKey; Authorization = "Bearer $anonKey" } -ContentType "application/json" `
+        -Body (@{ email = $TestEmail; password = $TestPassword } | ConvertTo-Json)
+      $token = $signin.access_token
+      Add-StepResult "signup/login" $(if ($token) { "PASS" } else { "FAIL" }) "email=$TestEmail mode=admin-create"
+    } catch {
+      Add-StepResult "signup/login" "FAIL" (Get-SafeDetail "$signupError | fallback: $($_.Exception.Message)")
+      exit 1
+    }
+  }
 }
 
 $auth = @{ Authorization = "Bearer $token" }
@@ -609,14 +634,32 @@ if ($resolvedMockMode -eq "skip_mock" -or -not $aiEnabled -or (-not $aiMock -and
     Add-StepResult "POST user prose seed" "FAIL" $_.Exception.Message.Substring(0, [Math]::Min(80, $_.Exception.Message.Length))
   }
 
-  $signupB = Invoke-RestMethod -Uri "$SupabaseUrl/auth/v1/signup" -Method POST `
-    -Headers @{ apikey = $anonKey; Authorization = "Bearer $anonKey" } -ContentType "application/json" `
-    -Body (@{ email = "s9b-$(Get-Random)@example.com"; password = $TestPassword } | ConvertTo-Json)
-  $authB = @{ Authorization = "Bearer $($signupB.access_token)" }
-  $crossBody = New-RewriteProseBody -BeatId $beatId -SessionId $sessionId `
-    -RewriteMode "improve_emotion" -IdempotencyKey "s9-cross-$(Get-Random)"
-  Invoke-ApiExpectFailure -Name "cross-user rewrite 404" -Method POST -Headers $authB `
-    -Path $rewritePath -Body $crossBody
+  try {
+    $emailB = "s9b-$(Get-Random)@example.com"
+    $tokenB = $null
+    try {
+      $signupB = Invoke-RestMethod -Uri "$SupabaseUrl/auth/v1/signup" -Method POST `
+        -Headers @{ apikey = $anonKey; Authorization = "Bearer $anonKey" } -ContentType "application/json" `
+        -Body (@{ email = $emailB; password = $TestPassword } | ConvertTo-Json)
+      $tokenB = $signupB.access_token
+    } catch {
+      $srk = Resolve-ServiceRoleKey
+      Invoke-RestMethod -Uri "$SupabaseUrl/auth/v1/admin/users" -Method POST `
+        -Headers @{ apikey = $srk; Authorization = "Bearer $srk" } -ContentType "application/json" `
+        -Body (@{ email = $emailB; password = $TestPassword; email_confirm = $true } | ConvertTo-Json) | Out-Null
+      $signinB = Invoke-RestMethod -Uri "$SupabaseUrl/auth/v1/token?grant_type=password" -Method POST `
+        -Headers @{ apikey = $anonKey; Authorization = "Bearer $anonKey" } -ContentType "application/json" `
+        -Body (@{ email = $emailB; password = $TestPassword } | ConvertTo-Json)
+      $tokenB = $signinB.access_token
+    }
+    $authB = @{ Authorization = "Bearer $tokenB" }
+    $crossBody = New-RewriteProseBody -BeatId $beatId -SessionId $sessionId `
+      -RewriteMode "improve_emotion" -IdempotencyKey "s9-cross-$(Get-Random)"
+    Invoke-ApiExpectFailure -Name "cross-user rewrite 404" -Method POST -Headers $authB `
+      -Path $rewritePath -Body $crossBody
+  } catch {
+    Add-StepResult "cross-user rewrite 404" "FAIL" (Get-SafeDetail $_.Exception.Message)
+  }
 
   $badModeBody = New-RewriteProseBody -BeatId $beatId -SessionId $sessionId `
     -RewriteMode "evil_mode" -IdempotencyKey "s9-badmode-$(Get-Random)"
@@ -842,10 +885,24 @@ if ($resolvedMockMode -eq "skip_mock" -or -not $aiEnabled -or (-not $aiMock -and
     Invoke-ApiExpectErrorCode -Name "publish copy reject client model" -Method POST -Path $improvePathPub `
       -Headers $auth -Body $badModelBody -ExpectedCode "BAD_REQUEST"
 
-    $signupPubB = Invoke-RestMethod -Uri "$SupabaseUrl/auth/v1/signup" -Method POST `
-      -Headers @{ apikey = $anonKey; Authorization = "Bearer $anonKey" } -ContentType "application/json" `
-      -Body (@{ email = "s9pubb-$(Get-Random)@example.com"; password = $TestPassword } | ConvertTo-Json)
-    $authPubB = @{ Authorization = "Bearer $($signupPubB.access_token)" }
+    $emailPubB = "s9pubb-$(Get-Random)@example.com"
+    $tokenPubB = $null
+    try {
+      $signupPubB = Invoke-RestMethod -Uri "$SupabaseUrl/auth/v1/signup" -Method POST `
+        -Headers @{ apikey = $anonKey; Authorization = "Bearer $anonKey" } -ContentType "application/json" `
+        -Body (@{ email = $emailPubB; password = $TestPassword } | ConvertTo-Json)
+      $tokenPubB = $signupPubB.access_token
+    } catch {
+      $srk = Resolve-ServiceRoleKey
+      Invoke-RestMethod -Uri "$SupabaseUrl/auth/v1/admin/users" -Method POST `
+        -Headers @{ apikey = $srk; Authorization = "Bearer $srk" } -ContentType "application/json" `
+        -Body (@{ email = $emailPubB; password = $TestPassword; email_confirm = $true } | ConvertTo-Json) | Out-Null
+      $signinPubB = Invoke-RestMethod -Uri "$SupabaseUrl/auth/v1/token?grant_type=password" -Method POST `
+        -Headers @{ apikey = $anonKey; Authorization = "Bearer $anonKey" } -ContentType "application/json" `
+        -Body (@{ email = $emailPubB; password = $TestPassword } | ConvertTo-Json)
+      $tokenPubB = $signinPubB.access_token
+    }
+    $authPubB = @{ Authorization = "Bearer $tokenPubB" }
     Invoke-ApiExpectFailure -Name "publish copy cross-user 404" -Method POST -Headers $authPubB `
       -Path $improvePathPub `
       -Body (New-ImprovePublishCopyBody -PackageId $packageId -Fields @("teaser") -IdempotencyKey "s9-pub-cross-$(Get-Random)")

@@ -68,6 +68,10 @@ function Resolve-SupabaseAnonKey {
 
 function Resolve-ServiceRoleKey {
   if ($script:ServiceRoleKey) { return $script:ServiceRoleKey }
+  if (-not [string]::IsNullOrWhiteSpace($env:SUPABASE_SERVICE_ROLE_KEY)) {
+    $script:ServiceRoleKey = $env:SUPABASE_SERVICE_ROLE_KEY.Trim()
+    return $script:ServiceRoleKey
+  }
   Push-Location $RepoRoot
   try {
     foreach ($line in (& supabase status -o env 2>$null)) {
@@ -404,8 +408,29 @@ try {
   $token = $signup.access_token
   Add-StepResult "signup/login" $(if ($token) { "PASS" } else { "FAIL" }) "email=$TestEmail"
 } catch {
-  Add-StepResult "signup/login" "FAIL" $_.Exception.Message
-  exit 1
+  $signupError = $_.Exception.Message
+  try {
+    $signin = Invoke-RestMethod -Uri "$SupabaseUrl/auth/v1/token?grant_type=password" -Method POST `
+      -Headers @{ apikey = $anonKey; Authorization = "Bearer $anonKey" } -ContentType "application/json" `
+      -Body (@{ email = $TestEmail; password = $TestPassword } | ConvertTo-Json)
+    $token = $signin.access_token
+    Add-StepResult "signup/login" $(if ($token) { "PASS" } else { "FAIL" }) "email=$TestEmail mode=login"
+  } catch {
+    try {
+      $srk = Resolve-ServiceRoleKey
+      Invoke-RestMethod -Uri "$SupabaseUrl/auth/v1/admin/users" -Method POST `
+        -Headers @{ apikey = $srk; Authorization = "Bearer $srk" } -ContentType "application/json" `
+        -Body (@{ email = $TestEmail; password = $TestPassword; email_confirm = $true } | ConvertTo-Json) | Out-Null
+      $signin = Invoke-RestMethod -Uri "$SupabaseUrl/auth/v1/token?grant_type=password" -Method POST `
+        -Headers @{ apikey = $anonKey; Authorization = "Bearer $anonKey" } -ContentType "application/json" `
+        -Body (@{ email = $TestEmail; password = $TestPassword } | ConvertTo-Json)
+      $token = $signin.access_token
+      Add-StepResult "signup/login" $(if ($token) { "PASS" } else { "FAIL" }) "email=$TestEmail mode=admin-create"
+    } catch {
+      Add-StepResult "signup/login" "FAIL" (Get-SafeDetail "$signupError | fallback: $($_.Exception.Message)")
+      exit 1
+    }
+  }
 }
 
 $auth = @{ Authorization = "Bearer $token" }

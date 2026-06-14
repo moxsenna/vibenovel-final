@@ -57,22 +57,11 @@ export interface EnvPresenceFlags {
   hasSupabaseUrl: boolean;
   hasSupabaseAnonKey: boolean;
   hasSupabaseServiceRoleKey: boolean;
-  appEnv: string;
-  allowedOriginsCount: number;
   aiGenerationEnabled: boolean;
   aiProviderMock: boolean;
   hasOpenRouterApiKey: boolean;
   creditTopupEnabled: boolean;
   paymentProviderMock: boolean;
-  hasMayarApiKey: boolean;
-  mayarEnv: string;
-  paymentProvider: string;
-  duitkuEnv: string;
-  hasDuitkuMerchantCode: boolean;
-  hasDuitkuMerchantKey: boolean;
-  hasDuitkuCallbackUrl: boolean;
-  duitkuCallbackUrlIsPublic: boolean;
-  duitkuSmokeCallbackFixture: boolean;
 }
 
 const DEFAULT_APP_ENV = "development";
@@ -331,24 +320,11 @@ export function getEnvPresenceFlags(bindings: AppBindings): EnvPresenceFlags {
     hasSupabaseUrl: Boolean(bindings.SUPABASE_URL?.trim()),
     hasSupabaseAnonKey: Boolean(bindings.SUPABASE_ANON_KEY?.trim()),
     hasSupabaseServiceRoleKey: Boolean(bindings.SUPABASE_SERVICE_ROLE_KEY?.trim()),
-    appEnv: getAppEnv(bindings),
-    allowedOriginsCount: getAllowedOrigins(bindings).length,
     aiGenerationEnabled: isAiGenerationEnabled(bindings),
     aiProviderMock: isAiProviderMock(bindings),
     hasOpenRouterApiKey: hasOpenRouterApiKey(bindings),
     creditTopupEnabled: isCreditTopupEnabled(bindings),
     paymentProviderMock: isPaymentProviderMock(bindings),
-    hasMayarApiKey: hasMayarApiKey(bindings),
-    mayarEnv: getMayarEnv(bindings),
-    paymentProvider: isPaymentProviderMock(bindings)
-      ? "mock"
-      : getPaymentProvider(bindings),
-    duitkuEnv: getDuitkuEnv(bindings),
-    hasDuitkuMerchantCode: hasDuitkuMerchantCode(bindings),
-    hasDuitkuMerchantKey: hasDuitkuMerchantKey(bindings),
-    hasDuitkuCallbackUrl: hasDuitkuCallbackUrl(bindings),
-    duitkuCallbackUrlIsPublic: isDuitkuCallbackUrlPublic(bindings),
-    duitkuSmokeCallbackFixture: isDuitkuSmokeCallbackFixtureEnabled(bindings),
   };
 }
 

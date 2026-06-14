@@ -683,6 +683,9 @@ export type AuditEntityType = (typeof AUDIT_ENTITY_TYPES)[keyof typeof AUDIT_ENT
 // --- Sprint 8: AI generation attempts + credit ledger (schema only in 8.1) ---
 
 export const GENERATION_TYPES = {
+  concept_generation: "concept_generation",
+  foundation_proposal: "foundation_proposal",
+  outline_generation: "outline_generation",
   prose_beat: "prose_beat",
   prose_rewrite: "prose_rewrite",
   publish_copy: "publish_copy",

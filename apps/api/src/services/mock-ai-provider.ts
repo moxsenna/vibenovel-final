@@ -11,7 +11,7 @@ const MOCK_PROSE_BEAT_TEMPLATE =
   "Dia menahan napas. Ruangan itu terasa lebih sempit dari biasanya, " +
   "seolah setiap kata yang belum terucap ikut menekan dadanya. " +
   "Langkahnya pelan menuju jendela — bukan untuk kabur, melainkan " +
-  "untuk memastikan dunia di luar masih ada sebelum ia memilih kebenaran.";
+  "untuk memastikan dunia di luar masih ada sebelum ia mengambil keputusan.";
 
 function buildDeterministicProse(input: ModelRouterGenerateInput): string {
   const hashPrefix = input.promptHash.slice(0, 8);

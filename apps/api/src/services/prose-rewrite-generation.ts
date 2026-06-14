@@ -18,6 +18,7 @@ import {
   refundCreditsForAttempt,
 } from "./credit-ledger.js";
 import { getCreditCostForGeneration } from "./ai-credit-policy.js";
+import { assertAiGenerationAllowedForOwner } from "./ai-rate-limit.js";
 import { buildContextPacketForOwner } from "./context-packet-builder.js";
 import { getOwnedBeatRow } from "./chapter-beat.js";
 import { calculateEstimatedCostUsd } from "./model-cost-map.js";
@@ -49,6 +50,11 @@ import {
 } from "./generation-attempt.js";
 import { generateCorrelationId } from "./audit-snapshot.js";
 import { createServiceRoleClient } from "../lib/supabase.js";
+import {
+  assertAiOutputUsable,
+  persistValidationReportBestEffort,
+  validateAiOutput,
+} from "./output-validator.js";
 
 const IDEMPOTENCY_KEY_MAX = 120;
 const INSTRUCTION_MAX = 500;
@@ -459,6 +465,13 @@ export async function rewriteProseForOwner(
     qualityMode: body.qualityMode,
   });
 
+  await assertAiGenerationAllowedForOwner(bindings, {
+    userId: ownerId,
+    projectId,
+    generationType: GENERATION_TYPES.prose_rewrite,
+    requestedCreditCost: creditCost,
+  });
+
   const correlationId = generateCorrelationId();
   let attempt = await createGenerationAttempt(bindings, {
     projectId,
@@ -538,6 +551,19 @@ export async function rewriteProseForOwner(
 
   let saved;
   try {
+    const validationReport = validateAiOutput({
+      outputText: providerResult.text,
+      forbiddenConcepts: packetResult.preview.mustNotInclude,
+      mustInclude: packetResult.preview.mustInclude,
+    });
+    await persistValidationReportBestEffort(bindings, {
+      projectId,
+      userId: ownerId,
+      generationAttemptId: attempt.id,
+      report: validationReport,
+    });
+    assertAiOutputUsable(validationReport);
+
     saved = await saveAiRewrittenProseVersionForOwner(
       bindings,
       ownerId,
