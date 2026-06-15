@@ -776,8 +776,9 @@ if ($resolvedMockMode -eq "skip_mock" -or -not $aiEnabled -or (-not $aiMock -and
             $approxOk = ($attemptRow.metadata.costEstimateApproximate -eq $true)
             Add-StepResult "estimated_cost_usd mock (rewrite)" $(if ($mockCostOk -and $approxOk) { "PASS" } else { "FAIL" }) "cost=$estCost approximate=$($attemptRow.metadata.costEstimateApproximate)"
             Add-StepResult "estimated_cost_usd live (rewrite)" "SKIP" "provider=mock"
-          } elseif ($provider -eq "openrouter" -and $attemptRow.model -eq "google/gemini-2.5-flash" -and $attemptRow.input_tokens -and $attemptRow.output_tokens) {
-            $liveCostOk = ($null -ne $estCost) -and ([decimal]$estCost -gt 0)
+          } elseif ($provider -eq "openrouter" -and $attemptRow.model -like "google/gemini-2.5-flash*" -and $attemptRow.input_tokens -and $attemptRow.output_tokens) {
+            $expectedCostZero = $attemptRow.model -like "*:free"
+            $liveCostOk = if ($expectedCostZero) { ($null -ne $estCost) -and ([decimal]$estCost -eq 0) } else { ($null -ne $estCost) -and ([decimal]$estCost -gt 0) }
             Add-StepResult "estimated_cost_usd live (rewrite)" $(if ($liveCostOk) { "PASS" } else { "FAIL" }) "cost=$estCost model=$($attemptRow.model)"
             Add-StepResult "estimated_cost_usd mock (rewrite)" "SKIP" "provider=openrouter"
           } else {
@@ -988,8 +989,9 @@ if ($resolvedMockMode -eq "skip_mock" -or -not $aiEnabled -or (-not $aiMock -and
             $mockPubCostOk = ($null -ne $estCostPub) -and ([decimal]$estCostPub -eq 0)
             Add-StepResult "estimated_cost_usd mock (publish)" $(if ($mockPubCostOk) { "PASS" } else { "FAIL" }) "cost=$estCostPub"
             Add-StepResult "estimated_cost_usd live (publish)" "SKIP" "provider=mock"
-          } elseif ($providerPub -eq "openrouter" -and $attemptPubRow.model -eq "google/gemini-2.5-flash" -and $attemptPubRow.input_tokens -and $attemptPubRow.output_tokens) {
-            $livePubCostOk = ($null -ne $estCostPub) -and ([decimal]$estCostPub -gt 0)
+          } elseif ($providerPub -eq "openrouter" -and $attemptPubRow.model -like "google/gemini-2.5-flash*" -and $attemptPubRow.input_tokens -and $attemptPubRow.output_tokens) {
+            $expectedCostZero = $attemptPubRow.model -like "*:free"
+            $livePubCostOk = if ($expectedCostZero) { ($null -ne $estCostPub) -and ([decimal]$estCostPub -eq 0) } else { ($null -ne $estCostPub) -and ([decimal]$estCostPub -gt 0) }
             Add-StepResult "estimated_cost_usd live (publish)" $(if ($livePubCostOk) { "PASS" } else { "FAIL" }) "cost=$estCostPub model=$($attemptPubRow.model)"
             Add-StepResult "estimated_cost_usd mock (publish)" "SKIP" "provider=openrouter"
           } else {

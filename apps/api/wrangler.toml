@@ -28,6 +28,10 @@ PAYMENT_PROVIDER_MOCK = "true"
 PAYMENT_PROVIDER_MOCK_MODE = "success"
 AI_GENERATION_ENABLED = "false"
 AI_PROVIDER_MOCK = "true"
+AI_MODEL_HEMAT = "google/gemini-2.5-flash:free"
+AI_MODEL_SEIMBANG = "google/gemini-2.5-flash:free"
+AI_MODEL_TERBAIK = "google/gemini-2.5-flash:free"
+DEFAULT_AI_MODEL = "google/gemini-2.5-flash:free"
 
 # Production API on Cloudflare Workers. Secrets are uploaded with:
 #   npm run operator:production:worker-secrets -- -RequireLiveDuitku
@@ -47,7 +51,10 @@ AI_GENERATION_ENABLED = "true"
 AI_PROVIDER_MOCK = "false"
 OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
 AI_EMBEDDING_MODEL = "openai/text-embedding-3-small"
-AI_MODEL_HEMAT = "google/gemini-2.5-flash"
+AI_MODEL_HEMAT = "google/gemini-2.5-flash:free"
+AI_MODEL_SEIMBANG = "google/gemini-2.5-flash:free"
+AI_MODEL_TERBAIK = "google/gemini-2.5-flash:free"
+DEFAULT_AI_MODEL = "google/gemini-2.5-flash:free"
 
 # Live Duitku provider. Keep secrets out of this file.
 CREDIT_TOPUP_ENABLED = "true"

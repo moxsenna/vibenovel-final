@@ -37,6 +37,26 @@ const MODEL_COST_MAP: Readonly<Record<string, ModelCostConfig>> = {
     inputUsdPer1M: 0.3,
     outputUsdPer1M: 2.5,
   },
+  "google/gemini-2.5-flash:free": {
+    inputUsdPer1M: 0,
+    outputUsdPer1M: 0,
+  },
+  "google/gemma-2-9b-it:free": {
+    inputUsdPer1M: 0,
+    outputUsdPer1M: 0,
+  },
+  "openrouter/free": {
+    inputUsdPer1M: 0,
+    outputUsdPer1M: 0,
+  },
+  "meta-llama/llama-3-8b-instruct:free": {
+    inputUsdPer1M: 0,
+    outputUsdPer1M: 0,
+  },
+  "qwen/qwen-2.5-coder-32b-instruct:free": {
+    inputUsdPer1M: 0,
+    outputUsdPer1M: 0,
+  },
 };
 
 export function getModelCostConfig(model: string): ModelCostConfig | null {

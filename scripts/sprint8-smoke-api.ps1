@@ -556,8 +556,9 @@ if ($resolvedMockMode -eq "skip_mock" -or -not $aiEnabled -or -not $aiMock) {
             $mockCostOk = ($null -ne $estCost) -and ([decimal]$estCost -eq 0)
             $approxOk = ($attemptRow.metadata.costEstimateApproximate -eq $true)
             Add-StepResult "estimated_cost_usd mock" $(if ($mockCostOk -and $approxOk) { "PASS" } else { "FAIL" }) "cost=$estCost approximate=$($attemptRow.metadata.costEstimateApproximate)"
-          } elseif ($provider -eq "openrouter" -and $attemptRow.model -eq "google/gemini-2.5-flash" -and $attemptRow.input_tokens -and $attemptRow.output_tokens) {
-            $liveCostOk = ($null -ne $estCost) -and ([decimal]$estCost -gt 0)
+          } elseif ($provider -eq "openrouter" -and $attemptRow.model -like "google/gemini-2.5-flash*" -and $attemptRow.input_tokens -and $attemptRow.output_tokens) {
+            $expectedCostZero = $attemptRow.model -like "*:free"
+            $liveCostOk = if ($expectedCostZero) { ($null -ne $estCost) -and ([decimal]$estCost -eq 0) } else { ($null -ne $estCost) -and ([decimal]$estCost -gt 0) }
             Add-StepResult "estimated_cost_usd live" $(if ($liveCostOk) { "PASS" } else { "FAIL" }) "cost=$estCost model=$($attemptRow.model)"
           } else {
             Add-StepResult "estimated_cost_usd mock" "SKIP" "provider=$provider (not mock success path)"
