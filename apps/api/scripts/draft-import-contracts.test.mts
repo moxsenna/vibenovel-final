@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 import { AppError } from "../src/errors.ts";
 import {
   extractDraftImportSignalsFromText,
+  isDuplicateDraftImportError,
   parseDraftImportBody,
   summarizeDraftContent,
 } from "../src/services/draft-import.ts";
@@ -53,6 +54,35 @@ for (const required of [
   "word_count",
 ]) {
   assert.match(migrationSql, new RegExp(required), `${required} must exist in migration`);
+}
+
+const auditEnumMigrationSql = readFileSync(
+  "../../supabase/migrations/00018_sprint18_draft_import_audit_enum.sql",
+  "utf8",
+);
+for (const required of [
+  "ALTER TYPE public.audit_entity_type ADD VALUE IF NOT EXISTS 'draft_import'",
+  "ALTER TYPE public.audit_action ADD VALUE IF NOT EXISTS 'draft_import_created'",
+  "ALTER TYPE public.audit_action ADD VALUE IF NOT EXISTS 'draft_import_signals_extracted'",
+]) {
+  assert.match(auditEnumMigrationSql, new RegExp(required), `${required} must exist in migration`);
+}
+
+assert.equal(isDuplicateDraftImportError({ code: "23505" }), true);
+assert.equal(isDuplicateDraftImportError({ code: "PGRST116" }), false);
+assert.equal(isDuplicateDraftImportError(null), false);
+
+const draftImportServiceSource = readFileSync("src/services/draft-import.ts", "utf8");
+for (const required of [
+  "isDuplicateDraftImportError(error)",
+  ".eq(\"content_hash\", summary.contentHash)",
+  ".maybeSingle()",
+]) {
+  assert.match(
+    draftImportServiceSource,
+    new RegExp(required.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")),
+    `${required} must exist in draft import duplicate retry path`,
+  );
 }
 
 console.log("PASS Sprint 15 draft import contracts");

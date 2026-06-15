@@ -108,6 +108,13 @@ function normalizeMetadata(value: unknown): Record<string, unknown> {
   return {};
 }
 
+export function isDuplicateDraftImportError(error: unknown): boolean {
+  if (!error || typeof error !== "object") {
+    return false;
+  }
+  return (error as { code?: unknown }).code === "23505";
+}
+
 export function parseDraftImportBody(raw: unknown): ParsedDraftImportBody {
   if (typeof raw !== "object" || raw === null || Array.isArray(raw)) {
     throw AppError.badRequest("Request body must be a JSON object");
@@ -313,7 +320,31 @@ export async function createDraftImportForOwner(
     .single();
 
   if (error || !data) {
-    console.error("draft_imports insert failed");
+    if (isDuplicateDraftImportError(error)) {
+      const { data: existing, error: lookupError } = await admin
+        .from("draft_imports")
+        .select(DRAFT_IMPORT_SELECT)
+        .eq("project_id", projectId)
+        .eq("owner_id", ownerId)
+        .eq("content_hash", summary.contentHash)
+        .maybeSingle();
+
+      if (lookupError) {
+        console.error("draft_imports duplicate lookup failed", {
+          code: lookupError.code,
+          message: lookupError.message,
+        });
+        throw AppError.internal("Failed to import draft");
+      }
+      if (existing) {
+        return { draftImport: mapDraftImport(existing as DraftImportRow) };
+      }
+    }
+
+    console.error("draft_imports insert failed", {
+      code: error?.code,
+      message: error?.message,
+    });
     throw AppError.internal("Failed to import draft");
   }
 
