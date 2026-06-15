@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 import { IntegrationNotice } from "@/components/common/IntegrationNotice";
 import { useDraftImportData } from "@/hooks/useDraftImportData";
 import { ROUTES } from "@/routes/paths";
-import type { DraftImportSignal } from "@/services/draftImport";
+import type { DraftImportSignal, ImportJobSummary } from "@/services/draftImport";
 
 const SIGNAL_LABELS: Record<string, string> = {
   genre: "Genre",
@@ -32,25 +32,72 @@ function SignalPanel({ signal }: { signal: DraftImportSignal }) {
   );
 }
 
+const PHASE_LABELS: Record<string, string> = {
+  uploaded: "Upload",
+  chunking: "Chunking",
+  embedding: "Embedding",
+  analysis: "Analisis",
+  entity_extraction: "Ekstraksi entitas",
+  style_extraction: "Ekstraksi gaya",
+  ready_for_review: "Siap review",
+};
+
+function ImportJobProgress({ job }: { job: ImportJobSummary | null }) {
+  if (!job) {
+    return (
+      <p className="mt-3 font-body-sm text-body-sm text-muted-text">
+        Prep job belum dimulai.
+      </p>
+    );
+  }
+
+  const progress = Math.max(0, Math.min(100, Math.round(job.progressPercent)));
+  const phaseLabel = PHASE_LABELS[job.currentPhase] ?? job.currentPhase;
+
+  return (
+    <div className="mt-3 flex flex-col gap-2">
+      <div className="flex items-center justify-between gap-3 font-label-sm text-label-sm">
+        <span className="text-muted-text">Progress prep {progress}%</span>
+        <span className="text-main-text">{phaseLabel}</span>
+      </div>
+      <div className="h-2 overflow-hidden rounded-full bg-surface-container">
+        <div className="h-full rounded-full bg-secondary" style={{ width: `${progress}%` }} />
+      </div>
+      {job.errorMessageSafe ? (
+        <p className="font-body-sm text-body-sm text-error">{job.errorMessageSafe}</p>
+      ) : null}
+    </div>
+  );
+}
+
 export function DraftImportPage() {
   const {
     projectId,
     draftImport,
+    importJob,
     signals,
     content,
     loading,
     importing,
     extracting,
+    resuming,
+    materializing,
+    proposalCount,
     notice,
     apiMode,
     setContent,
     importDraft,
     extractSignals,
+    resumePrep,
+    materializeProposals,
   } = useDraftImportData();
 
   const canImport = apiMode && content.trim().length >= 120 && !importing;
   const canExtract = apiMode && Boolean(draftImport) && !extracting;
-  const conceptsRoute = projectId ? ROUTES.project.concepts(projectId) : ROUTES.dashboard;
+  const canResume = apiMode && Boolean(draftImport) && !resuming;
+  const canMaterialize =
+    apiMode && Boolean(draftImport) && signals.length > 0 && !materializing;
+  const foundationRoute = projectId ? ROUTES.project.foundation(projectId) : ROUTES.dashboard;
 
   return (
     <div className="mx-auto flex w-full max-w-editor flex-col gap-lg pb-24">
@@ -98,11 +145,29 @@ export function DraftImportPage() {
             <button
               type="button"
               className="inline-flex items-center gap-2 rounded-lg border border-border px-4 py-2 font-label-md text-label-md text-main-text disabled:cursor-not-allowed disabled:opacity-50"
+              onClick={() => void resumePrep()}
+              disabled={!canResume}
+            >
+              <span className="material-symbols-outlined text-[18px]">restart_alt</span>
+              {resuming ? "Melanjutkan..." : "Resume prep"}
+            </button>
+            <button
+              type="button"
+              className="inline-flex items-center gap-2 rounded-lg border border-border px-4 py-2 font-label-md text-label-md text-main-text disabled:cursor-not-allowed disabled:opacity-50"
               onClick={() => void extractSignals()}
               disabled={!canExtract}
             >
               <span className="material-symbols-outlined text-[18px]">travel_explore</span>
               {extracting ? "Mendeteksi..." : "Deteksi sinyal"}
+            </button>
+            <button
+              type="button"
+              className="inline-flex items-center gap-2 rounded-lg bg-secondary px-4 py-2 font-label-md text-label-md text-on-secondary disabled:cursor-not-allowed disabled:opacity-50"
+              onClick={() => void materializeProposals()}
+              disabled={!canMaterialize}
+            >
+              <span className="material-symbols-outlined text-[18px]">rate_review</span>
+              {materializing ? "Membuat proposal..." : "Buat proposal review"}
             </button>
           </div>
         </div>
@@ -123,6 +188,7 @@ export function DraftImportPage() {
                 Belum ada draft yang diimpor.
               </p>
             )}
+            <ImportJobProgress job={importJob} />
           </div>
 
           <div className="flex flex-col gap-sm">
@@ -143,15 +209,15 @@ export function DraftImportPage() {
           </div>
 
           <Link
-            to={conceptsRoute}
+            to={foundationRoute}
             className={`inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 font-label-md text-label-md ${
-              signals.length > 0
+              proposalCount !== null && proposalCount > 0
                 ? "bg-secondary text-on-secondary"
                 : "pointer-events-none bg-surface-container text-muted-text"
             }`}
           >
-            <span className="material-symbols-outlined text-[18px]">lightbulb</span>
-            Ubah sinyal jadi proposal konsep
+            <span className="material-symbols-outlined text-[18px]">fact_check</span>
+            Review di Fondasi
           </Link>
         </aside>
       </section>

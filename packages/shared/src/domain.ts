@@ -32,6 +32,8 @@ import type {
   PaymentWebhookProcessingStatus,
   GenerationStatus,
   GenerationType,
+  ImportJobPhase,
+  ImportJobStatus,
   DefaultLanguage,
   DetectedSignalStatus,
   DetectedSignalType,
@@ -54,6 +56,7 @@ import type {
   RevealRiskLevel,
   RetentionMarkerType,
   TimelineEventSource,
+  ProseEmbeddingSource,
   SpeechRuleSource,
   SpeechRuleStatus,
   StoryConceptSource,
@@ -408,6 +411,50 @@ export interface StoryConcept extends Timestamps {
   payload: JsonObject;
 }
 
+// --- Sprint 18: draft import/RAG prep (memory is read-only, proposals are review-first) ---
+
+export interface ImportJob extends Timestamps {
+  id: ID;
+  projectId: ID;
+  ownerId: ID;
+  draftImportId: ID | null;
+  status: ImportJobStatus;
+  currentPhase: ImportJobPhase;
+  progressPercent: number;
+  errorCode: string | null;
+  errorMessageSafe: string | null;
+  phaseState: JsonObject;
+  metadata: JsonObject;
+  startedAt: ISODateTime | null;
+  finishedAt: ISODateTime | null;
+}
+
+export interface ProseEmbedding extends Timestamps {
+  id: ID;
+  projectId: ID;
+  ownerId: ID;
+  draftImportId: ID | null;
+  importJobId: ID | null;
+  source: ProseEmbeddingSource;
+  sourceRef: string;
+  chunkIndex: number;
+  chunkText: string;
+  chunkHash: string;
+  wordCount: number;
+  embeddingProvider: string | null;
+  embeddingModel: string | null;
+  metadata: JsonObject;
+}
+
+export interface RetrievalMemorySnippet {
+  sourceRef: string;
+  text: string;
+  similarity: number | null;
+  readOnly: true;
+  usage: "context_only";
+  metadata: JsonObject;
+}
+
 // --- Sprint 4: outline planning (NOT prose — beat_contracts/prose_versions deferred Sprint 5+) ---
 
 /** Retention marker on a chapter outline row (maps to UI badges). */
@@ -717,6 +764,8 @@ export interface WriterContextPacket {
     unresolvedThreadLabels: string[];
     /** Sprint 17 — past/current timeline events only (never future). */
     recentTimeline: string[];
+    /** Sprint 18: read-only RAG snippets, never canon/source of truth. */
+    retrievalMemory: RetrievalMemorySnippet[];
     /** Sprint 16: POV-only knowledge; unsafe future reveal facts are omitted. */
     povKnowledge: PovKnowledgeSnapshot;
   };

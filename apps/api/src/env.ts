@@ -18,6 +18,8 @@ export interface AppBindings {
   AI_MODEL_HEMAT?: string;
   AI_MODEL_SEIMBANG?: string;
   AI_MODEL_TERBAIK?: string;
+  /** Sprint 18 — server-side embedding model; must be allowlisted. */
+  AI_EMBEDDING_MODEL?: string;
   AI_TIMEOUT_MS?: string;
   AI_MAX_RETRIES?: string;
   AI_CREDIT_COST_PROSE_BEAT?: string;

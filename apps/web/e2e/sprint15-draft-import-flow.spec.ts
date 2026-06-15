@@ -53,6 +53,26 @@ function draftImportPayload(status = "uploaded") {
   };
 }
 
+function importJobPayload(status = "running", currentPhase = "uploaded", progressPercent = 5) {
+  return {
+    id: "import-job-123",
+    projectId: PROJECT_ID,
+    ownerId: sessionUser.id,
+    draftImportId: DRAFT_IMPORT_ID,
+    status,
+    currentPhase,
+    progressPercent,
+    errorCode: null,
+    errorMessageSafe: null,
+    phaseState: { resumedFrom: null },
+    metadata: { resumeCount: 0 },
+    startedAt: now(),
+    finishedAt: null,
+    createdAt: now(),
+    updatedAt: now(),
+  };
+}
+
 function extractedSignals() {
   return [
     {
@@ -227,6 +247,42 @@ async function mockDraftImportApis(page: Page) {
       });
     },
   );
+
+  await page.route(
+    `**/api/projects/${PROJECT_ID}/draft-imports/${DRAFT_IMPORT_ID}/import-jobs/resume`,
+    async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          ok: true,
+          data: {
+            importJob: importJobPayload(),
+            resumed: false,
+          },
+        }),
+      });
+    },
+  );
+
+  await page.route(
+    `**/api/projects/${PROJECT_ID}/draft-imports/${DRAFT_IMPORT_ID}/materialize-proposals`,
+    async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          ok: true,
+          data: {
+            draftImport: draftImportPayload("signals_extracted"),
+            proposalCount: 4,
+            proposalIds: ["proposal-character", "proposal-fact", "proposal-style", "proposal-voice"],
+            proposalTypes: ["character", "fact", "style"],
+          },
+        }),
+      });
+    },
+  );
 }
 
 test.describe("Sprint 15 draft import continuation", () => {
@@ -251,6 +307,7 @@ test.describe("Sprint 15 draft import continuation", () => {
     await page.getByRole("textbox", { name: "Isi draft" }).fill(draftText);
     await page.getByRole("button", { name: "Import draft" }).click();
     await expect(page.getByText("74 kata terdeteksi.")).toBeVisible();
+    await expect(page.getByText(/Progress prep.*5%/i)).toBeVisible();
 
     await page.getByRole("button", { name: "Deteksi sinyal" }).click();
     await expect(page.getByText("5 sinyal")).toBeVisible();
@@ -259,9 +316,11 @@ test.describe("Sprint 15 draft import continuation", () => {
     await expect(page.getByRole("heading", { name: "Konflik status" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Pembaca serial mobile" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Periksa rahasia" })).toBeVisible();
-    await expect(page.getByRole("link", { name: "lightbulb Ubah sinyal jadi proposal konsep" })).toHaveAttribute(
+    await page.getByRole("button", { name: /Buat proposal review/i }).click();
+    await expect(page.getByText(/4 proposal siap direview/i)).toBeVisible();
+    await expect(page.getByRole("link", { name: /Review di Fondasi/i })).toHaveAttribute(
       "href",
-      `/projects/${PROJECT_ID}/concepts`,
+      `/projects/${PROJECT_ID}/foundation`,
     );
   });
 });

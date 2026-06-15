@@ -2,7 +2,17 @@ import { AppError } from "../errors.js";
 import type { AppBindings } from "../env.js";
 import { createServiceRoleClient } from "../lib/supabase.js";
 import { writeAuditLog } from "./audit.js";
+import {
+  buildDraftImportAiProposalRows,
+  buildDraftImportProposalDrafts,
+} from "./import/entity-extraction.js";
+import { chunkDraftForImport } from "./import/chunking.js";
+import {
+  buildAuthorVoiceProposalDraft,
+  extractAuthorVoiceFromDraft,
+} from "./import/style-extraction.js";
 import { getOwnedProjectRow } from "./project.js";
+import { assertProposalPayloadSafe } from "./summary-safety.js";
 
 const CONTENT_MIN_CHARS = 120;
 const CONTENT_MAX_CHARS = 200_000;
@@ -84,6 +94,8 @@ const DRAFT_IMPORT_SELECT =
   "id, project_id, owner_id, content_text, content_hash, excerpt_preview, word_count, status, metadata, created_at, updated_at";
 const DRAFT_SIGNAL_SELECT =
   "id, draft_import_id, project_id, owner_id, type, label, value, confidence, metadata, created_at, updated_at";
+const AI_PROPOSAL_SELECT =
+  "id, proposal_type, status, risk_level, source, title, payload, created_at, updated_at";
 
 function countWords(content: string): number {
   return content.split(/\s+/).filter(Boolean).length;
@@ -397,4 +409,127 @@ export async function extractDraftImportSignalsForOwner(
 
   const signals = await listSignalsForDraftImport(bindings, ownerId, projectId, draftImportId);
   return { draftImport: mapDraftImport(updated as DraftImportRow), signals };
+}
+
+function mapSignalToDraft(signalRow: DraftImportSignal): DraftImportSignalDraft {
+  return {
+    type: signalRow.type,
+    label: signalRow.label,
+    value: signalRow.value,
+    confidence: signalRow.confidence ?? 0.5,
+    metadata: signalRow.metadata,
+  };
+}
+
+export async function materializeDraftImportProposalsForOwner(
+  bindings: AppBindings,
+  ownerId: string,
+  projectId: string,
+  draftImportId: string,
+): Promise<{
+  draftImport: DraftImportSummary;
+  proposalCount: number;
+  proposalIds: string[];
+  proposalTypes: string[];
+}> {
+  const row = await getOwnedDraftImportRow(bindings, ownerId, projectId, draftImportId);
+  let signals = await listSignalsForDraftImport(bindings, ownerId, projectId, draftImportId);
+  if (signals.length === 0) {
+    const extracted = await extractDraftImportSignalsForOwner(
+      bindings,
+      ownerId,
+      projectId,
+      draftImportId,
+    );
+    signals = extracted.signals;
+  }
+
+  const chunks = await chunkDraftForImport({
+    projectId,
+    draftImportId,
+    content: row.content_text,
+  });
+  const authorVoice = extractAuthorVoiceFromDraft({
+    draftImportId,
+    content: row.content_text,
+    chunks,
+  });
+  const drafts = [
+    ...buildDraftImportProposalDrafts({
+    projectId,
+    draftImportId,
+    signals: signals.map(mapSignalToDraft),
+    }),
+    buildAuthorVoiceProposalDraft({ projectId, draftImportId, authorVoice }),
+  ];
+  for (const draft of drafts) {
+    assertProposalPayloadSafe(draft.payload);
+  }
+
+  const rows = buildDraftImportAiProposalRows(drafts);
+  if (rows.length === 0) {
+    return {
+      draftImport: mapDraftImport(row),
+      proposalCount: 0,
+      proposalIds: [],
+      proposalTypes: [],
+    };
+  }
+
+  const admin = createServiceRoleClient(bindings);
+  const { error: deleteError } = await admin
+    .from("ai_proposals")
+    .delete()
+    .eq("project_id", projectId)
+    .eq("source", "ai_import")
+    .eq("status", "proposed")
+    .eq("payload->>draftImportId", draftImportId);
+
+  if (deleteError) {
+    console.error("ai_proposals cleanup for draft import failed");
+    throw AppError.internal("Failed to refresh draft import proposals");
+  }
+
+  const { data: inserted, error: insertError } = await admin
+    .from("ai_proposals")
+    .insert(rows)
+    .select(AI_PROPOSAL_SELECT);
+
+  if (insertError || !inserted) {
+    console.error("ai_proposals insert from draft import failed");
+    throw AppError.internal("Failed to create draft import proposals");
+  }
+
+  const proposalRows = inserted as Array<{
+    id: string;
+    proposal_type: string;
+    risk_level: string;
+    source: string;
+  }>;
+  const proposalIds = proposalRows.map((proposal) => proposal.id);
+  const proposalTypes = [...new Set(proposalRows.map((proposal) => proposal.proposal_type))];
+
+  for (const proposal of proposalRows) {
+    await writeAuditLog(bindings, {
+      userId: ownerId,
+      projectId,
+      action: "ai_proposal_created",
+      entityType: "ai_proposal",
+      entityId: proposal.id,
+      metadata: {
+        proposalType: proposal.proposal_type,
+        riskLevel: proposal.risk_level,
+        source: proposal.source,
+        draftImportId,
+        fromDraftImport: true,
+      },
+    });
+  }
+
+  return {
+    draftImport: mapDraftImport(row),
+    proposalCount: proposalRows.length,
+    proposalIds,
+    proposalTypes,
+  };
 }

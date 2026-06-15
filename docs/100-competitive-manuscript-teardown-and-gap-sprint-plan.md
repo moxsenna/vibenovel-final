@@ -287,24 +287,25 @@ Catatan verifikasi: tes adalah kontrak fungsi-murni (tsx), bukan integrasi DB. I
 ### Sprint 18 — Full: Draft Import + RAG + Voice (Persona C)
 
 **Skema**
-- [ ] **18.1** Enable `pgvector` di Supabase; tabel `prose_embeddings` (`project_id`, `source_ref`, `chunk_text`, `embedding vector`, `metadata`) + index ANN.
-- [ ] **18.2** Tabel `import_jobs` (status multi-phase, progress, error) untuk error recovery ala Manuscript.
+- [x] **18.1** Enable `pgvector` di Supabase; tabel `prose_embeddings` (`project_id`, `source_ref`, `chunk_text`, `embedding vector`, `metadata`) + index ANN. Implemented 2026-06-15: migration `00017_sprint18_import_rag.sql` adds pgvector, owner-scoped `prose_embeddings`, FK indexes, and HNSW cosine ANN index.
+- [x] **18.2** Tabel `import_jobs` (status multi-phase, progress, error) untuk error recovery ala Manuscript. Implemented 2026-06-15: `import_jobs` tracks phase, status, progress, safe error, phase state, timestamps, and owner-only RLS.
 
 **Service (pipeline prep)**
-- [ ] **18.3** `import/chunking.ts` — pecah draft (paragraf/scene), CJK/ID-aware word count.
-- [ ] **18.4** `import/embedding.ts` — embed chunk via provider allowlist (managed, bukan BYOK).
-- [ ] **18.5** `import/entity-extraction.ts` — ekstrak karakter/fakta sebagai **ai_proposals** (review dulu, bukan canon).
-- [ ] **18.6** `import/style-extraction.ts` — turunkan authorVoice → simpan ke style (proposal).
-- [ ] **18.7** Retrieval memory: util ambil top-k snippet untuk packet (`continuity`/style), **read-only, never source of truth** (`docs/08`).
-- [ ] **18.8** Progress + error recovery per fase (resume).
+- [x] **18.3** `import/chunking.ts` — pecah draft (paragraf/scene), CJK/ID-aware word count. Implemented 2026-06-15: deterministic paragraph chunking, chunk hash, source refs, and Latin/CJK word counting covered by `test:sprint18-import-rag`.
+- [x] **18.4** `import/embedding.ts` — embed chunk via provider allowlist (managed, bukan BYOK). Implemented 2026-06-15: OpenRouter `/embeddings` client uses server-side allowlist (`openai/text-embedding-3-small`, 1536 dims), request/response validation, and `prose_embeddings` row builder.
+- [x] **18.5** `import/entity-extraction.ts` — ekstrak karakter/fakta sebagai **ai_proposals** (review dulu, bukan canon). Implemented 2026-06-15: draft import signals materialize to `ai_proposals` via `materialize-proposals`, with `source=ai_import`, `status=proposed`, and no direct `facts` insert.
+- [x] **18.6** `import/style-extraction.ts` — turunkan authorVoice → simpan ke style (proposal). Implemented 2026-06-15: deterministic author voice metrics/tags produce a low-risk `style` proposal via `materialize-proposals`, with no raw prose dump.
+- [x] **18.7** Retrieval memory: util ambil top-k snippet untuk packet (`continuity`/style), **read-only, never source of truth** (`docs/08`). Implemented 2026-06-15: `retrievalMemory` enters `WriterContextPacket.continuity` as `readOnly/context_only` snippets from `prose_embeddings`; packet safety/hash includes the final memory snapshot.
+- [x] **18.8** Progress + error recovery per fase (resume). Implemented 2026-06-15: `import/job-progress.ts` adds phase progress patches, safe failure messages, resume patching, and `import-jobs/latest|resume` routes.
+- [x] **18.13** Prep runner hardening: `import-jobs/resume` now runs the idempotent prep pipeline (`chunking → embedding → prose_embeddings refresh → signal/entity extraction → author voice/style proposal → ready_for_review`) with safe failure recovery. Implemented 2026-06-16: `import/pipeline-runner.ts` wires OpenRouter embeddings and proposal materialization without writing `facts`.
 
 **Web**
-- [ ] **18.9** Flow Persona C: upload/paste draft → progress fase → review hasil ekstraksi (accept/reject proposal) → lanjut menulis.
+- [x] **18.9** Flow Persona C: upload/paste draft → progress fase → review hasil ekstraksi (accept/reject proposal) → lanjut menulis. Implemented 2026-06-15: web Draft Import flow shows prep progress/resume, materializes review proposals, and routes to Fondasi review; covered by Playwright `sprint15-draft-import-flow`.
 
 **Test**
-- [ ] **18.10** Vitest: ekstraksi menghasilkan proposal `proposed`, bukan `facts` langsung.
-- [ ] **18.11** Vitest: retrieval snippet tidak pernah menimpa canon; hanya konteks.
-- [ ] **18.12** Acceptance: draft → Fondasi hasil ekstraksi → lanjut, tanpa BYOK, tanpa bocor.
+- [x] **18.10** Vitest: ekstraksi menghasilkan proposal `proposed`, bukan `facts` langsung. Covered by `apps/api/scripts/sprint18-import-rag-contracts.test.mts`.
+- [x] **18.11** Vitest: retrieval snippet tidak pernah menimpa canon; hanya konteks. Covered by `apps/api/scripts/sprint18-import-rag-contracts.test.mts` (`readOnly`, `context_only`, no canon ids).
+- [x] **18.12** Acceptance: draft → Fondasi hasil ekstraksi → lanjut, tanpa BYOK, tanpa bocor. Code acceptance 2026-06-15: managed OpenRouter embedding allowlist, proposal-first import, read-only retrieval memory, and web review flow are covered by Sprint 18 contract + Draft Import Playwright. Production migration/deploy smoke remains separate.
 
 ### Sprint 19 — Full: Story Bible Granularity + Writer Retention
 

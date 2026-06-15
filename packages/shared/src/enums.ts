@@ -462,6 +462,34 @@ export type TimelineEventSource =
 /** Deterministic mini-arc grouping size (chapters per arc) when planner gives none. */
 export const DEFAULT_MINI_ARC_SIZE = 5;
 
+// --- Sprint 18: import/RAG preparation (read-only memory, proposal-first extraction) ---
+
+export const IMPORT_JOB_STATUSES = {
+  pending: "pending",
+  running: "running",
+  succeeded: "succeeded",
+  failed: "failed",
+  cancelled: "cancelled",
+} as const;
+export type ImportJobStatus = (typeof IMPORT_JOB_STATUSES)[keyof typeof IMPORT_JOB_STATUSES];
+
+export const IMPORT_JOB_PHASES = {
+  uploaded: "uploaded",
+  chunking: "chunking",
+  embedding: "embedding",
+  analysis: "analysis",
+  entity_extraction: "entity_extraction",
+  style_extraction: "style_extraction",
+  ready_for_review: "ready_for_review",
+} as const;
+export type ImportJobPhase = (typeof IMPORT_JOB_PHASES)[keyof typeof IMPORT_JOB_PHASES];
+
+export const PROSE_EMBEDDING_SOURCES = {
+  imported_draft: "imported_draft",
+} as const;
+export type ProseEmbeddingSource =
+  (typeof PROSE_EMBEDDING_SOURCES)[keyof typeof PROSE_EMBEDDING_SOURCES];
+
 // --- Sprint 5: write room (draft prose — NOT canon until Sprint 6 summary) ---
 
 export const WRITING_SESSION_STATUSES = {
