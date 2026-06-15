@@ -135,6 +135,13 @@ const HONORIFIC_WORDS = new Set([
   "tuan",
 ]);
 
+const LEADING_NAME_CONTEXT_WORDS = new Set([
+  "ketika",
+  "masalah",
+  "saat",
+  "setelah",
+]);
+
 const NON_PERSON_START_WORDS = new Set([
   "arsip",
   "bab",
@@ -150,8 +157,10 @@ const NON_PERSON_START_WORDS = new Set([
   "mama",
   "kereta",
   "kotak",
+  "ketika",
   "lalu",
   "malam",
+  "masalah",
   "naskah",
   "pagi",
   "papa",
@@ -271,8 +280,12 @@ function cleanupNameCandidate(candidate: string): string {
 
 function baseName(candidate: string): string {
   const parts = cleanupNameCandidate(candidate).split(/\s+/).filter(Boolean);
-  if (parts.length > 1 && HONORIFIC_WORDS.has(parts[0].replace(/\./g, "").toLowerCase())) {
-    return parts.slice(1).join(" ");
+  while (
+    parts.length > 1 &&
+    (HONORIFIC_WORDS.has(parts[0].replace(/\./g, "").toLowerCase()) ||
+      LEADING_NAME_CONTEXT_WORDS.has(parts[0].replace(/\./g, "").toLowerCase()))
+  ) {
+    parts.shift();
   }
   return parts.join(" ");
 }
@@ -343,6 +356,7 @@ function detectProtagonistName(text: string): string | null {
     const existing = candidates.get(key);
     const score =
       2 +
+      (firstIndex < 120 ? 20 : 0) +
       (firstIndex < 500 ? 3 : 0) +
       (PROTAGONIST_CONTEXT_RE.test(window) ? 3 : 0) -
       (startsWithHonorific ? 2 : 0);
@@ -389,18 +403,43 @@ function hasRomcomPattern(lower: string, explicitGenre?: string | null): boolean
   return fakeDating || (romanticSetup && (comedyTexture || urbanWork));
 }
 
+function hasDomesticDramaPattern(lower: string, explicitGenre?: string | null): boolean {
+  if (explicitGenre && /drama rumah tangga|domestic drama|keluarga/.test(explicitGenre.toLowerCase())) {
+    return true;
+  }
+  const householdRoles = /suami|istri|mertua|menantu|anak tunggal|ibu mertua|kepala keluarga/.test(
+    lower,
+  );
+  const householdPressure = /rumah tangga|tabungan|utang|berutang|penagih|selingkuh|pulang larut|kehilangan pekerjaan|kebohongan|keluarga/.test(
+    lower,
+  );
+  const domesticObjects = /meja makan|katering|dapur|tetangga|rumah|uang bersama/.test(lower);
+  const domesticProblem =
+    /rumah tangga/.test(lower) &&
+    /utang|berutang|tabungan|pulang larut|kehilangan pekerjaan|mertua|ibunya|kebohongan/.test(
+      lower,
+    );
+  return (householdRoles && (householdPressure || domesticObjects)) || domesticProblem || (domesticObjects && householdPressure);
+}
+
 export function extractDraftImportSignalsFromText(text: string): DraftImportSignalDraft[] {
   const lower = text.toLowerCase();
   const signals: DraftImportSignalDraft[] = [];
   const explicitGenre = explicitFieldValue(text, "genre");
   const explicitTone = explicitFieldValue(text, "tone");
-  const hasRomcom = hasRomcomPattern(lower, explicitGenre);
+  const explicitRomcom = Boolean(
+    explicitGenre && /romantic comedy|romcom|komedi romantis|romantis komedi/i.test(explicitGenre),
+  );
+  const hasDomesticDrama = !explicitRomcom && hasDomesticDramaPattern(lower, explicitGenre);
+  const hasRomcom = !hasDomesticDrama && hasRomcomPattern(lower, explicitGenre);
   const hasStationMystery =
     /arsip|stasiun|peron|kereta|tiket|tabung film|rel/.test(lower) &&
     /ayah|ibu|meninggal|kematian|kecelakaan|dua belas tahun|masa lalu|warisan/.test(lower);
 
   if (hasRomcom) {
     signals.push(signal("genre", "Romantic Comedy", "romantic comedy", 0.9));
+  } else if (hasDomesticDrama) {
+    signals.push(signal("genre", "Drama Rumah Tangga", "drama rumah tangga", 0.92));
   } else if (explicitGenre && /misteri/.test(explicitGenre.toLowerCase())) {
     signals.push(signal("genre", "Misteri drama ringan", "misteri drama", 0.92));
   } else if (hasStationMystery) {
@@ -415,6 +454,10 @@ export function extractDraftImportSignalsFromText(text: string): DraftImportSign
     signals.push(signal("tone", "Tone cerita terdeteksi", explicitTone, 0.88));
   } else if (hasRomcom) {
     signals.push(signal("tone", "Ringan, witty, hangat", "ringan witty hangat", 0.84));
+  } else if (hasDomesticDrama) {
+    signals.push(
+      signal("tone", "Emosional, realistis, tegang pelan", "emosional realistis tegang", 0.84),
+    );
   } else if (hasStationMystery) {
     signals.push(
       signal("tone", "Emosional, sinematik, sedikit tegang", "emosional sinematik tegang", 0.82),
@@ -434,6 +477,15 @@ export function extractDraftImportSignalsFromText(text: string): DraftImportSign
         "core_conflict",
         "Pacar pura-pura, tekanan keluarga, dan pitch brand",
         "pura-pura menjadi pacar demi acara keluarga sambil memenangkan pitch romantis",
+        0.88,
+      ),
+    );
+  } else if (hasDomesticDrama) {
+    signals.push(
+      signal(
+        "core_conflict",
+        "Kebohongan finansial dan tekanan mertua",
+        "utang, kehilangan pekerjaan, tabungan berkurang, dan mertua ikut menutup kebohongan",
         0.88,
       ),
     );
@@ -480,6 +532,15 @@ export function extractDraftImportSignalsFromText(text: string): DraftImportSign
         0.84,
       ),
     );
+  } else if (hasDomesticDrama) {
+    signals.push(
+      signal(
+        "reader_promise",
+        "Pengungkapan kebohongan rumah tangga",
+        "Rani mengurai kebohongan suami, utang, dan tekanan keluarga secara emosional",
+        0.86,
+      ),
+    );
   } else if (hasStationMystery) {
     signals.push(
       signal(
@@ -497,11 +558,24 @@ export function extractDraftImportSignalsFromText(text: string): DraftImportSign
 
   if (hasRomcom && /jakarta|brand|copywriter|coffee shop|kantor|urban|keluarga besar/.test(lower)) {
     signals.push(signal("target_reader", "Pembaca romcom urban mobile", "urban_romcom_mobile", 0.82));
+  } else if (hasDomesticDrama && /bekasi|jakarta|urban|kelas menengah|katering|rumah/.test(lower)) {
+    signals.push(
+      signal("target_reader", "Pembaca drama rumah tangga urban", "urban_domestic_drama", 0.82),
+    );
   } else if (/kbm|hp|serial|pembaca wanita|bab pendek|online/.test(lower)) {
     signals.push(signal("target_reader", "Pembaca serial mobile", "hp_serial", 0.82));
   }
 
-  if (hasStationMystery) {
+  if (hasDomesticDrama) {
+    signals.push(
+      signal(
+        "secret_candidate",
+        "Rahasia: pekerjaan hilang, utang, dan tabungan",
+        "Bima kehilangan pekerjaan, berutang diam-diam, dan menutupi uang bersama yang berkurang",
+        0.86,
+      ),
+    );
+  } else if (hasStationMystery) {
     signals.push(
       signal(
         "secret_candidate",
@@ -518,6 +592,15 @@ export function extractDraftImportSignalsFromText(text: string): DraftImportSign
         "continuity_warning",
         "Review objek dan peristiwa kunci",
         "tiket tua, tabung film, arsip stasiun, dan kejadian 12 tahun lalu perlu dikunci sebelum jadi canon",
+        0.86,
+      ),
+    );
+  } else if (hasDomesticDrama) {
+    signals.push(
+      signal(
+        "continuity_warning",
+        "Review rahasia finansial dan relasi keluarga",
+        "status pekerjaan Bima, utang, tabungan, peran Bu Ratna, dan dampak pada Alia perlu direview sebelum canon",
         0.86,
       ),
     );

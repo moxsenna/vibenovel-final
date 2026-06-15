@@ -137,6 +137,48 @@ assert.equal(
   false,
 );
 
+const domesticDramaDraftText = `
+BAB 1
+
+Rani Pradipta menata piring di meja makan untuk tiga orang, seperti biasa.
+Bima pulang larut lagi, membawa alasan pendek tentang lembur dan wajah yang
+terlalu lelah untuk diajak bicara. Alia memperhatikan keduanya tanpa bertanya.
+
+BAB 2
+
+Ketika Rani mengecek tabungan bersama untuk belanja katering, jumlahnya
+berkurang tanpa penjelasan. Ia sempat mengira Bima berselingkuh, tetapi catatan
+transfer dan pesan dari penagih utang membuat dadanya lebih sesak.
+
+BAB 3
+
+Bu Ratna datang ke rumah dan langsung mengatur cara Rani bicara pada tetangga.
+Masalah rumah tangga, kata Bu Ratna, harus ditutup rapat. Rani mulai memahami
+bahwa Bima kehilangan pekerjaan enam bulan lalu, berutang diam-diam, dan
+melibatkan ibunya agar kebohongan itu tetap rapi.
+`.trim();
+
+const domesticSignals = extractDraftImportSignalsFromText(domesticDramaDraftText);
+const domesticByType = new Map(domesticSignals.map((signal) => [signal.type, signal]));
+assert.equal(domesticByType.get("protagonist")?.value, "Rani");
+assert.equal(domesticByType.get("genre")?.value, "drama rumah tangga");
+assert.match(domesticByType.get("tone")?.value ?? "", /emosional|realistis|tegang/i);
+assert.match(
+  domesticByType.get("core_conflict")?.value ?? "",
+  /utang|pekerjaan|tabungan|mertua|kebohongan/i,
+);
+assert.match(
+  domesticByType.get("reader_promise")?.value ?? "",
+  /rumah tangga|kebohongan|Rani|keluarga/i,
+);
+assert.ok(domesticSignals.some((signal) => signal.type === "secret_candidate"));
+assert.equal(
+  domesticSignals.some(
+    (signal) => /romantic comedy|fake dating|Kira|Arka|pitch brand/i.test(`${signal.label} ${signal.value}`),
+  ),
+  false,
+);
+
 const migrationSql = readFileSync(
   "../../supabase/migrations/00013_sprint15_draft_import.sql",
   "utf8",
