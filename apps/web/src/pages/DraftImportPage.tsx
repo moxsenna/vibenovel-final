@@ -10,6 +10,7 @@ const SIGNAL_LABELS: Record<string, string> = {
   core_conflict: "Konflik",
   reader_promise: "Janji Pembaca",
   target_reader: "Target Pembaca",
+  relationship_dynamic: "Dinamika Relasi",
   tone: "Tone",
   secret_candidate: "Rahasia Cerita",
   continuity_warning: "Catatan Kontinuitas",

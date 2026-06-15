@@ -124,9 +124,11 @@ const HONORIFIC_WORDS = new Set([
   "ibu",
   "kak",
   "mas",
+  "mama",
   "mbak",
   "nyonya",
   "om",
+  "papa",
   "pak",
   "prof",
   "tante",
@@ -145,12 +147,14 @@ const NON_PERSON_START_WORDS = new Set([
   "genre",
   "hujan",
   "judul",
+  "mama",
   "kereta",
   "kotak",
   "lalu",
   "malam",
   "naskah",
   "pagi",
+  "papa",
   "pelan",
   "peron",
   "pov",
@@ -369,20 +373,39 @@ function explicitFieldValue(text: string, field: string): string | null {
   return match?.[1]?.trim() ?? null;
 }
 
+function hasRomcomPattern(lower: string, explicitGenre?: string | null): boolean {
+  if (explicitGenre && /romantic comedy|romcom|komedi romantis|romantis komedi/i.test(explicitGenre)) {
+    return true;
+  }
+  const fakeDating =
+    /pacar kontrak|pacar palsu|pura-pura (?:jadi|menjadi) pacar|fake dating|pretend (?:boyfriend|girlfriend)|contract boyfriend|contract girlfriend/.test(
+      lower,
+    );
+  const romanticSetup = /pacar|mantan|nikah|pernikahan|romantis|muse|gebetan/.test(lower);
+  const comedyTexture = /witty|sarkastik|coffee shop|kafe|kopi|senyum palsu|nasihat buruk|terlalu percaya diri|kapan nikah/.test(
+    lower,
+  );
+  const urbanWork = /brand|copywriter|freelance|pitch|kantor|jakarta|kampanye/.test(lower);
+  return fakeDating || (romanticSetup && (comedyTexture || urbanWork));
+}
+
 export function extractDraftImportSignalsFromText(text: string): DraftImportSignalDraft[] {
   const lower = text.toLowerCase();
   const signals: DraftImportSignalDraft[] = [];
   const explicitGenre = explicitFieldValue(text, "genre");
   const explicitTone = explicitFieldValue(text, "tone");
+  const hasRomcom = hasRomcomPattern(lower, explicitGenre);
   const hasStationMystery =
     /arsip|stasiun|peron|kereta|tiket|tabung film|rel/.test(lower) &&
     /ayah|ibu|meninggal|kematian|kecelakaan|dua belas tahun|masa lalu|warisan/.test(lower);
 
-  if (explicitGenre && /misteri/.test(explicitGenre.toLowerCase())) {
+  if (hasRomcom) {
+    signals.push(signal("genre", "Romantic Comedy", "romantic comedy", 0.9));
+  } else if (explicitGenre && /misteri/.test(explicitGenre.toLowerCase())) {
     signals.push(signal("genre", "Misteri drama ringan", "misteri drama", 0.92));
   } else if (hasStationMystery) {
     signals.push(signal("genre", "Misteri drama ringan", "misteri drama", 0.88));
-  } else if (/istri|suami|mertua|menantu|selingkuh|keluarga|rumah tangga/.test(lower)) {
+  } else if (/istri|suami|mertua|menantu|selingkuh|rumah tangga/.test(lower)) {
     signals.push(signal("genre", "Drama Rumah Tangga", "drama rumah tangga", 0.92));
   } else if (/sihir|akademi|fantasi|kerajaan|monster|kekuatan/.test(lower)) {
     signals.push(signal("genre", "Fantasi Serial", "fantasi serial", 0.86));
@@ -390,6 +413,8 @@ export function extractDraftImportSignalsFromText(text: string): DraftImportSign
 
   if (explicitTone) {
     signals.push(signal("tone", "Tone cerita terdeteksi", explicitTone, 0.88));
+  } else if (hasRomcom) {
+    signals.push(signal("tone", "Ringan, witty, hangat", "ringan witty hangat", 0.84));
   } else if (hasStationMystery) {
     signals.push(
       signal("tone", "Emosional, sinematik, sedikit tegang", "emosional sinematik tegang", 0.82),
@@ -403,7 +428,16 @@ export function extractDraftImportSignalsFromText(text: string): DraftImportSign
     );
   }
 
-  if (hasStationMystery && /kematian|kecelakaan|ayah/.test(lower)) {
+  if (hasRomcom) {
+    signals.push(
+      signal(
+        "core_conflict",
+        "Pacar pura-pura, tekanan keluarga, dan pitch brand",
+        "pura-pura menjadi pacar demi acara keluarga sambil memenangkan pitch romantis",
+        0.88,
+      ),
+    );
+  } else if (hasStationMystery && /kematian|kecelakaan|ayah/.test(lower)) {
     signals.push(
       signal(
         "core_conflict",
@@ -429,7 +463,24 @@ export function extractDraftImportSignalsFromText(text: string): DraftImportSign
     signals.push(signal("core_conflict", "Konflik rahasia masa lalu", "rahasia masa lalu", 0.8));
   }
 
-  if (hasStationMystery) {
+  if (hasRomcom) {
+    signals.push(
+      signal(
+        "reader_promise",
+        "Fake dating romcom dengan chemistry dan banter",
+        "romansa komedi, fake dating, keluarga cerewet, dan chemistry Kira-Arka",
+        0.86,
+      ),
+    );
+    signals.push(
+      signal(
+        "relationship_dynamic",
+        "Fake dating antara mantan teman SMA",
+        "Kira dan Arka berpura-pura pacaran sambil membawa luka malu masa SMA",
+        0.84,
+      ),
+    );
+  } else if (hasStationMystery) {
     signals.push(
       signal(
         "reader_promise",
@@ -444,7 +495,9 @@ export function extractDraftImportSignalsFromText(text: string): DraftImportSign
     );
   }
 
-  if (/kbm|hp|serial|pembaca wanita|bab pendek|online/.test(lower)) {
+  if (hasRomcom && /jakarta|brand|copywriter|coffee shop|kantor|urban|keluarga besar/.test(lower)) {
+    signals.push(signal("target_reader", "Pembaca romcom urban mobile", "urban_romcom_mobile", 0.82));
+  } else if (/kbm|hp|serial|pembaca wanita|bab pendek|online/.test(lower)) {
     signals.push(signal("target_reader", "Pembaca serial mobile", "hp_serial", 0.82));
   }
 

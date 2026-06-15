@@ -92,6 +92,51 @@ assert.equal(
   false,
 );
 
+const romcomDraftText = `
+BAB 1
+
+Kira menutup laptopnya tepat ketika Mama menelepon untuk menanyakan undangan
+pernikahan Dimas minggu depan. Dalam kepanikan, Kira mengaku sudah punya pacar.
+Masalahnya, pacar itu tidak ada.
+
+Maya, sahabat Kira sekaligus pemilik coffee shop kecil, menyarankan solusi
+paling buruk dengan wajah paling serius: pinjam saja Arka.
+
+BAB 2
+
+Arka Wibisana muncul di kantor brand dengan kemeja terlalu rapi dan senyum
+terlalu percaya diri. Mantan teman SMA Kira itu setuju pura-pura menjadi pacar
+Kira selama acara keluarga, tetapi ia punya syarat: Kira harus membantunya
+memenangkan pitch brand besar dengan berpura-pura menjadi muse kampanye
+romantisnya.
+
+BAB 3
+
+Di depan keluarga besar, Kira dan Arka saling melempar senyum palsu, jawaban
+witty, dan tatapan yang hampir terlalu meyakinkan. Setiap kali Mama bertanya
+kapan nikah, Kira ingin menghilang di balik piring kue.
+`.trim();
+
+const romcomSignals = extractDraftImportSignalsFromText(romcomDraftText);
+const romcomByType = new Map(romcomSignals.map((signal) => [signal.type, signal]));
+assert.equal(romcomByType.get("protagonist")?.value, "Kira");
+assert.equal(romcomByType.get("genre")?.value, "romantic comedy");
+assert.match(romcomByType.get("tone")?.value ?? "", /witty|hangat|ringan/i);
+assert.match(
+  romcomByType.get("core_conflict")?.value ?? "",
+  /pura-pura|pacar|keluarga|pitch|mantan/i,
+);
+assert.match(
+  romcomByType.get("reader_promise")?.value ?? "",
+  /romansa|komedi|chemistry|fake dating|keluarga/i,
+);
+assert.equal(
+  romcomSignals.some(
+    (signal) => /misteri|stasiun|arsip|kereta|kematian ayah/i.test(`${signal.label} ${signal.value}`),
+  ),
+  false,
+);
+
 const migrationSql = readFileSync(
   "../../supabase/migrations/00013_sprint15_draft_import.sql",
   "utf8",

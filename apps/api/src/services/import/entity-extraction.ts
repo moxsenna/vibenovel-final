@@ -130,6 +130,7 @@ export function buildDraftImportProposalDrafts(
       signal.type === "target_reader" ||
       signal.type === "genre" ||
       signal.type === "tone" ||
+      signal.type === "relationship_dynamic" ||
       signal.type === "style_preference"
     ) {
       addOnce(
