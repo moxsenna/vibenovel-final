@@ -97,6 +97,78 @@ const DRAFT_SIGNAL_SELECT =
 const AI_PROPOSAL_SELECT =
   "id, proposal_type, status, risk_level, source, title, payload, created_at, updated_at";
 
+const DOCUMENT_HEADING_WORDS = new Set([
+  "adegan",
+  "bagian",
+  "bab",
+  "chapter",
+  "draft",
+  "episode",
+  "epilog",
+  "judul",
+  "part",
+  "premis",
+  "prolog",
+  "pov",
+  "scene",
+  "sinopsis",
+  "tone",
+]);
+
+const HONORIFIC_WORDS = new Set([
+  "bang",
+  "bapak",
+  "bu",
+  "dokter",
+  "dr",
+  "ibu",
+  "kak",
+  "mas",
+  "mbak",
+  "nyonya",
+  "om",
+  "pak",
+  "prof",
+  "tante",
+  "tuan",
+]);
+
+const NON_PERSON_START_WORDS = new Set([
+  "arsip",
+  "bab",
+  "chapter",
+  "dan",
+  "dari",
+  "dalam",
+  "di",
+  "draft",
+  "genre",
+  "hujan",
+  "judul",
+  "kereta",
+  "kotak",
+  "lalu",
+  "malam",
+  "naskah",
+  "pagi",
+  "pelan",
+  "peron",
+  "pov",
+  "premis",
+  "ruang",
+  "saat",
+  "scene",
+  "senja",
+  "seolah",
+  "setelah",
+  "stasiun",
+  "tiket",
+  "tone",
+]);
+
+const PROTAGONIST_CONTEXT_RE =
+  /ayahnya|ibunya|masa lalunya|curiga|menggenggam|menemukan|menyadari|mencari|menatap|pulang|kembali|sendirian|mengikuti|membuka|menyimpan/i;
+
 function countWords(content: string): number {
   return content.split(/\s+/).filter(Boolean).length;
 }
@@ -165,24 +237,191 @@ function signal(
   };
 }
 
+function isDocumentStructureLine(line: string): boolean {
+  const trimmed = line.trim();
+  if (!trimmed) {
+    return false;
+  }
+  const firstWord = trimmed.split(/\s+/)[0]?.replace(/[^A-Za-z]/g, "").toLowerCase();
+  if (firstWord && DOCUMENT_HEADING_WORDS.has(firstWord)) {
+    return true;
+  }
+  return /^[A-Z0-9\s:._-]{2,40}$/.test(trimmed) && !/[a-z]/.test(trimmed);
+}
+
+function narrativeTextForSignals(text: string): string {
+  return text
+    .split(/\r?\n/)
+    .filter((line) => !isDocumentStructureLine(line))
+    .join("\n")
+    .trim();
+}
+
+function cleanupNameCandidate(candidate: string): string {
+  return candidate
+    .replace(/[“”"'.:,;!?()[\]{}]+$/g, "")
+    .replace(/^[“”"'.:,;!?()[\]{}]+/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function baseName(candidate: string): string {
+  const parts = cleanupNameCandidate(candidate).split(/\s+/).filter(Boolean);
+  if (parts.length > 1 && HONORIFIC_WORDS.has(parts[0].replace(/\./g, "").toLowerCase())) {
+    return parts.slice(1).join(" ");
+  }
+  return parts.join(" ");
+}
+
+function displayName(candidate: string): string {
+  return baseName(candidate).split(/\s+/)[0] ?? candidate;
+}
+
+function isLikelyPersonName(candidate: string): boolean {
+  const cleaned = cleanupNameCandidate(candidate);
+  if (!cleaned || cleaned.length < 3) {
+    return false;
+  }
+  if (/^[A-Z\s0-9._-]+$/.test(cleaned)) {
+    return false;
+  }
+  const name = baseName(cleaned);
+  const first = name.split(/\s+/)[0]?.replace(/[^A-Za-z-]/g, "").toLowerCase();
+  if (!first || NON_PERSON_START_WORDS.has(first) || DOCUMENT_HEADING_WORDS.has(first)) {
+    return false;
+  }
+  return true;
+}
+
+function explicitProtagonistFromText(text: string): string | null {
+  const section = text.match(
+    /tokoh utama\s*:\s*([\s\S]{1,700}?)(?:\n\s*(?:premis|genre|tone|pov|bab|chapter)\b|$)/i,
+  );
+  if (!section) {
+    return null;
+  }
+  const firstCharacterLine = section[1]
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .find((line) => line.length > 0);
+  if (!firstCharacterLine) {
+    return null;
+  }
+  const candidate = firstCharacterLine.split(/[-\u2013\u2014]/)[0]?.trim() ?? "";
+  return isLikelyPersonName(candidate) ? displayName(candidate) : null;
+}
+
+function detectProtagonistName(text: string): string | null {
+  const explicit = explicitProtagonistFromText(text);
+  if (explicit) {
+    return explicit;
+  }
+
+  const narrative = narrativeTextForSignals(text);
+  const candidatePattern =
+    /\b(?:(?:Pak|Bu|Ibu|Bapak|Mas|Mbak|Kak|Bang|Om|Tante|Tuan|Nyonya|Dr|Dokter|Prof)\.?\s+)?[A-Z][\p{L}'-]{2,}(?:\s+[A-Z][\p{L}'-]{2,}){0,2}/gu;
+  const candidates = new Map<
+    string,
+    { candidate: string; count: number; firstIndex: number; score: number }
+  >();
+
+  for (const match of narrative.matchAll(candidatePattern)) {
+    const candidate = cleanupNameCandidate(match[0]);
+    if (!isLikelyPersonName(candidate)) {
+      continue;
+    }
+    const key = displayName(candidate).toLowerCase();
+    const firstIndex = match.index ?? narrative.indexOf(match[0]);
+    const window = narrative.slice(Math.max(0, firstIndex - 90), firstIndex + 140);
+    const startsWithHonorific = HONORIFIC_WORDS.has(
+      candidate.split(/\s+/)[0]?.replace(/\./g, "").toLowerCase(),
+    );
+    const existing = candidates.get(key);
+    const score =
+      2 +
+      (firstIndex < 500 ? 3 : 0) +
+      (PROTAGONIST_CONTEXT_RE.test(window) ? 3 : 0) -
+      (startsWithHonorific ? 2 : 0);
+
+    if (existing) {
+      existing.count += 1;
+      existing.score += score;
+      existing.firstIndex = Math.min(existing.firstIndex, firstIndex);
+      if (candidate.length > existing.candidate.length && !startsWithHonorific) {
+        existing.candidate = candidate;
+      }
+      continue;
+    }
+
+    candidates.set(key, { candidate, count: 1, firstIndex, score });
+  }
+
+  const best = [...candidates.values()].sort(
+    (left, right) =>
+      right.score + right.count * 2 - (left.score + left.count * 2) ||
+      left.firstIndex - right.firstIndex,
+  )[0];
+  return best ? displayName(best.candidate) : null;
+}
+
+function explicitFieldValue(text: string, field: string): string | null {
+  const match = text.match(new RegExp(`^\\s*${field}\\s*:\\s*(.+)$`, "im"));
+  return match?.[1]?.trim() ?? null;
+}
+
 export function extractDraftImportSignalsFromText(text: string): DraftImportSignalDraft[] {
   const lower = text.toLowerCase();
   const signals: DraftImportSignalDraft[] = [];
+  const explicitGenre = explicitFieldValue(text, "genre");
+  const explicitTone = explicitFieldValue(text, "tone");
+  const hasStationMystery =
+    /arsip|stasiun|peron|kereta|tiket|tabung film|rel/.test(lower) &&
+    /ayah|ibu|meninggal|kematian|kecelakaan|dua belas tahun|masa lalu|warisan/.test(lower);
 
-  if (/istri|suami|mertua|menantu|selingkuh|keluarga|rumah tangga/.test(lower)) {
+  if (explicitGenre && /misteri/.test(explicitGenre.toLowerCase())) {
+    signals.push(signal("genre", "Misteri drama ringan", "misteri drama", 0.92));
+  } else if (hasStationMystery) {
+    signals.push(signal("genre", "Misteri drama ringan", "misteri drama", 0.88));
+  } else if (/istri|suami|mertua|menantu|selingkuh|keluarga|rumah tangga/.test(lower)) {
     signals.push(signal("genre", "Drama Rumah Tangga", "drama rumah tangga", 0.92));
   } else if (/sihir|akademi|fantasi|kerajaan|monster|kekuatan/.test(lower)) {
     signals.push(signal("genre", "Fantasi Serial", "fantasi serial", 0.86));
   }
 
-  const protagonistMatch = text.match(/\b([A-Z][a-zA-ZÀ-ž]{2,})\b/);
-  if (protagonistMatch) {
+  if (explicitTone) {
+    signals.push(signal("tone", "Tone cerita terdeteksi", explicitTone, 0.88));
+  } else if (hasStationMystery) {
     signals.push(
-      signal("protagonist", `Tokoh utama: ${protagonistMatch[1]}`, protagonistMatch[1], 0.78),
+      signal("tone", "Emosional, sinematik, sedikit tegang", "emosional sinematik tegang", 0.82),
     );
   }
 
-  if (/hina|menghina|diremehkan|ditindas|miskin|bully|rundung/.test(lower)) {
+  const protagonistName = detectProtagonistName(text);
+  if (protagonistName) {
+    signals.push(
+      signal("protagonist", `Tokoh utama terindikasi: ${protagonistName}`, protagonistName, 0.84),
+    );
+  }
+
+  if (hasStationMystery && /kematian|kecelakaan|ayah/.test(lower)) {
+    signals.push(
+      signal(
+        "core_conflict",
+        "Misteri arsip dan kematian masa lalu",
+        "kematian ayah, tiket/arsip stasiun, dan peristiwa 12 tahun lalu",
+        0.88,
+      ),
+    );
+  } else if (hasStationMystery) {
+    signals.push(
+      signal(
+        "core_conflict",
+        "Misteri stasiun yang kembali terbuka",
+        "arsip, peron, dan kereta lama memicu konflik masa lalu",
+        0.84,
+      ),
+    );
+  } else if (/hina|menghina|diremehkan|ditindas|miskin|bully|rundung/.test(lower)) {
     signals.push(
       signal("core_conflict", "Konflik status dan penghinaan", "tokoh diremehkan", 0.84),
     );
@@ -190,7 +429,16 @@ export function extractDraftImportSignalsFromText(text: string): DraftImportSign
     signals.push(signal("core_conflict", "Konflik rahasia masa lalu", "rahasia masa lalu", 0.8));
   }
 
-  if (/balas dendam|bangkit|revenge|menang|elegan/.test(lower)) {
+  if (hasStationMystery) {
+    signals.push(
+      signal(
+        "reader_promise",
+        "Janji pengungkapan misteri keluarga",
+        "mengungkap rahasia kematian dan arsip stasiun secara emosional",
+        0.84,
+      ),
+    );
+  } else if (/balas dendam|bangkit|revenge|menang|elegan/.test(lower)) {
     signals.push(
       signal("reader_promise", "Janji kebangkitan emosional", "kebangkitan dan pembalasan elegan", 0.84),
     );
@@ -200,7 +448,27 @@ export function extractDraftImportSignalsFromText(text: string): DraftImportSign
     signals.push(signal("target_reader", "Pembaca serial mobile", "hp_serial", 0.82));
   }
 
-  if (/rahasia|disembunyikan|fakta canon|canon|kontinuitas|masa lalu/.test(lower)) {
+  if (hasStationMystery) {
+    signals.push(
+      signal(
+        "secret_candidate",
+        "Rahasia: arsip, tiket, dan kematian ayah",
+        "kematian ayah mungkin bukan kecelakaan; tiket/arsip menyimpan petunjuk",
+        0.86,
+      ),
+    );
+  }
+
+  if (hasStationMystery) {
+    signals.push(
+      signal(
+        "continuity_warning",
+        "Review objek dan peristiwa kunci",
+        "tiket tua, tabung film, arsip stasiun, dan kejadian 12 tahun lalu perlu dikunci sebelum jadi canon",
+        0.86,
+      ),
+    );
+  } else if (/rahasia|disembunyikan|fakta canon|canon|kontinuitas|masa lalu/.test(lower)) {
     signals.push(
       signal(
         "continuity_warning",

@@ -36,11 +36,61 @@ const signals = extractDraftImportSignalsFromText(draftText);
 const signalTypes = new Set(signals.map((signal) => signal.type));
 assert.ok(signalTypes.has("genre"));
 assert.ok(signalTypes.has("protagonist"));
+assert.equal(signals.find((signal) => signal.type === "protagonist")?.value, "Nadira");
 assert.ok(signalTypes.has("core_conflict"));
 assert.ok(signalTypes.has("reader_promise"));
 assert.ok(signalTypes.has("target_reader"));
 assert.ok(signalTypes.has("continuity_warning"));
 assert.ok(signals.every((signal) => signal.metadata.source === "imported_draft"));
+
+const mysteryDraftText = `
+BAB 1
+
+Nara Prameswari menggenggam tiket tua tanpa tujuan yang ia temukan di kotak
+warisan ibunya. Hujan turun di atap Stasiun Senja, membuat tulisan di tiket itu
+semakin samar.
+
+Raka menatap Pak Seno dengan wajah pucat. "Peron 3 sudah ditutup."
+
+Pak Seno mencengkeram tongkatnya. Dari balik dinding arsip, suara rel mulai
+bergetar.
+
+Pelan. Lalu semakin keras.
+
+Seolah ada kereta yang memang datang.
+
+Seolah dua belas tahun tidak pernah berlalu.
+
+Dan di dalam genggaman Nara, tabung film hitam itu terasa lebih berat
+daripada seluruh masa lalunya. Ia mulai curiga kematian ayahnya bukan
+kecelakaan, dan arsip tersembunyi itu menyimpan jawaban yang dulu ditutup
+ibunya.
+
+BAB 2
+
+Nara kembali ke ruang administrasi lama sendirian. Raka mengikuti dari jauh,
+dingin seperti biasa, tetapi ia tahu terlalu banyak tentang malam ketika kereta
+terakhir meninggalkan stasiun.
+`.trim();
+
+const mysterySignals = extractDraftImportSignalsFromText(mysteryDraftText);
+const mysteryProtagonist = mysterySignals.find((signal) => signal.type === "protagonist");
+assert.equal(mysteryProtagonist?.value, "Nara");
+assert.notEqual(mysteryProtagonist?.value, "BAB");
+assert.equal(mysterySignals.find((signal) => signal.type === "genre")?.value, "misteri drama");
+assert.match(
+  mysterySignals.find((signal) => signal.type === "core_conflict")?.label ?? "",
+  /arsip|kematian|masa lalu|misteri/i,
+);
+assert.ok(mysterySignals.some((signal) => signal.type === "tone"));
+assert.ok(mysterySignals.some((signal) => signal.type === "secret_candidate"));
+assert.equal(
+  mysterySignals.some(
+    (signal) =>
+      signal.type === "reader_promise" && /kebangkitan|pembalasan/i.test(signal.value),
+  ),
+  false,
+);
 
 const migrationSql = readFileSync(
   "../../supabase/migrations/00013_sprint15_draft_import.sql",
