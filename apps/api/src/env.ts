@@ -64,6 +64,14 @@ export interface EnvPresenceFlags {
   paymentProviderMock: boolean;
   appEnv: string;
   paymentProvider: string;
+  hasMayarApiKey: boolean;
+  mayarEnv: string;
+  hasDuitkuMerchantCode: boolean;
+  hasDuitkuMerchantKey: boolean;
+  duitkuEnv: string;
+  hasDuitkuCallbackUrl: boolean;
+  duitkuCallbackUrlIsPublic: boolean;
+  duitkuSmokeCallbackFixture: boolean;
 }
 
 const DEFAULT_APP_ENV = "development";
@@ -329,6 +337,14 @@ export function getEnvPresenceFlags(bindings: AppBindings): EnvPresenceFlags {
     paymentProviderMock: isPaymentProviderMock(bindings),
     appEnv: getAppEnv(bindings),
     paymentProvider: getPaymentProvider(bindings),
+    hasMayarApiKey: hasMayarApiKey(bindings),
+    mayarEnv: getMayarEnv(bindings),
+    hasDuitkuMerchantCode: hasDuitkuMerchantCode(bindings),
+    hasDuitkuMerchantKey: hasDuitkuMerchantKey(bindings),
+    duitkuEnv: getDuitkuEnv(bindings),
+    hasDuitkuCallbackUrl: hasDuitkuCallbackUrl(bindings),
+    duitkuCallbackUrlIsPublic: isDuitkuCallbackUrlPublic(bindings),
+    duitkuSmokeCallbackFixture: isDuitkuSmokeCallbackFixtureEnabled(bindings),
   };
 }
 

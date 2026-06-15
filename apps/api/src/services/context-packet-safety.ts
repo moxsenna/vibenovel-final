@@ -60,6 +60,7 @@ export interface AssertWriterPacketSafeOptions {
   currentChapterNumber: number;
   futureChapterSummaries: string[];
   futureChapterTitles: string[];
+  futureRevealFactIds?: string[];
 }
 
 function canonicalize(value: unknown): unknown {
@@ -122,6 +123,21 @@ function containsFutureContent(
   return false;
 }
 
+function containsFutureRevealFactId(packet: WriterContextPacket, factIds: string[]): boolean {
+  if (factIds.length === 0) return false;
+  const forbidden = new Set(factIds);
+  const povKnowledge = packet.continuity?.povKnowledge;
+  if (!povKnowledge) return false;
+
+  const entries = [
+    ...povKnowledge.knownFacts,
+    ...povKnowledge.suspectedFacts,
+    ...povKnowledge.partialFacts,
+    ...povKnowledge.falseBeliefs,
+  ];
+  return entries.some((entry) => forbidden.has(entry.factId));
+}
+
 export function assertWriterPacketSafe(
   packet: WriterContextPacket,
   options: AssertWriterPacketSafeOptions,
@@ -136,6 +152,11 @@ export function assertWriterPacketSafe(
 
   if (containsFutureContent(json, options.futureChapterSummaries, options.futureChapterTitles)) {
     console.error("context packet safety: future chapter content detected");
+    throw AppError.internal("Context packet failed safety checks");
+  }
+
+  if (containsFutureRevealFactId(packet, options.futureRevealFactIds ?? [])) {
+    console.error("context packet safety: future reveal fact id detected in povKnowledge");
     throw AppError.internal("Context packet failed safety checks");
   }
 

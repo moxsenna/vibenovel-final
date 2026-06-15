@@ -68,6 +68,7 @@ export default tseslint.config(
   {
     files: [
       "apps/api/**/*.{ts,mts,cts}",
+      "apps/api/**/*.js",
       "packages/**/*.ts",
       "apps/web/e2e/**/*.ts",
     ],

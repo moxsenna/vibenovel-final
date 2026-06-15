@@ -144,6 +144,16 @@ export const CHARACTER_SOURCES = {
 } as const;
 export type CharacterSource = (typeof CHARACTER_SOURCES)[keyof typeof CHARACTER_SOURCES];
 
+export const CHARACTER_KNOWLEDGE_STATUSES = {
+  unknown: "unknown",
+  suspects: "suspects",
+  partially_knows: "partially_knows",
+  knows: "knows",
+  misbelieves: "misbelieves",
+} as const;
+export type CharacterKnowledgeStatus =
+  (typeof CHARACTER_KNOWLEDGE_STATUSES)[keyof typeof CHARACTER_KNOWLEDGE_STATUSES];
+
 // --- Facts (confirmed canon only in `facts` table) ---
 
 export const FACT_CATEGORIES = {
@@ -231,6 +241,8 @@ export const AI_PROPOSAL_TYPES = {
   character_update: "character_update",
   /** Sprint 6 — relationship dynamic change candidate */
   relationship_update: "relationship_update",
+  character_state_update: "character_state_update",
+  character_knowledge_update: "character_knowledge_update",
 } as const;
 export type AiProposalType = (typeof AI_PROPOSAL_TYPES)[keyof typeof AI_PROPOSAL_TYPES];
 
@@ -436,6 +448,19 @@ export const RETENTION_MARKER_TYPES = {
 } as const;
 export type RetentionMarkerType =
   (typeof RETENTION_MARKER_TYPES)[keyof typeof RETENTION_MARKER_TYPES];
+
+// --- Sprint 17: continuity engine II (mini-arc + timeline — planner/continuity, not canon) ---
+
+/** Origin of a timeline event row. `chapter_close` is materialized at summary approval. */
+export const TIMELINE_EVENT_SOURCES = {
+  chapter_close: "chapter_close",
+  user: "user",
+} as const;
+export type TimelineEventSource =
+  (typeof TIMELINE_EVENT_SOURCES)[keyof typeof TIMELINE_EVENT_SOURCES];
+
+/** Deterministic mini-arc grouping size (chapters per arc) when planner gives none. */
+export const DEFAULT_MINI_ARC_SIZE = 5;
 
 // --- Sprint 5: write room (draft prose — NOT canon until Sprint 6 summary) ---
 

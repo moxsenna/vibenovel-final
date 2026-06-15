@@ -37,6 +37,16 @@ Dokumen ini menyatukan fitur MVP dan Full. Jangan membuat dokumen terpisah `MVP.
 16. Publish Package Generator
 17. Cost-Aware Model Router
 
+## Shipped vs planned engine register
+
+Status per 2026-06-15:
+
+- Shipped/real: Story Intake, Story Foundation, Canon Facts + AI Proposals, Outline/Chapter/Beat planning, Reveal Gate, Context Packet Builder, Prose Writer via OpenRouter, managed credit router, Chapter Summary/Delta, proposal-to-canon promotion, Publish Package, Draft Import signal extraction, Creator Mode settings, Duitku topup provider, and Cloudflare Worker production API.
+- Partial: Version history storage/API exists through `chapter_prose_versions`; full writer-facing diff/accept/reject UX is still planned.
+- Planned: Character State Engine, Character Knowledge Engine, Timeline Engine, Mini Arc table/service, RAG/vector memory, full voice/style learning, and writer retention analytics.
+
+For code-verified backlog and drift notes, use `docs/100-competitive-manuscript-teardown-and-gap-sprint-plan.md`. For historical sprint-number mapping, use `docs/61-roadmap-and-sprint-number-reconciliation.md`.
+
 ## Non-negotiable architecture rules
 
 ```txt

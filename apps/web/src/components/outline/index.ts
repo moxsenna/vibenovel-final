@@ -1,4 +1,5 @@
 export { OutlineRetentionHint } from "./OutlineRetentionHint";
+export { OutlineTimelineInspector } from "./OutlineTimelineInspector";
 export { OutlineChapterBadge } from "./OutlineChapterBadge";
 export { OutlineChapterCard } from "./OutlineChapterCard";
 export { OutlineChapterEditor } from "./OutlineChapterEditor";

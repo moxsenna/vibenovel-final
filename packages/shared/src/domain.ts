@@ -18,6 +18,7 @@ import type {
   PublishChecklistItemId,
   PublishPackageGeneratorVersion,
   PublishPackageStatus,
+  CharacterKnowledgeStatus,
   CharacterRole,
   CharacterSource,
   CharacterStatus,
@@ -52,6 +53,7 @@ import type {
   ReaderTarget,
   RevealRiskLevel,
   RetentionMarkerType,
+  TimelineEventSource,
   SpeechRuleSource,
   SpeechRuleStatus,
   StoryConceptSource,
@@ -157,6 +159,18 @@ export interface Character extends Timestamps {
   sortOrder: number;
 }
 
+export interface CharacterState extends Timestamps {
+  id: ID;
+  projectId: ID;
+  characterId: ID;
+  chapterNumber: number;
+  emotionalState: string | null;
+  physicalState: string | null;
+  currentGoal: string | null;
+  locationId: ID | null;
+  metadata: JsonObject;
+}
+
 // --- Facts (confirmed canon only — AI output must go through ai_proposals) ---
 
 export interface Fact extends Timestamps {
@@ -171,6 +185,18 @@ export interface Fact extends Timestamps {
   isLocked: boolean;
   source: FactSource;
   acceptedFromProposalId: ID | null;
+}
+
+export interface CharacterKnowledge extends Timestamps {
+  id: ID;
+  projectId: ID;
+  characterId: ID;
+  factId: ID;
+  knowledgeStatus: CharacterKnowledgeStatus;
+  confidence: number | null;
+  learnedAtChapter: number | null;
+  learnedFrom: string | null;
+  metadata: JsonObject;
 }
 
 // --- Relationship speech rules (internal: relationship_speech_rules; UI: Panggilan & Gaya Bicara) ---
@@ -425,8 +451,47 @@ export interface ChapterOutline extends Timestamps {
   endingHook: string | null;
   miniVictory: string | null;
   povCharacterId: ID | null;
+  /** Sprint 17 — mini-arc grouping (presentational; nullable for legacy plans). */
+  miniArcId: ID | null;
   status: ChapterOutlineStatus;
   markers: ChapterOutlineMarker[];
+  metadata: JsonObject;
+}
+
+/**
+ * Sprint 17 — Season → MiniArc → Chapter grouping.
+ * Planner artifact only; covers an inclusive chapter range within one outline plan.
+ */
+export interface MiniArc extends Timestamps {
+  id: ID;
+  projectId: ID;
+  outlinePlanId: ID;
+  arcNumber: number;
+  title: string;
+  premise: string;
+  startChapter: number;
+  endChapter: number;
+  payoff: string | null;
+  metadata: JsonObject;
+}
+
+/**
+ * Sprint 17 — continuity timeline event.
+ * Past/current chapter facts derived at chapter close; never carries future truth
+ * and never mutates `facts`.
+ */
+export interface TimelineEvent extends Timestamps {
+  id: ID;
+  projectId: ID;
+  chapterOutlineId: ID | null;
+  chapterSummaryId: ID | null;
+  chapterNumber: number;
+  relativeOrder: number;
+  event: string;
+  involvedCharacterIds: ID[];
+  locationId: ID | null;
+  consequences: string[];
+  source: TimelineEventSource;
   metadata: JsonObject;
 }
 
@@ -585,6 +650,23 @@ export interface ForbiddenRevealEntry {
   forbiddenConcepts: string[];
 }
 
+export interface PovKnowledgeFactSummary {
+  factId: ID;
+  text: string;
+  confidence: number | null;
+  learnedAtChapter: number | null;
+  learnedFrom?: string | null;
+}
+
+export interface PovKnowledgeSnapshot {
+  characterId: ID | null;
+  knownFacts: PovKnowledgeFactSummary[];
+  suspectedFacts: PovKnowledgeFactSummary[];
+  partialFacts: PovKnowledgeFactSummary[];
+  falseBeliefs: PovKnowledgeFactSummary[];
+  unknownFactCount: number;
+}
+
 /**
  * Full writer Context Packet — slice-only, backend-built.
  * Must NOT include full outline dump, future chapters, or planningTruth raw.
@@ -633,6 +715,10 @@ export interface WriterContextPacket {
     previousChapterSummaries: string[];
     openLoopsActive: OpenLoopSafeSummary[];
     unresolvedThreadLabels: string[];
+    /** Sprint 17 — past/current timeline events only (never future). */
+    recentTimeline: string[];
+    /** Sprint 16: POV-only knowledge; unsafe future reveal facts are omitted. */
+    povKnowledge: PovKnowledgeSnapshot;
   };
   revealGate: {
     allowedBreadcrumbs: string[];
@@ -671,6 +757,7 @@ export interface WriterContextPacketPreview {
   mustInclude: string[];
   mustNotInclude: string[];
   storyCheckLabels: string[];
+  povKnowledgeSummary: string | null;
   packetLogId: ID;
 }
 

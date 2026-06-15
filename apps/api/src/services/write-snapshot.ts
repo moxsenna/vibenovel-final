@@ -10,12 +10,15 @@ import {
   type Character,
   type Fact,
   type OpenLoop,
+  type PovKnowledgeSnapshot,
   type RelationshipSpeechRule,
+  type TimelineEvent,
 } from "@vibenovel/shared";
 import type { AppBindings } from "../env.js";
 import {
   mapChapterBeatRow,
   mapChapterOutlineRow,
+  mapTimelineEventRow,
   type ChapterBeatRow,
   type ChapterOutlineRow,
   type FoundationRow,
@@ -23,6 +26,7 @@ import {
   type PlannedRevealSafeRow,
   type ProjectRow,
   type StoryConceptRow,
+  type TimelineEventRow,
 } from "../lib/mappers.js";
 import { createServiceRoleClient } from "../lib/supabase.js";
 import { AppError } from "../errors.js";
@@ -30,6 +34,11 @@ import { listCharactersForOwner } from "./character.js";
 import { listFactsForOwner } from "./fact.js";
 import { getOwnedProjectRow } from "./project.js";
 import { listSpeechRulesForOwner } from "./speech-rule.js";
+import {
+  buildPovKnowledgeSnapshot,
+  collectFutureRevealFactIds,
+  listCharacterKnowledgeForOwner,
+} from "./character-knowledge.js";
 
 const FOUNDATION_SELECT =
   "id, project_id, premise, main_conflict, reader_promise, tone, genre, target_reader, story_secrets_preview, style_tags, readiness_percent, readiness_status, status, is_locked, locked_at, created_at, updated_at";
@@ -41,7 +50,7 @@ const PLAN_SELECT =
   "id, project_id, status, season_label, arc_summary, retention_summary, target_chapter_count, planning_notes, metadata, locked_at, created_at, updated_at";
 
 const CHAPTER_SELECT =
-  "id, project_id, outline_plan_id, chapter_number, title, summary, purpose, chapter_function, emotional_direction, hook, ending_hook, mini_victory, pov_character_id, status, markers, metadata, created_at, updated_at";
+  "id, project_id, outline_plan_id, chapter_number, title, summary, purpose, chapter_function, emotional_direction, hook, ending_hook, mini_victory, pov_character_id, mini_arc_id, status, markers, metadata, created_at, updated_at";
 
 const BEAT_SELECT =
   "id, project_id, chapter_outline_id, writing_session_id, beat_number, title, summary, direction, status, emotional_shift, must_include, must_not_include, word_target, stop_condition, sort_order, metadata, created_at, updated_at";
@@ -52,6 +61,9 @@ const REVEAL_SAFE_SELECT =
 
 const LOOP_SELECT =
   "id, project_id, outline_plan_id, opened_in_chapter_outline_id, payoff_chapter_outline_id, question, reader_facing_hint, status, importance, metadata, created_at, updated_at";
+
+const TIMELINE_SELECT =
+  "id, project_id, chapter_outline_id, chapter_summary_id, chapter_number, relative_order, event, involved_character_ids, location_id, consequences, source, metadata, created_at, updated_at";
 
 const SETTINGS_SELECT = "id, project_id, default_format";
 
@@ -82,6 +94,10 @@ export interface WriteContextSnapshot {
   chapterNumberByOutlineId: Map<string, number>;
   openLoops: OpenLoop[];
   plannedReveals: PlannedRevealSafeRow[];
+  /** Sprint 16 - POV-only knowledge; future reveal fact text is filtered out. */
+  povKnowledge: PovKnowledgeSnapshot;
+  /** Sprint 17 — past/current continuity events only (chapter_number < current). */
+  pastTimelineEvents: TimelineEvent[];
   beat: ChapterBeat | null;
   characters: Character[];
   facts: Fact[];
@@ -291,7 +307,7 @@ export async function loadWriteContextSnapshot(
 
   const admin = createServiceRoleClient(bindings);
 
-  const [loopsRes, revealsRes] = await Promise.all([
+  const [loopsRes, revealsRes, timelineRes] = await Promise.all([
     admin
       .from("open_loops")
       .select(LOOP_SELECT)
@@ -302,6 +318,14 @@ export async function loadWriteContextSnapshot(
       .select(REVEAL_SAFE_SELECT)
       .eq("project_id", projectId)
       .eq("outline_plan_id", plan.id),
+    // Past/current only — never load events at/after the current chapter so future
+    // continuity cannot leak into the writer Context Packet.
+    admin
+      .from("timeline_events")
+      .select(TIMELINE_SELECT)
+      .eq("project_id", projectId)
+      .lt("chapter_number", currentNumber)
+      .order("relative_order", { ascending: true }),
   ]);
 
   if (loopsRes.error) {
@@ -312,9 +336,32 @@ export async function loadWriteContextSnapshot(
     console.error("planned_reveals select for write snapshot failed");
     throw AppError.internal("Failed to load planned reveals");
   }
+  if (timelineRes.error) {
+    console.error("timeline_events select for write snapshot failed");
+    throw AppError.internal("Failed to load timeline events");
+  }
 
   const openLoops = ((loopsRes.data ?? []) as Parameters<typeof mapOpenLoopRowSafe>[0][]).map(
     mapOpenLoopRowSafe,
+  );
+  const plannedReveals = (revealsRes.data ?? []) as PlannedRevealSafeRow[];
+  const povKnowledgeRows = currentRow.pov_character_id
+    ? await listCharacterKnowledgeForOwner(
+        bindings,
+        ownerId,
+        projectId,
+        currentRow.pov_character_id,
+      )
+    : [];
+  const povKnowledge = buildPovKnowledgeSnapshot({
+    povCharacterId: currentRow.pov_character_id,
+    facts,
+    knowledgeRows: povKnowledgeRows,
+    futureRevealFactIds: collectFutureRevealFactIds(plannedReveals, currentNumber),
+  });
+
+  const pastTimelineEvents = ((timelineRes.data ?? []) as TimelineEventRow[]).map(
+    mapTimelineEventRow,
   );
 
   return {
@@ -328,7 +375,9 @@ export async function loadWriteContextSnapshot(
     futureChapterSummaries: futureRows.map((row) => row.summary),
     chapterNumberByOutlineId,
     openLoops,
-    plannedReveals: (revealsRes.data ?? []) as PlannedRevealSafeRow[],
+    plannedReveals,
+    povKnowledge,
+    pastTimelineEvents,
     beat,
     characters,
     facts,
@@ -388,4 +437,3 @@ export function filterActiveOpenLoops(
     return openedAt !== undefined && openedAt <= currentChapterNumber;
   });
 }
-

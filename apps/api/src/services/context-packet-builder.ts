@@ -24,6 +24,8 @@ import {
   loadWriteContextSnapshot,
   type WriteSnapshotInput,
 } from "./write-snapshot.js";
+import { buildPastTimelineSummaries } from "./timeline.js";
+import { collectFutureRevealFactIds } from "./character-knowledge.js";
 
 const PREVIOUS_SUMMARY_MAX = 500;
 const MAX_PREVIOUS_SUMMARIES = 20;
@@ -164,6 +166,19 @@ function buildOpenLoopSummaries(
   });
 }
 
+function buildPovKnowledgeSummary(
+  povKnowledge: WriterContextPacket["continuity"]["povKnowledge"] | null | undefined,
+): string | null {
+  if (!povKnowledge?.characterId) return null;
+  return [
+    `POV: ${povKnowledge.knownFacts.length} known`,
+    `${povKnowledge.suspectedFacts.length} suspect`,
+    `${povKnowledge.partialFacts.length} partial`,
+    `${povKnowledge.falseBeliefs.length} false`,
+    `${povKnowledge.unknownFactCount} unknown`,
+  ].join(", ");
+}
+
 function buildWriterPacketFromSnapshot(
   snapshot: Awaited<ReturnType<typeof loadWriteContextSnapshot>>,
   generatedAt: string,
@@ -245,6 +260,8 @@ function buildWriterPacketFromSnapshot(
       previousChapterSummaries: previousSummaries,
       openLoopsActive,
       unresolvedThreadLabels: activeLoops.map((loop) => loop.question),
+      recentTimeline: buildPastTimelineSummaries(snapshot.pastTimelineEvents, currentNumber),
+      povKnowledge: snapshot.povKnowledge,
     },
     revealGate,
     emotionalTarget: {
@@ -285,6 +302,10 @@ export function buildPreviewFromPacket(
   if (packet.revealGate.forbiddenReveals.length > 0) {
     storyCheckLabels.push("Rahasia masa depan ditahan");
   }
+  const povKnowledgeSummary = buildPovKnowledgeSummary(packet.continuity.povKnowledge);
+  if (povKnowledgeSummary) {
+    storyCheckLabels.push("POV knowledge scoped");
+  }
 
   const hasBeat = packet.meta.beatNumber !== undefined;
 
@@ -301,6 +322,7 @@ export function buildPreviewFromPacket(
     mustInclude: packet.constraints.mustInclude,
     mustNotInclude: packet.constraints.mustNotInclude,
     storyCheckLabels,
+    povKnowledgeSummary,
     packetLogId,
   };
 }
@@ -355,6 +377,12 @@ export async function buildContextPacketForOwner(
     currentChapterNumber: snapshot.currentChapter.chapterNumber,
     futureChapterSummaries: snapshot.futureChapterSummaries,
     futureChapterTitles: snapshot.futureChapterTitles,
+    futureRevealFactIds: [
+      ...collectFutureRevealFactIds(
+        snapshot.plannedReveals,
+        snapshot.currentChapter.chapterNumber,
+      ),
+    ],
   });
 
   const admin = createServiceRoleClient(bindings);

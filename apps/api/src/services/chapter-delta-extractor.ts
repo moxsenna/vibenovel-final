@@ -2,6 +2,7 @@ import {
   AI_PROPOSAL_RISK_LEVELS,
   AI_PROPOSAL_SOURCES,
   AI_PROPOSAL_TYPES,
+  CHARACTER_KNOWLEDGE_STATUSES,
   CHAPTER_DELTA_EXTRACTOR_VERSIONS,
   CHAPTER_SUMMARY_ITEM_TYPES,
   type AiProposalRiskLevel,
@@ -130,6 +131,68 @@ function buildCharacterUpdateProposal(
   };
 }
 
+function buildCharacterStateProposal(
+  summary: ChapterSummaryRow,
+  item: ChapterSummaryItemRow,
+): ProposalDraft | null {
+  if (!item.related_character_id || item.body.trim().length < 8) return null;
+  const stateSummary = truncate(item.body, 500);
+  return {
+    proposalType: AI_PROPOSAL_TYPES.character_state_update,
+    title: truncate(item.title ? `State tokoh: ${item.title}` : "State tokoh", 200),
+    riskLevel: AI_PROPOSAL_RISK_LEVELS.medium,
+    payload: {
+      summaryId: summary.id,
+      chapterOutlineId: summary.chapter_outline_id,
+      chapterNumber: summary.chapter_number,
+      targetEntityType: "character",
+      targetEntityId: item.related_character_id,
+      characterId: item.related_character_id,
+      stateSummary,
+      currentGoal: stateSummary,
+      reason: "Kandidat state tokoh dari ringkasan bab",
+      sourceItemType: item.item_type,
+      sourceItemId: item.id,
+    },
+    sourceItemType: item.item_type,
+    sourceItemId: item.id,
+  };
+}
+
+function buildCharacterKnowledgeProposal(
+  summary: ChapterSummaryRow,
+  item: ChapterSummaryItemRow,
+): ProposalDraft | null {
+  if (!item.related_character_id || !item.related_fact_id) return null;
+  const knowledgeSummary = truncate(extractFactText(item.body), 500);
+  if (knowledgeSummary.length < 8) return null;
+
+  return {
+    proposalType: AI_PROPOSAL_TYPES.character_knowledge_update,
+    title: truncate(item.title ? `Knowledge POV: ${item.title}` : "Knowledge POV", 200),
+    riskLevel: AI_PROPOSAL_RISK_LEVELS.medium,
+    payload: {
+      summaryId: summary.id,
+      chapterOutlineId: summary.chapter_outline_id,
+      chapterNumber: summary.chapter_number,
+      targetEntityType: "character",
+      targetEntityId: item.related_character_id,
+      characterId: item.related_character_id,
+      factId: item.related_fact_id,
+      knowledgeStatus: CHARACTER_KNOWLEDGE_STATUSES.knows,
+      confidence: 0.8,
+      learnedAtChapter: summary.chapter_number,
+      learnedFrom: `chapter_${summary.chapter_number}`,
+      knowledgeSummary,
+      reason: "Kandidat knowledge POV dari ringkasan bab",
+      sourceItemType: item.item_type,
+      sourceItemId: item.id,
+    },
+    sourceItemType: item.item_type,
+    sourceItemId: item.id,
+  };
+}
+
 function buildRelationshipUpdateProposal(
   summary: ChapterSummaryRow,
   item: ChapterSummaryItemRow,
@@ -230,19 +293,24 @@ export function extractChapterDeltaStub(
   items: ChapterSummaryItemRow[],
 ): ExtractedChapterDelta {
   const proposalDrafts: ProposalDraft[] = [];
+  const appendDraft = (draft: ProposalDraft | null): ProposalDraft | null => {
+    if (!draft || proposalDrafts.length >= MAX_DELTA_PROPOSALS) return null;
+    proposalDrafts.push(draft);
+    return draft;
+  };
 
   for (const item of items) {
     if (!EXTRACTABLE_ITEM_TYPES.has(item.item_type)) continue;
     const draft = buildProposalDraft(summary, item);
-    if (draft) {
-      proposalDrafts.push(draft);
+    const appendedDraft = appendDraft(draft);
+    if (appendedDraft) {
       if (
-        draft.proposalType === AI_PROPOSAL_TYPES.fact &&
-        draft.riskLevel === AI_PROPOSAL_RISK_LEVELS.high &&
+        appendedDraft.proposalType === AI_PROPOSAL_TYPES.fact &&
+        appendedDraft.riskLevel === AI_PROPOSAL_RISK_LEVELS.high &&
         proposalDrafts.length < MAX_DELTA_PROPOSALS
       ) {
         const factText = extractFactText(item.body);
-        proposalDrafts.push({
+        appendDraft({
           proposalType: AI_PROPOSAL_TYPES.reveal_status_update,
           title: "Kandidat reveal (high risk)",
           riskLevel: AI_PROPOSAL_RISK_LEVELS.high,
@@ -261,6 +329,14 @@ export function extractChapterDeltaStub(
         });
       }
     }
+
+    if (item.item_type === CHAPTER_SUMMARY_ITEM_TYPES.character_change) {
+      appendDraft(buildCharacterStateProposal(summary, item));
+    }
+    if (item.item_type === CHAPTER_SUMMARY_ITEM_TYPES.new_fact_candidate) {
+      appendDraft(buildCharacterKnowledgeProposal(summary, item));
+    }
+
     if (proposalDrafts.length >= MAX_DELTA_PROPOSALS) break;
   }
 

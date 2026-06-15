@@ -36,6 +36,7 @@ export function WritePage() {
     saveProse,
     buildSafeContext,
     contextPreview,
+    showPovKnowledgeSummary,
     finishChapter,
     aiGenerating,
     aiError,
@@ -68,6 +69,19 @@ export function WritePage() {
     hasProseForRewrite,
     lockedTitle,
     lockedDescription,
+    proseVersions,
+    currentProseVersionId,
+    selectedProseVersionId,
+    onSelectProseVersion,
+    onUseSelectedProseVersion,
+    versionApplying,
+    pendingAiVersionId,
+    onAcceptPendingAiVersion,
+    onRejectPendingAiVersion,
+    canUndoProse,
+    canRedoProse,
+    undoProse,
+    redoProse,
     source,
   } = useWriteRoomData();
 
@@ -128,6 +142,19 @@ export function WritePage() {
     rewriteGenerating,
     rewriteNotice,
     rewriteError,
+    proseVersions,
+    currentProseVersionId,
+    selectedProseVersionId,
+    onSelectProseVersion,
+    onUseSelectedProseVersion: () => void onUseSelectedProseVersion(),
+    versionApplying,
+    pendingAiVersionId,
+    onAcceptPendingAiVersion,
+    onRejectPendingAiVersion: () => void onRejectPendingAiVersion(),
+    canUndo: canUndoProse,
+    canRedo: canRedoProse,
+    onUndoProse: undoProse,
+    onRedoProse: redoProse,
   };
 
   const assistantProps = {
@@ -226,6 +253,7 @@ export function WritePage() {
         <WriterAssistantPanel
           draft={draft}
           contextPreview={contextPreview}
+          showPovKnowledgeSummary={showPovKnowledgeSummary}
           onBuildContext={editable ? () => void buildSafeContext() : undefined}
           buildingContext={buildingContext}
           {...assistantProps}

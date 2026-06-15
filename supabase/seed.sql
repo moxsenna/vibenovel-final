@@ -45,6 +45,16 @@ ON CONFLICT (id) DO UPDATE SET
   raw_user_meta_data = EXCLUDED.raw_user_meta_data,
   updated_at = now();
 
+UPDATE auth.users
+SET confirmation_token = '',
+    recovery_token = '',
+    email_change_token_new = '',
+    email_change = '',
+    phone_change_token = '',
+    email_change_token_current = '',
+    reauthentication_token = ''
+WHERE id = 'a0000000-0000-4000-8000-000000000001';
+
 INSERT INTO auth.identities (
   id,
   user_id,

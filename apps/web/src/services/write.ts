@@ -36,6 +36,11 @@ export interface SaveProseDraftResponse {
   chapterWordCount: number;
 }
 
+export interface MakeCurrentProseResponse {
+  version: ChapterProseVersion;
+  chapterWordCount: number;
+}
+
 export interface GenerateBeatsResponse {
   beats: ChapterBeat[];
   created: boolean;
@@ -153,6 +158,17 @@ export async function fetchProseVersion(
   return apiRequest<{ version: ChapterProseVersion }>(
     `/api/projects/${projectId}/write/prose/${versionId}`,
     { token },
+  );
+}
+
+export async function makeProseVersionCurrent(
+  projectId: string,
+  versionId: string,
+  token: string | null | undefined,
+): Promise<MakeCurrentProseResponse> {
+  return apiRequest<MakeCurrentProseResponse>(
+    `/api/projects/${projectId}/write/prose/${versionId}/make-current`,
+    { method: "POST", body: {}, token },
   );
 }
 

@@ -17,6 +17,7 @@ import { writeAuditLog } from "./audit.js";
 import { snapshotChapterSummaryApproval } from "./audit-snapshot.js";
 import { getOwnedProjectRow } from "./project.js";
 import { countLinkedProposals } from "./summary-proposal-linker.js";
+import { materializeChapterCloseTimelineEvent } from "./timeline.js";
 
 const SUMMARY_SELECT =
   "id, project_id, chapter_outline_id, writing_session_id, current_prose_version_ids, status, chapter_number, title, synopsis, mini_victory, emotional_outcome, ending_hook, word_count, summary_version, is_current, safety_flags, metadata, approved_at, created_at, updated_at";
@@ -220,6 +221,16 @@ export async function approveChapterSummaryForOwner(
       summary_version: approvedRow.summary_version,
     }),
   });
+
+  // Sprint 17 — materialize a continuity timeline event at chapter close.
+  // Best-effort: a timeline failure must never block an otherwise-valid approval.
+  try {
+    await materializeChapterCloseTimelineEvent(bindings, projectId, approvedRow, items);
+  } catch (timelineErr) {
+    console.error("timeline materialization on summary approval failed");
+    if (timelineErr instanceof Error) console.error(timelineErr.message);
+    warnings.push("timeline_event_skipped");
+  }
 
   return {
     summary: mapChapterSummaryRow(updatedSummary as ChapterSummaryRow),

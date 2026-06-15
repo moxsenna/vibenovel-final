@@ -59,6 +59,10 @@ const proseDraftSource = readFileSync(
   fileURLToPath(new URL("../src/services/prose-draft.ts", import.meta.url)),
   "utf8",
 );
+const writeRoomMigration = readFileSync(
+  fileURLToPath(new URL("../../../supabase/migrations/00004_sprint5_write_room.sql", import.meta.url)),
+  "utf8",
+);
 assert.match(
   proseDraftSource,
   /export async function makeProseVersionCurrentForOwner/,
@@ -66,13 +70,28 @@ assert.match(
 );
 assert.match(
   proseDraftSource,
+  /if\s*\(\s*versionRow\.is_current\s*\)\s*\{[\s\S]*?return\s*\{/,
+  "make-current must be idempotent when the selected version is already current",
+);
+assert.match(
+  proseDraftSource,
   /\.update\(\{ is_current: false \}\)[\s\S]*\.eq\("chapter_beat_id"/,
   "make-current must demote only versions for the same beat before selecting the accepted one",
+);
+assert.match(
+  proseDraftSource,
+  /\.update\(\{ is_current: true \}\)[\s\S]*\.eq\("id", versionId\)[\s\S]*\.eq\("project_id", projectId\)/,
+  "make-current must promote exactly the selected version within the project",
 );
 assert.doesNotMatch(
   proseDraftSource,
   /from\("chapter_prose_versions"\)\.delete\(\)/,
   "make-current must keep previous prose versions readable, not delete them",
+);
+assert.match(
+  writeRoomMigration,
+  /CREATE UNIQUE INDEX chapter_prose_versions_one_current_per_beat_idx[\s\S]*ON public\.chapter_prose_versions \(chapter_beat_id\)[\s\S]*WHERE is_current = true;/,
+  "schema must enforce at most one current prose version per beat",
 );
 
 console.log("PASS write room gates and make-current contracts are explicit");

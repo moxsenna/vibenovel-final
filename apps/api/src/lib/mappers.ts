@@ -23,6 +23,9 @@ import type {
   PublishPackageStatus,
   PublishSafetyFlags,
   Character,
+  CharacterKnowledge,
+  CharacterKnowledgeStatus,
+  CharacterState,
   CreditBalance,
   CreditLedgerDirection,
   CreditLedgerEntry,
@@ -36,10 +39,13 @@ import type {
   IntakeMessage,
   IntakeSession,
   JsonObject,
+  MiniArc,
   OpenLoop,
   OutlinePlan,
   PlannedReveal,
   Project,
+  TimelineEvent,
+  TimelineEventSource,
   ProjectSettings,
   RelationshipSpeechRule,
   StoryConcept,
@@ -266,6 +272,66 @@ export function mapCharacterRow(row: CharacterRow): Character {
   };
 }
 
+export interface CharacterStateRow {
+  id: string;
+  project_id: string;
+  character_id: string;
+  chapter_number: number;
+  emotional_state: string | null;
+  physical_state: string | null;
+  current_goal: string | null;
+  location_id: string | null;
+  metadata: JsonObject | unknown;
+  created_at: string;
+  updated_at: string;
+}
+
+export function mapCharacterStateRow(row: CharacterStateRow): CharacterState {
+  return {
+    id: row.id,
+    projectId: row.project_id,
+    characterId: row.character_id,
+    chapterNumber: row.chapter_number,
+    emotionalState: row.emotional_state,
+    physicalState: row.physical_state,
+    currentGoal: row.current_goal,
+    locationId: row.location_id,
+    metadata: parseJsonObject(row.metadata),
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
+export interface CharacterKnowledgeRow {
+  id: string;
+  project_id: string;
+  character_id: string;
+  fact_id: string;
+  knowledge_status: string;
+  confidence: number | null;
+  learned_at_chapter: number | null;
+  learned_from: string | null;
+  metadata: JsonObject | unknown;
+  created_at: string;
+  updated_at: string;
+}
+
+export function mapCharacterKnowledgeRow(row: CharacterKnowledgeRow): CharacterKnowledge {
+  return {
+    id: row.id,
+    projectId: row.project_id,
+    characterId: row.character_id,
+    factId: row.fact_id,
+    knowledgeStatus: row.knowledge_status as CharacterKnowledgeStatus,
+    confidence: row.confidence,
+    learnedAtChapter: row.learned_at_chapter,
+    learnedFrom: row.learned_from,
+    metadata: parseJsonObject(row.metadata),
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
 export interface FactRow {
   id: string;
   project_id: string;
@@ -440,6 +506,67 @@ function parseJsonObject(value: unknown): JsonObject {
     return value as JsonObject;
   }
   return {};
+}
+
+const PROSE_VERSION_METADATA_FORBIDDEN_KEYS = new Set([
+  "apikey",
+  "authorization",
+  "contextpacket",
+  "contextpacketjson",
+  "fullprompt",
+  "model",
+  "modelid",
+  "openrouter",
+  "packetjson",
+  "planningtruth",
+  "prompt",
+  "promptjson",
+  "prompttext",
+  "provider",
+  "providerpayload",
+  "rawprompt",
+  "secret",
+  "systemprompt",
+  "token",
+  "userprompt",
+]);
+
+function normalizeMetadataKey(key: string): string {
+  return key.replace(/[_\-\s]/g, "").toLowerCase();
+}
+
+function isForbiddenProseVersionMetadataKey(key: string): boolean {
+  const normalized = normalizeMetadataKey(key);
+  return (
+    PROSE_VERSION_METADATA_FORBIDDEN_KEYS.has(normalized) ||
+    normalized.includes("apikey") ||
+    normalized.includes("secret") ||
+    normalized.includes("token")
+  );
+}
+
+function sanitizeProseVersionMetadataValue(value: unknown): unknown {
+  if (Array.isArray(value)) {
+    return value.map(sanitizeProseVersionMetadataValue);
+  }
+
+  if (value !== null && typeof value === "object") {
+    return sanitizeProseVersionMetadata(value);
+  }
+
+  return value;
+}
+
+function sanitizeProseVersionMetadata(value: unknown): JsonObject {
+  const obj = parseJsonObject(value);
+  const safe: Record<string, unknown> = {};
+
+  for (const [key, item] of Object.entries(obj)) {
+    if (isForbiddenProseVersionMetadataKey(key)) continue;
+    safe[key] = sanitizeProseVersionMetadataValue(item);
+  }
+
+  return safe as JsonObject;
 }
 
 export interface IntakeSessionRow {
@@ -622,6 +749,7 @@ export interface ChapterOutlineRow {
   ending_hook: string | null;
   mini_victory: string | null;
   pov_character_id: string | null;
+  mini_arc_id: string | null;
   status: string;
   markers: JsonObject | unknown;
   metadata: JsonObject | unknown;
@@ -644,6 +772,7 @@ export function mapChapterOutlineRow(row: ChapterOutlineRow): ChapterOutline {
     endingHook: row.ending_hook,
     miniVictory: row.mini_victory,
     povCharacterId: row.pov_character_id,
+    miniArcId: row.mini_arc_id ?? null,
     status: row.status as ChapterOutline["status"],
     markers: parseMarkers(row.markers),
     metadata: parseJsonObject(row.metadata),
@@ -749,6 +878,76 @@ export interface PlannedRevealSafeRow {
   metadata: JsonObject | unknown;
   created_at: string;
   updated_at: string;
+}
+
+// --- Sprint 17: mini-arc + timeline (planner/continuity artifacts — NOT canon) ---
+
+export interface MiniArcRow {
+  id: string;
+  project_id: string;
+  outline_plan_id: string;
+  arc_number: number;
+  title: string;
+  premise: string;
+  start_chapter: number;
+  end_chapter: number;
+  payoff: string | null;
+  metadata: JsonObject | unknown;
+  created_at: string;
+  updated_at: string;
+}
+
+export function mapMiniArcRow(row: MiniArcRow): MiniArc {
+  return {
+    id: row.id,
+    projectId: row.project_id,
+    outlinePlanId: row.outline_plan_id,
+    arcNumber: row.arc_number,
+    title: row.title,
+    premise: row.premise,
+    startChapter: row.start_chapter,
+    endChapter: row.end_chapter,
+    payoff: row.payoff,
+    metadata: parseJsonObject(row.metadata),
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
+export interface TimelineEventRow {
+  id: string;
+  project_id: string;
+  chapter_outline_id: string | null;
+  chapter_summary_id: string | null;
+  chapter_number: number;
+  relative_order: number;
+  event: string;
+  involved_character_ids: string[] | null;
+  location_id: string | null;
+  consequences: string[] | null;
+  source: string;
+  metadata: JsonObject | unknown;
+  created_at: string;
+  updated_at: string;
+}
+
+export function mapTimelineEventRow(row: TimelineEventRow): TimelineEvent {
+  return {
+    id: row.id,
+    projectId: row.project_id,
+    chapterOutlineId: row.chapter_outline_id,
+    chapterSummaryId: row.chapter_summary_id,
+    chapterNumber: row.chapter_number,
+    relativeOrder: row.relative_order,
+    event: row.event,
+    involvedCharacterIds: row.involved_character_ids ?? [],
+    locationId: row.location_id,
+    consequences: row.consequences ?? [],
+    source: row.source as TimelineEventSource,
+    metadata: parseJsonObject(row.metadata),
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
 }
 
 export interface ChapterBeatRow {
@@ -878,7 +1077,7 @@ export function mapChapterProseVersionRow(row: ChapterProseVersionRow): ChapterP
     source: row.source as ChapterProseSource,
     isCurrent: row.is_current,
     contextPacketLogId: row.context_packet_log_id,
-    metadata: parseJsonObject(row.metadata),
+    metadata: sanitizeProseVersionMetadata(row.metadata),
     createdAt: row.created_at,
   };
 }
@@ -1059,6 +1258,18 @@ export function mapLinkedProposalSummary(
     "suggestedStatus",
     "targetEntityType",
     "targetEntityId",
+    "characterId",
+    "factId",
+    "knowledgeStatus",
+    "confidence",
+    "learnedAtChapter",
+    "learnedFrom",
+    "stateSummary",
+    "knowledgeSummary",
+    "emotionalState",
+    "physicalState",
+    "currentGoal",
+    "locationId",
   ];
   for (const key of allowedKeys) {
     if (key in payload) safeExcerpt[key] = payload[key];

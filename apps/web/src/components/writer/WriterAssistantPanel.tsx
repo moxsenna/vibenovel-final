@@ -21,6 +21,7 @@ const REWRITE_MODE_OPTIONS: ProseRewriteMode[] = [
 export interface WriterAssistantPanelProps {
   draft: ChapterDraft;
   contextPreview?: SafeContextPreview | null;
+  showPovKnowledgeSummary?: boolean;
   onBuildContext?: () => void;
   buildingContext?: boolean;
   onGenerateAi?: () => void;
@@ -57,6 +58,7 @@ export interface WriterAssistantPanelProps {
 export function WriterAssistantPanel({
   draft,
   contextPreview = null,
+  showPovKnowledgeSummary = false,
   onBuildContext,
   buildingContext = false,
   onGenerateAi,
@@ -98,14 +100,6 @@ export function WriterAssistantPanel({
           <Icon name="auto_awesome" size={22} className="text-primary" />
           {pageCopy.assistantTitle}
         </h2>
-        <button
-          type="button"
-          aria-label="Tutup panel asisten"
-          className="rounded-full p-1 text-muted-text transition-colors hover:text-on-surface"
-          disabled
-        >
-          <Icon name="close" size={20} />
-        </button>
       </div>
 
       <div className="flex flex-col gap-6 p-lg">
@@ -133,6 +127,9 @@ export function WriterAssistantPanel({
                   <li>Item wajib: {contextPreview.mustIncludeCount}</li>
                   <li>Item dilarang: {contextPreview.mustNotIncludeCount}</li>
                   <li>Cek cerita aman: {contextPreview.storyCheckLabels.length}</li>
+                  {showPovKnowledgeSummary && contextPreview.povKnowledgeSummary ? (
+                    <li>{contextPreview.povKnowledgeSummary}</li>
+                  ) : null}
                   {contextPreview.packetHashShort ? (
                     <li>Hash paket: {contextPreview.packetHashShort}…</li>
                   ) : null}
@@ -392,14 +389,6 @@ export function WriterAssistantPanel({
               ),
             )}
           </div>
-          <Button
-            variant="ghost"
-            className="mt-2 w-full rounded-xl border border-border text-primary hover:border-primary hover:bg-primary-soft"
-            leftIcon={<Icon name="checklist" size={18} />}
-            disabled
-          >
-            {pageCopy.recheckLabel}
-          </Button>
         </div>
       </div>
     </aside>

@@ -2,7 +2,7 @@
 
 ## MVP tables
 
-MVP minimal perlu tabel/logical collections:
+MVP minimal perlu tabel/logical collections. Status per 2026-06-15: sebagian sudah menjadi tabel production migration; sebagian masih target lanjutan.
 
 ```txt
 users / profiles
@@ -10,13 +10,28 @@ projects
 story_foundations
 characters
 facts
-reveals
-chapters
+ai_proposals
+planned_reveals
+chapter_outlines
 chapter_beats
-prose_versions
-qa_reports
+chapter_prose_versions
+context_packet_logs
+chapter_summaries
 chapter_deltas
-credits_ledger later
+chapter_summary_items
+chapter_summary_proposals
+generation_attempts
+credit_ledger
+credit_topup_products / credit_topup_orders / payment_webhook_events
+draft_imports / draft_import_signals
+
+planned later:
+character_states
+character_knowledge
+timeline_events
+mini_arcs
+prose_embeddings
+import_jobs
 ```
 
 ## Important design rules
@@ -26,23 +41,30 @@ credits_ledger later
 - AI-generated data harus punya source dan status.
 - User-edited prose harus menjadi accepted version bila disetujui.
 
-## Prose version
+## Chapter prose version
 
 ```ts
-ProseVersion {
+ChapterProseVersion {
   id: string
   projectId: string
-  chapterId: string
-  beatId?: string
+  chapterBeatId: string
   versionNumber: number
-  text: string
-  source: 'ai_generated' | 'user_edited' | 'ai_rewritten' | 'accepted' | 'published'
-  isCurrentAcceptedVersion: boolean
-  model?: string
-  contextPacketHash?: string
-  qaStatus?: 'passed' | 'warning' | 'failed'
+  proseText: string
+  wordCount: number
+  source: 'user_edited' | 'stub_deterministic' | 'ai_generated'
+  isCurrent: boolean
+  contextPacketLogId: string | null
+  metadata: Record<string, unknown>
+  createdAt: string
 }
 ```
+
+Notes:
+
+- `chapter_prose_versions` adalah draft storage, bukan canon facts.
+- Satu beat hanya boleh punya satu row `is_current = true`.
+- Status seperti `accepted` atau `published` bukan nilai `source`; accept/publish hidup di workflow summary/publish, bukan di enum prose source.
+- Model id, token, dan prompt raw tidak boleh menjadi response normal UI; pakai audit/generation attempt summary yang aman.
 
 ## Chapter Delta
 
@@ -62,6 +84,8 @@ ChapterDelta {
   continuityWarnings: string[]
 }
 ```
+
+Status saat ini: `chapter_deltas` dan `chapter_summary_items` sudah ada, dan kandidat canon harus masuk `ai_proposals`. `characterStateChanges`, `timelineEvents`, dan memory/RAG masih target Sprint continuity berikutnya, bukan tabel yang sudah ada.
 
 ## Sprint boundary
 

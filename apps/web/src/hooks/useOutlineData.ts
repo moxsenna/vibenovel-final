@@ -17,10 +17,11 @@ import { DEMO_MODE_LABEL } from "@/lib/workflow-truth";
 import { resolveProjectIdForRoute } from "@/lib/project-context";
 import type { OutlineAdvancedControlValues, OutlineChapterDraft } from "@/components/outline";
 import { mockOutline } from "@/mocks/outline";
-import type { ChapterOutline, CreatorMode } from "@vibenovel/shared";
+import type { ChapterOutline, CreatorMode, MiniArc, TimelineEvent } from "@vibenovel/shared";
 import {
   approveOutline,
   fetchOutlineBundle,
+  fetchTimeline,
   generateOutline,
   lockOutline,
   patchChapterOutline,
@@ -68,6 +69,8 @@ export interface OutlineData {
   isLocked: boolean;
   projectId: string | null;
   apiChapters: ChapterOutline[];
+  miniArcs: MiniArc[];
+  timelineEvents: TimelineEvent[];
   creatorMode: CreatorMode;
   advancedControls: OutlineAdvancedControlValues;
   updateAdvancedControl: <K extends keyof OutlineAdvancedControlValues>(
@@ -100,6 +103,8 @@ export function useOutlineData(): OutlineData {
     });
   });
   const [apiChapters, setApiChapters] = useState<ChapterOutline[]>([]);
+  const [miniArcs, setMiniArcs] = useState<MiniArc[]>([]);
+  const [timelineEvents, setTimelineEvents] = useState<TimelineEvent[]>([]);
   const [openLoops, setOpenLoops] = useState<UiOpenLoop[]>([]);
   const [reveals, setReveals] = useState<UiPlannedReveal[]>([]);
   const [source, setSource] = useState<OutlineDataSource>(useMocks ? "mock" : "api");
@@ -119,6 +124,7 @@ export function useOutlineData(): OutlineData {
   const applyBundle = useCallback(
     (resolvedId: string, bundle: Awaited<ReturnType<typeof fetchOutlineBundle>>) => {
       setApiChapters(bundle.chapterOutlines);
+      setMiniArcs(bundle.miniArcs ?? []);
       setOutline(mapOutlineBundleToUi(resolvedId, bundle));
       const chMap = chapterNumberMap(bundle.chapterOutlines);
       setOpenLoops(mapOpenLoopsToUi(bundle.openLoops, chMap));
@@ -152,6 +158,8 @@ export function useOutlineData(): OutlineData {
           setNotice("Proyek tidak ditemukan.");
         }
         setApiChapters([]);
+        setMiniArcs([]);
+        setTimelineEvents([]);
         setOpenLoops([]);
         setReveals([]);
         return;
@@ -165,6 +173,13 @@ export function useOutlineData(): OutlineData {
       applyBundle(resolvedId, bundle);
       setCreatorMode(settings.creatorMode ?? "simple");
       setSource("api");
+      // Continuity timeline is best-effort — never fail outline load over it.
+      try {
+        const timeline = await fetchTimeline(resolvedId, token);
+        setTimelineEvents(timeline.events ?? []);
+      } catch {
+        setTimelineEvents([]);
+      }
     } catch (error) {
       if (allowMockFallback()) {
         setOutline(mockOutline);
@@ -195,6 +210,8 @@ export function useOutlineData(): OutlineData {
     if (!apiMode) {
       setOutline(mockOutline);
       setApiChapters([]);
+      setMiniArcs([]);
+      setTimelineEvents([]);
       setOpenLoops([]);
       setReveals([]);
       setSource("mock");
@@ -402,6 +419,8 @@ export function useOutlineData(): OutlineData {
       isLocked,
       projectId,
       apiChapters,
+      miniArcs,
+      timelineEvents,
       creatorMode,
       advancedControls,
       updateAdvancedControl,
@@ -431,6 +450,8 @@ export function useOutlineData(): OutlineData {
       isLocked,
       projectId,
       apiChapters,
+      miniArcs,
+      timelineEvents,
       creatorMode,
       advancedControls,
       updateAdvancedControl,
