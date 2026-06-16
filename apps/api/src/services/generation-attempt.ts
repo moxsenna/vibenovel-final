@@ -366,7 +366,8 @@ async function updateGenerationAttemptStatus(
     .single();
 
   if (error || !data) {
-    console.error("generation_attempts update failed");
+    // Log the provider/DB error class server-side without leaking it to clients.
+    console.error("generation_attempts update failed", error?.code ?? "", error?.message ?? "");
     throw AppError.internal("Failed to update generation attempt");
   }
 
