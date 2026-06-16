@@ -89,13 +89,33 @@ export async function computePacketHash(packet: WriterContextPacket): Promise<st
   return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, "0")).join("");
 }
 
-export function extractForbiddenConcepts(title: string, hint: string | null): string[] {
-  const raw = `${title} ${hint ?? ""}`.toLowerCase();
-  const tokens = raw
+/**
+ * Build distinctive forbidden-concept phrases from a reveal TITLE.
+ *
+ * Only the title is used — the reader-facing hint is intentionally safe, so its
+ * words must never become forbidden. We emit multi-word phrases (bigrams of
+ * adjacent content words) instead of bare single words, so ordinary prose does
+ * not false-positive on common words like "hubungan" or "identitas" while a
+ * verbatim spoiler phrase is still caught. A lone content word is kept only when
+ * it is long enough (>= 6 chars) to be distinctive on its own.
+ *
+ * The second parameter is retained for call-site compatibility but ignored.
+ */
+export function extractForbiddenConcepts(title: string, _hint?: string | null): string[] {
+  const words = title
+    .toLowerCase()
     .split(/[\s,;:.!?()[\]{}'"–—-]+/)
     .map((t) => t.trim())
     .filter((t) => t.length >= 3 && !FORBIDDEN_CONCEPT_STOPWORDS.has(t));
-  return [...new Set(tokens)].slice(0, 12);
+
+  const concepts: string[] = [];
+  for (let i = 0; i < words.length - 1; i += 1) {
+    concepts.push(`${words[i]} ${words[i + 1]}`);
+  }
+  if (concepts.length === 0 && words.length === 1 && words[0].length >= 6) {
+    concepts.push(words[0]);
+  }
+  return [...new Set(concepts)].slice(0, 12);
 }
 
 function containsForbiddenKey(json: string): boolean {

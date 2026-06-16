@@ -47,15 +47,27 @@ const forbiddenConcepts = extractForbiddenConcepts(
   "Identitas dan hubungan Siska",
   "Pembaca hanya melihat nama dan gelagat akrab, bukan kebenaran penuh yang belum terbuka di bab awal.",
 );
-assert.deepEqual(
-  forbiddenConcepts.filter((concept) =>
-    ["dan", "yang", "belum", "bukan", "bab", "awal", "nama"].includes(concept),
-  ),
-  [],
+// Forbidden concepts must be distinctive multi-word phrases — never bare common
+// words (which would block ordinary prose), and never words sourced from the
+// safe reader-facing hint.
+assert.ok(forbiddenConcepts.every((concept) => concept.includes(" ")));
+assert.ok(forbiddenConcepts.includes("hubungan siska"));
+assert.ok(!forbiddenConcepts.includes("hubungan"));
+assert.ok(!forbiddenConcepts.includes("identitas"));
+assert.ok(!forbiddenConcepts.includes("nama"));
+assert.ok(
+  !forbiddenConcepts.some((concept) => /pembaca|gelagat|akrab|kebenaran/.test(concept)),
 );
-assert.ok(forbiddenConcepts.includes("identitas"));
-assert.ok(forbiddenConcepts.includes("hubungan"));
-assert.ok(forbiddenConcepts.includes("siska"));
+// A common single word in prose must NOT trip the future-reveal leak check now.
+const commonWordProse = validateAiOutput({
+  outputText:
+    "Sari menatap hubungan keluarganya yang retak sambil mengaduk masakan di dapur sempit.",
+  forbiddenConcepts,
+  mustInclude: [],
+});
+assert.equal(commonWordProse.allowed, true);
+// A distinctive single long word from a one-word title is still kept solo.
+assert.deepEqual(extractForbiddenConcepts("Pengkhianatan", null), ["pengkhianatan"]);
 
 assert.throws(
   () => parseSafeRepairRequest({ outputText: safe.outputText }),
