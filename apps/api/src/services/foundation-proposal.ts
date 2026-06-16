@@ -90,9 +90,16 @@ function parsePayload(value: unknown): JsonObject {
   return {};
 }
 
-function isFoundationStubBatch(row: AiProposalRow): boolean {
+function isFoundationStubBatch(row: Pick<AiProposalRow, "payload">): boolean {
   const payload = parsePayload(row.payload);
   return FOUNDATION_GENERATOR_MARKERS.has(payload.generator as string);
+}
+
+export function isFoundationReviewProposal(
+  row: Pick<AiProposalRow, "source" | "payload">,
+): boolean {
+  if (row.source === AI_PROPOSAL_SOURCES.ai_import) return true;
+  return isFoundationStubBatch(row);
 }
 
 async function loadSelectedConcept(
@@ -355,7 +362,7 @@ function buildProposalDrafts(ctx: GenerationContext): ProposalDraft[] {
   return drafts;
 }
 
-async function listExistingStubBatch(
+async function listFoundationFlowRows(
   bindings: AppBindings,
   projectId: string,
   statusFilter?: string,
@@ -378,7 +385,25 @@ async function listExistingStubBatch(
     throw AppError.internal("Failed to list foundation proposals");
   }
 
-  return ((data ?? []) as AiProposalRow[]).filter(isFoundationStubBatch);
+  return (data ?? []) as AiProposalRow[];
+}
+
+async function listExistingStubBatch(
+  bindings: AppBindings,
+  projectId: string,
+  statusFilter?: string,
+): Promise<AiProposalRow[]> {
+  const rows = await listFoundationFlowRows(bindings, projectId, statusFilter);
+  return rows.filter(isFoundationStubBatch);
+}
+
+async function listFoundationReviewRows(
+  bindings: AppBindings,
+  projectId: string,
+  statusFilter?: string,
+): Promise<AiProposalRow[]> {
+  const rows = await listFoundationFlowRows(bindings, projectId, statusFilter);
+  return rows.filter(isFoundationReviewProposal);
 }
 
 async function insertProposalDrafts(
@@ -842,6 +867,6 @@ export async function listFoundationProposalsForOwner(
       ? undefined
       : AI_PROPOSAL_STATUSES.proposed;
 
-  const rows = await listExistingStubBatch(bindings, projectId, statusFilter);
+  const rows = await listFoundationReviewRows(bindings, projectId, statusFilter);
   return rows.map(mapAiProposalResponse);
 }

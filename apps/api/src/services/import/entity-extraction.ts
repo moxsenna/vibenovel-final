@@ -78,6 +78,55 @@ function proposal(
   };
 }
 
+function cleanSignalText(value: string): string {
+  return value.trim().replace(/\s+/g, " ");
+}
+
+function stripProtagonistPrefix(value: string): string {
+  return cleanSignalText(value).replace(
+    /^(tokoh\s+utama(?:\s+terindikasi)?|protagonis|main\s+character)\s*:?\s*/i,
+    "",
+  );
+}
+
+function looksLikeCharacterName(value: string): boolean {
+  const text = stripProtagonistPrefix(value);
+  if (!text || text.length > 80) return false;
+  if (/[.,;!?]/.test(text)) return false;
+  return !/\b(adalah|cerita|dengan|dihantui|dan|menjadi|pusat|sebagai|tokoh|utama|yang)\b/i.test(
+    text,
+  );
+}
+
+function resolveProtagonistSignal(signal: DraftImportSignalDraft): {
+  name: string;
+  description: string;
+} {
+  const rawLabel = cleanSignalText(signal.label);
+  const rawValue = cleanSignalText(signal.value);
+  const labelName = stripProtagonistPrefix(rawLabel);
+  const valueName = stripProtagonistPrefix(rawValue);
+
+  if (looksLikeCharacterName(rawValue)) {
+    return {
+      name: valueName,
+      description: rawLabel !== rawValue ? rawLabel : "",
+    };
+  }
+
+  if (looksLikeCharacterName(rawLabel)) {
+    return {
+      name: labelName,
+      description: rawValue !== rawLabel ? rawValue : "",
+    };
+  }
+
+  return {
+    name: valueName || labelName || "Tokoh Utama",
+    description: rawLabel !== rawValue ? rawLabel : rawValue,
+  };
+}
+
 export function buildDraftImportProposalDrafts(
   input: BuildDraftImportProposalDraftsInput,
 ): DraftImportProposalDraft[] {
@@ -92,15 +141,16 @@ export function buildDraftImportProposalDrafts(
 
   for (const signal of input.signals) {
     if (signal.type === "protagonist") {
+      const protagonist = resolveProtagonistSignal(signal);
       addOnce(
         "character:protagonist",
         proposal(input, signal, {
           proposalType: AI_PROPOSAL_TYPES.character,
-          title: `Import candidate character: ${signal.value}`,
+          title: `Import candidate character: ${protagonist.name}`,
           payload: {
-            name: signal.value,
+            name: protagonist.name,
             role: "protagonist",
-            description: signal.label,
+            description: protagonist.description,
           },
         }),
       );

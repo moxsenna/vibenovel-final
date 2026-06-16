@@ -13,6 +13,7 @@ import {
   buildDraftImportAiProposalRows,
   buildDraftImportProposalDrafts,
 } from "../src/services/import/entity-extraction.ts";
+import { isFoundationReviewProposal } from "../src/services/foundation-proposal.ts";
 import {
   buildAuthorVoiceProposalDraft,
   extractAuthorVoiceFromDraft,
@@ -331,6 +332,54 @@ assert.equal(
 assert.equal(
   proposalDrafts.every((draft) => draft.payload.draftImportId === "draft-18"),
   true,
+);
+
+const aiProtagonistProposalDrafts = buildDraftImportProposalDrafts({
+  projectId: "project-18",
+  draftImportId: "draft-ai-protagonist",
+  signals: [
+    {
+      type: "protagonist",
+      label: "Lira Sembadra",
+      value:
+        "Teknisi komunikasi yang dihantui trauma masa lalu dan menjadi pusat cerita.",
+      confidence: 0.84,
+      metadata: { source: "ai_draft_import" },
+    },
+  ],
+});
+const aiProtagonistCharacterProposal = aiProtagonistProposalDrafts.find(
+  (draft) => draft.proposalType === AI_PROPOSAL_TYPES.character,
+);
+assert.equal(aiProtagonistCharacterProposal?.payload.name, "Lira Sembadra");
+assert.match(
+  String(aiProtagonistCharacterProposal?.payload.description ?? ""),
+  /Teknisi komunikasi/,
+);
+
+assert.equal(
+  isFoundationReviewProposal({
+    source: AI_PROPOSAL_SOURCES.ai_import,
+    payload: { draftImportId: "draft-18", extractionMode: "proposal_only" },
+  }),
+  true,
+  "draft-import proposals must be visible in the foundation review panel",
+);
+assert.equal(
+  isFoundationReviewProposal({
+    source: AI_PROPOSAL_SOURCES.system_seed,
+    payload: { generator: "foundation_ai_batch", batchId: "batch-18" },
+  }),
+  true,
+  "foundation AI generator proposals must remain visible in the foundation panel",
+);
+assert.equal(
+  isFoundationReviewProposal({
+    source: AI_PROPOSAL_SOURCES.summary_stub,
+    payload: { generator: "chapter_delta_stub" },
+  }),
+  false,
+  "unrelated proposal batches must stay out of the foundation panel",
 );
 
 const authorVoice = extractAuthorVoiceFromDraft({
