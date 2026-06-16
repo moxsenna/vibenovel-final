@@ -9,11 +9,13 @@ import {
 import type { AppBindings } from "../src/env.ts";
 import { AppError } from "../src/errors.ts";
 import { getCreditCostForGeneration } from "../src/services/ai-credit-policy.ts";
-import { resolveModelForGeneration } from "../src/services/model-router.ts";
+import { MODEL_ALLOWLIST, resolveModelForGeneration } from "../src/services/model-router.ts";
 
 const bindings: AppBindings = {
   AI_PROVIDER_MOCK: "true",
 };
+
+const LIVE_FREE_TEST_MODEL = "google/gemma-4-31b-it:free";
 
 const planningGenerationContracts: Array<{
   key: "concept_generation" | "foundation_proposal" | "outline_generation";
@@ -118,6 +120,39 @@ assert.throws(
     err.code === "CREDIT_INVALID_AMOUNT" &&
     err.message.includes("not enabled"),
   "draft import signal extraction must not be billable while import review is in test mode",
+);
+
+assert.equal(
+  MODEL_ALLOWLIST.has(LIVE_FREE_TEST_MODEL),
+  true,
+  "the current OpenRouter free test model must be allowlisted",
+);
+
+assert.equal(
+  resolveModelForGeneration(
+    {
+      ...bindings,
+      AI_MODEL_HEMAT: LIVE_FREE_TEST_MODEL,
+    },
+    {
+      generationType: GENERATION_TYPES.draft_import_signal_extraction,
+      qualityMode: WRITER_QUALITY_MODES.hemat,
+    },
+  ).model,
+  LIVE_FREE_TEST_MODEL,
+  "draft import signal extraction must resolve the configured free test model",
+);
+
+const wranglerToml = readFileSync("wrangler.toml", "utf8");
+assert.match(
+  wranglerToml,
+  new RegExp(`DEFAULT_AI_MODEL = "${LIVE_FREE_TEST_MODEL}"`),
+  "production Worker config must use the verified free test model",
+);
+assert.doesNotMatch(
+  wranglerToml,
+  /AI_MODEL_HEMAT = "google\/gemini-2\.5-flash:free"/,
+  "production Worker config must not use the unavailable Gemini free slug",
 );
 
 const migrationSql = readFileSync(

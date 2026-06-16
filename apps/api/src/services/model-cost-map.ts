@@ -41,6 +41,10 @@ const MODEL_COST_MAP: Readonly<Record<string, ModelCostConfig>> = {
     inputUsdPer1M: 0,
     outputUsdPer1M: 0,
   },
+  "google/gemma-4-31b-it:free": {
+    inputUsdPer1M: 0,
+    outputUsdPer1M: 0,
+  },
   "google/gemma-2-9b-it:free": {
     inputUsdPer1M: 0,
     outputUsdPer1M: 0,

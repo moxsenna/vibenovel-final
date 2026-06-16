@@ -35,6 +35,7 @@ export const MODEL_ALLOWLIST = new Set([
   "google/gemini-2.0-flash-001",
   "google/gemini-2.5-flash",
   "google/gemini-2.5-flash:free",
+  "google/gemma-4-31b-it:free",
   "openrouter/free",
   "meta-llama/llama-3-8b-instruct:free",
   "qwen/qwen-2.5-coder-32b-instruct:free",
