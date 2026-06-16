@@ -747,6 +747,7 @@ export type AuditEntityType = (typeof AUDIT_ENTITY_TYPES)[keyof typeof AUDIT_ENT
 export const GENERATION_TYPES = {
   concept_generation: "concept_generation",
   foundation_proposal: "foundation_proposal",
+  draft_import_signal_extraction: "draft_import_signal_extraction",
   outline_generation: "outline_generation",
   prose_beat: "prose_beat",
   prose_rewrite: "prose_rewrite",

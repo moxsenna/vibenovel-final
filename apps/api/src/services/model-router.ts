@@ -65,6 +65,7 @@ const QUALITY_MAX_OUTPUT_TOKENS: Record<WriterQualityMode, number> = {
 const GENERATION_TYPE_TOKEN_CAP: Record<GenerationType, number> = {
   [GENERATION_TYPES.concept_generation]: 3000,
   [GENERATION_TYPES.foundation_proposal]: 3000,
+  [GENERATION_TYPES.draft_import_signal_extraction]: 1800,
   [GENERATION_TYPES.outline_generation]: 4000,
   [GENERATION_TYPES.prose_beat]: 2000,
   [GENERATION_TYPES.prose_rewrite]: 2000,
@@ -75,6 +76,7 @@ const GENERATION_TYPE_TOKEN_CAP: Record<GenerationType, number> = {
 const PLANNING_GENERATION_TYPES = new Set<GenerationType>([
   GENERATION_TYPES.concept_generation,
   GENERATION_TYPES.foundation_proposal,
+  GENERATION_TYPES.draft_import_signal_extraction,
   GENERATION_TYPES.outline_generation,
 ]);
 

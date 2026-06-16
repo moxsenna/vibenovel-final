@@ -26,6 +26,11 @@ const CREDIT_COST_TABLE: Record<
     [WRITER_QUALITY_MODES.seimbang]: 6,
     [WRITER_QUALITY_MODES.terbaik]: 12,
   },
+  [GENERATION_TYPES.draft_import_signal_extraction]: {
+    [WRITER_QUALITY_MODES.hemat]: null,
+    [WRITER_QUALITY_MODES.seimbang]: null,
+    [WRITER_QUALITY_MODES.terbaik]: null,
+  },
   [GENERATION_TYPES.outline_generation]: {
     [WRITER_QUALITY_MODES.hemat]: 5,
     [WRITER_QUALITY_MODES.seimbang]: 10,

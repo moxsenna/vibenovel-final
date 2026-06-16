@@ -1,12 +1,22 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
+import { GENERATION_TYPES, WRITER_QUALITY_MODES } from "@vibenovel/shared";
+import type { AppBindings } from "../src/env.ts";
 import { AppError } from "../src/errors.ts";
+import type {
+  ModelRouterGenerateInput,
+  ModelRouterGenerateResult,
+} from "../src/services/ai-generation-types.ts";
 import {
   extractDraftImportSignalsFromText,
   isDuplicateDraftImportError,
   parseDraftImportBody,
   summarizeDraftContent,
 } from "../src/services/draft-import.ts";
+import {
+  extractDraftImportSignalsAiFirst,
+  parseDraftImportSignalExtractionOutput,
+} from "../src/services/import/signal-extraction-ai.ts";
 
 const draftText = `
 Nadira menatap dapur mertuanya yang sempit. Suaminya pulang bersama perempuan lain,
@@ -178,6 +188,106 @@ assert.equal(
   ),
   false,
 );
+
+const aiExtractionText = JSON.stringify({
+  signals: [
+    {
+      type: "genre",
+      label: "Drama rumah tangga realistis",
+      value: "drama rumah tangga",
+      confidence: 0.94,
+      evidence: "Bima kehilangan pekerjaan enam bulan lalu, berutang diam-diam",
+    },
+    {
+      type: "tone",
+      label: "Emosional, realistis, tegang pelan",
+      value: "emosional realistis tegang pelan",
+      confidence: 0.9,
+      evidence: "Rani menata piring di meja makan untuk tiga orang",
+    },
+    {
+      type: "protagonist",
+      label: "Tokoh utama: Rani Pradipta",
+      value: "Rani Pradipta",
+      confidence: 0.92,
+      evidence: "Rani Pradipta menata piring di meja makan",
+    },
+    {
+      type: "core_conflict",
+      label: "Kebohongan finansial dalam keluarga",
+      value: "suami kehilangan pekerjaan, utang diam-diam, tabungan berkurang, dan mertua menutupinya",
+      confidence: 0.93,
+      evidence: "tabungan bersama berkurang tanpa penjelasan",
+    },
+  ],
+});
+
+const aiParsedSignals = parseDraftImportSignalExtractionOutput(aiExtractionText, {
+  provider: "openrouter",
+  model: "google/gemini-2.5-flash:free",
+  promptHash: "prompt-hash",
+});
+assert.equal(aiParsedSignals.length, 4);
+assert.equal(aiParsedSignals[0].metadata.extractor, "ai_draft_import");
+assert.equal(aiParsedSignals[0].metadata.extractionMode, "ai");
+assert.equal(aiParsedSignals[0].metadata.model, "google/gemini-2.5-flash:free");
+assert.match(String(aiParsedSignals[0].metadata.evidence), /Bima kehilangan pekerjaan/i);
+
+const staleRomcomFallback = [
+  {
+    type: "genre",
+    label: "Romantic Comedy",
+    value: "romantic comedy",
+    confidence: 0.9,
+    metadata: { source: "imported_draft", extractor: "deterministic_draft_import" },
+  },
+  {
+    type: "core_conflict",
+    label: "Pacar pura-pura, tekanan keluarga, dan pitch brand",
+    value: "fake dating dan pitch brand",
+    confidence: 0.88,
+    metadata: { source: "imported_draft", extractor: "deterministic_draft_import" },
+  },
+];
+
+const aiFirstResult = await extractDraftImportSignalsAiFirst({
+  bindings: { AI_PROVIDER_MOCK: "false", AI_GENERATION_ENABLED: "true" } as AppBindings,
+  content: domesticDramaDraftText,
+  fallbackSignals: staleRomcomFallback,
+  generate: async (input: ModelRouterGenerateInput): Promise<ModelRouterGenerateResult> => {
+    assert.equal(input.generationType, GENERATION_TYPES.draft_import_signal_extraction);
+    assert.equal(input.qualityMode, WRITER_QUALITY_MODES.hemat);
+    assert.equal(input.temperature, 0.1);
+    assert.ok(input.promptMessages?.some((message) => /JSON/i.test(message.content)));
+    return {
+      text: aiExtractionText,
+      provider: "openrouter",
+      model: "google/gemini-2.5-flash:free",
+      inputTokens: 300,
+      outputTokens: 120,
+      latencyMs: 42,
+      finishReason: "stop",
+      promptHash: input.promptHash,
+    };
+  },
+});
+assert.equal(aiFirstResult.extractionMode, "ai");
+assert.equal(aiFirstResult.signals.find((signal) => signal.type === "genre")?.value, "drama rumah tangga");
+assert.equal(
+  aiFirstResult.signals.some((signal) => /romantic comedy|fake dating|pitch brand/i.test(signal.value)),
+  false,
+);
+
+const fallbackAfterAiError = await extractDraftImportSignalsAiFirst({
+  bindings: { AI_PROVIDER_MOCK: "false", AI_GENERATION_ENABLED: "true" } as AppBindings,
+  content: domesticDramaDraftText,
+  fallbackSignals: domesticSignals,
+  generate: async () => {
+    throw new AppError("AI_PROVIDER_ERROR", "simulated model failure", 502);
+  },
+});
+assert.equal(fallbackAfterAiError.extractionMode, "deterministic_fallback");
+assert.equal(fallbackAfterAiError.signals, domesticSignals);
 
 const migrationSql = readFileSync(
   "../../supabase/migrations/00013_sprint15_draft_import.sql",

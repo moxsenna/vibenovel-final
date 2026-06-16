@@ -11,6 +11,7 @@ import {
   buildAuthorVoiceProposalDraft,
   extractAuthorVoiceFromDraft,
 } from "./import/style-extraction.js";
+import { extractDraftImportSignalsAiFirst } from "./import/signal-extraction-ai.js";
 import { getOwnedProjectRow } from "./project.js";
 import { assertProposalPayloadSafe } from "./summary-safety.js";
 
@@ -786,7 +787,13 @@ export async function extractDraftImportSignalsForOwner(
   draftImportId: string,
 ): Promise<{ draftImport: DraftImportSummary; signals: DraftImportSignal[] }> {
   const row = await getOwnedDraftImportRow(bindings, ownerId, projectId, draftImportId);
-  const signalDrafts = extractDraftImportSignalsFromText(row.content_text);
+  const fallbackSignalDrafts = extractDraftImportSignalsFromText(row.content_text);
+  const extraction = await extractDraftImportSignalsAiFirst({
+    bindings,
+    content: row.content_text,
+    fallbackSignals: fallbackSignalDrafts,
+  });
+  const signalDrafts = extraction.signals;
   const admin = createServiceRoleClient(bindings);
 
   const { error: deleteError } = await admin
@@ -839,7 +846,13 @@ export async function extractDraftImportSignalsForOwner(
     action: "draft_import_signals_extracted",
     entityType: "draft_import",
     entityId: draftImportId,
-    metadata: { signalCount: signalDrafts.length },
+    metadata: {
+      signalCount: signalDrafts.length,
+      extractionMode: extraction.extractionMode,
+      provider: extraction.providerResult?.provider,
+      model: extraction.providerResult?.model,
+      promptHash: extraction.providerResult?.promptHash,
+    },
   });
 
   const signals = await listSignalsForDraftImport(bindings, ownerId, projectId, draftImportId);

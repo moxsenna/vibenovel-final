@@ -7,6 +7,7 @@ import {
   type WriterQualityMode,
 } from "@vibenovel/shared";
 import type { AppBindings } from "../src/env.ts";
+import { AppError } from "../src/errors.ts";
 import { getCreditCostForGeneration } from "../src/services/ai-credit-policy.ts";
 import { resolveModelForGeneration } from "../src/services/model-router.ts";
 
@@ -89,6 +90,34 @@ assert.equal(
   }).maxOutputTokens,
   800,
   "publish_copy must keep the short marketing-copy token cap",
+);
+
+assert.equal(
+  GENERATION_TYPES.draft_import_signal_extraction,
+  "draft_import_signal_extraction",
+  "draft import signal extraction must be a first-class internal generation type",
+);
+
+assert.equal(
+  resolveModelForGeneration(bindings, {
+    generationType: GENERATION_TYPES.draft_import_signal_extraction,
+    qualityMode: WRITER_QUALITY_MODES.hemat,
+  }).maxOutputTokens,
+  1800,
+  "draft import signal extraction must have a bounded JSON token cap",
+);
+
+assert.throws(
+  () =>
+    getCreditCostForGeneration({
+      generationType: GENERATION_TYPES.draft_import_signal_extraction,
+      qualityMode: WRITER_QUALITY_MODES.hemat,
+    }),
+  (err: unknown) =>
+    err instanceof AppError &&
+    err.code === "CREDIT_INVALID_AMOUNT" &&
+    err.message.includes("not enabled"),
+  "draft import signal extraction must not be billable while import review is in test mode",
 );
 
 const migrationSql = readFileSync(
