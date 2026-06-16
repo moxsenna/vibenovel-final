@@ -29,10 +29,11 @@ export async function sendIntakeMessage(
   projectId: string,
   content: string,
   token?: string | null,
+  options: { phase?: string; entrypoint?: string } = {},
 ): Promise<SendIntakeMessageResponse> {
   return apiRequest<SendIntakeMessageResponse>(`/api/projects/${projectId}/intake/messages`, {
     method: "POST",
-    body: { content },
+    body: { content, ...options },
     token,
   });
 }

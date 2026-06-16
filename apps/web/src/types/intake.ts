@@ -1,6 +1,12 @@
 export type IntakeMessageRole = "agent" | "user";
 
 export type IntakeProgressStatus = "done" | "active" | "pending";
+export type IntakeUiPhase =
+  | "idea_collection"
+  | "signal_detection"
+  | "concept_generation"
+  | "foundation_preparation"
+  | "foundation_refinement";
 
 export interface IntakeMessage {
   id: string;
@@ -25,6 +31,8 @@ export interface DetectedSignal {
 
 export interface IntakeSession {
   projectId: string;
+  phase: IntakeUiPhase;
+  modeLabel: string;
   pageTitle: string;
   introTitle: string;
   introSubtitle: string;

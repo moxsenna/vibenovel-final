@@ -30,7 +30,6 @@ import {
   buildHonestProgressSteps,
   buildHonestRecentExcerpt,
   buildHonestRecentStatusLabel,
-  INTAKE_STUB_ASSISTANT_LABEL,
   resolveActiveProjectCta,
   resolveHonestProjectRoute,
 } from "@/lib/workflow-truth";
@@ -56,6 +55,7 @@ interface FoundationReadinessApi {
   readinessScore: number;
   readinessLevel: string;
   canLock: boolean;
+  canRefine: boolean;
   missing: string[];
 }
 
@@ -455,6 +455,8 @@ export function mapIntakeBundleToUi(
 ): IntakeSession {
   const useDemoCopy = !isApiModeEnabled();
   const fallback = mockIntakeSession;
+  const phase = (session.phase ?? "idea_collection") as IntakeSession["phase"];
+  const foundationMode = phase === "foundation_refinement";
   const uiMessages =
     messages.length > 0 ? messages.map(mapApiMessageToUi) : useDemoCopy ? fallback.messages : [];
   const uiSignals =
@@ -462,19 +464,33 @@ export function mapIntakeBundleToUi(
 
   return {
     projectId,
-    pageTitle: useDemoCopy ? fallback.pageTitle : "Ceritakan Ide Anda",
-    introTitle: useDemoCopy ? fallback.introTitle : "Mulai dari ide mentah",
+    phase,
+    modeLabel: foundationMode ? "Matangkan Fondasi" : "Ide dan Konsep",
+    pageTitle: useDemoCopy ? fallback.pageTitle : "Asisten Narra",
+    introTitle: useDemoCopy
+      ? fallback.introTitle
+      : foundationMode
+        ? "Matangkan fondasi"
+        : "Ceritakan arah ceritamu",
     introSubtitle: useDemoCopy
       ? fallback.introSubtitle
-      : "Ceritakan ide, konflik, atau suasana yang ingin Anda tulis.",
+      : foundationMode
+        ? "Narra memakai fondasi yang sudah ada untuk menajamkan motivasi, konflik, stakes, dan janji pembaca."
+        : "Tulis ide, konflik, draft, atau suasana yang ingin kamu bangun.",
     messages: uiMessages,
     progress: useDemoCopy ? fallback.progress : buildHonestProgress(signals),
     progressPercent: session.progressPercent ?? (useDemoCopy ? fallback.progressPercent : 0),
     detectedSignals: uiSignals,
     suggestedActions: useDemoCopy ? fallback.suggestedActions : [],
     conceptsRoute: ROUTES.project.concepts(projectId),
-    inputPlaceholder: useDemoCopy ? fallback.inputPlaceholder : "Tulis ide cerita Anda di sini…",
-    inputTip: isApiModeEnabled() ? INTAKE_STUB_ASSISTANT_LABEL : fallback.inputTip,
+    inputPlaceholder: useDemoCopy
+      ? fallback.inputPlaceholder
+      : foundationMode
+        ? "Jawab pertanyaan Narra atau tulis bagian fondasi yang ingin dipertajam..."
+        : "Tulis ide cerita kamu di sini...",
+    inputTip: isApiModeEnabled()
+      ? "Asisten Narra memakai AI dan menyimpan obrolan ke proyek ini."
+      : fallback.inputTip,
     ctaLabel: useDemoCopy ? fallback.ctaLabel : "Lanjut ke Konsep",
     ctaHint: useDemoCopy
       ? fallback.ctaHint
@@ -528,9 +544,11 @@ export function mapReadinessApiToUi(
     statusLabel: READINESS_LABELS[readiness.readinessLevel] ?? readiness.readinessLevel,
     hint: readiness.canLock
       ? "Fondasi siap dikunci. Tinjau usulan yang tersisa sebelum mengunci."
+      : readiness.canRefine
+        ? "Fondasi cukup lengkap. Matangkan dengan Narra sebelum dikunci."
       : percent >= 45
         ? "Lengkapi bagian yang masih kurang dan terima usulan yang diperlukan."
-        : "Lengkapi intake dan konsep terlebih dahulu.",
+        : "Lengkapi obrolan Asisten Narra dan konsep terlebih dahulu.",
     missingItems: readiness.missing,
   };
 }

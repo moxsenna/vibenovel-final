@@ -23,7 +23,7 @@ export function IntakePage() {
 
       {loading ? (
         <p className="mb-4 font-body-sm text-body-sm text-muted-text" role="status">
-          Memuat sesi intake...
+          Memuat Asisten Narra...
         </p>
       ) : null}
 

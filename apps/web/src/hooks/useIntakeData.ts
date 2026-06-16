@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { ApiClientError } from "@/lib/api";
 import { mapApiMessageToUi, mapApiSignalToUi, mapIntakeBundleToUi } from "@/lib/api-mappers";
@@ -31,6 +31,7 @@ export interface IntakeData {
 
 export function useIntakeData(): IntakeData {
   const { id: routeProjectId } = useParams();
+  const [searchParams] = useSearchParams();
   const { session: authSession, loading: authLoading } = useAuth();
   const useMocks = shouldUseMocks();
   const token = authSession?.access_token ?? null;
@@ -50,6 +51,7 @@ export function useIntakeData(): IntakeData {
   const [sending, setSending] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [projectId, setProjectId] = useState<string | null>(null);
+  const foundationMode = searchParams.get("mode") === "foundation";
 
   const loadBundle = useCallback(async () => {
     if (!apiMode || !token) return;
@@ -140,7 +142,12 @@ export function useIntakeData(): IntakeData {
 
       setSending(true);
       try {
-        const result = await sendIntakeMessage(projectId, text, token);
+        const result = await sendIntakeMessage(
+          projectId,
+          text,
+          token,
+          foundationMode ? { phase: "foundation_refinement", entrypoint: "foundation" } : {},
+        );
         const userMsg = mapApiMessageToUi(result.userMessage);
         const agentMsg = mapApiMessageToUi(result.agentMessage);
 
@@ -169,7 +176,7 @@ export function useIntakeData(): IntakeData {
         setSending(false);
       }
     },
-    [apiMode, projectId, token],
+    [apiMode, foundationMode, projectId, token],
   );
 
   const extractSignals = useCallback(async () => {

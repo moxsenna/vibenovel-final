@@ -5,6 +5,8 @@ import { ROUTES } from "@/routes/paths";
 /** Sprint 1 typed mock — replace with API in Sprint 3 */
 export const mockIntakeSession: IntakeSession = {
   projectId: DEMO_PROJECT_ID,
+  phase: "idea_collection",
+  modeLabel: "Ide dan Konsep",
   pageTitle: "Ceritakan Ide Ceritamu",
   introTitle: "Mari Bangun Ceritamu",
   introSubtitle:
