@@ -44,6 +44,12 @@ import {
 } from "./generation-attempt.js";
 import { generateCorrelationId } from "./audit-snapshot.js";
 import { computePromptHashFromMessages } from "./prose-generation-prompt.js";
+import { getFoundationBundleForOwner } from "./foundation.js";
+import { getFoundationReadinessForOwner } from "./foundation-readiness.js";
+import {
+  buildNarraSystemPrompt,
+  resolveNarraPhase,
+} from "./story-agent-context.js";
 
 const SESSION_SELECT =
   "id, project_id, status, phase, progress_percent, summary, metadata, created_at, updated_at";
@@ -65,6 +71,9 @@ const RECENT_MESSAGE_LIMIT = 20;
 
 const AGENT_STUB_DEFAULT =
   "Aku menangkap beberapa arah cerita. Kita akan kumpulkan tokoh, konflik, janji pembaca, dan rahasia yang perlu ditahan.";
+
+const FOUNDATION_REFINEMENT_STUB =
+  "Aku sudah masuk mode mematangkan fondasi. Kita akan tajamkan motivasi tokoh, tekanan lawan, stakes, janji pembaca, dan gaya serial sebelum fondasi dikunci.";
 
 const FORBIDDEN_BODY_KEYS = new Set([
   "id",
@@ -142,7 +151,10 @@ function parseLimit(value: string | undefined, defaultLimit: number): number {
   return Math.min(parsed, MAX_MESSAGE_LIMIT);
 }
 
-function buildAgentStubReply(userContent: string): string {
+function buildAgentStubReply(userContent: string, phase?: IntakePhase): string {
+  if (phase === INTAKE_PHASES.foundation_refinement) {
+    return FOUNDATION_REFINEMENT_STUB;
+  }
   const lower = userContent.toLowerCase();
   if (/istri|suami|mertua|rumah tangga/.test(lower)) {
     return "Aku menangkap nuansa drama rumah tangga. Ceritakan sedikit tentang tokoh utama dan apa yang paling menyakitkan baginya — kita kumpulkan konflik, janji pembaca, dan rahasia yang perlu ditahan.";
@@ -418,9 +430,14 @@ export async function appendUserMessageForOwner(
   body: Record<string, unknown>,
 ): Promise<AppendMessageResult> {
   assertNoForbiddenKeys(body);
-  await getOwnedProjectRow(bindings, ownerId, projectId);
+  const projectRow = await getOwnedProjectRow(bindings, ownerId, projectId);
 
   const content = assertMessageContent(body.content);
+  const requestedPhase =
+    typeof body.phase === "string" ? body.phase : undefined;
+  const entrypoint =
+    typeof body.entrypoint === "string" ? body.entrypoint : undefined;
+  const narraPhase = resolveNarraPhase({ requestedPhase, entrypoint });
 
   if (body.role !== undefined && body.role !== null) {
     if (typeof body.role !== "string" || !MESSAGE_ROLE_SET.has(body.role)) {
@@ -441,7 +458,7 @@ export async function appendUserMessageForOwner(
       session_id: sessionRow.id,
       role: INTAKE_MESSAGE_ROLES.user,
       content,
-      metadata: { source: "api" },
+      metadata: { source: "api", phase: narraPhase, entrypoint: entrypoint ?? null },
     })
     .select(MESSAGE_SELECT)
     .single();
@@ -461,13 +478,58 @@ export async function appendUserMessageForOwner(
   const useMock = isAiProviderMock(bindings);
   const aiEnabled = isAiGenerationEnabled(bindings);
 
+  await admin
+    .from("intake_sessions")
+    .update({
+      phase: narraPhase,
+      metadata: {
+        ...parseJsonObject(sessionRow.metadata),
+        lastEntrypoint: entrypoint ?? null,
+        assistantName: "Asisten Narra",
+      },
+    })
+    .eq("id", sessionRow.id)
+    .eq("project_id", projectId);
+
   if (aiEnabled && !useMock) {
     const historyMessages = await listMessagesForSession(bindings, projectId, sessionRow.id, RECENT_MESSAGE_LIMIT);
 
-    const systemPrompt =
-      "Kamu adalah asisten intake cerita pintar yang ramah, hangat, membimbing, ringkas, dan tidak robotik. " +
-      "Tugasmu adalah menganalisis ide cerita pengguna, memberikan tanggapan singkat yang mendukung, meringkas arah cerita yang terdeteksi secara alami, dan mengajukan SATU pertanyaan follow-up yang berguna untuk menggali detail cerita lebih lanjut (misalnya tentang tokoh, konflik, rahasia, janji pembaca, target pembaca, genre, atau nada emosional). " +
-      "Jangan membuat fakta cerita yang berlebihan di luar apa yang diceritakan pengguna. Jangan membocorkan plot masa depan. Jawab dalam bahasa Indonesia yang ramah bagi penulis pemula.";
+    let foundationSummary: string | undefined;
+    let readinessSummary: string | undefined;
+
+    if (narraPhase === INTAKE_PHASES.foundation_refinement) {
+      const [foundationBundle, readiness] = await Promise.all([
+        getFoundationBundleForOwner(bindings, ownerId, projectId),
+        getFoundationReadinessForOwner(bindings, ownerId, projectId),
+      ]);
+      const f = foundationBundle.foundation;
+      const characterNames = foundationBundle.characters
+        .map((character) => character.name)
+        .slice(0, 6)
+        .join(", ");
+      const factSummary = foundationBundle.facts
+        .map((fact) => fact.text)
+        .slice(0, 5)
+        .join(" | ");
+
+      foundationSummary = [
+        `Premise: ${f.premise || "(belum diisi)"}`,
+        `Konflik: ${f.mainConflict || "(belum diisi)"}`,
+        `Janji pembaca: ${f.readerPromise || "(belum diisi)"}`,
+        `Genre/Tone: ${[f.genre, f.tone].filter(Boolean).join(" / ") || "(belum diisi)"}`,
+        `Tokoh: ${characterNames || "(belum ada)"}`,
+        `Fakta: ${factSummary || "(belum ada)"}`,
+      ].join("\n");
+      readinessSummary =
+        `${readiness.readinessScore}%, ${readiness.readinessLevel}, missing: ${readiness.missing.join(", ") || "tidak ada"}`;
+    }
+
+    const systemPrompt = buildNarraSystemPrompt({
+      phase: narraPhase,
+      projectTitle: projectRow.title,
+      foundationSummary,
+      readinessSummary,
+    });
 
     const promptMessages = [
       { role: "system" as const, content: systemPrompt },
@@ -597,7 +659,7 @@ export async function appendUserMessageForOwner(
       throw err;
     }
   } else {
-    agentContent = buildAgentStubReply(content);
+    agentContent = buildAgentStubReply(content, narraPhase);
     const { data: dbAgentRow, error: agentError } = await admin
       .from("intake_messages")
       .insert({
@@ -930,7 +992,20 @@ async function extractSignalsAndProgressInternal(
   }
 
   const progressPercent = computeProgressFromSignals(allSignals);
-  const nextPhase = progressPercent >= 80 ? INTAKE_PHASES.concept_generation : INTAKE_PHASES.signal_detection;
+  const { data: currentSession } = await admin
+    .from("intake_sessions")
+    .select("phase")
+    .eq("id", sessionId)
+    .eq("project_id", projectId)
+    .maybeSingle();
+
+  const currentPhase = typeof currentSession?.phase === "string" ? currentSession.phase : "";
+  const nextPhase =
+    currentPhase === INTAKE_PHASES.foundation_refinement
+      ? INTAKE_PHASES.foundation_refinement
+      : progressPercent >= 80
+        ? INTAKE_PHASES.concept_generation
+        : INTAKE_PHASES.signal_detection;
 
   await admin
     .from("intake_sessions")

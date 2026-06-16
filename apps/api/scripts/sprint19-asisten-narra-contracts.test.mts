@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import {
   AI_PROPOSAL_STATUSES,
   AI_PROPOSAL_TYPES,
@@ -8,6 +9,10 @@ import {
   REFINE_READINESS_MIN_SCORE,
 } from "@vibenovel/shared";
 import { computeFoundationReadiness } from "../src/services/foundation-readiness.ts";
+import {
+  buildNarraSystemPrompt,
+  resolveNarraPhase,
+} from "../src/services/story-agent-context.ts";
 
 assert.equal(INTAKE_PHASES.foundation_refinement, "foundation_refinement");
 assert.equal(FOUNDATION_READINESS_LEVELS.siap_dimatangkan, "siap_dimatangkan");
@@ -235,5 +240,56 @@ assert.equal(
   ),
   true,
 );
+
+assert.equal(resolveNarraPhase({ requestedPhase: undefined, entrypoint: undefined }), "idea_collection");
+assert.equal(
+  resolveNarraPhase({ requestedPhase: "foundation_refinement", entrypoint: "foundation" }),
+  "foundation_refinement",
+);
+
+const narraPrompt = buildNarraSystemPrompt({
+  phase: "foundation_refinement",
+  projectTitle: "Meja Makan yang Selalu Genap",
+  foundationSummary:
+    "Rani menghadapi kebohongan finansial Bima dan tekanan Bu Ratna.",
+  readinessSummary: "75%, siap dimatangkan, missing: Stakes and serial momentum",
+});
+assert.match(narraPrompt, /Asisten Narra/);
+assert.match(narraPrompt, /foundation/i);
+assert.match(narraPrompt, /proposal/i);
+assert.doesNotMatch(narraPrompt, /AWS|Mayar|Duitku|OpenRouter API key/i);
+
+const intakeServiceSql = readFileSync("src/services/intake.ts", "utf8");
+assert.match(intakeServiceSql, /buildNarraSystemPrompt/);
+assert.match(intakeServiceSql, /resolveNarraPhase/);
+assert.match(intakeServiceSql, /foundation_refinement/);
+assert.doesNotMatch(intakeServiceSql, /foundation_refinement_messages/);
+assert.doesNotMatch(intakeServiceSql, /foundation_refinement_sessions/);
+
+const foundationRoutesSql = readFileSync("src/routes/foundation.ts", "utf8");
+assert.match(
+  foundationRoutesSql,
+  /\/api\/projects\/:id\/foundation\/proposals\/generate-from-narra/,
+);
+
+const narraPatchServiceSql = readFileSync(
+  "src/services/asisten-narra-foundation-patch.ts",
+  "utf8",
+);
+assert.match(narraPatchServiceSql, /asisten_narra_foundation_patch/);
+assert.match(narraPatchServiceSql, /\.from\("ai_proposals"\)\.insert/);
+assert.doesNotMatch(
+  narraPatchServiceSql,
+  /\.from\("facts"\)\s*[\s\S]*\.insert/,
+  "Narra patch must not insert canon facts directly",
+);
+assert.doesNotMatch(
+  narraPatchServiceSql,
+  /\.from\("story_foundations"\)\s*[\s\S]*\.update/,
+  "Narra patch must not mutate foundation directly",
+);
+
+const foundationProposalSql = readFileSync("src/services/foundation-proposal.ts", "utf8");
+assert.match(foundationProposalSql, /asisten_narra_foundation_patch/);
 
 console.log("PASS Sprint 19 Asisten Narra contracts");

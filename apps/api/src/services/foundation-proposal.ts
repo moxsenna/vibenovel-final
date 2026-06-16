@@ -64,8 +64,13 @@ export const FOUNDATION_FLOW_PROPOSAL_TYPES: readonly AiProposalType[] = [
 
 const GENERATOR_MARKER = "foundation_stub_batch";
 const GENERATOR_MARKER_AI = "foundation_ai_batch";
+const GENERATOR_MARKER_NARRA = "asisten_narra_foundation_patch";
 /** Both stub and AI batches belong to the foundation flow (dedup/list/regenerate). */
-const FOUNDATION_GENERATOR_MARKERS = new Set<string>([GENERATOR_MARKER, GENERATOR_MARKER_AI]);
+const FOUNDATION_GENERATOR_MARKERS = new Set<string>([
+  GENERATOR_MARKER,
+  GENERATOR_MARKER_AI,
+  GENERATOR_MARKER_NARRA,
+]);
 
 interface ProposalDraft {
   proposalType: AiProposalType;

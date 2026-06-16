@@ -23,6 +23,7 @@
     "test:sprint16-character-continuity": "npm run build -w @vibenovel/shared && tsx scripts/sprint16-character-continuity-contracts.test.mts",
     "test:sprint17-timeline-miniarc": "tsx scripts/sprint17-timeline-miniarc-contracts.test.mts",
     "test:sprint18-import-rag": "npm run build -w @vibenovel/shared && tsx scripts/sprint18-import-rag-contracts.test.mts",
+    "test:sprint19-asisten-narra": "npm run build -w @vibenovel/shared && tsx scripts/sprint19-asisten-narra-contracts.test.mts",
     "test:health-env-flags": "tsx scripts/env-health-flags.test.mts",
     "test:duitku-signature": "tsx scripts/duitku-callback-signature.test.mts",
     "test:atomic-grant": "tsx scripts/atomic-grant-rpc.test.mts",
