@@ -8,6 +8,7 @@ export const ROUTES = {
   creditTopup: "/credits/topup",
   creditTopupMockReturn: "/credits/topup/mock-return",
   project: {
+    narra: (id: string) => `/projects/${id}/intake`,
     intake: (id: string) => `/projects/${id}/intake`,
     importDraft: (id: string) => `/projects/${id}/import-draft`,
     concepts: (id: string) => `/projects/${id}/concepts`,
@@ -23,7 +24,7 @@ export const PLACEHOLDER_ROUTES = [
   { path: ROUTES.landing, label: "Landing / Selamat Datang", stitch: "vibenovel_selamat_datang_polished" },
   { path: ROUTES.start, label: "Mulai Proyek Baru", stitch: "mulai_proyek_baru_polished" },
   { path: ROUTES.dashboard, label: "Dashboard Penulis", stitch: "dashboard_penulis_refined" },
-  { path: ROUTES.project.intake(":id"), label: "Chat Story Agent Intake", stitch: "beri_tahu_ide_ceritamu_refined" },
+  { path: ROUTES.project.intake(":id"), label: "Asisten Narra", stitch: "beri_tahu_ide_ceritamu_refined" },
   { path: ROUTES.project.importDraft(":id"), label: "Import Draft", stitch: "draft_import_continuation" },
   { path: ROUTES.project.concepts(":id"), label: "Pilihan Konsep Cerita", stitch: "pilihan_konsep_cerita_refined" },
   { path: ROUTES.project.foundation(":id"), label: "Fondasi Cerita", stitch: "fondasi_cerita_refined" },
