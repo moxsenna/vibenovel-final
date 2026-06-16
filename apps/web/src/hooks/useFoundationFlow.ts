@@ -14,12 +14,14 @@ import { apiErrorMessage } from "@/lib/hook-fallback";
 import { DEMO_MODE_LABEL } from "@/lib/workflow-truth";
 import { resolveProjectIdForRoute } from "@/lib/project-context";
 import { mockStoryFoundation } from "@/mocks/storyFoundation";
+import { ROUTES } from "@/routes/paths";
 import { fetchFoundationBundle } from "@/services/foundation";
 import {
   acceptProposal,
   fetchFoundationProposals,
   fetchFoundationReadiness,
   generateFoundationProposals,
+  generateFoundationProposalsFromNarra,
   lockFoundation,
 } from "@/services/foundation-flow";
 import type { StoryFoundation } from "@/types/storyFoundation";
@@ -32,12 +34,15 @@ export interface FoundationFlowData {
   source: FoundationFlowSource;
   loading: boolean;
   generating: boolean;
+  generatingNarra: boolean;
   locking: boolean;
   acceptingId: string | null;
   notice: string | null;
   lockNotice: string | null;
   apiMode: boolean;
+  matangkanDenganNarraRoute: string | null;
   generateProposals: () => Promise<void>;
+  generateNarraProposals: () => Promise<void>;
   acceptProposalById: (proposalId: string) => Promise<void>;
   lockFoundationNow: () => Promise<void>;
   refresh: () => Promise<void>;
@@ -77,11 +82,15 @@ export function useFoundationFlow(): FoundationFlowData {
   const [source, setSource] = useState<FoundationFlowSource>(useMocks ? "mock" : "api");
   const [loading, setLoading] = useState(apiMode);
   const [generating, setGenerating] = useState(false);
+  const [generatingNarra, setGeneratingNarra] = useState(false);
   const [locking, setLocking] = useState(false);
   const [acceptingId, setAcceptingId] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [lockNotice, setLockNotice] = useState<string | null>(null);
   const [projectId, setProjectId] = useState<string | null>(null);
+  const matangkanDenganNarraRoute = projectId
+    ? `${ROUTES.project.narra(projectId)}?mode=foundation`
+    : null;
 
   const loadAll = useCallback(async () => {
     if (!apiMode || !token) return;
@@ -238,6 +247,44 @@ export function useFoundationFlow(): FoundationFlowData {
     [apiMode, projectId, token],
   );
 
+  const generateNarraProposals = useCallback(async () => {
+    if (!apiMode || !token || !projectId) return;
+
+    setGeneratingNarra(true);
+    setNotice(null);
+    try {
+      await generateFoundationProposalsFromNarra(projectId, token);
+      const [proposalRows, readiness, bundle] = await Promise.all([
+        fetchFoundationProposals(projectId, token, true),
+        fetchFoundationReadiness(projectId, token),
+        fetchFoundationBundle(projectId, token),
+      ]);
+      setProposals(proposalRows.map(mapProposalToUi));
+      const ui = mapFoundationBundleToUi(
+        projectId,
+        bundle.foundation,
+        bundle.characters,
+        bundle.facts,
+      );
+      ui.readiness = mapReadinessApiToUi(readiness);
+      ui.isLocked = bundle.foundation.isLocked;
+      setFoundation((prev) => ({
+        ...prev,
+        ...ui,
+        pageCopy: prev.pageCopy,
+        secretSchedule: prev.secretSchedule,
+      }));
+    } catch (error) {
+      setNotice(
+        error instanceof ApiClientError
+          ? `Gagal membuat Usulan Narra (${error.message}).`
+          : "Gagal membuat Usulan Narra.",
+      );
+    } finally {
+      setGeneratingNarra(false);
+    }
+  }, [apiMode, projectId, token]);
+
   const lockFoundationNow = useCallback(async () => {
     if (!apiMode || !token || !projectId) return;
 
@@ -275,12 +322,15 @@ export function useFoundationFlow(): FoundationFlowData {
       source,
       loading,
       generating,
+      generatingNarra,
       locking,
       acceptingId,
       notice,
       lockNotice,
       apiMode,
+      matangkanDenganNarraRoute,
       generateProposals,
+      generateNarraProposals,
       acceptProposalById,
       lockFoundationNow,
       refresh: loadAll,
@@ -291,12 +341,15 @@ export function useFoundationFlow(): FoundationFlowData {
       source,
       loading,
       generating,
+      generatingNarra,
       locking,
       acceptingId,
       notice,
       lockNotice,
       apiMode,
+      matangkanDenganNarraRoute,
       generateProposals,
+      generateNarraProposals,
       acceptProposalById,
       lockFoundationNow,
       loadAll,

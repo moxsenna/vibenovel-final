@@ -82,6 +82,16 @@ export async function generateFoundationProposals(
   );
 }
 
+export async function generateFoundationProposalsFromNarra(
+  projectId: string,
+  token?: string | null,
+): Promise<GenerateFoundationProposalsResponse> {
+  return apiRequest<GenerateFoundationProposalsResponse>(
+    `/api/projects/${projectId}/foundation/proposals/generate-from-narra`,
+    { method: "POST", token },
+  );
+}
+
 export async function fetchFoundationReadiness(
   projectId: string,
   token?: string | null,
