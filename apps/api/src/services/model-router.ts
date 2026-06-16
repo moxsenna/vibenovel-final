@@ -64,10 +64,14 @@ const QUALITY_MAX_OUTPUT_TOKENS: Record<WriterQualityMode, number> = {
 };
 
 const GENERATION_TYPE_TOKEN_CAP: Record<GenerationType, number> = {
+  [GENERATION_TYPES.intake_assistant]: 800,
   [GENERATION_TYPES.concept_generation]: 3000,
   [GENERATION_TYPES.foundation_proposal]: 3000,
   [GENERATION_TYPES.draft_import_signal_extraction]: 1800,
   [GENERATION_TYPES.outline_generation]: 4000,
+  [GENERATION_TYPES.beat_generation]: 3000,
+  [GENERATION_TYPES.chapter_summary_generation]: 3000,
+  [GENERATION_TYPES.continuity_delta]: 1500,
   [GENERATION_TYPES.prose_beat]: 2000,
   [GENERATION_TYPES.prose_rewrite]: 2000,
   [GENERATION_TYPES.publish_copy]: 800,
@@ -75,14 +79,29 @@ const GENERATION_TYPE_TOKEN_CAP: Record<GenerationType, number> = {
 };
 
 const PLANNING_GENERATION_TYPES = new Set<GenerationType>([
+  GENERATION_TYPES.intake_assistant,
   GENERATION_TYPES.concept_generation,
   GENERATION_TYPES.foundation_proposal,
   GENERATION_TYPES.draft_import_signal_extraction,
   GENERATION_TYPES.outline_generation,
+  GENERATION_TYPES.beat_generation,
+  GENERATION_TYPES.chapter_summary_generation,
+  GENERATION_TYPES.continuity_delta,
 ]);
 
 /** Hard upper bound for any server-side maxOutputTokensOverride. */
 const MAX_OUTPUT_TOKENS_CEILING = 4000;
+
+/**
+ * Heavy structured planning generations (e.g. outline) need more wall-clock and
+ * more attempts on slower/free models, which intermittently return empty or
+ * non-JSON bodies. These tune resilience WITHOUT changing the configured model.
+ */
+const HEAVY_PLANNING_TOKEN_THRESHOLD = 3000;
+const HEAVY_PLANNING_TIMEOUT_MS = 60_000;
+const PLANNING_RETRY_FLOOR = 3;
+const RETRY_BASE_DELAY_MS = 500;
+const RETRY_MAX_DELAY_MS = 4000;
 
 function assertModelAllowlisted(model: string): string {
   const trimmed = model.trim();
@@ -143,11 +162,18 @@ export function resolveModelForGeneration(
 
   const useMock = isAiProviderMock(bindings);
 
+  const isHeavyPlanning =
+    PLANNING_GENERATION_TYPES.has(input.generationType) &&
+    typeCap >= HEAVY_PLANNING_TOKEN_THRESHOLD;
+  const timeoutMs = isHeavyPlanning
+    ? Math.max(QUALITY_TIMEOUT_MS[input.qualityMode], HEAVY_PLANNING_TIMEOUT_MS)
+    : QUALITY_TIMEOUT_MS[input.qualityMode];
+
   return {
     provider: useMock ? "mock" : "openrouter",
     model,
     maxOutputTokens,
-    timeoutMs: QUALITY_TIMEOUT_MS[input.qualityMode],
+    timeoutMs,
     temperature: 0.7,
   };
 }
@@ -188,8 +214,17 @@ function isRetryableProviderError(err: unknown): boolean {
   return (
     err.code === "AI_PROVIDER_ERROR" ||
     err.code === "AI_PROVIDER_TIMEOUT" ||
-    err.code === "AI_PROVIDER_RATE_LIMITED"
+    err.code === "AI_PROVIDER_RATE_LIMITED" ||
+    // Free/slow models intermittently return empty content; treat as transient.
+    err.code === "AI_OUTPUT_EMPTY"
   );
+}
+
+/** Exponential backoff with jitter between provider retries. */
+async function delayBeforeRetry(attempt: number): Promise<void> {
+  const expo = Math.min(RETRY_BASE_DELAY_MS * 2 ** attempt, RETRY_MAX_DELAY_MS);
+  const jitter = Math.floor(Math.random() * RETRY_BASE_DELAY_MS);
+  await new Promise((resolve) => setTimeout(resolve, expo + jitter));
 }
 
 async function invokeProvider(
@@ -213,7 +248,12 @@ async function invokeProvider(
     );
   }
 
-  const maxRetries = getAiMaxRetries(bindings);
+  // Heavy structured planning generations get a higher retry floor because
+  // free/slow models fail transiently more often on large JSON payloads.
+  const baseRetries = getAiMaxRetries(bindings);
+  const maxRetries = PLANNING_GENERATION_TYPES.has(input.generationType)
+    ? Math.max(baseRetries, PLANNING_RETRY_FLOOR)
+    : baseRetries;
   let lastError: unknown;
 
   for (let attempt = 0; attempt <= maxRetries; attempt += 1) {
@@ -226,6 +266,7 @@ async function invokeProvider(
     } catch (err) {
       lastError = err;
       if (attempt < maxRetries && isRetryableProviderError(err)) {
+        await delayBeforeRetry(attempt);
         continue;
       }
       throw err;

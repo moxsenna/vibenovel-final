@@ -629,6 +629,30 @@ function stripOutlineFences(text: string): string {
   return t.trim();
 }
 
+/**
+ * Tolerant JSON-object parse. Slow/free models often wrap the JSON in code
+ * fences or surrounding prose; strip fences first, then fall back to the
+ * outermost `{ … }` slice before giving up. Returns null if no object parses.
+ */
+export function parseLenientJsonObject(text: string): Record<string, unknown> | null {
+  const stripped = stripOutlineFences(text);
+  const candidates = [stripped];
+  const first = stripped.indexOf("{");
+  const last = stripped.lastIndexOf("}");
+  if (first >= 0 && last > first) candidates.push(stripped.slice(first, last + 1));
+  for (const candidate of candidates) {
+    try {
+      const parsed = JSON.parse(candidate);
+      if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+        return parsed as Record<string, unknown>;
+      }
+    } catch {
+      // try next candidate
+    }
+  }
+  return null;
+}
+
 /** Markers derived from chapter fields (keeps AI output small + enum-safe). */
 function deriveMarkers(ch: {
   hook: string;
@@ -874,19 +898,14 @@ export async function generateOutlineDraftWithAi(
       temperature: 0.4,
     });
 
-    let parsed: unknown;
-    try {
-      parsed = JSON.parse(stripOutlineFences(routerResult.text));
-    } catch {
+    const parsed = parseLenientJsonObject(routerResult.text);
+    if (!parsed) {
       throw new AppError("GENERATION_FAILED", "AI mengembalikan format outline yang tidak valid. Coba lagi.", 502);
-    }
-    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
-      throw new AppError("GENERATION_FAILED", "AI tidak mengembalikan outline yang valid. Coba lagi.", 502);
     }
     assertPlanningOutputSpecificToProject(parsed, "outline");
 
     const draft = buildOutlineDraftFromAi(
-      parsed as Record<string, unknown>,
+      parsed,
       snapshot,
       options.targetChapterCount,
     );
