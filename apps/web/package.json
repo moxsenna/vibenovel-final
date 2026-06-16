@@ -16,7 +16,8 @@
     "test:e2e:sprint7": "playwright test e2e/sprint7-publish-flow.spec.ts",
     "test:e2e:sprint8": "playwright test e2e/sprint8-write-ai-flow.spec.ts",
     "test:e2e:sprint14": "playwright test e2e/sprint14-write-room-flow.spec.ts",
-    "test:e2e:sprint16": "playwright test e2e/sprint16-creator-mode.spec.ts"
+    "test:e2e:sprint16": "playwright test e2e/sprint16-creator-mode.spec.ts",
+    "test:e2e:sprint19": "playwright test e2e/sprint19-asisten-narra.spec.ts"
   },
   "dependencies": {
     "@vibenovel/shared": "*",
