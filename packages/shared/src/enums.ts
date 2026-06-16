@@ -96,10 +96,15 @@ export type FoundationStatus = (typeof FOUNDATION_STATUSES)[keyof typeof FOUNDAT
 export const FOUNDATION_READINESS_LEVELS = {
   belum_siap: "belum_siap",
   bisa_lanjut: "bisa_lanjut",
+  siap_dimatangkan: "siap_dimatangkan",
   siap_dikunci: "siap_dikunci",
+  sangat_siap: "sangat_siap",
 } as const;
 export type FoundationReadinessLevel =
   (typeof FOUNDATION_READINESS_LEVELS)[keyof typeof FOUNDATION_READINESS_LEVELS];
+
+export const REFINE_READINESS_MIN_SCORE = 75;
+export const LOCK_READINESS_MIN_SCORE = 85;
 
 export const STORY_GENRES = {
   drama_domestic: "drama_domestic",
@@ -313,6 +318,7 @@ export const INTAKE_PHASES = {
   signal_detection: "signal_detection",
   concept_generation: "concept_generation",
   foundation_preparation: "foundation_preparation",
+  foundation_refinement: "foundation_refinement",
 } as const;
 export type IntakePhase = (typeof INTAKE_PHASES)[keyof typeof INTAKE_PHASES];
 
