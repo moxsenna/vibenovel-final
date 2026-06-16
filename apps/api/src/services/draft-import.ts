@@ -12,6 +12,7 @@ import {
   extractAuthorVoiceFromDraft,
 } from "./import/style-extraction.js";
 import { extractDraftImportSignalsAiFirst } from "./import/signal-extraction-ai.js";
+import { materializeDraftImportFoundationSeedForOwner } from "./import/foundation-seed.js";
 import { getOwnedProjectRow } from "./project.js";
 import { assertProposalPayloadSafe } from "./summary-safety.js";
 
@@ -879,6 +880,8 @@ export async function materializeDraftImportProposalsForOwner(
   proposalCount: number;
   proposalIds: string[];
   proposalTypes: string[];
+  seededConceptId: string | null;
+  createdSeedConcept: boolean;
 }> {
   const row = await getOwnedDraftImportRow(bindings, ownerId, projectId, draftImportId);
   let signals = await listSignalsForDraftImport(bindings, ownerId, projectId, draftImportId);
@@ -902,11 +905,20 @@ export async function materializeDraftImportProposalsForOwner(
     content: row.content_text,
     chunks,
   });
-  const drafts = [
-    ...buildDraftImportProposalDrafts({
+  const signalDrafts = signals.map(mapSignalToDraft);
+  const foundationSeed = await materializeDraftImportFoundationSeedForOwner(
+    bindings,
+    ownerId,
     projectId,
     draftImportId,
-    signals: signals.map(mapSignalToDraft),
+    signalDrafts,
+  );
+  const drafts = [
+    ...foundationSeed.proposalDrafts,
+    ...buildDraftImportProposalDrafts({
+      projectId,
+      draftImportId,
+      signals: signalDrafts,
     }),
     buildAuthorVoiceProposalDraft({ projectId, draftImportId, authorVoice }),
   ];
@@ -921,6 +933,8 @@ export async function materializeDraftImportProposalsForOwner(
       proposalCount: 0,
       proposalIds: [],
       proposalTypes: [],
+      seededConceptId: foundationSeed.conceptId,
+      createdSeedConcept: foundationSeed.createdConcept,
     };
   }
 
@@ -979,5 +993,7 @@ export async function materializeDraftImportProposalsForOwner(
     proposalCount: proposalRows.length,
     proposalIds,
     proposalTypes,
+    seededConceptId: foundationSeed.conceptId,
+    createdSeedConcept: foundationSeed.createdConcept,
   };
 }

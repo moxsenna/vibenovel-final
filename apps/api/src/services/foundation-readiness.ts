@@ -185,7 +185,7 @@ async function persistReadinessToFoundation(
 }
 
 interface ReadinessComputeOptions {
-  /** Proposal statuses counted toward readiness (display: proposed only; lock: proposed + accepted). */
+  /** Proposal statuses counted toward readiness. Lock readiness uses accepted proposals only. */
   activeStatuses: Set<string>;
   /** When true, accepted-but-not-yet-canon items count as pass (lock gate). */
   acceptedCountsAsReady: boolean;
@@ -198,7 +198,7 @@ function isPromotableFactProposal(row: AiProposalRow): boolean {
   return payload.category !== "secret" && typeof payload.highRiskCategory !== "string";
 }
 
-function computeFoundationReadiness(
+export function computeFoundationReadiness(
   foundation: FoundationRow | null,
   concept: StoryConceptRow | null,
   proposals: AiProposalRow[],
@@ -441,10 +441,10 @@ export async function getFoundationReadinessForOwner(
     speechRules,
     relationshipHeavy,
     {
-      // Credit `accepted` proposals too (same as the lock readiness) so the
-      // displayed readiness does NOT drop after the user accepts proposals and
-      // `canLock` honestly predicts whether the lock will succeed.
-      activeStatuses: new Set(["proposed", "accepted"]),
+      // Only accepted proposals count toward lock readiness. Proposed import
+      // seeds remain visible in the review panel, but they should not make the
+      // UI say "ready to lock" before the writer accepts them.
+      activeStatuses: new Set(["accepted"]),
       acceptedCountsAsReady: true,
       persist: true,
     },
@@ -487,7 +487,7 @@ export async function getFoundationLockReadinessForOwner(
     speechRules,
     relationshipHeavy,
     {
-      activeStatuses: new Set(["proposed", "accepted"]),
+      activeStatuses: new Set(["accepted"]),
       acceptedCountsAsReady: true,
       persist: false,
     },

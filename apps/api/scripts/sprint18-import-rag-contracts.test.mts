@@ -13,6 +13,7 @@ import {
   buildDraftImportAiProposalRows,
   buildDraftImportProposalDrafts,
 } from "../src/services/import/entity-extraction.ts";
+import { buildDraftImportFoundationSeed } from "../src/services/import/foundation-seed.ts";
 import { isFoundationReviewProposal } from "../src/services/foundation-proposal.ts";
 import {
   buildAuthorVoiceProposalDraft,
@@ -33,6 +34,7 @@ import {
   attachReadOnlyRetrievalMemoryToPacket,
   buildReadOnlyRetrievalSnippets,
 } from "../src/services/import/retrieval-memory.ts";
+import { computeFoundationReadiness } from "../src/services/foundation-readiness.ts";
 
 const migrationSql = readFileSync(
   "../../supabase/migrations/00017_sprint18_import_rag.sql",
@@ -334,6 +336,169 @@ assert.equal(
   true,
 );
 
+const importFoundationSeed = buildDraftImportFoundationSeed({
+  projectId: "project-18",
+  draftImportId: "draft-seed-18",
+  projectTitle: "Draft Saya",
+  signals: [
+    {
+      type: "genre",
+      label: "Sci-Fi Psychological Horror",
+      value:
+        "Kombinasi eksplorasi ruang angkasa, misteri koloni kosong, dan horor psikologis berbasis manipulasi memori.",
+      confidence: 0.99,
+      metadata: { source: "ai_draft_import" },
+    },
+    {
+      type: "protagonist",
+      label: "Lira Sembadra",
+      value:
+        "Teknisi komunikasi yang dihantui trauma masa lalu dan menjadi pusat cerita.",
+      confidence: 0.99,
+      metadata: { source: "ai_draft_import" },
+    },
+    {
+      type: "core_conflict",
+      label: "Man vs. Alien Intelligence",
+      value:
+        "Perjuangan melawan Noctilite yang membaca memori, meniru suara orang terkasih, dan menjebak kesadaran manusia.",
+      confidence: 0.95,
+      metadata: { source: "ai_draft_import" },
+    },
+    {
+      type: "reader_promise",
+      label: "Mystery Unraveling & Psychological Stakes",
+      value:
+        "Janji pengungkapan misteri koloni Kharon-7 dan konfrontasi Lira dengan rasa bersalahnya.",
+      confidence: 0.85,
+      metadata: { source: "ai_draft_import" },
+    },
+    {
+      type: "setting",
+      label: "Kharon-7",
+      value: "Bulan mati dengan koloni berkubah dan laboratorium rahasia.",
+      confidence: 0.99,
+      metadata: { source: "ai_draft_import" },
+    },
+    {
+      type: "tone",
+      label: "Sinematik, tegang, psikologis",
+      value: "sinematik tegang psikologis",
+      confidence: 0.88,
+      metadata: { source: "ai_draft_import" },
+    },
+  ],
+});
+assert.match(importFoundationSeed.concept.title, /Lira|Sci-Fi/i);
+assert.match(importFoundationSeed.concept.shortPitch, /Lira|Noctilite|Kharon-7/i);
+assert.equal(importFoundationSeed.concept.genre, "Sci-Fi Psychological Horror");
+assert.equal(importFoundationSeed.concept.status, "selected");
+assert.equal(importFoundationSeed.foundationProposal.proposalType, AI_PROPOSAL_TYPES.foundation);
+assert.equal(importFoundationSeed.foundationProposal.source, AI_PROPOSAL_SOURCES.ai_import);
+assert.equal(importFoundationSeed.foundationProposal.status, AI_PROPOSAL_STATUSES.proposed);
+assert.equal(importFoundationSeed.foundationProposal.payload.draftImportId, "draft-seed-18");
+assert.match(String(importFoundationSeed.foundationProposal.payload.mainConflict), /Noctilite/i);
+assert.equal(importFoundationSeed.safeFactProposals.length >= 2, true);
+assert.equal(
+  importFoundationSeed.safeFactProposals.every(
+    (draft) =>
+      draft.proposalType === AI_PROPOSAL_TYPES.fact &&
+      draft.source === AI_PROPOSAL_SOURCES.ai_import &&
+      draft.payload.category !== "secret",
+  ),
+  true,
+);
+
+const selectedConceptForReadiness = {
+  id: "concept-import-seed",
+  project_id: "project-18",
+  title: importFoundationSeed.concept.title,
+  short_pitch: importFoundationSeed.concept.shortPitch,
+  reader_promise: importFoundationSeed.concept.readerPromise,
+  core_conflict: importFoundationSeed.concept.coreConflict,
+  genre: importFoundationSeed.concept.genre,
+  tone: importFoundationSeed.concept.tone,
+  target_reader: importFoundationSeed.concept.targetReader,
+  status: "selected",
+  source: "system",
+  score: 92,
+  payload: importFoundationSeed.concept.payload,
+  created_at: "2026-06-16T00:00:00.000Z",
+  updated_at: "2026-06-16T00:00:00.000Z",
+} as Parameters<typeof computeFoundationReadiness>[1];
+
+const importSeedProposalRows = [
+  importFoundationSeed.foundationProposal,
+  ...importFoundationSeed.safeFactProposals,
+  ...buildDraftImportProposalDrafts({
+    projectId: "project-18",
+    draftImportId: "draft-ai-protagonist",
+    signals: [
+      {
+        type: "protagonist",
+        label: "Lira Sembadra",
+        value:
+          "Teknisi komunikasi yang dihantui trauma masa lalu dan menjadi pusat cerita.",
+        confidence: 0.84,
+        metadata: { source: "ai_draft_import" },
+      },
+    ],
+  }),
+].map((draft, index) => ({
+  id: `proposal-${index}`,
+  project_id: "project-18",
+  proposal_type: draft.proposalType,
+  status: draft.status,
+  risk_level: draft.riskLevel,
+  source: draft.source,
+  title: draft.title,
+  payload: draft.payload,
+  review_note: draft.reviewNote,
+  reviewed_at: null,
+  reviewed_by: null,
+  merged_into_id: null,
+  result_fact_id: null,
+  result_character_id: null,
+  created_at: "2026-06-16T00:00:00.000Z",
+  updated_at: "2026-06-16T00:00:00.000Z",
+})) as Parameters<typeof computeFoundationReadiness>[2];
+
+const proposedSeedReadiness = computeFoundationReadiness(
+  null,
+  selectedConceptForReadiness,
+  importSeedProposalRows,
+  [],
+  [],
+  [],
+  false,
+  {
+    activeStatuses: new Set(["accepted"]),
+    acceptedCountsAsReady: true,
+    persist: false,
+  },
+);
+assert.equal(
+  proposedSeedReadiness.canLock,
+  false,
+  "proposed import seed proposals must not make foundation lock-ready before review",
+);
+
+const acceptedSeedReadiness = computeFoundationReadiness(
+  null,
+  selectedConceptForReadiness,
+  importSeedProposalRows.map((row) => ({ ...row, status: "accepted" })),
+  [],
+  [],
+  [],
+  false,
+  {
+    activeStatuses: new Set(["accepted"]),
+    acceptedCountsAsReady: true,
+    persist: false,
+  },
+);
+assert.equal(acceptedSeedReadiness.canLock, true);
+
 const aiProtagonistProposalDrafts = buildDraftImportProposalDrafts({
   projectId: "project-18",
   draftImportId: "draft-ai-protagonist",
@@ -421,6 +586,7 @@ assert.equal(
 
 const draftImportServiceSql = readFileSync("src/services/draft-import.ts", "utf8");
 assert.match(draftImportServiceSql, /materializeDraftImportProposalsForOwner/);
+assert.match(draftImportServiceSql, /materializeDraftImportFoundationSeedForOwner/);
 assert.match(draftImportServiceSql, /\.from\("ai_proposals"\)/);
 assert.match(draftImportServiceSql, /extractAuthorVoiceFromDraft/);
 assert.match(draftImportServiceSql, /buildAuthorVoiceProposalDraft/);
@@ -428,6 +594,13 @@ assert.doesNotMatch(
   draftImportServiceSql,
   /\.from\("facts"\)\s*[\s\S]*\.insert/,
   "draft import materialization must not insert canon facts directly",
+);
+
+const foundationReadinessSql = readFileSync("src/services/foundation-readiness.ts", "utf8");
+assert.doesNotMatch(
+  foundationReadinessSql,
+  /activeStatuses:\s*new Set\(\["proposed",\s*"accepted"\]\)/,
+  "display readiness must not report lock-ready from proposed-only proposals",
 );
 
 const draftImportRoutesSql = readFileSync("src/routes/draft-import.ts", "utf8");
