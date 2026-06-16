@@ -1,79 +1,120 @@
-# Foundation Coach / Matangkan Fondasi Design
+# Asisten Narra / Unified Story Agent Design
 
 Date: 2026-06-16
-Status: Proposed design
+Status: Proposed design, revised after product brainstorming
 Owner: Narraza product sprint
+
+## Decision Summary
+
+Narraza should not add a separate "Foundation Coach" product surface. The writer should experience one continuous assistant: **Asisten Narra**.
+
+Internally, the first version can keep using `intake_sessions` and `intake_messages` as the continuity anchor. The product layer should rename the experience from "Mulai Proyek" to "Asisten Narra", then make the same chat phase-aware:
+
+- During early project creation, Narra behaves as intake assistant.
+- After concept/foundation exist, Narra behaves as foundation refinement assistant.
+- Later phases can reuse the same agent surface for outline review, continuity review, and publishing help without fragmenting the writer's mental model.
+
+The key rule stays the same: Narra may suggest and materialize proposals, but must not silently mutate canon.
 
 ## Problem
 
-The current Foundation flow can reach 75% after import-derived proposals are accepted. That proves the project has the minimum structural pieces: selected concept, premise, conflict, reader promise, protagonist, a few facts, target reader, genre, tone, and secret safety. It does not prove the story is mature enough to lock.
+The current flow can reach around 75% readiness after import-derived foundation proposals are accepted. That means the project has enough structural pieces, but not necessarily a mature story bible. If Narraza lets the writer lock at this point, weak motivation, generic stakes, vague reader promise, or thin character pressure can flow into outline generation.
 
-This is especially visible after Draft Import. The imported draft can seed a real foundation, but the result is often a "working draft" rather than a reliable story bible. Locking at 75% lets weak premises, shallow stakes, vague character motivation, or generic reader promise flow into outline generation.
+The earlier "Foundation Coach" idea solves the quality gap, but it risks feeling like yet another separate feature. The writer already started a conversation with the intake agent. When they reach Foundation, the better experience is to continue that same conversation with the assistant now aware of the current foundation.
 
-The product needs an intermediate refinement step: after proposals fill the foundation, the writer should be guided by AI to sharpen the foundation before lock.
+## Product Language
 
-## Goals
+- Sidebar label: `Asisten Narra`
+- Persona name in chat: `Narra`
+- Foundation CTA: `Matangkan dengan Narra`
+- Proposal section label: `Usulan Narra`
+- Old user-facing label to remove from active project nav: `Mulai Proyek`
 
-- Treat 75% as "ready to refine", not "ready to lock".
-- Add a guided AI step named Foundation Coach / Matangkan Fondasi.
-- Keep Narraza's proposal-first rule: AI output becomes proposals or patch previews, never silent canon mutation.
-- Let the writer answer a few targeted questions instead of rewriting the whole foundation form manually.
-- Raise the lock threshold to a story-quality threshold around 85%.
-- Make the Foundation page honest about what is missing: not just fields, but maturity signals like motivation, stakes, opposing force, serial engine, and style specificity.
+`Proyek Baru` remains the creation button. It is not the same concept as the story assistant.
 
-## Non-Goals
+## Overall Narraza Flow Adjustment
 
-- No free-form chatbot that can mutate canon directly.
-- No BYOK/provider setting changes.
-- No outline generation changes in this feature.
-- No raw future-truth leakage into writer context packets.
-- No attempt to solve all Story Bible granularity; this feature only matures the current foundation/canon primitives.
+Recommended main navigation for an active project:
 
-## Recommended Product Flow
+1. `Beranda`
+2. `Asisten Narra`
+3. `Fondasi Cerita`
+4. `Outline`
+5. `Ruang Tulis`
+6. `Paket Publish`
 
-1. Writer imports a draft, generates foundation proposals, or accepts foundation suggestions.
-2. The Foundation page recomputes readiness.
-3. If readiness is below 75%, the primary action remains proposal/intake completion.
-4. If readiness is 75-84%, the primary action becomes `Matangkan Fondasi`.
-5. Foundation Coach opens a focused refinement panel and asks one targeted question at a time.
-6. After enough answers, the coach generates a Foundation Patch.
-7. The patch appears as reviewable proposals grouped by foundation fields, characters, facts, style, and high-risk secrets.
-8. Writer applies accepted proposals using the existing foundation proposal acceptance path.
-9. Readiness recomputes. At 85% or higher, `Kunci Fondasi` becomes available.
+`Asisten Narra` is not just "start project". It is the writer's persistent story agent. The route can remain `/projects/:id/intake` for compatibility in MVP, but the UI copy should no longer call it intake except in internal code.
+
+Recommended project lifecycle:
+
+1. Writer creates a project from `/start`.
+2. Writer opens `Asisten Narra` and gives idea, premise, draft signals, or story direction.
+3. Narra extracts signals and helps produce/select concepts.
+4. Draft import can seed concept and foundation proposals.
+5. Writer accepts safe proposals into draft foundation.
+6. If foundation readiness is below 75, the main action remains "complete missing foundation pieces".
+7. If readiness is 75-84, the main action becomes `Matangkan dengan Narra`.
+8. The same Narra chat continues with foundation context and asks targeted questions.
+9. Narra materializes a Foundation Patch into reviewable `ai_proposals`.
+10. Writer accepts safe proposals.
+11. At readiness >= 85, `Kunci Fondasi` becomes available.
+12. Outline, write room, summary, and publish continue to rely on locked foundation and proposal-first canon flow.
+
+## Phase-Aware Assistant
+
+Use one session history with phase metadata:
+
+- `idea_collection`
+- `signal_detection`
+- `concept_generation`
+- `foundation_preparation`
+- `foundation_refinement`
+
+The new phase `foundation_refinement` means Narra must include these context inputs:
+
+- current selected concept,
+- current foundation fields,
+- accepted characters and facts,
+- active foundation proposals,
+- latest readiness checks,
+- draft import signals if available,
+- recent chat history.
+
+The assistant should avoid re-asking details already present. It should ask one focused question at a time. Once enough information exists, it should offer to create `Usulan Narra`.
 
 ## Readiness Model
 
-The current readiness model is structural and often caps near 75 for non-relationship-heavy projects. The new model should split readiness into two bands:
+Treat 75% as "ready to refine", not "ready to lock".
 
-### Core Completeness: 70 Points
+Core completeness is worth 70 points:
 
-- Selected concept.
-- Premise.
-- Main conflict.
-- Reader promise.
-- Protagonist.
-- Minimum two safe canon facts.
-- Target reader.
-- Genre and tone.
-- High-risk secret safety.
+- selected concept,
+- premise,
+- main conflict,
+- reader promise,
+- protagonist,
+- at least two safe canon facts,
+- target reader,
+- genre and tone,
+- high-risk secret safety.
 
-### Foundation Maturity: 30 Points
+Maturity is worth 30 points:
 
-- Protagonist motivation or wound is specific.
-- Opposing force is clear.
-- Stakes and consequence are explicit.
-- Reader promise has serial momentum, not just a generic genre promise.
-- Style and mobile format are specific enough to guide generation.
-- Secret/reveal material is identified as planner-only proposal, not unsafe canon.
+- protagonist motivation or wound is specific,
+- opposing force is clear,
+- stakes and consequence are explicit,
+- reader promise has serial momentum,
+- style and mobile format are specific enough,
+- high-risk secrets remain planner/proposal-only.
 
 `canLock` should require:
 
 - score >= 85,
 - all core checks passing,
 - no unresolved high-risk direct-canon issue,
-- no locked-foundation conflict.
+- foundation is not already locked.
 
-The UI labels should be:
+UI labels:
 
 - 0-44: `Belum siap`
 - 45-74: `Perlu dilengkapi`
@@ -81,160 +122,92 @@ The UI labels should be:
 - 85-94: `Siap dikunci`
 - 95-100: `Sangat siap`
 
-The existing enum can remain as storage compatibility, but UI copy and `canLock` should follow the richer score.
+## Narra Foundation Patch
 
-## Coach Behavior
+Narra's refinement output is a structured patch. The patch creates proposals only.
 
-The coach should be a focused agent, not an open-ended companion. It receives:
+Patch sections:
 
-- project title and selected concept,
-- current foundation fields,
-- accepted characters and facts,
-- current proposal queue summary,
-- import-derived signals and author voice if available,
-- readiness check failures and weak maturity checks.
-
-It asks at most five questions per session. Each question must target one weakness and should be easy to answer. Examples:
-
-- "Apa luka atau rasa bersalah yang paling menentukan keputusan tokoh utama?"
-- "Kalau tokoh utama gagal, kerugian emosional apa yang paling terasa?"
-- "Siapa atau apa yang terus menekan tokoh utama dari luar?"
-- "Janji apa yang membuat pembaca ingin lanjut bab berikutnya?"
-- "Rahasia apa yang perlu disimpan, tapi tidak boleh dibocorkan terlalu cepat?"
-
-The coach should avoid re-asking details already present in foundation/canon. If enough information already exists, it can generate the patch immediately.
-
-## Foundation Patch Output
-
-The coach output should be a structured JSON patch with these sections:
-
-- `foundation`: proposed premise, main conflict, reader promise, tone, target reader, style tags, and optional story secrets preview.
-- `characters`: proposed character additions or description upgrades.
-- `facts`: safe canon facts only, such as motivation, relationship, event, location, or promise.
-- `style`: author voice and mobile-serial guidance.
-- `secrets`: high-risk or planner-only material, always kept as proposals and never directly promoted to facts.
+- `foundation`: premise, main conflict, reader promise, genre, tone, target reader, style tags, optional safe story secrets preview.
+- `characters`: protagonist/supporting character upgrades.
+- `facts`: safe canon facts only.
+- `style`: author voice and mobile serial guidance.
+- `secrets`: high-risk or planner-only material; never direct fact promotion.
 - `maturityEvaluation`: check statuses and reasons.
 
-Patch materialization should create `ai_proposals` with a marker such as `generator: "foundation_coach_patch"` and a `sessionId`. The existing foundation proposal acceptance endpoint should apply safe proposals. High-risk `secret`, `reveal`, and high-risk fact proposals should remain blocked from direct accept unless a future reveal-gate workflow handles them explicitly.
+Patch proposals should use payload metadata:
 
-## Data Model
+- `generator: "asisten_narra_foundation_patch"`
+- `sessionId`
+- `phase: "foundation_refinement"`
+- `readinessBefore`
+- `targetReadiness: 85`
 
-Recommended additive tables:
+Existing foundation proposal acceptance remains the promotion path.
 
-### `foundation_refinement_sessions`
+## API Shape
 
-- `id`
-- `project_id`
-- `owner_id`
-- `status`: `active`, `patch_ready`, `completed`, `abandoned`, `failed`
-- `before_readiness_score`
-- `target_readiness_score` default 85
-- `final_readiness_score`
-- `metadata`
-- `created_at`
-- `updated_at`
+Keep chat continuity by extending the existing intake API rather than creating separate foundation chat tables.
 
-### `foundation_refinement_messages`
+Recommended MVP endpoints:
 
-- `id`
-- `session_id`
-- `project_id`
-- `role`: `user`, `agent`, `system`
-- `content`
-- `metadata`
-- `created_at`
+- `GET /api/projects/:id/intake`
+  - Returns session, messages, detected signals, and a small `agentContext` summary.
 
-These tables keep the Foundation Coach conversation distinct from intake chat. Intake remains for collecting raw story ideas; Foundation Coach is for post-seed refinement.
+- `POST /api/projects/:id/intake/messages`
+  - Accepts `content`.
+  - Also accepts optional `phase: "foundation_refinement"` and `entrypoint: "foundation"`.
+  - Updates the active session phase and sends Narra a phase-aware prompt.
 
-## API Design
+- `POST /api/projects/:id/foundation/proposals/generate-from-narra`
+  - Reads the same active intake session history.
+  - Reads foundation/readiness context.
+  - Creates reviewable `ai_proposals` marked as `asisten_narra_foundation_patch`.
 
-Suggested endpoints:
+Rejected API shape:
 
-- `POST /api/projects/:id/foundation/refinement/start`
-  - Creates or resumes the active refinement session.
-  - Returns readiness, current weakness list, and the first coach message.
+- Do not create `foundation_refinement_sessions` and `foundation_refinement_messages` for MVP. That fragments the conversation and conflicts with the product decision.
 
-- `GET /api/projects/:id/foundation/refinement`
-  - Returns active/latest session, messages, and patch status.
+## Frontend Shape
 
-- `POST /api/projects/:id/foundation/refinement/messages`
-  - Adds a user answer and returns the next coach message or patch-ready state.
+Sidebar:
 
-- `POST /api/projects/:id/foundation/refinement/patch`
-  - Generates a structured Foundation Patch and materializes review proposals.
+- Change active-project nav label from `Mulai Proyek` to `Asisten Narra`.
+- Route active projects to `/projects/:id/intake`.
+- Keep `/start` for creating new projects.
 
-- `POST /api/projects/:id/foundation/refinement/complete`
-  - Marks session complete after enough proposals are accepted or the writer exits.
+Asisten Narra page:
 
-Use the existing model router and credit ledger. MVP can reuse `GENERATION_TYPES.foundation_proposal` with metadata `task: "foundation_coach"` to avoid a migration solely for billing. A later analytics sprint can add `foundation_coach` as a first-class generation type.
+- Page title: `Asisten Narra`.
+- Intro copy changes by phase.
+- Foundation entry mode shows foundation readiness context and a CTA to create `Usulan Narra`.
+- The chat panel remains the same component family, but it must not say "intake" in user-facing copy.
 
-## Frontend Design
+Foundation page:
 
-On the Foundation page:
-
-- The readiness card shows richer status copy and missing maturity items.
-- At 75-84%, the primary CTA is `Matangkan Fondasi`.
-- `Kunci Fondasi` is disabled below 85 with clear text: "Matangkan fondasi dulu agar outline tidak lemah."
-- The coach appears as an inline panel or drawer below the readiness card, not a separate route.
-- Questions are shown one at a time, with a text area and compact suggested answer chips where helpful.
-- The patch preview appears above the proposal list with actions:
-  - `Terapkan Usulan Aman`
-  - individual `Terima Usulan`
-  - high-risk items marked as planner-only / needs reveal review.
-
-The page must not show generic feature instructions. Copy should be direct and workflow-oriented.
-
-## Error Handling
-
-- If AI generation is disabled, show a deterministic refinement checklist and allow manual foundation editing.
-- If OpenRouter fails, keep the session and user answer, show retry copy, and refund credits if debit already happened.
-- If AI returns invalid JSON, retry once with a repair prompt; if still invalid, fail the patch request without creating partial proposals.
-- If a session already has a patch, `patch` endpoint should be idempotent unless `regenerate=true`.
-- If foundation is locked, refinement start should return conflict unless a future unlock/edit workflow is explicitly supported.
-- Never write raw prompts, provider tokens, or full imported prose into audit logs.
+- At 75-84 readiness, show `Matangkan dengan Narra`.
+- The CTA navigates to Asisten Narra with `?mode=foundation` or opens the same page state in the chat route.
+- Proposal list shows Narra-generated patches alongside import/foundation generator proposals.
+- Lock stays disabled until 85.
 
 ## Safety
 
-- Coach output is not canon until accepted.
-- High-risk secret/reveal items stay in proposal queue and are not directly promoted to `facts`.
-- Patch proposals should include safe payload excerpts only.
-- Writer Context Packet remains past-safe; coach planner material must not leak into prose generation unless accepted and allowed by Reveal Gate.
-- The lock endpoint remains the final authority and recomputes readiness server-side.
+- Narra output is not canon until accepted.
+- High-risk secret/reveal items stay as proposals.
+- No raw imported prose, provider tokens, full prompts, or raw model payloads should enter audit logs.
+- Writer Context Packet remains past-safe. Planner-only secrets must not leak into prose generation unless accepted and allowed by reveal controls.
+- Server-side lock remains final authority.
 
-## Testing
+## Rollout
 
-API contract tests:
+1. Normalize naming and session phase model.
+2. Add readiness maturity threshold and labels.
+3. Extend Narra chat prompt with phase-aware context.
+4. Add Narra foundation patch materialization.
+5. Wire Foundation CTA into the same chat.
+6. Add contract and web smoke coverage.
+7. Deploy API and web.
 
-- Imported/accepted foundation at 75% returns `canLock=false`.
-- A matured foundation with coach patch accepted reaches >=85 and `canLock=true`.
-- Coach patch materializes proposals, not direct facts or direct foundation mutation.
-- High-risk secret/fact proposals cannot be promoted directly.
-- Patch generation is idempotent for the same session.
-- AI parse failure does not create partial proposals.
+## Product Answer
 
-Web tests:
-
-- Foundation at 75% shows `Matangkan Fondasi` as primary CTA and disables lock.
-- Coach asks a targeted question based on missing maturity checks.
-- User answer leads to patch preview.
-- Applying safe patch proposals updates foundation cards and readiness.
-- At >=85, lock CTA enables.
-
-Production smoke:
-
-- Existing import-derived project can move from 75 to >=85 by answering coach questions and accepting safe proposals.
-- Health smoke remains unchanged for Duitku/OpenRouter.
-
-## Rollout Plan
-
-1. Add readiness maturity model and threshold changes behind code-level tests.
-2. Add refinement session schema and API.
-3. Add deterministic fallback coach checklist.
-4. Add AI coach prompt and structured patch generation.
-5. Wire Foundation page CTA/panel.
-6. Add tests and production smoke.
-7. Backfill existing 75% projects only by recalculating readiness; do not auto-create coach sessions.
-
-## Decision
-
-The MVP default is to make 85% the hard lock threshold. If production testing shows too much friction, a later beta setting can allow "lock with warning" for advanced users. MVP should keep the hard gate because weak foundations produce weak outlines, and that is more damaging than one extra refinement step.
+Yes, Narraza should adjust its overall structure. "Mulai Proyek" is a one-time action; `Asisten Narra` is a persistent companion for the writer. The product will feel clearer if Narra is the one assistant that starts the project, matures the foundation, helps inspect outline quality, and eventually supports writing continuity.
