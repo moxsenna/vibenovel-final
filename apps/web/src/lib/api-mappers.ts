@@ -67,8 +67,10 @@ const GENRE_BADGE_CLASSES = [
 
 const READINESS_LABELS: Record<string, string> = {
   belum_siap: "Belum siap",
-  bisa_lanjut: "Bisa lanjut",
-  siap_dikunci: "Hampir siap dikunci",
+  bisa_lanjut: "Perlu dilengkapi",
+  siap_dimatangkan: "Siap dimatangkan",
+  siap_dikunci: "Siap dikunci",
+  sangat_siap: "Sangat siap",
 };
 
 const STATUS_BADGES: Record<string, string> = {

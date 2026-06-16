@@ -16,6 +16,7 @@ export interface FoundationReadinessResponse {
   readinessScore: number;
   readinessLevel: string;
   canLock: boolean;
+  canRefine: boolean;
   checks: Array<{
     key: string;
     label: string;
