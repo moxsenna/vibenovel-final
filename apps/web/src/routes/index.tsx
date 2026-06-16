@@ -1,6 +1,5 @@
-import { createBrowserRouter } from "react-router-dom";
+import { Navigate, createBrowserRouter } from "react-router-dom";
 import { AppShell } from "@/components/layout";
-import { LandingPage } from "@/pages/LandingPage";
 import { StartProjectPage } from "@/pages/StartProjectPage";
 import { DashboardPage } from "@/pages/DashboardPage";
 import { IntakePage } from "@/pages/IntakePage";
@@ -17,7 +16,7 @@ import { CreditTopupReturnPage } from "@/pages/CreditTopupReturnPage";
 import { LoginPage } from "@/pages/LoginPage";
 
 export const router = createBrowserRouter([
-  { path: "/", element: <LandingPage /> },
+  { path: "/", element: <Navigate to="/login" replace /> },
   { path: "/login", element: <LoginPage /> },
   {
     element: <AppShell />,
