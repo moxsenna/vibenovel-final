@@ -664,10 +664,13 @@
           window.addEventListener("scroll", onScroll, { passive: true });
         }
 
-        /* ---- Scroll reveal ---- */
+        /* ---- Scroll reveal (with hard failsafe so content is NEVER stuck hidden) ---- */
         var revealEls = Array.prototype.slice.call(document.querySelectorAll("[data-reveal]"));
-        if (reduceMotion || !("IntersectionObserver" in window)) {
+        var revealAll = function () {
           revealEls.forEach(function (el) { el.classList.add("is-visible"); });
+        };
+        if (reduceMotion || !("IntersectionObserver" in window)) {
+          revealAll();
         } else {
           var revealObs = new IntersectionObserver(function (entries) {
             entries.forEach(function (e) {
@@ -676,12 +679,29 @@
                 revealObs.unobserve(e.target);
               }
             });
-          }, { threshold: 0.12, rootMargin: "0px 0px -8% 0px" });
+          }, { threshold: 0.08, rootMargin: "0px 0px 5% 0px" });
           revealEls.forEach(function (el) { revealObs.observe(el); });
+          /* Reveal whatever is already in view right now (no scroll needed). */
+          requestAnimationFrame(function () {
+            var vh = window.innerHeight || 800;
+            revealEls.forEach(function (el) {
+              if (el.getBoundingClientRect().top < vh * 0.95) el.classList.add("is-visible");
+            });
+          });
+          /* Failsafe: if anything is still hidden shortly after load, show it. */
+          window.setTimeout(revealAll, 1200);
+          window.addEventListener("load", function () { window.setTimeout(revealAll, 400); });
         }
 
         /* ---- Animated counters ---- */
         var counters = Array.prototype.slice.call(document.querySelectorAll(".stat-num[data-count]"));
+        var fmtCount = function (el, val) {
+          return (el.getAttribute("data-prefix") || "") + val + (el.getAttribute("data-suffix") || "");
+        };
+        /* Resting state shows the FINAL value so it can never get stuck at 0. */
+        counters.forEach(function (el) {
+          el.textContent = fmtCount(el, parseInt(el.getAttribute("data-count"), 10) || 0);
+        });
         var runCount = function (el) {
           var target = parseInt(el.getAttribute("data-count"), 10) || 0;
           var prefix = el.getAttribute("data-prefix") || "";
