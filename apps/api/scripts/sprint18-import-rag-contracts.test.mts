@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { existsSync } from "node:fs";
 import { readFileSync } from "node:fs";
 import {
   AI_PROPOSAL_SOURCES,
@@ -606,6 +607,52 @@ assert.doesNotMatch(
 const draftImportRoutesSql = readFileSync("src/routes/draft-import.ts", "utf8");
 assert.match(draftImportRoutesSql, /materialize-proposals/);
 assert.match(draftImportRoutesSql, /import-jobs\/resume/);
+
+const foundationAcceptServicePath = "src/services/foundation-proposal-acceptance.ts";
+assert.equal(
+  existsSync(foundationAcceptServicePath),
+  true,
+  "Foundation review needs a dedicated accept service that promotes accepted proposals into draft foundation data",
+);
+const foundationAcceptServiceSql = readFileSync(foundationAcceptServicePath, "utf8");
+assert.match(foundationAcceptServiceSql, /acceptFoundationProposalForOwner/);
+assert.match(foundationAcceptServiceSql, /\.from\("story_foundations"\)/);
+assert.match(foundationAcceptServiceSql, /\.from\("characters"\)/);
+assert.match(foundationAcceptServiceSql, /\.from\("facts"\)/);
+assert.match(
+  foundationAcceptServiceSql,
+  /high-risk|high risk|risk_level/,
+  "Foundation accept service must keep high-risk secret/fact proposals out of direct promotion",
+);
+assert.match(
+  foundationAcceptServiceSql,
+  /Diturunkan dari draft import/,
+  "Accepted style proposals should be allowed to replace generic import-derived tone placeholders",
+);
+assert.match(
+  foundationAcceptServiceSql,
+  /foundation_ai_batch/,
+  "Accepted foundation-AI style proposals should replace stale import-derived style tags",
+);
+
+const foundationRoutesSql = readFileSync("src/routes/foundation.ts", "utf8");
+assert.match(
+  foundationRoutesSql,
+  /\/api\/projects\/:id\/foundation\/proposals\/:proposalId\/accept/,
+  "Foundation proposal accept must use a foundation-specific endpoint",
+);
+
+const webFoundationFlowSql = readFileSync("../web/src/services/foundation-flow.ts", "utf8");
+assert.match(
+  webFoundationFlowSql,
+  /\/api\/projects\/\$\{projectId\}\/foundation\/proposals\/\$\{proposalId\}\/accept/,
+  "Foundation UI must accept proposals through the foundation endpoint so accepted cards immediately update the draft foundation",
+);
+assert.doesNotMatch(
+  webFoundationFlowSql,
+  /\/api\/projects\/\$\{projectId\}\/proposals\/\$\{proposalId\}\/accept/,
+  "Foundation UI must not use the generic status-only proposal accept endpoint",
+);
 
 const contextPacketBuilderSql = readFileSync("src/services/context-packet-builder.ts", "utf8");
 assert.match(contextPacketBuilderSql, /loadRetrievalMemorySnippetsForPacket/);

@@ -9,6 +9,7 @@ import {
   generateFoundationProposalsForOwner,
   listFoundationProposalsForOwner,
 } from "../services/foundation-proposal.js";
+import { acceptFoundationProposalForOwner } from "../services/foundation-proposal-acceptance.js";
 import { lockFoundationForOwner } from "../services/foundation-lock.js";
 import { getFoundationReadinessForOwner } from "../services/foundation-readiness.js";
 import type { AppEnv } from "../types.js";
@@ -50,6 +51,14 @@ export function registerFoundationRoutes(app: Hono<AppEnv>): void {
       includeResolved: c.req.query("includeResolved"),
     });
     return jsonSuccess(c, { proposals });
+  });
+
+  app.post("/api/projects/:id/foundation/proposals/:proposalId/accept", authMiddleware, async (c) => {
+    const ownerId = c.get("userId");
+    const projectId = c.req.param("id");
+    const proposalId = c.req.param("proposalId");
+    const result = await acceptFoundationProposalForOwner(c.env, ownerId, projectId, proposalId);
+    return jsonSuccess(c, result);
   });
 
   app.get("/api/projects/:id/foundation/readiness", authMiddleware, async (c) => {
