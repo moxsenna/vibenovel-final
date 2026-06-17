@@ -10,7 +10,7 @@ import {
 } from "@/lib/api-mappers";
 import { createEmptyApiFoundation } from "@/lib/empty-states";
 import { allowMockFallback, shouldUseMocks } from "@/lib/env";
-import { apiErrorMessage } from "@/lib/hook-fallback";
+import { aiGenerationFailureNotice, apiErrorMessage } from "@/lib/hook-fallback";
 import { DEMO_MODE_LABEL } from "@/lib/workflow-truth";
 import { resolveProjectIdForRoute } from "@/lib/project-context";
 import { mockStoryFoundation } from "@/mocks/storyFoundation";
@@ -195,11 +195,7 @@ export function useFoundationFlow(): FoundationFlowData {
         readiness: mapReadinessApiToUi(readiness),
       }));
     } catch (error) {
-      setNotice(
-        error instanceof ApiClientError
-          ? `Gagal membuat usulan (${error.message}).`
-          : "Gagal membuat usulan fondasi.",
-      );
+      setNotice(aiGenerationFailureNotice(error, "Gagal membuat usulan"));
     } finally {
       setGenerating(false);
     }
@@ -235,11 +231,7 @@ export function useFoundationFlow(): FoundationFlowData {
           };
         });
       } catch (error) {
-        setNotice(
-          error instanceof ApiClientError
-            ? `Gagal menerima usulan (${error.message}).`
-            : "Gagal menerima usulan.",
-        );
+        setNotice(aiGenerationFailureNotice(error, "Gagal menerima usulan"));
       } finally {
         setAcceptingId(null);
       }
@@ -275,11 +267,7 @@ export function useFoundationFlow(): FoundationFlowData {
         secretSchedule: prev.secretSchedule,
       }));
     } catch (error) {
-      setNotice(
-        error instanceof ApiClientError
-          ? `Gagal membuat Usulan Narra (${error.message}).`
-          : "Gagal membuat Usulan Narra.",
-      );
+      setNotice(aiGenerationFailureNotice(error, "Gagal membuat Usulan Narra"));
     } finally {
       setGeneratingNarra(false);
     }
@@ -291,15 +279,19 @@ export function useFoundationFlow(): FoundationFlowData {
     setLocking(true);
     setLockNotice(null);
     try {
-      const result = await lockFoundation(projectId, token);
+      await lockFoundation(projectId, token);
+      const [bundle, readiness] = await Promise.all([
+        fetchFoundationBundle(projectId, token),
+        fetchFoundationReadiness(projectId, token),
+      ]);
       const ui = mapFoundationBundleToUi(
         projectId,
-        result.foundation,
-        result.promoted.characters,
-        result.promoted.facts,
+        bundle.foundation,
+        bundle.characters,
+        bundle.facts,
       );
-      ui.readiness = mapReadinessApiToUi(result.readiness);
-      ui.isLocked = result.foundation.isLocked;
+      ui.readiness = mapReadinessApiToUi(readiness);
+      ui.isLocked = bundle.foundation.isLocked;
       setFoundation((prev) => ({
         ...ui,
         pageCopy: prev.pageCopy,

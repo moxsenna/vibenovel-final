@@ -751,14 +751,18 @@ export type AuditEntityType = (typeof AUDIT_ENTITY_TYPES)[keyof typeof AUDIT_ENT
 // --- Sprint 8: AI generation attempts + credit ledger (schema only in 8.1) ---
 
 export const GENERATION_TYPES = {
+  intake_assistant: "intake_assistant",
   concept_generation: "concept_generation",
   foundation_proposal: "foundation_proposal",
   draft_import_signal_extraction: "draft_import_signal_extraction",
   outline_generation: "outline_generation",
+  beat_generation: "beat_generation",
+  chapter_summary_generation: "chapter_summary_generation",
+  continuity_delta: "continuity_delta",
   prose_beat: "prose_beat",
   prose_rewrite: "prose_rewrite",
   publish_copy: "publish_copy",
-  /** Reserved — summary/delta AI deferred beyond Sprint 8 MVP */
+  /** Legacy alias — prefer continuity_delta */
   summary_delta: "summary_delta",
 } as const;
 export type GenerationType = (typeof GENERATION_TYPES)[keyof typeof GENERATION_TYPES];

@@ -16,6 +16,11 @@ const CREDIT_COST_TABLE: Record<
   GenerationType,
   Record<WriterQualityMode, number | null>
 > = {
+  [GENERATION_TYPES.intake_assistant]: {
+    [WRITER_QUALITY_MODES.hemat]: 1,
+    [WRITER_QUALITY_MODES.seimbang]: 1,
+    [WRITER_QUALITY_MODES.terbaik]: 1,
+  },
   [GENERATION_TYPES.concept_generation]: {
     [WRITER_QUALITY_MODES.hemat]: 3,
     [WRITER_QUALITY_MODES.seimbang]: 6,
@@ -35,6 +40,21 @@ const CREDIT_COST_TABLE: Record<
     [WRITER_QUALITY_MODES.hemat]: 5,
     [WRITER_QUALITY_MODES.seimbang]: 10,
     [WRITER_QUALITY_MODES.terbaik]: 20,
+  },
+  [GENERATION_TYPES.beat_generation]: {
+    [WRITER_QUALITY_MODES.hemat]: 3,
+    [WRITER_QUALITY_MODES.seimbang]: 6,
+    [WRITER_QUALITY_MODES.terbaik]: 12,
+  },
+  [GENERATION_TYPES.chapter_summary_generation]: {
+    [WRITER_QUALITY_MODES.hemat]: 3,
+    [WRITER_QUALITY_MODES.seimbang]: 6,
+    [WRITER_QUALITY_MODES.terbaik]: 12,
+  },
+  [GENERATION_TYPES.continuity_delta]: {
+    [WRITER_QUALITY_MODES.hemat]: null,
+    [WRITER_QUALITY_MODES.seimbang]: null,
+    [WRITER_QUALITY_MODES.terbaik]: null,
   },
   [GENERATION_TYPES.prose_beat]: {
     [WRITER_QUALITY_MODES.hemat]: 5,
@@ -59,9 +79,12 @@ const CREDIT_COST_TABLE: Record<
 };
 
 const ENABLED_GENERATION_TYPES = new Set<GenerationType>([
+  GENERATION_TYPES.intake_assistant,
   GENERATION_TYPES.concept_generation,
   GENERATION_TYPES.foundation_proposal,
   GENERATION_TYPES.outline_generation,
+  GENERATION_TYPES.beat_generation,
+  GENERATION_TYPES.chapter_summary_generation,
   GENERATION_TYPES.prose_beat,
   GENERATION_TYPES.prose_rewrite,
   GENERATION_TYPES.publish_copy,

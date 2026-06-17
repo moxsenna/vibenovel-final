@@ -479,7 +479,14 @@ export function mapIntakeBundleToUi(
         : "Tulis ide, konflik, draft, atau suasana yang ingin kamu bangun.",
     messages: uiMessages,
     progress: useDemoCopy ? fallback.progress : buildHonestProgress(signals),
-    progressPercent: session.progressPercent ?? (useDemoCopy ? fallback.progressPercent : 0),
+    progressPercent: (() => {
+      if (useDemoCopy) return fallback.progressPercent;
+      const items = buildHonestProgress(signals);
+      const total = items.length;
+      if (total === 0) return 0;
+      const done = items.filter((item) => item.status === "done").length;
+      return Math.round((done / total) * 100);
+    })(),
     detectedSignals: uiSignals,
     suggestedActions: useDemoCopy ? fallback.suggestedActions : [],
     conceptsRoute: ROUTES.project.concepts(projectId),

@@ -546,7 +546,7 @@ export async function appendUserMessageForOwner(
     attempt = await createGenerationAttempt(bindings, {
       projectId,
       userId: ownerId,
-      generationType: GENERATION_TYPES.publish_copy,
+      generationType: GENERATION_TYPES.intake_assistant,
       idempotencyKey,
       creditCost: 1,
       promptHash,
@@ -566,7 +566,7 @@ export async function appendUserMessageForOwner(
         attemptId: attempt.id,
         amount: 1,
         reason: CREDIT_LEDGER_REASONS.generationDebit,
-        generationType: GENERATION_TYPES.publish_copy,
+        generationType: GENERATION_TYPES.intake_assistant,
         idempotencyKey,
         correlationId,
       });
@@ -587,7 +587,7 @@ export async function appendUserMessageForOwner(
 
     try {
       const routerResult = await generateWithModelRouter(bindings, {
-        generationType: GENERATION_TYPES.publish_copy,
+        generationType: GENERATION_TYPES.intake_assistant,
         qualityMode: WRITER_QUALITY_MODES.hemat,
         promptHash,
         promptMessages,
@@ -639,7 +639,7 @@ export async function appendUserMessageForOwner(
             attemptId: attempt.id,
             amount: 1,
             reason: CREDIT_LEDGER_REASONS.generationRefund,
-            generationType: GENERATION_TYPES.publish_copy,
+            generationType: GENERATION_TYPES.intake_assistant,
             idempotencyKey,
             correlationId,
           });

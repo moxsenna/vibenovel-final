@@ -147,7 +147,8 @@ const structuralReady = computeFoundationReadiness(
   },
 );
 
-assert.equal(structuralReady.readinessScore, REFINE_READINESS_MIN_SCORE);
+assert.equal(structuralReady.readinessScore >= REFINE_READINESS_MIN_SCORE, true);
+assert.equal(structuralReady.readinessScore < LOCK_READINESS_MIN_SCORE, true);
 assert.equal(structuralReady.canRefine, true);
 assert.equal(structuralReady.canLock, false);
 assert.equal(structuralReady.readinessLevel, FOUNDATION_READINESS_LEVELS.siap_dimatangkan);
@@ -217,6 +218,25 @@ matureRows[3] = {
   },
 };
 
+
+matureRows.push({
+  id: "proposal-speech-mature",
+  project_id: "project-19-mature",
+  proposal_type: AI_PROPOSAL_TYPES.relationship_speech_rule,
+  status: AI_PROPOSAL_STATUSES.accepted,
+  risk_level: "low",
+  source: "ai_import",
+  title: "Aturan bicara keluarga",
+  payload: { rule: "Rani bicara singkat saat mertua menekan." },
+  review_note: null,
+  reviewed_at: null,
+  reviewed_by: null,
+  merged_into_id: null,
+  result_fact_id: null,
+  result_character_id: null,
+  created_at: "2026-06-16T00:00:00.000Z",
+  updated_at: "2026-06-16T00:00:00.000Z",
+});
 const matureReady = computeFoundationReadiness(
   null,
   matureConcept,
@@ -224,7 +244,7 @@ const matureReady = computeFoundationReadiness(
   [],
   [],
   [],
-  false,
+  true,
   {
     activeStatuses: new Set(["accepted"]),
     acceptedCountsAsReady: true,

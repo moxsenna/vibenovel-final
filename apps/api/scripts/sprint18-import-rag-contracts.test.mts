@@ -498,7 +498,10 @@ const acceptedSeedReadiness = computeFoundationReadiness(
     persist: false,
   },
 );
-assert.equal(acceptedSeedReadiness.canLock, true);
+assert.equal(acceptedSeedReadiness.readinessScore >= 75, true);
+assert.equal(acceptedSeedReadiness.readinessScore < 85, true);
+assert.equal(acceptedSeedReadiness.canRefine, true);
+assert.equal(acceptedSeedReadiness.canLock, false);
 
 const aiProtagonistProposalDrafts = buildDraftImportProposalDrafts({
   projectId: "project-18",

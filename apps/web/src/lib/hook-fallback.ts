@@ -9,6 +9,15 @@ export function apiErrorMessage(error: unknown, fallback: string): string {
     : fallback;
 }
 
+export const AI_FAILURE_REFUND_NOTICE =
+  "Kredit telah dikembalikan. Silakan coba lagi.";
+
+export function aiGenerationFailureNotice(error: unknown, prefix: string): string {
+  const base =
+    error instanceof ApiClientError ? `${prefix} (${error.message}).` : `${prefix}.`;
+  return `${base} ${AI_FAILURE_REFUND_NOTICE}`;
+}
+
 export function shouldLoadMockOnFailure(): boolean {
   return allowMockFallback();
 }

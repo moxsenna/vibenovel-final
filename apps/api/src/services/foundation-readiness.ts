@@ -432,7 +432,7 @@ export function computeFoundationReadiness(
       status: pass ? "pass" : "missing",
       reason: pass ? reasonPass : reasonMissing,
     });
-    if (pass) score += SUPPORT_WEIGHT;
+    if (pass) score += 1;
   }
 
   maturityCheck(
@@ -475,17 +475,23 @@ export function computeFoundationReadiness(
   const readinessLevel = levelFromScore(score);
 
   const coreKeys = [
-    "selected_concept",
-    "premise",
-    "main_conflict",
-    "reader_promise",
-    "protagonist",
-    "facts",
-  ];
+      "selected_concept",
+      "premise",
+      "main_conflict",
+      "reader_promise",
+      "protagonist",
+      "facts",
+      "genre_tone",
+      "secret_guard",
+    ];
   const coreComplete = coreKeys.every((key) => {
-    const check = checks.find((c) => c.key === key);
-    return check?.status === "pass" || check?.status === "partial";
-  });
+      const check = checks.find((c) => c.key === key);
+      if (!check) return false;
+      if (key === "secret_guard" || key === "genre_tone") {
+        return check.status === "pass";
+      }
+      return check.status === "pass" || check.status === "partial";
+    });
 
   const foundationUnlocked = !foundation?.is_locked;
   const canRefine =
