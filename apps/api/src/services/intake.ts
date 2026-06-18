@@ -43,6 +43,7 @@ import {
   markGenerationAttemptFailed,
 } from "./generation-attempt.js";
 import { generateCorrelationId } from "./audit-snapshot.js";
+import { getCreditCostForGeneration } from "./ai-credit-policy.js";
 import { computePromptHashFromMessages } from "./prose-generation-prompt.js";
 import { getFoundationBundleForOwner } from "./foundation.js";
 import { getFoundationReadinessForOwner } from "./foundation-readiness.js";
@@ -542,16 +543,22 @@ export async function appendUserMessageForOwner(
 
     const promptHash = await computePromptHashFromMessages(promptMessages);
     const idempotencyKey = `intake-assistant-${projectId}-${crypto.randomUUID()}`;
+    const generationType = GENERATION_TYPES.intake_assistant;
+    const qualityMode = WRITER_QUALITY_MODES.hemat;
+    const creditCost = getCreditCostForGeneration({
+      generationType,
+      qualityMode,
+    });
 
     attempt = await createGenerationAttempt(bindings, {
       projectId,
       userId: ownerId,
-      generationType: GENERATION_TYPES.intake_assistant,
+      generationType,
       idempotencyKey,
-      creditCost: 1,
+      creditCost,
       promptHash,
       correlationId,
-      qualityMode: WRITER_QUALITY_MODES.hemat,
+      qualityMode,
       metadata: {
         actualGenerationType: "intake_assistant",
         billingAlias: "publish_copy",
@@ -564,9 +571,10 @@ export async function appendUserMessageForOwner(
         userId: ownerId,
         projectId,
         attemptId: attempt.id,
-        amount: 1,
+        amount: creditCost,
         reason: CREDIT_LEDGER_REASONS.generationDebit,
-        generationType: GENERATION_TYPES.intake_assistant,
+        generationType,
+        qualityMode,
         idempotencyKey,
         correlationId,
       });
@@ -587,8 +595,8 @@ export async function appendUserMessageForOwner(
 
     try {
       const routerResult = await generateWithModelRouter(bindings, {
-        generationType: GENERATION_TYPES.intake_assistant,
-        qualityMode: WRITER_QUALITY_MODES.hemat,
+        generationType,
+        qualityMode,
         promptHash,
         promptMessages,
       });
@@ -637,9 +645,10 @@ export async function appendUserMessageForOwner(
             userId: ownerId,
             projectId,
             attemptId: attempt.id,
-            amount: 1,
+            amount: creditCost,
             reason: CREDIT_LEDGER_REASONS.generationRefund,
-            generationType: GENERATION_TYPES.intake_assistant,
+            generationType,
+            qualityMode,
             idempotencyKey,
             correlationId,
           });

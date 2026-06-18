@@ -17,6 +17,7 @@ export function ConceptsPage() {
     generating,
     selectingId,
     apiMode,
+    generateCreditCost,
     generate,
     selectConceptById,
   } = useConceptsData();
@@ -37,6 +38,9 @@ export function ConceptsPage() {
         <div className="mb-6 flex flex-col items-start gap-3 rounded-xl border border-border bg-surface-soft p-6">
           <p className="font-body-md text-body-md text-on-surface-variant">
             Belum ada konsep untuk proyek ini. Buat 3 arah cerita dari obrolan intake.
+          </p>
+          <p className="font-body-sm text-body-sm text-muted-text">
+            Buat 3 konsep — {generateCreditCost.toLocaleString("id-ID")} kredit.
           </p>
           <Button
             variant="primary"

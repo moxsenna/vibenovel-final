@@ -6,26 +6,27 @@ Novel panjang rusak ketika karakter tahu hal yang belum dia tahu, berada di temp
 
 ## Implementation status
 
-Status per 2026-06-15: continuity engine **separuh jalan**. Timeline + mini-arc sudah shipped (Sprint 17); character state/knowledge belum.
+Status per **2026-06-16** (code-verified; see [`docs/audit/12-docs-code-truth-matrix-2026-06-16.md`](audit/12-docs-code-truth-matrix-2026-06-16.md)):
 
-Sudah shipped (Sprint 17 — lihat `docs/100`):
+**Shipped — Sprint 16 (character continuity, migration `00016`):**
 
-- Tabel `timeline_events` (migration `00015`) — event past/current dimaterialisasi saat chapter close (best-effort di `chapter-summary-approval`).
-- Tabel `mini_arcs` + `chapter_outlines.mini_arc_id` — Season→MiniArc→Chapter.
-- Context Packet membawa `continuity.recentTimeline` **past-only** (filter `chapter_number < current` di `write-snapshot`; tidak ada bocor future).
+- Tabel `character_states` dan `character_knowledge` (RLS owner-only).
+- Services `character-state.ts`, `character-knowledge.ts`; proposal types dari Chapter Delta (`character_state_update`, `character_knowledge_update`).
+- Context Packet membawa `povKnowledge` (known/suspected/false beliefs) untuk POV — `write-snapshot.ts` / `context-packet-builder.ts`; tipe `PovKnowledgeSnapshot` di `@vibenovel/shared`.
+- Safety: `context-packet-safety.ts` memastikan `povKnowledge` tidak menjadi celah bocor reveal masa depan.
 
-Belum ada (target Sprint continuity I):
+**Shipped — Sprint 17 (migration `00015`):**
 
-- Belum ada tabel `character_states`.
-- Belum ada tabel `character_knowledge`.
-- Context Packet saat ini belum membawa `povKnowledge`.
+- Tabel `timeline_events`, `mini_arcs`, `chapter_outlines.mini_arc_id`.
+- `continuity.recentTimeline` **past-only** di packet (filter `chapter_number < current`).
 
-Proteksi lain yang sudah nyata: `WriterContextPacket` slice-only, `Reveal Gate`, `context_packet_logs`, `chapter_summaries`, `chapter_deltas`, dan `ai_proposals`.
+**Belum ada / backlog (bukan regressi Sprint 16–17):**
 
-Target implementasi tersisa:
+- Voice cards / author voice learning sebagai canon.
+- RAG sebagai source of truth (retrieval memory di Sprint 18 adalah **read-only** snippet).
+- Full Story Bible entity editors (Creator Mode = settings + outline knobs partial — lihat [`docs/101-sprint-16-creator-mode-report.md`](101-sprint-16-creator-mode-report.md)).
 
-- Sprint continuity I: `character_states` + `character_knowledge` + `povKnowledge` aman.
-- ~~Sprint continuity II: `timeline_events` + timeline past-only di Context Packet.~~ **Selesai (Sprint 17).**
+Proteksi lain yang sudah nyata: `WriterContextPacket` slice-only, Reveal Gate, `context_packet_logs`, `chapter_summaries`, `chapter_deltas`, dan `ai_proposals`.
 
 ## Character State
 

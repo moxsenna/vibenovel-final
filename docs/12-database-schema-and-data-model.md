@@ -2,7 +2,7 @@
 
 ## MVP tables
 
-MVP minimal perlu tabel/logical collections. Status per 2026-06-15: sebagian sudah menjadi tabel production migration; sebagian masih target lanjutan.
+MVP minimal perlu tabel/logical collections. Status per **2026-06-16**: lihat juga [`docs/audit/12-docs-code-truth-matrix-2026-06-16.md`](audit/12-docs-code-truth-matrix-2026-06-16.md).
 
 ```txt
 users / profiles
@@ -24,15 +24,16 @@ generation_attempts
 credit_ledger
 credit_topup_products / credit_topup_orders / payment_webhook_events
 draft_imports / draft_import_signals
-
-planned later:
-character_states
-character_knowledge
-timeline_events
-mini_arcs
-prose_embeddings
-import_jobs
+validation_reports          — shipped 00012 (Sprint 14 safety)
+character_states              — shipped 00016 (Sprint 16)
+character_knowledge           — shipped 00016 (Sprint 16)
+timeline_events               — shipped 00015 (Sprint 17)
+mini_arcs                     — shipped 00015 (Sprint 17)
+prose_embeddings              — shipped 00017 (Sprint 18, pgvector)
+import_jobs                   — shipped 00017 (Sprint 18)
 ```
+
+**Migrations in repo:** `00001`–`00019` (`supabase/migrations/`). Hosted production may lag — operator must apply through latest migration per environment.
 
 ## Important design rules
 
@@ -85,7 +86,7 @@ ChapterDelta {
 }
 ```
 
-Status saat ini: `chapter_deltas` dan `chapter_summary_items` sudah ada, dan kandidat canon harus masuk `ai_proposals`. `characterStateChanges`, `timelineEvents`, dan memory/RAG masih target Sprint continuity berikutnya, bukan tabel yang sudah ada.
+Status saat ini: `chapter_deltas` dan `chapter_summary_items` sudah ada; kandidat canon masuk `ai_proposals`. Perubahan `character_states` / `character_knowledge` dan materialisasi `timeline_events` saat chapter close **shipped** (Sprint 16–17); voice/RAG canon tetap backlog.
 
 ## Sprint boundary
 

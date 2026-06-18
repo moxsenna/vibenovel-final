@@ -76,7 +76,7 @@ WriterContextPacket {
 }
 ```
 
-Planned extension for Sprint continuity:
+**Shipped (Sprint 16):** `povKnowledge` on `WriterContextPacket` — built from `character_knowledge` for the active POV; structure in `@vibenovel/shared` (`PovKnowledgeSnapshot`: `knownFacts`, `suspectedFacts`, `falseBeliefs`, `forbiddenFacts`). Safety checks in `context-packet-safety.ts` prevent future-reveal leakage via knowledge.
 
 ```ts
 povKnowledge?: {
@@ -87,14 +87,12 @@ povKnowledge?: {
 }
 ```
 
-`povKnowledge` baru boleh masuk setelah ada tabel `character_knowledge` dan safety check yang memastikan knowledge POV tidak menjadi celah bocor reveal masa depan.
-
 ## Workflow per beat
 
 ```txt
 1. Load canonical story state
 2. Load beat contract
-3. Build character knowledge snapshot (PLANNED; saat ini memakai canon facts + reveal gate)
+3. Build character knowledge snapshot (POV — shipped Sprint 16)
 4. Build reveal gate
 5. Build context packet
 6. Generate prose
@@ -114,4 +112,4 @@ Writer hanya menulis adegan saat ini. Writer tidak merencanakan masa depan dan t
 - Context Packet tidak berisi future outline mentah.
 - Prose version tersimpan.
 - User bisa menyimpan versi prose.
-- Full accept/reject/diff version UX masih planned di sprint Version History.
+- Desktop version history + diff + accept/reject untuk AI versions **shipped** (Sprint 15); mobile sheet optional backlog.

@@ -9,6 +9,9 @@
 | **Metode** | Baca repo Manuscript (README + struktur) → baca `docs/01–17` Narraza → **verifikasi klaim docs terhadap kode nyata** (migrations `00001–00014`, `apps/api/src/services/*`, `apps/web/src/components/writer/*`) |
 | **Status** | Living document — Part E/F adalah backlog yang dieksekusi; Part B adalah snapshot yang wajib re-check sebelum sprint lanjutan |
 
+
+> **Sprint 16 closure report (Creator Mode):** [`docs/101-sprint-16-creator-mode-report.md`](101-sprint-16-creator-mode-report.md) — not this competitive backlog file. **Docs↔code SSOT:** [`docs/audit/12-docs-code-truth-matrix-2026-06-16.md`](audit/12-docs-code-truth-matrix-2026-06-16.md).
+
 > Catatan penting: dokumen ini sengaja **mengoreksi** beberapa klaim di `docs/04`, `docs/07`, `docs/08`, `docs/12` yang **tidak cocok dengan kode**. Lihat Part C dan Part G.
 
 > Update 2026-06-15: AWS/EC2 sudah retired dari jalur produksi. API production aktif di Cloudflare Worker custom domain `https://api.narraza.web.id`, OpenRouter live, dan Duitku production live. Health smoke menunjukkan `aiProviderMock=false`, `paymentProvider=duitku`, `paymentProviderMock=false`, dan secrets Duitku/OpenRouter tersedia.

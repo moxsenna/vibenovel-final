@@ -18,7 +18,21 @@ export const ROUTES = {
     summary: (id: string) => `/projects/${id}/summary`,
     publish: (id: string) => `/projects/${id}/publish`,
   },
-} as const;
+  admin: {
+    root: "/admin",
+    users: "/admin/users",
+    userDetail: (id: string) => `/admin/users/${id}`,
+    projects: "/admin/projects",
+    projectDetail: (id: string) => `/admin/projects/${id}`,
+    proposals: "/admin/proposals",
+    proposalDetail: (id: string) => `/admin/proposals/${id}`,
+    generationAttempts: "/admin/generation-attempts",
+    generationAttemptDetail: (id: string) => `/admin/generation-attempts/${id}`,
+    system: "/admin/system",
+    auditLogs: "/admin/audit-logs",
+  },
+};
+
 
 export const PLACEHOLDER_ROUTES = [
   { path: ROUTES.landing, label: "Landing / Selamat Datang", stitch: "vibenovel_selamat_datang_polished" },

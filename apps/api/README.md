@@ -394,7 +394,7 @@ Live OpenRouter rewrite not tested in smoke.
 | POST | `/api/projects/:id/proposals` | Bearer JWT | Create manual proposal (`status: proposed`) |
 | GET | `/api/projects/:id/proposals/:proposalId` | Bearer JWT | Proposal detail |
 | PATCH | `/api/projects/:id/proposals/:proposalId` | Bearer JWT | Update proposed proposal only |
-| POST | `/api/projects/:id/proposals/:proposalId/accept` | Bearer JWT | Accept (status only — no canon promotion) |
+| POST | `/api/projects/:id/proposals/:proposalId/accept` | Bearer JWT | Accept + canon promotion for delta/summary types (`fact`, `character_update`, …); body optional `{ confirmHighRisk }`; foundation types → 409 (use foundation accept) |
 | POST | `/api/projects/:id/proposals/:proposalId/reject` | Bearer JWT | Reject proposal |
 | POST | `/api/projects/:id/proposals/:proposalId/merge` | Bearer JWT | Merge proposal |
 | GET | `/api/credits/balance` | Bearer JWT | Read-only credit balance for authenticated user |
@@ -1214,7 +1214,7 @@ Aliases: `characterAId`/`characterBId`, `fromCharacterName`/`toCharacterName`, `
 
 ### AI proposal queue (Task 2.11)
 
-Canon safety gate — proposals stay in queue until explicit accept/reject/merge. **Accept does not auto-promote to facts/characters/speech rules** (deferred to Task 2.11b / Sprint 3).
+Canon safety gate — proposals stay in queue until explicit accept/reject/merge. **Generic accept** (`POST .../proposals/:id/accept`): preflight → `promoteProposalToCanon` → mark accepted (Sprint 12.4). Foundation review types use `POST .../foundation/proposals/:id/accept`. Summary-linked proposals use `POST .../summary/:summaryId/proposals/:id/accept`.
 
 **`GET /api/projects/:id/proposals`** — default `status=proposed` only. Filters: `?status=`, `?type=`, `?riskLevel=`, `?includeResolved=true`.
 

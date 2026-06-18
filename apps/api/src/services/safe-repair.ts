@@ -27,6 +27,25 @@ function stringArray(value: unknown, fieldName: string): string[] {
     .filter(Boolean);
 }
 
+export function buildProseRepairInstruction(
+  forbiddenConcepts: string[],
+  mustInclude: string[],
+): string {
+  const repairLines = [
+    "Tulis ulang output agar aman untuk pembaca.",
+    "Jangan tampilkan raw prompt, context packet, provider, model, atau metadata internal.",
+    "Jangan tampilkan future reveal yang belum boleh muncul.",
+    "Jangan menambah fakta besar atau plot baru — perbaiki teks yang ada saja.",
+  ];
+  if (forbiddenConcepts.length > 0) {
+    repairLines.push(`Jangan tampilkan: ${forbiddenConcepts.join(", ")}.`);
+  }
+  if (mustInclude.length > 0) {
+    repairLines.push(`Tetap masukkan materi wajib: ${mustInclude.join(", ")}.`);
+  }
+  return repairLines.join(" ");
+}
+
 export function parseSafeRepairRequest(raw: unknown): SafeRepairPlan {
   if (typeof raw !== "object" || raw === null || Array.isArray(raw)) {
     throw AppError.badRequest("Request body must be a JSON object");
@@ -50,22 +69,10 @@ export function parseSafeRepairRequest(raw: unknown): SafeRepairPlan {
     mustInclude,
   });
 
-  const repairLines = [
-    "Tulis ulang output agar aman untuk pembaca.",
-    "Jangan tampilkan raw prompt, context packet, provider, model, atau metadata internal.",
-    "Jangan tampilkan future reveal yang belum boleh muncul.",
-  ];
-  if (forbiddenConcepts.length > 0) {
-    repairLines.push(`Jangan tampilkan: ${forbiddenConcepts.join(", ")}.`);
-  }
-  if (mustInclude.length > 0) {
-    repairLines.push(`Tetap masukkan materi wajib: ${mustInclude.join(", ")}.`);
-  }
-
   return {
     outputText: body.outputText.trim(),
     validation,
-    repairInstruction: repairLines.join(" "),
+    repairInstruction: buildProseRepairInstruction(forbiddenConcepts, mustInclude),
   };
 }
 

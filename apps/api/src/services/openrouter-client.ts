@@ -123,8 +123,8 @@ export async function callOpenRouterChatCompletion(
       headers: {
         Authorization: `Bearer ${apiKey}`,
         "Content-Type": "application/json",
-        "HTTP-Referer": "https://vibenovel.local",
-        "X-Title": "VibeNovel API",
+        "HTTP-Referer": "https://narraza.local",
+        "X-Title": "Narraza API",
       },
       body: JSON.stringify(body),
       signal: controller.signal,

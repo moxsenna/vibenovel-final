@@ -6,6 +6,7 @@ import type {
   WriterQualityMode,
 } from "@vibenovel/shared";
 import { WRITER_QUALITY_MODES } from "@vibenovel/shared";
+import { formatAiOutputUnsafeMessage } from "@/lib/ai-validation-labels";
 import { apiRequest } from "@/lib/api";
 
 export interface GenerateBeatProseInput {
@@ -37,23 +38,16 @@ export interface GenerateBeatProseResponse {
 }
 
 /** Mirrors server ai-credit-policy — display only; billing is server-side. */
-const PROSE_BEAT_CREDIT_COSTS: Record<WriterQualityMode, number> = {
-  [WRITER_QUALITY_MODES.hemat]: 5,
-  [WRITER_QUALITY_MODES.seimbang]: 10,
-  [WRITER_QUALITY_MODES.terbaik]: 20,
-};
-
-const PROSE_REWRITE_CREDIT_COSTS: Record<WriterQualityMode, number> = {
-  [WRITER_QUALITY_MODES.hemat]: 3,
-  [WRITER_QUALITY_MODES.seimbang]: 6,
-  [WRITER_QUALITY_MODES.terbaik]: 12,
-};
-
-const PUBLISH_COPY_CREDIT_COSTS: Record<WriterQualityMode, number> = {
-  [WRITER_QUALITY_MODES.hemat]: 3,
-  [WRITER_QUALITY_MODES.seimbang]: 6,
-  [WRITER_QUALITY_MODES.terbaik]: 12,
-};
+export {
+  formatProseBeatActionCostLabel,
+  formatProseBeatCreditCostLabel,
+  formatProseRewriteActionCostLabel,
+  formatPublishCopyCreditCostLabel,
+  formatPublishCopyTierCostsLabel,
+  getProseBeatCreditCost,
+  getProseRewriteCreditCost,
+  getPublishCopyCreditCost,
+} from "./ai-credit-display";
 
 const QUALITY_SET = new Set<string>(Object.values(WRITER_QUALITY_MODES));
 
@@ -64,46 +58,10 @@ export function normalizeQualityMode(value: string | null | undefined): WriterQu
   return WRITER_QUALITY_MODES.seimbang;
 }
 
-export function getProseBeatCreditCost(qualityMode: WriterQualityMode): number {
-  return PROSE_BEAT_CREDIT_COSTS[qualityMode] ?? PROSE_BEAT_CREDIT_COSTS.seimbang;
-}
-
-export function getProseRewriteCreditCost(qualityMode: WriterQualityMode): number {
-  return PROSE_REWRITE_CREDIT_COSTS[qualityMode] ?? PROSE_REWRITE_CREDIT_COSTS.seimbang;
-}
-
-export function getPublishCopyCreditCost(qualityMode: WriterQualityMode): number {
-  return PUBLISH_COPY_CREDIT_COSTS[qualityMode] ?? PUBLISH_COPY_CREDIT_COSTS.seimbang;
-}
-
 export function formatQualityModeLabel(qualityMode: WriterQualityMode): string {
   if (qualityMode === WRITER_QUALITY_MODES.hemat) return "Hemat";
   if (qualityMode === WRITER_QUALITY_MODES.terbaik) return "Terbaik";
   return "Seimbang";
-}
-
-export function formatProseBeatCreditCostLabel(qualityMode: WriterQualityMode): string {
-  const cost = getProseBeatCreditCost(qualityMode);
-  return `Biaya: ${cost} kredit`;
-}
-
-export function formatProseBeatActionCostLabel(qualityMode: WriterQualityMode): string {
-  const cost = getProseBeatCreditCost(qualityMode);
-  return `Biaya Tulis Beat dengan AI: ${cost} kredit`;
-}
-
-export function formatProseRewriteActionCostLabel(qualityMode: WriterQualityMode): string {
-  const cost = getProseRewriteCreditCost(qualityMode);
-  return `Biaya rewrite: ${cost} kredit`;
-}
-
-export function formatPublishCopyCreditCostLabel(qualityMode: WriterQualityMode): string {
-  const cost = getPublishCopyCreditCost(qualityMode);
-  return `Biaya: ${cost} kredit`;
-}
-
-export function formatPublishCopyTierCostsLabel(): string {
-  return "Biaya: 3/6/12 kredit (hemat/seimbang/terbaik)";
 }
 
 export const PROSE_REWRITE_MODES = {
@@ -204,7 +162,7 @@ export interface RewriteBeatProseResponse {
   idempotentReplay: boolean;
 }
 
-export function mapAiGenerationErrorCode(code: string): string {
+export function mapAiGenerationErrorCode(code: string, details?: unknown): string {
   switch (code) {
     case "AI_DISABLED":
       return "AI generation belum aktif.";
@@ -215,7 +173,10 @@ export function mapAiGenerationErrorCode(code: string): string {
     case "AI_PROVIDER_RATE_LIMITED":
       return "AI provider sedang tidak tersedia. Kredit dikembalikan jika sudah terpotong.";
     case "AI_OUTPUT_UNSAFE":
-      return "Output AI ditolak oleh pemeriksaan keamanan.";
+      return formatAiOutputUnsafeMessage(
+        details,
+        "Output AI ditolak oleh pemeriksaan keamanan.",
+      );
     case "GENERATION_IN_PROGRESS":
       return "Generasi masih berjalan.";
     case "GENERATION_FAILED":
@@ -229,10 +190,17 @@ export function mapAiGenerationErrorCode(code: string): string {
   }
 }
 
-export function mapAiPublishCopyErrorCode(code: string, fallbackMessage?: string): string {
+export function mapAiPublishCopyErrorCode(
+  code: string,
+  fallbackMessage?: string,
+  details?: unknown,
+): string {
   switch (code) {
     case "AI_OUTPUT_UNSAFE":
-      return "Saran copy ditolak oleh pemeriksaan keamanan.";
+      return formatAiOutputUnsafeMessage(
+        details,
+        "Saran copy ditolak oleh pemeriksaan keamanan.",
+      );
     case "GENERATION_IN_PROGRESS":
       return "Permintaan copy AI masih berjalan.";
     case "GENERATION_FAILED":
@@ -240,11 +208,15 @@ export function mapAiPublishCopyErrorCode(code: string, fallbackMessage?: string
     case "BAD_REQUEST":
       return fallbackMessage?.trim() || "Permintaan copy AI tidak valid.";
     default:
-      return mapAiGenerationErrorCode(code);
+      return mapAiGenerationErrorCode(code, details);
   }
 }
 
-export function mapAiRewriteErrorCode(code: string, fallbackMessage?: string): string {
+export function mapAiRewriteErrorCode(
+  code: string,
+  fallbackMessage?: string,
+  details?: unknown,
+): string {
   switch (code) {
     case "NO_PROSE_TO_REWRITE":
       return "Belum ada teks untuk diperbaiki.";
@@ -253,11 +225,14 @@ export function mapAiRewriteErrorCode(code: string, fallbackMessage?: string): s
     case "GENERATION_FAILED":
       return "Rewrite sebelumnya gagal. Coba lagi dengan permintaan baru.";
     case "AI_OUTPUT_UNSAFE":
-      return "Output rewrite ditolak oleh pemeriksaan keamanan.";
+      return formatAiOutputUnsafeMessage(
+        details,
+        "Output rewrite ditolak oleh pemeriksaan keamanan.",
+      );
     case "BAD_REQUEST":
       return fallbackMessage?.trim() || "Permintaan rewrite tidak valid.";
     default:
-      return mapAiGenerationErrorCode(code);
+      return mapAiGenerationErrorCode(code, details);
   }
 }
 

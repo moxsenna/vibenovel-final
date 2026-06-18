@@ -14,6 +14,21 @@ import { SettingsPage } from "@/pages/SettingsPage";
 import { CreditTopupPage } from "@/pages/CreditTopupPage";
 import { CreditTopupReturnPage } from "@/pages/CreditTopupReturnPage";
 import { LoginPage } from "@/pages/LoginPage";
+import { AdminGuard } from "@/components/admin/AdminGuard";
+import { AdminShell } from "@/components/admin/AdminShell";
+import { AdminOverviewPage } from "@/pages/admin/AdminOverviewPage";
+import { AdminUsersPage } from "@/pages/admin/AdminUsersPage";
+import { AdminUserDetailPage } from "@/pages/admin/AdminUserDetailPage";
+import { AdminProjectsPage } from "@/pages/admin/AdminProjectsPage";
+import { AdminProjectDetailPage } from "@/pages/admin/AdminProjectDetailPage";
+import { AdminProposalsPage } from "@/pages/admin/AdminProposalsPage";
+import { AdminProposalDetailPage } from "@/pages/admin/AdminProposalDetailPage";
+import { AdminGenerationAttemptsPage } from "@/pages/admin/AdminGenerationAttemptsPage";
+
+import { AdminSystemPage } from "@/pages/admin/AdminSystemPage";
+import { AdminAuditLogsPage } from "@/pages/admin/AdminAuditLogsPage";
+import { ROUTES } from "@/routes/paths";
+
 
 export const router = createBrowserRouter([
   { path: "/", element: <Navigate to="/login" replace /> },
@@ -35,6 +50,26 @@ export const router = createBrowserRouter([
       { path: "/credits/topup", element: <CreditTopupPage /> },
       { path: "/credits/topup/mock-return", element: <CreditTopupReturnPage /> },
       { path: "/credits/topup/return", element: <CreditTopupReturnPage /> },
+    ],
+  },
+  {
+    path: ROUTES.admin.root,
+    element: (
+      <AdminGuard>
+        <AdminShell />
+      </AdminGuard>
+    ),
+    children: [
+      { index: true, element: <AdminOverviewPage /> },
+      { path: "users", element: <AdminUsersPage /> },
+      { path: "users/:userId", element: <AdminUserDetailPage /> },
+      { path: "projects", element: <AdminProjectsPage /> },
+      { path: "projects/:projectId", element: <AdminProjectDetailPage /> },
+      { path: "proposals", element: <AdminProposalsPage /> },
+      { path: "proposals/:proposalId", element: <AdminProposalDetailPage /> },
+      { path: "generation-attempts", element: <AdminGenerationAttemptsPage /> },
+      { path: "system", element: <AdminSystemPage /> },
+      { path: "audit-logs", element: <AdminAuditLogsPage /> },
     ],
   },
 ]);

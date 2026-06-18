@@ -22,6 +22,10 @@ export interface ValidateAiOutputInput {
   outputText: string;
   forbiddenConcepts?: string[];
   mustInclude?: string[];
+  /** Fact phrases POV must not assert as known (character-knowledge gate). */
+  povForbiddenFactTexts?: string[];
+  retentionHookKeywords?: string[];
+  styleToneHint?: string | null;
   maxChars?: number;
 }
 
@@ -35,6 +39,7 @@ export interface PersistValidationReportInput {
 
 const DEFAULT_MAX_OUTPUT_CHARS = 30_000;
 const MOBILE_PARAGRAPH_MAX_CHARS = 1_200;
+const MIN_POV_FACT_PHRASE_CHARS = 14;
 
 const RAW_CONTEXT_PATTERNS = [
   /context_packet/i,
@@ -60,6 +65,18 @@ const PROVIDER_PATTERNS = [
   /\bprovider\s*[:=]/i,
   /\bsource\s*[:=]\s*(ai_generated|mock|openrouter)/i,
 ];
+
+const USER_FACING_LABEL_BY_CHECK_KEY: Record<string, string> = {
+  no_empty_output: "Teks kosong",
+  no_future_reveal_leak: "Rahasia belum bocor",
+  no_raw_context_fields: "Tidak ada data internal",
+  no_provider_or_model_names: "Tidak ada data internal",
+  pov_character_knowledge: "Pengetahuan POV konsisten",
+  beat_requirement_coverage: "Cerita nyambung",
+  safe_mobile_prose_length: "Format enak dibaca di HP",
+  retention_unlock_hook: "Ending cukup kuat",
+  style_voice_consistency: "Suara cerita konsisten",
+};
 
 function normalize(text: string): string {
   return text.trim().replace(/\s+/g, " ");
@@ -95,6 +112,28 @@ function worstSeverity(checks: OutputValidationCheck[]): ValidationSeverity {
   return "info";
 }
 
+/** Plain-language labels for UI (`docs/09`). */
+export function buildUserFacingValidationLabels(
+  checks: OutputValidationCheck[],
+): { label: string; status: "pass" | "warn" | "fail" }[] {
+  const seen = new Set<string>();
+  const labels: { label: string; status: "pass" | "warn" | "fail" }[] = [];
+
+  for (const check of checks) {
+    const label = USER_FACING_LABEL_BY_CHECK_KEY[check.key];
+    if (!label || seen.has(label)) continue;
+    seen.add(label);
+    const status: "pass" | "warn" | "fail" = check.passed
+      ? "pass"
+      : check.severity === "blocked"
+        ? "fail"
+        : "warn";
+    labels.push({ label, status });
+  }
+
+  return labels;
+}
+
 export function validateAiOutput(input: ValidateAiOutputInput): OutputValidationReport {
   const outputText = typeof input.outputText === "string" ? input.outputText : "";
   const trimmed = outputText.trim();
@@ -120,6 +159,20 @@ export function validateAiOutput(input: ValidateAiOutputInput): OutputValidation
     leakedConcept
       ? "Output mentions a future reveal that is forbidden for this chapter."
       : "No future reveal leak detected.",
+  );
+
+  const povForbidden = (input.povForbiddenFactTexts ?? [])
+    .map((phrase) => phrase.trim())
+    .filter((phrase) => phrase.length >= MIN_POV_FACT_PHRASE_CHARS);
+  const leakedPovFact = povForbidden.find((phrase) => includesConcept(trimmed, phrase));
+  addCheck(
+    checks,
+    "pov_character_knowledge",
+    !leakedPovFact,
+    "blocked",
+    leakedPovFact
+      ? "Output states canon the POV character does not know yet."
+      : "POV character knowledge respected.",
   );
 
   addCheck(
@@ -152,6 +205,37 @@ export function validateAiOutput(input: ValidateAiOutputInput): OutputValidation
       : "Output covers required beat material.",
   );
 
+
+  const retentionKeywords = (input.retentionHookKeywords ?? [])
+    .map((k) => k.trim())
+    .filter((k) => k.length >= 4);
+  const retentionApplies = trimmed.length >= 120 && retentionKeywords.length > 0;
+  const retentionHit =
+    !retentionApplies ||
+    retentionKeywords.some((keyword) => includesConcept(trimmed, keyword));
+  addCheck(
+    checks,
+    "retention_unlock_hook",
+    retentionHit,
+    "warning",
+    retentionApplies && !retentionHit
+      ? "Closing prose may be weak vs chapter hook target."
+      : "Retention hook cues present or not required.",
+  );
+
+  const toneHint = input.styleToneHint?.trim() ?? "";
+  const styleApplies = toneHint.length >= 4;
+  const styleHit = !styleApplies || includesConcept(trimmed, toneHint);
+  addCheck(
+    checks,
+    "style_voice_consistency",
+    styleHit,
+    "warning",
+    styleApplies && !styleHit
+      ? "Prose may drift from foundation tone guidance."
+      : "Style/tone guidance respected or not set.",
+  );
+
   const maxChars = input.maxChars ?? DEFAULT_MAX_OUTPUT_CHARS;
   addCheck(
     checks,
@@ -175,13 +259,15 @@ export function validateAiOutput(input: ValidateAiOutputInput): OutputValidation
 
 export function assertAiOutputUsable(report: OutputValidationReport): void {
   if (report.allowed) return;
+  const failedChecks = report.checks.filter((check) => !check.passed);
   throw new AppError(
     "AI_OUTPUT_UNSAFE",
     "AI output failed safety validation",
     422,
     {
       severity: report.severity,
-      checks: report.checks.filter((check) => !check.passed),
+      checks: failedChecks,
+      userFacingLabels: buildUserFacingValidationLabels(report.checks),
     },
   );
 }
@@ -200,6 +286,7 @@ export async function persistValidationReportBestEffort(
       checks_json: {
         allowed: input.report.allowed,
         checks: input.report.checks,
+        userFacingLabels: buildUserFacingValidationLabels(input.report.checks),
       },
       repair_status: input.repairStatus ?? "not_requested",
     });

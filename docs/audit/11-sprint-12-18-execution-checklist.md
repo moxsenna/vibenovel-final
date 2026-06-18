@@ -266,7 +266,7 @@
 - [ ] ✅ Verify: `planningTruth` tak pernah masuk writer (cek packet).
 
 ### Task 16.5 — E2E + report
-- [ ] E2E + `docs/100-sprint-16-creator-mode-report.md`.
+- [x] E2E + [`docs/101-sprint-16-creator-mode-report.md`](../101-sprint-16-creator-mode-report.md).
 
 **🚪 Exit Gate:** Advanced opt-in; Beginner tetap ringan; planner-only aman; report ditulis.
 
@@ -354,12 +354,15 @@
 
 | Sprint | Status | Exit gate lulus? | Report |
 |---|---|---|---|
-| 12 Stabilization | ✅ **CLOSED** — 12.1–12.8 done (+2 hotfix prod: concept-gen #1, foundation lock #2). Sisa (mobile-write visual + outline/foundation real) → Sprint 13 | ✅ lulus | [docs/96](../96-sprint-12-stabilization-report.md) |
-| 13 Real Generation | 🔧 ✅ 13.1 foundation AI, 13.2 outline AI, 13.5 reveals, readiness-UX (no drop after accept), deploy-script health-check — semua DEPLOYED+VERIFIED (PR #4/#5 + main). Verified 3 ide berbeda (barista tuli, mercusuar, dll) konsisten spesifik. Sisa minor: 13.3 concept billing alias (cosmetic), 13.4 post-check specificity (sudah via prompt), 13.6 smoke specs, 13.7 report (docs/97) | ☐ | docs/97 |
-| 14 Safety Hardening | ☐ | ☐ (GATE AI non-founder) | docs/98 |
-| 15 Draft Import | ☐ | ☐ | docs/99 |
-| 16 Creator Mode | ☐ | ☐ | docs/100 |
-| 17 Retention KBM | ☐ | ☐ | docs/101 |
-| 18 Payment (gated) | ☐ | ☐ (founder Go) | docs/102 |
+| 12 Stabilization | ✅ **CLOSED** | ✅ lulus | [docs/96](../96-sprint-12-stabilization-report.md) |
+| 13 Real Generation | ✅ **CLOSED** (core AI foundation/outline; sisa 13.3–13.6b cosmetic/mock removal) | ✅ core | [docs/97](../97-sprint-13-real-generation-report.md) |
+| 14 Safety Hardening | ✅ **CLOSED** per [`docs/98`](../98-sprint-14-safety-hardening-report.md) + Part F `docs/100-competitive` | ✅ (subset validators) | [docs/98](../98-sprint-14-safety-hardening-report.md) |
+| 15 Draft Import | ✅ **CLOSED** per [`docs/99`](../99-sprint-15-draft-import-report.md) + Part F | ✅ | [docs/99](../99-sprint-15-draft-import-report.md) |
+| 16 Creator Mode | ✅ **CLOSED** per [`docs/101`](../101-sprint-16-creator-mode-report.md) + Part F | ✅ | [docs/101](../101-sprint-16-creator-mode-report.md) |
+| 17 Timeline/Mini-arc | ✅ **CLOSED** per Part F Sprint 17 + contracts `test:sprint17-timeline-miniarc` | ✅ | Part F in `docs/100-competitive` |
+| 18 Import RAG | ✅ **CLOSED** per Part F Sprint 18 + [`docs/99`](../99-sprint-15-draft-import-report.md) overlap | ✅ | Part F + `test:sprint18-import-rag` |
+| 18 Payment (gated) | ☐ | ☐ (founder Go) | docs/102 (payment enablement — not import RAG) |
+
+> **Tracker note (2026-06-16):** Progress board diselaraskan dengan closure reports `docs/96`–`99`, `docs/101`, dan Part F checklist di [`docs/100-competitive-manuscript-teardown-and-gap-sprint-plan.md`](../100-competitive-manuscript-teardown-and-gap-sprint-plan.md). Sisa eksekusi: beat/summary AI, full `docs/09` validators, `13.6b` mock removal, payment sprint (founder gate).
 
 **Public launch (no payment):** boleh setelah 12+13+14 ✅. **Payment:** setelah 18 ✅ + founder Go.

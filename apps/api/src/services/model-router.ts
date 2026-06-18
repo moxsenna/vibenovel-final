@@ -24,32 +24,28 @@ import {
   assertPromptSafeForProvider,
   assertProviderOutputSafe,
 } from "./ai-prompt-safety.js";
+import { resolveQualityModeForGeneration } from "./ai-credit-policy.js";
 import { generateWithMockProvider } from "./mock-ai-provider.js";
+import {
+  getModelCandidatesForGeneration,
+  isProseModelRoutingGenerationType,
+} from "./model-routing-v2.js";
 import { callOpenRouterChatCompletion } from "./openrouter-client.js";
 
 /** Hardcoded allowlist — client cannot pass arbitrary model ids. */
 export const MODEL_ALLOWLIST = new Set([
-  "google/gemma-2-9b-it",
-  "google/gemma-2-9b-it:free",
-  "google/gemini-flash-latest",
-  "google/gemini-2.0-flash-001",
+  "google/gemini-3.1-flash-lite",
+  "qwen/qwen3.7-plus",
+  "minimax/minimax-m3",
+  "deepseek/deepseek-v4-flash",
   "google/gemini-2.5-flash",
-  "google/gemini-2.5-flash:free",
+  "mistralai/mistral-large-2512",
+  "anthropic/claude-opus-4.8",
+  "openai/gpt-5.2",
   "google/gemma-4-31b-it:free",
   "openrouter/free",
-  "meta-llama/llama-3-8b-instruct:free",
-  "qwen/qwen-2.5-coder-32b-instruct:free",
   "anthropic/claude-3-haiku",
-  "anthropic/claude-3.5-sonnet",
-  "anthropic/claude-3-haiku-20240307",
-  "anthropic/claude-3-5-sonnet-20240620",
 ]);
-
-const QUALITY_DEFAULT_MODELS: Record<WriterQualityMode, string> = {
-  [WRITER_QUALITY_MODES.hemat]: "google/gemma-2-9b-it",
-  [WRITER_QUALITY_MODES.seimbang]: "anthropic/claude-3-haiku",
-  [WRITER_QUALITY_MODES.terbaik]: "anthropic/claude-3.5-sonnet",
-};
 
 const QUALITY_TIMEOUT_MS: Record<WriterQualityMode, number> = {
   [WRITER_QUALITY_MODES.hemat]: 30_000,
@@ -130,11 +126,25 @@ function resolveModelFromEnv(
 
 function pickAllowlistedModel(
   bindings: AppBindings,
+  generationType: GenerationType,
   qualityMode: WriterQualityMode,
 ): string {
-  const envModel = resolveModelFromEnv(bindings, qualityMode);
-  if (envModel && MODEL_ALLOWLIST.has(envModel)) {
-    return envModel;
+  if (isProseModelRoutingGenerationType(generationType)) {
+    const envModel = resolveModelFromEnv(bindings, qualityMode);
+    if (envModel && MODEL_ALLOWLIST.has(envModel)) {
+      return envModel;
+    }
+  }
+
+  const candidates = getModelCandidatesForGeneration(
+    generationType,
+    qualityMode,
+  );
+  if (MODEL_ALLOWLIST.has(candidates.primary)) {
+    return candidates.primary;
+  }
+  if (MODEL_ALLOWLIST.has(candidates.fallback)) {
+    return candidates.fallback;
   }
 
   const defaultModel = getDefaultAiModel(bindings);
@@ -142,7 +152,7 @@ function pickAllowlistedModel(
     return defaultModel;
   }
 
-  return assertModelAllowlisted(QUALITY_DEFAULT_MODELS[qualityMode]);
+  return assertModelAllowlisted(candidates.primary);
 }
 
 /**
@@ -153,8 +163,16 @@ export function resolveModelForGeneration(
   bindings: AppBindings,
   input: ModelRouterResolveInput,
 ): ResolvedModelConfig {
-  const model = pickAllowlistedModel(bindings, input.qualityMode);
-  const qualityCap = QUALITY_MAX_OUTPUT_TOKENS[input.qualityMode];
+  const effectiveQualityMode = resolveQualityModeForGeneration(
+    input.generationType,
+    input.qualityMode,
+  );
+  const model = pickAllowlistedModel(
+    bindings,
+    input.generationType,
+    effectiveQualityMode,
+  );
+  const qualityCap = QUALITY_MAX_OUTPUT_TOKENS[effectiveQualityMode];
   const typeCap = GENERATION_TYPE_TOKEN_CAP[input.generationType];
   const maxOutputTokens = PLANNING_GENERATION_TYPES.has(input.generationType)
     ? typeCap
@@ -166,8 +184,11 @@ export function resolveModelForGeneration(
     PLANNING_GENERATION_TYPES.has(input.generationType) &&
     typeCap >= HEAVY_PLANNING_TOKEN_THRESHOLD;
   const timeoutMs = isHeavyPlanning
-    ? Math.max(QUALITY_TIMEOUT_MS[input.qualityMode], HEAVY_PLANNING_TIMEOUT_MS)
-    : QUALITY_TIMEOUT_MS[input.qualityMode];
+    ? Math.max(
+        QUALITY_TIMEOUT_MS[effectiveQualityMode],
+        HEAVY_PLANNING_TIMEOUT_MS,
+      )
+    : QUALITY_TIMEOUT_MS[effectiveQualityMode];
 
   return {
     provider: useMock ? "mock" : "openrouter",
@@ -176,6 +197,26 @@ export function resolveModelForGeneration(
     timeoutMs,
     temperature: 0.7,
   };
+}
+
+export function resolveFallbackModelForGeneration(
+  bindings: AppBindings,
+  input: ModelRouterResolveInput,
+): ResolvedModelConfig | null {
+  const primary = resolveModelForGeneration(bindings, input);
+  const effectiveQualityMode = resolveQualityModeForGeneration(
+    input.generationType,
+    input.qualityMode,
+  );
+  const fallback = getModelCandidatesForGeneration(
+    input.generationType,
+    effectiveQualityMode,
+  ).fallback;
+
+  if (fallback === primary.model || !MODEL_ALLOWLIST.has(fallback)) {
+    return null;
+  }
+  return { ...primary, model: fallback };
 }
 
 function applyInputOverrides(
@@ -299,6 +340,13 @@ export async function generateWithModelRouter(
     qualityMode: input.qualityMode,
   });
   const config = applyInputOverrides(baseConfig, input);
+  const fallbackBaseConfig = resolveFallbackModelForGeneration(bindings, {
+    generationType: input.generationType,
+    qualityMode: input.qualityMode,
+  });
+  const fallbackConfig = fallbackBaseConfig
+    ? applyInputOverrides(fallbackBaseConfig, input)
+    : null;
 
   logGenerationEvent("start", {
     generationType: input.generationType,
@@ -324,6 +372,40 @@ export async function generateWithModelRouter(
 
     return result;
   } catch (err) {
+    if (
+      fallbackConfig &&
+      fallbackConfig.model !== config.model &&
+      isRetryableProviderError(err)
+    ) {
+      logGenerationEvent("start", {
+        generationType: input.generationType,
+        qualityMode: input.qualityMode,
+        provider: fallbackConfig.provider,
+        model: fallbackConfig.model,
+        promptHash: input.promptHash,
+      });
+      try {
+        const fallbackResult = await invokeProvider(
+          bindings,
+          input,
+          fallbackConfig,
+        );
+        assertProviderOutputSafe(fallbackResult.text);
+        logGenerationEvent("success", {
+          generationType: input.generationType,
+          provider: fallbackResult.provider,
+          model: fallbackResult.model,
+          promptHash: fallbackResult.promptHash,
+          inputTokens: fallbackResult.inputTokens,
+          outputTokens: fallbackResult.outputTokens,
+          latencyMs: fallbackResult.latencyMs,
+        });
+        return fallbackResult;
+      } catch (fallbackErr) {
+        err = fallbackErr;
+      }
+    }
+
     const code = err instanceof AppError ? err.code : "AI_PROVIDER_ERROR";
     logGenerationEvent("error", {
       generationType: input.generationType,

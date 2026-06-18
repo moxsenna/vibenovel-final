@@ -3,7 +3,6 @@ import { useParams } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { ApiClientError } from "@/lib/api";
 import {
-  formatOutlineWorkflowError,
   mapApiChapterToUi,
   mapOpenLoopsToUi,
   mapOutlineBundleToUi,
@@ -12,7 +11,7 @@ import {
   type UiPlannedReveal,
 } from "@/lib/api-mappers";
 import { allowMockFallback, shouldUseMocks } from "@/lib/env";
-import { apiErrorMessage } from "@/lib/hook-fallback";
+import { aiGenerationFailureNotice, apiErrorMessage } from "@/lib/hook-fallback";
 import { DEMO_MODE_LABEL } from "@/lib/workflow-truth";
 import { resolveProjectIdForRoute } from "@/lib/project-context";
 import type { OutlineAdvancedControlValues, OutlineChapterDraft } from "@/components/outline";
@@ -239,11 +238,7 @@ export function useOutlineData(): OutlineData {
       setNotice(null);
       setWorkflowNotice("Rencana 10 bab berhasil dibuat.");
     } catch (error) {
-      setWorkflowNotice(
-        error instanceof ApiClientError
-          ? formatOutlineWorkflowError(error.message, error.details)
-          : "Gagal membuat rencana outline.",
-      );
+      setWorkflowNotice(aiGenerationFailureNotice(error, "Gagal membuat rencana outline."));
     } finally {
       setGenerating(false);
     }
@@ -283,11 +278,7 @@ export function useOutlineData(): OutlineData {
           : "Outline disetujui. Masih ada syarat kunci yang belum terpenuhi.",
       );
     } catch (error) {
-      setWorkflowNotice(
-        error instanceof ApiClientError
-          ? formatOutlineWorkflowError(error.message, error.details)
-          : "Gagal menyetujui outline.",
-      );
+      setWorkflowNotice(aiGenerationFailureNotice(error, "Gagal menyetujui outline."));
     } finally {
       setApproving(false);
     }
@@ -317,11 +308,7 @@ export function useOutlineData(): OutlineData {
       }));
       setWorkflowNotice("Outline berhasil dikunci.");
     } catch (error) {
-      setWorkflowNotice(
-        error instanceof ApiClientError
-          ? formatOutlineWorkflowError(error.message, error.details)
-          : "Gagal mengunci outline.",
-      );
+      setWorkflowNotice(aiGenerationFailureNotice(error, "Gagal mengunci outline."));
     } finally {
       setLocking(false);
     }

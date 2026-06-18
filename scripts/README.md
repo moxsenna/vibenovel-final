@@ -4,6 +4,21 @@ Operational scripts for local verification and future CI helpers. **Not** runtim
 
 **Debt register:** [`docs/36-non-blocking-technical-debt-and-deferred-items.md`](../docs/36-non-blocking-technical-debt-and-deferred-items.md)
 
+
+### Docs ↔ code drift gate (Fase B)
+
+Run from **repo root** after doc edits, new migrations, or before a release candidate:
+
+```bash
+npm run check:docs-drift
+```
+
+| npm script | Script | Behavior |
+|---|---|---|
+| `check:docs-drift` | `docs-code-drift-check.mjs` | **Exit 1** on stale strings in `docs/03`, `docs/08`, `docs/12`; missing `docs/101-sprint-16-…` or stray `docs/100-sprint-16-…`; shipped tables `00015`–`00017` unreferenced in shared/API. **Warnings only** for stub markers (Fase C). |
+
+SSOT: [`docs/audit/12-docs-code-truth-matrix-2026-06-16.md`](../docs/audit/12-docs-code-truth-matrix-2026-06-16.md).
+
 ---
 
 ## Smoke command index (Task 5.8)

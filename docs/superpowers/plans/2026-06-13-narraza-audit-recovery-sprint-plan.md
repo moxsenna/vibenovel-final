@@ -329,7 +329,7 @@ npx playwright test e2e/sprint15-draft-import-flow.spec.ts --retries=1
 - Modify: `apps/web/src/hooks/useOutlineData.ts`
 - Modify: `apps/web/src/pages/OutlinePage.tsx`
 - Test: `apps/web/e2e/sprint16-creator-mode.spec.ts`
-- Create: `docs/100-sprint-16-creator-mode-report.md`
+- Create: `docs/101-sprint-16-creator-mode-report.md` (renamed from `100-sprint-16` — 2026-06-16)
 
 ### Tasks
 
@@ -347,7 +347,7 @@ cd apps/web
 npx playwright test e2e/sprint16-creator-mode.spec.ts
 ```
 
-- [ ] Write `docs/100-sprint-16-creator-mode-report.md`.
+- [ ] Write `docs/101-sprint-16-creator-mode-report.md`.
 
 **Exit Gate:** User can switch to advanced creator mode, reload, and see advanced controls without regressing simple flow.
 

@@ -9,6 +9,8 @@ export interface AppBindings {
   AI_GENERATION_ENABLED?: string;
   /** Sprint 8 — local smoke without OpenRouter network. */
   AI_PROVIDER_MOCK?: string;
+  /** Sprint 12.0 — explicit opt-in for deterministic story stubs (dev/test). */
+  ALLOW_DETERMINISTIC_STORY_STUBS?: string;
   /** Sprint 8 — mock behavior: success | fail_provider | unsafe_output */
   AI_PROVIDER_MOCK_MODE?: string;
   /** Sprint 8 — Worker-only; never log or expose to client. */
@@ -111,6 +113,17 @@ export function isAiGenerationEnabled(bindings: AppBindings): boolean {
 export function isAiProviderMock(bindings: AppBindings): boolean {
   return parseTruthy(bindings.AI_PROVIDER_MOCK);
 }
+
+/** Dev/test fallback for beat/summary stubs; production live AI must not silent-stub. */
+export function allowDeterministicStoryStubs(bindings: AppBindings): boolean {
+  return parseTruthy(bindings.ALLOW_DETERMINISTIC_STORY_STUBS) || isAiProviderMock(bindings);
+}
+
+export function mayUseDeterministicStoryStub(bindings: AppBindings): boolean {
+  if (!isAiGenerationEnabled(bindings)) return true;
+  return allowDeterministicStoryStubs(bindings);
+}
+
 
 export function getAiProviderMockMode(
   bindings: AppBindings,

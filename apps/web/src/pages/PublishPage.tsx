@@ -286,7 +286,7 @@ export function PublishPage() {
 
       {isReadonly && isExported ? (
         <p className="font-body-sm text-body-sm text-muted-text">
-          Paket publish siap disalin. Status diekspor hanya penanda manual di VibeNovel.
+          Paket publish siap disalin. Status diekspor hanya penanda manual di Narraza.
         </p>
       ) : null}
     </div>

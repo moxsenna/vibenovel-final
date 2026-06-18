@@ -30,7 +30,7 @@ import {
   type PublishCopyAiField,
   type PublishCopySuggestions,
 } from "@/services/ai";
-import { fetchCreditBalance } from "@/services/credits";
+import { fetchCreditBalance, fetchCreditEstimate } from "@/services/credits";
 import { fetchOutlineBundle } from "@/services/outline";
 import {
   generatePublishPackage,
@@ -133,7 +133,7 @@ function mapPublishCopyAiError(error: unknown): string {
         return "Paket sudah ditandai exported dan tidak bisa diperbaiki.";
       }
     }
-    return mapAiPublishCopyErrorCode(error.code, error.message);
+    return mapAiPublishCopyErrorCode(error.code, error.message, error.details);
   }
   return "Gagal membuat saran copy AI.";
 }
@@ -238,6 +238,7 @@ export function usePublishData(): UsePublishDataResult {
   const [summaryApproved, setSummaryApproved] = useState(false);
   const [summaryId, setSummaryId] = useState<string | null>(null);
   const [qualityMode, setQualityMode] = useState<WriterQualityMode>(WRITER_QUALITY_MODES.seimbang);
+  const [serverPublishCopyCost, setServerPublishCopyCost] = useState<number | null>(null);
   const [creditBalance, setCreditBalance] = useState<CreditBalance | null>(null);
   const [creditLoading, setCreditLoading] = useState(false);
   const [creditError, setCreditError] = useState<string | null>(null);
@@ -360,6 +361,26 @@ export function usePublishData(): UsePublishDataResult {
       setQualityMode(WRITER_QUALITY_MODES.seimbang);
     }
   }, [apiMode, projectId, token]);
+
+  useEffect(() => {
+    if (!apiMode || !token) {
+      setServerPublishCopyCost(null);
+      return;
+    }
+
+    let cancelled = false;
+    void fetchCreditEstimate("publish_package", qualityMode, token)
+      .then((estimate) => {
+        if (!cancelled) setServerPublishCopyCost(estimate.creditCost);
+      })
+      .catch(() => {
+        if (!cancelled) setServerPublishCopyCost(null);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [apiMode, qualityMode, token]);
 
   const loadPublishRoom = useCallback(async () => {
     if (!apiMode || !token) return;
@@ -546,7 +567,10 @@ export function usePublishData(): UsePublishDataResult {
       return;
     }
 
-    const copyCost = getPublishCopyCreditCost(qualityMode);
+    const copyCost = getPublishCopyCreditCost(
+      qualityMode,
+      serverPublishCopyCost,
+    );
     if (creditBalance != null && creditBalance.balance < copyCost) {
       setPublishCopyAiError("Kredit tidak cukup.");
       return;
@@ -601,6 +625,7 @@ export function usePublishData(): UsePublishDataResult {
     qualityMode,
     refreshCreditBalance,
     selectedAiFields,
+    serverPublishCopyCost,
     source,
     token,
   ]);
@@ -715,7 +740,10 @@ export function usePublishData(): UsePublishDataResult {
     }
   }, [apiMode, applyApiPackage, packageId, projectId, token]);
 
-  const publishCopyCost = getPublishCopyCreditCost(qualityMode);
+  const publishCopyCost = getPublishCopyCreditCost(
+    qualityMode,
+    serverPublishCopyCost,
+  );
   const knownBalance = creditBalance?.balance ?? null;
   const publishCopyInsufficientCredit =
     knownBalance != null && knownBalance < publishCopyCost;
@@ -782,7 +810,10 @@ export function usePublishData(): UsePublishDataResult {
     publishCopyInstruction,
     applyingSuggestionField,
     applyingAllSuggestions,
-    publishCopyCreditCostLabel: formatPublishCopyCreditCostLabel(qualityMode),
+    publishCopyCreditCostLabel: formatPublishCopyCreditCostLabel(
+      qualityMode,
+      serverPublishCopyCost,
+    ),
     publishCopyQualityModeLabel: formatQualityModeLabel(qualityMode),
     publishCopyCreditBalance: knownBalance,
     publishCopyCreditLoading: creditLoading,

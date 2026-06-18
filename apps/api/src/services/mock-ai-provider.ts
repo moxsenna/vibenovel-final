@@ -13,8 +13,45 @@ const MOCK_PROSE_BEAT_TEMPLATE =
   "Langkahnya pelan menuju jendela — bukan untuk kabur, melainkan " +
   "untuk memastikan dunia di luar masih ada sebelum ia mengambil keputusan.";
 
+
+function buildMockBeatGenerationJson(input: ModelRouterGenerateInput): string {
+  const h = input.promptHash.slice(0, 6);
+  return JSON.stringify({
+    beats: [
+      { beatNumber: 1, title: "Pembukaan", summary: "Adegan pembuka memperkenalkan konflik langsung.", direction: "Mulai dari ketegangan kecil lalu eskalasi.", emotionalShift: "ragu → waspada", mustInclude: ["POV jelas"], mustNotInclude: ["spoiler bab depan"], wordTarget: 400, stopCondition: "Konflik utama tersentuh." },
+      { beatNumber: 2, title: "Gesekan", summary: "Karakter menghadapi hambatan pertama.", direction: "Percepat ritme dialog.", emotionalShift: "waspada → tegang", mustInclude: ["reaksi fisik"], mustNotInclude: [], wordTarget: 450, stopCondition: "Stakes naik." },
+      { beatNumber: 3, title: "Keputusan", summary: "Pilihan sulit memaksa perubahan rencana.", direction: "Tutup dengan hook emosional.", emotionalShift: "tegang → resolute", mustInclude: ["hook penutup"], mustNotInclude: [], wordTarget: 500, stopCondition: "Hook penutup terasa." },
+      { beatNumber: 4, title: "Konsekuensi", summary: "Keputusan menimbulkan biaya langsung.", direction: "Tegaskan konsekuensi.", emotionalShift: "resolute → cemas", mustInclude: [], mustNotInclude: [], wordTarget: 450, stopCondition: "Biaya terasa." },
+      { beatNumber: 5, title: "Penutup bab", summary: "Bab berakhir dengan pertanyaan terbuka.", direction: "Akhiri dengan cliffhanger aman.", emotionalShift: "cemas → penasaran", mustInclude: ["ending hook"], mustNotInclude: [], wordTarget: 400, stopCondition: "Cliffhanger jelas." },
+    ],
+    meta: { mock: true, hash: h },
+  });
+}
+
+function buildMockChapterSummaryJson(input: ModelRouterGenerateInput): string {
+  const h = input.promptHash.slice(0, 6);
+  return JSON.stringify({
+    synopsis: "Bab ini menutup satu konflik kecil sambil membuka taruhan yang lebih besar untuk pembaca. [mock:" + h + "]",
+    miniVictory: "Karakter utama berhasil melewati rintangan pertama.",
+    emotionalOutcome: "Dari ragu menjadi lebih tegas menghadapi risiko.",
+    endingHook: "Sesuatu yang disembunyikan mulai terlihat di ambang bab berikutnya.",
+    newFacts: [{ content: "Fakta kandidat dari naskah bab (mock).", category: "event", importance: "minor", confidence: 0.85 }],
+    characterStateChanges: [{ characterName: "Protagonis", change: "Lebih berani mengambil sikap.", evidence: "Dialog penutup bab." }],
+    relationshipChanges: [],
+    openLoopUpdates: [{ question: "Apa yang sebenarnya terjadi?", status: "developed", note: "Tegangan meningkat." }],
+    revealProgress: [{ title: "Petunjuk rahasia", status: "hinted", safeNote: "Hanya petunjuk, belum terungkap penuh." }],
+    continuityWarnings: [],
+  });
+}
+
 function buildDeterministicProse(input: ModelRouterGenerateInput): string {
   const hashPrefix = input.promptHash.slice(0, 8);
+  if (input.generationType === GENERATION_TYPES.beat_generation) {
+    return buildMockBeatGenerationJson(input);
+  }
+  if (input.generationType === GENERATION_TYPES.chapter_summary_generation) {
+    return buildMockChapterSummaryJson(input);
+  }
   if (input.generationType === GENERATION_TYPES.prose_beat) {
     return `${MOCK_PROSE_BEAT_TEMPLATE}\n\n[mock:${hashPrefix}]`;
   }

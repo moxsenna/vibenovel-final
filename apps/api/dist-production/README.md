@@ -1,0 +1,1 @@
+This folder contains the built output assets for the worker "vibenovel-api" generated at 2026-06-16T20:34:10.130Z.

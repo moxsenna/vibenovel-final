@@ -34,7 +34,11 @@ import {
   rewriteBeatProse,
   type ProseRewriteMode,
 } from "@/services/ai";
-import { fetchApiHealthFlags, fetchCreditBalance } from "@/services/credits";
+import {
+  fetchApiHealthFlags,
+  fetchCreditBalance,
+  fetchCreditEstimate,
+} from "@/services/credits";
 import { fetchOutlineBundle } from "@/services/outline";
 import { fetchProjectSettings } from "@/services/settings";
 import {
@@ -346,6 +350,10 @@ export function useWriteRoomData(): UseWriteRoomDataResult {
   const [aiError, setAiError] = useState<string | null>(null);
   const [aiNotice, setAiNotice] = useState<string | null>(null);
   const [qualityMode, setQualityMode] = useState<WriterQualityMode>(WRITER_QUALITY_MODES.seimbang);
+  const [serverCreditCosts, setServerCreditCosts] = useState<{
+    proseBeat: number | null;
+    proseRewrite: number | null;
+  }>({ proseBeat: null, proseRewrite: null });
   const [creatorMode, setCreatorMode] = useState<CreatorMode>("simple");
   const [creditBalance, setCreditBalance] = useState<CreditBalance | null>(null);
   const [creditLoading, setCreditLoading] = useState(false);
@@ -437,6 +445,36 @@ export function useWriteRoomData(): UseWriteRoomDataResult {
       setCreditLoading(false);
     }
   }, [apiMode, token]);
+
+  useEffect(() => {
+    if (!apiMode || !token) {
+      setServerCreditCosts({ proseBeat: null, proseRewrite: null });
+      return;
+    }
+
+    let cancelled = false;
+    void Promise.all([
+      fetchCreditEstimate("prose_beat", qualityMode, token),
+      fetchCreditEstimate("prose_rewrite", qualityMode, token),
+    ])
+      .then(([proseBeat, proseRewrite]) => {
+        if (!cancelled) {
+          setServerCreditCosts({
+            proseBeat: proseBeat.creditCost,
+            proseRewrite: proseRewrite.creditCost,
+          });
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setServerCreditCosts({ proseBeat: null, proseRewrite: null });
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [apiMode, qualityMode, token]);
 
   useEffect(() => {
     if (!apiMode) {
@@ -1108,7 +1146,10 @@ export function useWriteRoomData(): UseWriteRoomDataResult {
       return;
     }
 
-    const beatCost = getProseBeatCreditCost(qualityMode);
+    const beatCost = getProseBeatCreditCost(
+      qualityMode,
+      serverCreditCosts.proseBeat,
+    );
     if (creditBalance != null && creditBalance.balance < beatCost) {
       setAiError("Kredit tidak cukup.");
       return;
@@ -1186,7 +1227,7 @@ export function useWriteRoomData(): UseWriteRoomDataResult {
       setAiNotice(`Narasi AI berhasil dibuat. Terpotong ${cost} kredit.${balanceNote}${replayNote}`);
     } catch (error) {
       if (error instanceof ApiClientError) {
-        setAiError(mapAiGenerationErrorCode(error.code));
+        setAiError(mapAiGenerationErrorCode(error.code, error.details));
       } else {
         setAiError("Gagal menghasilkan narasi AI.");
       }
@@ -1204,6 +1245,7 @@ export function useWriteRoomData(): UseWriteRoomDataResult {
     proseVersionIdByBeatId,
     qualityMode,
     refreshCreditBalance,
+    serverCreditCosts.proseBeat,
     sessionId,
     source,
     token,
@@ -1236,7 +1278,10 @@ export function useWriteRoomData(): UseWriteRoomDataResult {
       return;
     }
 
-    const rewriteCost = getProseRewriteCreditCost(qualityMode);
+    const rewriteCost = getProseRewriteCreditCost(
+      qualityMode,
+      serverCreditCosts.proseRewrite,
+    );
     if (creditBalance != null && creditBalance.balance < rewriteCost) {
       setRewriteError("Kredit tidak cukup.");
       return;
@@ -1308,7 +1353,7 @@ export function useWriteRoomData(): UseWriteRoomDataResult {
       );
     } catch (error) {
       if (error instanceof ApiClientError) {
-        setRewriteError(mapAiRewriteErrorCode(error.code, error.message));
+        setRewriteError(mapAiRewriteErrorCode(error.code, error.message, error.details));
       } else {
         setRewriteError("Gagal memperbaiki teks.");
       }
@@ -1325,6 +1370,7 @@ export function useWriteRoomData(): UseWriteRoomDataResult {
     proseVersionIdByBeatId,
     qualityMode,
     refreshCreditBalance,
+    serverCreditCosts.proseRewrite,
     rewriteGenerating,
     rewriteInstruction,
     rewriteMode,
@@ -1359,11 +1405,26 @@ export function useWriteRoomData(): UseWriteRoomDataResult {
     draft.beats.find((beat) => beat.id === activeBeatId) ?? draft.beats[0];
 
   const editable = source === "api" && Boolean(activeBeat);
-  const proseBeatCreditCost = getProseBeatCreditCost(qualityMode);
-  const proseRewriteCreditCost = getProseRewriteCreditCost(qualityMode);
-  const creditCostLabel = formatProseBeatCreditCostLabel(qualityMode);
-  const creditActionCostLabel = formatProseBeatActionCostLabel(qualityMode);
-  const creditRewriteCostLabel = formatProseRewriteActionCostLabel(qualityMode);
+  const proseBeatCreditCost = getProseBeatCreditCost(
+    qualityMode,
+    serverCreditCosts.proseBeat,
+  );
+  const proseRewriteCreditCost = getProseRewriteCreditCost(
+    qualityMode,
+    serverCreditCosts.proseRewrite,
+  );
+  const creditCostLabel = formatProseBeatCreditCostLabel(
+    qualityMode,
+    serverCreditCosts.proseBeat,
+  );
+  const creditActionCostLabel = formatProseBeatActionCostLabel(
+    qualityMode,
+    serverCreditCosts.proseBeat,
+  );
+  const creditRewriteCostLabel = formatProseRewriteActionCostLabel(
+    qualityMode,
+    serverCreditCosts.proseRewrite,
+  );
   const qualityModeLabel = formatQualityModeLabel(qualityMode);
   const showCreditUi = source === "api";
   const showPovKnowledgeSummary = creatorMode === "advanced";

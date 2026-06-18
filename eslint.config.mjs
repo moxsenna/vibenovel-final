@@ -13,6 +13,7 @@ export default tseslint.config(
     ignores: [
       "**/dist/**",
       "**/dist-node/**",
+      "**/dist-production/**",
       "**/build/**",
       "**/node_modules/**",
       "**/.wrangler/**",
@@ -72,6 +73,11 @@ export default tseslint.config(
       "packages/**/*.ts",
       "apps/web/e2e/**/*.ts",
     ],
+    languageOptions: { globals: { ...globals.node } },
+  },
+  // Repo scripts (plain Node ESM, no TypeScript).
+  {
+    files: ["scripts/**/*.mjs"],
     languageOptions: { globals: { ...globals.node } },
   },
 );

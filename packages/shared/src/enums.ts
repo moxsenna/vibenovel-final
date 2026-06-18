@@ -8,6 +8,7 @@
 export const USER_ROLES = {
   writer: "writer",
   admin: "admin",
+  super_admin: "super_admin",
 } as const;
 export type UserRole = (typeof USER_ROLES)[keyof typeof USER_ROLES];
 

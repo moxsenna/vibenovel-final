@@ -56,8 +56,8 @@ AI_MODEL_SEIMBANG = "google/gemma-4-31b-it:free"
 AI_MODEL_TERBAIK = "google/gemma-4-31b-it:free"
 DEFAULT_AI_MODEL = "google/gemma-4-31b-it:free"
 
-# Live Duitku provider. Keep secrets out of this file.
-CREDIT_TOPUP_ENABLED = "true"
+# Duitku configuration is ready, but checkout stays off until the v2 launch gate.
+CREDIT_TOPUP_ENABLED = "false"
 PAYMENT_PROVIDER = "duitku"
 PAYMENT_PROVIDER_MOCK = "false"
 DUITKU_ENV = "production"

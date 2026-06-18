@@ -290,6 +290,7 @@ async function generateAiPatchDrafts(input: {
       amount: creditCost,
       reason: CREDIT_LEDGER_REASONS.generationDebit,
       generationType,
+      qualityMode,
       idempotencyKey,
       correlationId,
     });
@@ -357,6 +358,7 @@ async function generateAiPatchDrafts(input: {
         amount: creditCost,
         reason: CREDIT_LEDGER_REASONS.generationRefund,
         generationType,
+        qualityMode,
         idempotencyKey,
         correlationId,
       });

@@ -872,6 +872,7 @@ export async function generateOutlineDraftWithAi(
       amount: creditCost,
       reason: CREDIT_LEDGER_REASONS.generationDebit,
       generationType,
+      qualityMode,
       idempotencyKey,
       correlationId,
     });
@@ -938,6 +939,7 @@ export async function generateOutlineDraftWithAi(
         amount: creditCost,
         reason: CREDIT_LEDGER_REASONS.generationRefund,
         generationType,
+        qualityMode,
         idempotencyKey,
         correlationId,
       });

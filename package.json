@@ -2,7 +2,7 @@
   "name": "vibenovel",
   "private": true,
   "version": "0.1.0",
-  "description": "VibeNovel — AI Serial Fiction Production OS (monorepo)",
+  "description": "VibeNovel \u00e2\u20ac\u201d AI Serial Fiction Production OS (monorepo)",
   "workspaces": [
     "apps/*",
     "packages/*"
@@ -50,6 +50,7 @@
     "operator:production:homepage:deploy": "powershell -ExecutionPolicy Bypass -File scripts/operator-production-homepage-deploy.ps1",
     "preview:web": "npm run preview -w @vibenovel/web",
     "smoke:api": "powershell -ExecutionPolicy Bypass -File scripts/sprint2-smoke-api.ps1",
+    "smoke:api:admin": "powershell -ExecutionPolicy Bypass -File scripts/admin-smoke-api.ps1",
     "smoke:api:base": "powershell -ExecutionPolicy Bypass -File scripts/sprint2-smoke-api.ps1",
     "smoke:api:sprint5": "powershell -ExecutionPolicy Bypass -File scripts/sprint5-smoke-api.ps1",
     "smoke:api:sprint6": "powershell -ExecutionPolicy Bypass -File scripts/sprint6-smoke-api.ps1",
@@ -61,6 +62,8 @@
     "smoke:api:sprint10:mayar-live": "powershell -ExecutionPolicy Bypass -File scripts/sprint10-mayar-live-smoke.ps1",
     "smoke:api:sprint10:duitku": "powershell -ExecutionPolicy Bypass -File scripts/sprint10-duitku-smoke-api.ps1",
     "smoke:api:sprint14": "powershell -ExecutionPolicy Bypass -File scripts/sprint14-safety-smoke-api.ps1",
+    "smoke:api:sprint14:e2e-node": "powershell -ExecutionPolicy Bypass -File scripts/sprint14-e2e-prose-publish-node.ps1",
+    "smoke:api:sprint12": "powershell -ExecutionPolicy Bypass -File scripts/sprint12-story-generation-smoke-api.ps1",
     "smoke:web:topup": "powershell -ExecutionPolicy Bypass -File scripts/sprint10-smoke-web.ps1",
     "smoke:web:sprint10": "powershell -ExecutionPolicy Bypass -File scripts/sprint10-smoke-web.ps1",
     "smoke:web": "powershell -ExecutionPolicy Bypass -File scripts/sprint3-smoke-web.ps1",
@@ -75,8 +78,11 @@
     "smoke:web:publish": "powershell -ExecutionPolicy Bypass -File scripts/sprint7-smoke-web.ps1",
     "smoke:all:local": "powershell -ExecutionPolicy Bypass -File scripts/smoke-all-local.ps1",
     "smoke:all:local:full": "powershell -ExecutionPolicy Bypass -File scripts/smoke-all-local.ps1 -IncludeApiMode",
+    "smoke:no-prod-stubs": "node scripts/smoke-no-production-stubs.mjs",
+    "check:docs-drift": "node scripts/docs-code-drift-check.mjs",
     "lint": "eslint .",
-    "lint:fix": "eslint . --fix"
+    "lint:fix": "eslint . --fix",
+    "test:api:contracts": "npm run build -w @vibenovel/shared && npm run test:sprint14-safety -w @vibenovel/api && npm run test:prose-safe-repair-loop -w @vibenovel/api && npm run test:character-knowledge-validator -w @vibenovel/api && npm run test:sprint19-asisten-narra -w @vibenovel/api"
   },
   "engines": {
     "node": ">=18"

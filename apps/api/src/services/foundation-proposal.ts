@@ -688,6 +688,7 @@ async function generateFoundationDraftsWithAi(
       amount: creditCost,
       reason: CREDIT_LEDGER_REASONS.generationDebit,
       generationType,
+      qualityMode,
       idempotencyKey,
       correlationId,
     });
@@ -758,6 +759,7 @@ async function generateFoundationDraftsWithAi(
         amount: creditCost,
         reason: CREDIT_LEDGER_REASONS.generationRefund,
         generationType,
+        qualityMode,
         idempotencyKey,
         correlationId,
       });

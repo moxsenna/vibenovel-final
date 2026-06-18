@@ -41,6 +41,8 @@ jobs:
       - name: Lint
         run: npm run lint
 
+      - name: API safety and Narra contracts
+        run: npm run test:api:contracts
       - name: Build shared
         run: npm run build:shared
 

@@ -22,7 +22,6 @@ import { assertAiGenerationAllowedForOwner } from "./ai-rate-limit.js";
 import { buildContextPacketForOwner } from "./context-packet-builder.js";
 import { getOwnedBeatRow } from "./chapter-beat.js";
 import { calculateEstimatedCostUsd } from "./model-cost-map.js";
-import { generateWithModelRouter } from "./model-router.js";
 import { getOwnedProjectRow } from "./project.js";
 import { saveAiGeneratedProseVersionForOwner } from "./prose-draft.js";
 import { buildProseBeatPrompt } from "./prose-generation-prompt.js";
@@ -42,11 +41,11 @@ import {
 import { generateCorrelationId } from "./audit-snapshot.js";
 import { createServiceRoleClient } from "../lib/supabase.js";
 import { getProseVersionForOwner } from "./prose-draft.js";
-import {
-  assertAiOutputUsable,
-  persistValidationReportBestEffort,
-  validateAiOutput,
-} from "./output-validator.js";
+import { collectPovForbiddenFactTexts } from "./character-knowledge-validator.js";
+import { loadWriterPacketForLogForOwner } from "./context-packet-builder.js";
+import { listFactsForOwner } from "./fact.js";
+import { buildProseValidationContextFromPacket } from "./prose-validation-context.js";
+import { generateValidatedAiOutputWithSafeRepair } from "./prose-output-safe-repair.js";
 
 const IDEMPOTENCY_KEY_MAX = 120;
 const INSTRUCTION_MAX = 500;
@@ -267,6 +266,7 @@ async function handleProviderFailure(
     projectId: string;
     amount: number;
     generationType: typeof GENERATION_TYPES.prose_beat;
+    qualityMode: WriterQualityMode;
     idempotencyKey: string;
     correlationId: string;
     err: unknown;
@@ -285,6 +285,7 @@ async function handleProviderFailure(
       amount: input.amount,
       reason: CREDIT_LEDGER_REASONS.generationRefund,
       generationType: input.generationType,
+      qualityMode: input.qualityMode,
       idempotencyKey: input.idempotencyKey,
       correlationId: input.correlationId,
     });
@@ -379,6 +380,15 @@ export async function generateProseBeatForOwner(
     beatId: body.beatId,
   });
 
+  const [writerPacket, canonFacts] = await Promise.all([
+    loadWriterPacketForLogForOwner(bindings, ownerId, projectId, packetResult.packetLogId),
+    listFactsForOwner(bindings, ownerId, projectId, false),
+  ]);
+  const povForbiddenFactTexts = collectPovForbiddenFactTexts(
+    canonFacts,
+    writerPacket.continuity.povKnowledge,
+  );
+
   const promptResult = await buildProseBeatPrompt(
     bindings,
     projectId,
@@ -424,6 +434,7 @@ export async function generateProseBeatForOwner(
       amount: creditCost,
       reason: CREDIT_LEDGER_REASONS.generationDebit,
       generationType: GENERATION_TYPES.prose_beat,
+      qualityMode: body.qualityMode,
       idempotencyKey: body.idempotencyKey,
       correlationId,
     });
@@ -445,14 +456,25 @@ export async function generateProseBeatForOwner(
 
   attempt = await markGenerationAttemptRunning(bindings, attempt.id);
 
-  let providerResult;
+  let validated;
   try {
-    providerResult = await generateWithModelRouter(bindings, {
+    validated = await generateValidatedAiOutputWithSafeRepair({
+      bindings,
       generationType: GENERATION_TYPES.prose_beat,
       qualityMode: body.qualityMode,
       promptHash: promptResult.promptHash,
       promptMessages: promptResult.promptMessages,
+      validationContext: buildProseValidationContextFromPacket(
+        packetResult.preview,
+        writerPacket,
+        povForbiddenFactTexts,
+      ),
       metadata: { beatNumber: beatRow.beat_number },
+      persistContext: {
+        projectId,
+        userId: ownerId,
+        generationAttemptId: attempt.id,
+      },
     });
   } catch (err) {
     if (debited) {
@@ -462,6 +484,7 @@ export async function generateProseBeatForOwner(
         projectId,
         amount: creditCost,
         generationType: GENERATION_TYPES.prose_beat,
+        qualityMode: body.qualityMode,
         idempotencyKey: body.idempotencyKey,
         correlationId,
         err,
@@ -470,28 +493,17 @@ export async function generateProseBeatForOwner(
     throw err;
   }
 
+  const providerResult = validated.providerResult;
+
   let saved;
   try {
-    const validationReport = validateAiOutput({
-      outputText: providerResult.text,
-      forbiddenConcepts: packetResult.preview.mustNotInclude,
-      mustInclude: packetResult.preview.mustInclude,
-    });
-    await persistValidationReportBestEffort(bindings, {
-      projectId,
-      userId: ownerId,
-      generationAttemptId: attempt.id,
-      report: validationReport,
-    });
-    assertAiOutputUsable(validationReport);
-
     saved = await saveAiGeneratedProseVersionForOwner(
       bindings,
       ownerId,
       projectId,
       body.beatId,
       {
-        proseText: providerResult.text,
+        proseText: validated.text,
         contextPacketLogId: packetResult.packetLogId,
       },
     );
@@ -503,6 +515,7 @@ export async function generateProseBeatForOwner(
         projectId,
         amount: creditCost,
         generationType: GENERATION_TYPES.prose_beat,
+        qualityMode: body.qualityMode,
         idempotencyKey: body.idempotencyKey,
         correlationId,
         err,

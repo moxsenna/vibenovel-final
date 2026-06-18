@@ -527,3 +527,33 @@ export async function getContextPacketPreviewForOwner(
     beatDirection,
   });
 }
+
+export async function loadWriterPacketForLogForOwner(
+  bindings: AppBindings,
+  ownerId: string,
+  projectId: string,
+  logId: string,
+): Promise<WriterContextPacket> {
+  await getOwnedProjectRow(bindings, ownerId, projectId);
+  const admin = createServiceRoleClient(bindings);
+  const { data, error } = await admin
+    .from("context_packet_logs")
+    .select("packet_json")
+    .eq("id", logId)
+    .eq("project_id", projectId)
+    .maybeSingle();
+  if (error) {
+    console.error("context_packet_logs select for packet load failed");
+    throw AppError.internal("Failed to load context packet log");
+  }
+  if (!data) {
+    throw AppError.notFound("Context packet log not found");
+  }
+  const packet = parsePacketJson((data as { packet_json: unknown }).packet_json);
+  assertWriterPacketSafe(packet, {
+    currentChapterNumber: packet.meta.chapterNumber,
+    futureChapterSummaries: [],
+    futureChapterTitles: [],
+  });
+  return packet;
+}

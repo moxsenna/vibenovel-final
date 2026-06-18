@@ -520,6 +520,7 @@ export async function generateConceptsForOwner(
         amount: creditCost,
         reason: CREDIT_LEDGER_REASONS.generationDebit,
         generationType,
+        qualityMode,
         idempotencyKey,
         correlationId,
       });
@@ -615,6 +616,7 @@ export async function generateConceptsForOwner(
           amount: creditCost,
           reason: CREDIT_LEDGER_REASONS.generationRefund,
           generationType,
+          qualityMode,
           idempotencyKey,
           correlationId,
         });

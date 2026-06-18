@@ -10,7 +10,7 @@ export const mockIntakeSession: IntakeSession = {
   pageTitle: "Ceritakan Ide Ceritamu",
   introTitle: "Mari Bangun Ceritamu",
   introSubtitle:
-    "Ceritakan sedikit saja dulu. Nanti VibeNovel bantu rapikan jadi fondasi cerita.",
+    "Ceritakan sedikit saja dulu. Nanti Narra bantu rapikan jadi fondasi cerita.",
   messages: [
     {
       id: "msg-001",

@@ -2,7 +2,7 @@
   "name": "@vibenovel/api",
   "private": true,
   "version": "0.1.0",
-  "description": "VibeNovel API — Hono on Cloudflare Workers + Node (Sprint 2+)",
+  "description": "VibeNovel API \u2014 Hono on Cloudflare Workers + Node (Sprint 2+)",
   "type": "module",
   "scripts": {
     "dev": "wrangler dev",
@@ -18,6 +18,8 @@
     "test:write-room-contracts": "tsx scripts/write-room-contracts.test.mts",
     "test:prose-version-safe-response": "tsx scripts/prose-version-safe-response.test.mts",
     "test:sprint14-safety": "tsx scripts/sprint14-safety-contracts.test.mts",
+    "test:prose-safe-repair-loop": "tsx scripts/prose-safe-repair-loop.test.mts",
+    "test:character-knowledge-validator": "tsx scripts/character-knowledge-validator.test.mts",
     "test:draft-import": "tsx scripts/draft-import-contracts.test.mts",
     "test:creator-mode": "tsx scripts/sprint16-creator-mode-contracts.test.mts",
     "test:sprint16-character-continuity": "npm run build -w @vibenovel/shared && tsx scripts/sprint16-character-continuity-contracts.test.mts",
@@ -29,6 +31,7 @@
     "test:duitku-signature": "tsx scripts/duitku-callback-signature.test.mts",
     "test:atomic-grant": "tsx scripts/atomic-grant-rpc.test.mts",
     "test:atomic-grant-hosted": "tsx scripts/atomic-grant-hosted-staging.test.mts",
+    "test:admin-guard": "node scripts/test-admin-guard.mjs",
     "test:hosted-atomic-grant-probe": "tsx scripts/probe-hosted-atomic-grant.mts"
   },
   "dependencies": {

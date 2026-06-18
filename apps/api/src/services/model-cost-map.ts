@@ -33,9 +33,37 @@ export interface CalculateEstimatedCostResult {
  *   Input $0.30/M, Output $2.50/M
  */
 const MODEL_COST_MAP: Readonly<Record<string, ModelCostConfig>> = {
+  "google/gemini-3.1-flash-lite": {
+    inputUsdPer1M: 0.25,
+    outputUsdPer1M: 1.5,
+  },
+  "qwen/qwen3.7-plus": {
+    inputUsdPer1M: 0.32,
+    outputUsdPer1M: 1.28,
+  },
+  "minimax/minimax-m3": {
+    inputUsdPer1M: 0.3,
+    outputUsdPer1M: 1.2,
+  },
+  "deepseek/deepseek-v4-flash": {
+    inputUsdPer1M: 0.09,
+    outputUsdPer1M: 0.18,
+  },
   "google/gemini-2.5-flash": {
     inputUsdPer1M: 0.3,
     outputUsdPer1M: 2.5,
+  },
+  "mistralai/mistral-large-2512": {
+    inputUsdPer1M: 0.5,
+    outputUsdPer1M: 1.5,
+  },
+  "anthropic/claude-opus-4.8": {
+    inputUsdPer1M: 5,
+    outputUsdPer1M: 25,
+  },
+  "openai/gpt-5.2": {
+    inputUsdPer1M: 1.75,
+    outputUsdPer1M: 14,
   },
   "google/gemini-2.5-flash:free": {
     inputUsdPer1M: 0,
