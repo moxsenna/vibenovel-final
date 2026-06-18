@@ -5,6 +5,7 @@ node_modules/
 dist/
 dist-node/
 **/dist-node/
+apps/api/dist-production/
 build/
 .wrangler/
 **/.wrangler/
