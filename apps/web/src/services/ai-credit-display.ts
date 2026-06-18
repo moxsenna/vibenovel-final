@@ -15,11 +15,11 @@ const PROSE_REWRITE_CREDIT_COSTS: Record<WriterQualityMode, number> = {
   [WRITER_QUALITY_MODES.terbaik]: 4500,
 };
 
-const PUBLISH_COPY_CREDIT_COSTS: Record<WriterQualityMode, number> = {
-  [WRITER_QUALITY_MODES.hemat]: 400,
-  [WRITER_QUALITY_MODES.seimbang]: 400,
-  [WRITER_QUALITY_MODES.terbaik]: 400,
-};
+const PUBLISH_COPY_FALLBACK_CREDIT_COST = 400;
+
+function formatCreditNumber(value: number): string {
+  return value.toLocaleString("id-ID");
+}
 
 export function resolveDisplayedCreditCost(
   serverCreditCost: number | null | undefined,
@@ -50,13 +50,12 @@ export function getProseRewriteCreditCost(
 }
 
 export function getPublishCopyCreditCost(
-  qualityMode: WriterQualityMode,
   serverCreditCost?: number | null,
 ): number {
-  const fallback =
-    PUBLISH_COPY_CREDIT_COSTS[qualityMode] ??
-    PUBLISH_COPY_CREDIT_COSTS.seimbang;
-  return resolveDisplayedCreditCost(serverCreditCost, fallback);
+  return resolveDisplayedCreditCost(
+    serverCreditCost,
+    PUBLISH_COPY_FALLBACK_CREDIT_COST,
+  );
 }
 
 export function formatProseBeatActionCostLabel(
@@ -84,13 +83,42 @@ export function formatProseRewriteActionCostLabel(
 }
 
 export function formatPublishCopyCreditCostLabel(
-  qualityMode: WriterQualityMode,
   serverCreditCost?: number | null,
 ): string {
-  const cost = getPublishCopyCreditCost(qualityMode, serverCreditCost);
+  const cost = getPublishCopyCreditCost(serverCreditCost);
   return `Biaya: ${cost} kredit`;
 }
 
 export function formatPublishCopyTierCostsLabel(): string {
   return "Biaya mengikuti estimasi server.";
+}
+
+export function formatCreditSuccessNotice(
+  actionLabel: string,
+  creditCost: number,
+  remainingBalance: number | null,
+  idempotentReplay = false,
+): string {
+  const costCopy =
+    creditCost > 0
+      ? `${formatCreditNumber(creditCost)} kredit digunakan.`
+      : "Tidak ada kredit yang digunakan.";
+  const balanceCopy =
+    remainingBalance != null
+      ? ` Sisa kredit: ${formatCreditNumber(remainingBalance)}.`
+      : "";
+  const replayCopy = idempotentReplay
+    ? " Hasil permintaan sebelumnya ditampilkan kembali."
+    : "";
+  return `${actionLabel}. ${costCopy}${balanceCopy}${replayCopy}`;
+}
+
+export function formatPremiumQualityWarning(
+  qualityMode: WriterQualityMode,
+  creditCost: number,
+): string | null {
+  if (qualityMode !== WRITER_QUALITY_MODES.terbaik) return null;
+  return `Mode Terbaik memakai ${formatCreditNumber(
+    creditCost,
+  )} kredit. Gunakan untuk adegan kunci seperti opening, klimaks, atau ending.`;
 }

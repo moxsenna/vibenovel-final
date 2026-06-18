@@ -32,6 +32,7 @@
     "test:atomic-grant": "tsx scripts/atomic-grant-rpc.test.mts",
     "test:atomic-grant-hosted": "tsx scripts/atomic-grant-hosted-staging.test.mts",
     "test:admin-guard": "node scripts/test-admin-guard.mjs",
+    "test:credit-v2": "tsx scripts/credit-system-v2-contracts.test.mts",
     "test:hosted-atomic-grant-probe": "tsx scripts/probe-hosted-atomic-grant.mts"
   },
   "dependencies": {

@@ -43,6 +43,8 @@ jobs:
 
       - name: API safety and Narra contracts
         run: npm run test:api:contracts
+      - name: Credit System v2 contracts
+        run: npm run test:credit-v2
       - name: Build shared
         run: npm run build:shared
 

@@ -25,6 +25,7 @@ export interface WriterMobileLayoutProps {
   creditActionCostLabel?: string | null;
   creditRewriteCostLabel?: string | null;
   qualityModeLabel?: string | null;
+  premiumCreditWarning?: string | null;
   creditBalance?: number | null;
   creditLoading?: boolean;
   creditError?: string | null;
@@ -63,6 +64,7 @@ export function WriterMobileLayout({
   creditActionCostLabel = null,
   creditRewriteCostLabel = null,
   qualityModeLabel = null,
+  premiumCreditWarning = null,
   creditBalance = null,
   creditLoading = false,
   creditError = null,
@@ -198,6 +200,11 @@ export function WriterMobileLayout({
               </p>
               {creditActionCostLabel ? <p>{creditActionCostLabel}</p> : null}
               {creditRewriteCostLabel ? <p>{creditRewriteCostLabel}</p> : null}
+              {premiumCreditWarning ? (
+                <p className="rounded-lg border border-warning/30 bg-warning-soft px-3 py-2 text-on-surface">
+                  {premiumCreditWarning}
+                </p>
+              ) : null}
               {remainingAfterGenerate != null && !insufficientCredit ? (
                 <p>Estimasi sisa setelah generate: {remainingAfterGenerate} kredit</p>
               ) : null}

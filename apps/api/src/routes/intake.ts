@@ -10,6 +10,7 @@ import {
   listIntakeMessagesForOwner,
   updateDetectedSignalStatusForOwner,
 } from "../services/intake.js";
+import { getCreditBalanceForUser } from "../services/credit.js";
 import type { AppEnv } from "../types.js";
 
 export function registerIntakeRoutes(app: Hono<AppEnv>): void {
@@ -51,7 +52,8 @@ export function registerIntakeRoutes(app: Hono<AppEnv>): void {
       projectId,
       body as Record<string, unknown>,
     );
-    return jsonSuccess(c, result, 201);
+    const creditBalance = await getCreditBalanceForUser(c.env, ownerId);
+    return jsonSuccess(c, { ...result, creditBalance }, 201);
   });
 
   app.get("/api/projects/:id/intake/signals", authMiddleware, async (c) => {

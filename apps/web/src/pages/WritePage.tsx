@@ -45,6 +45,7 @@ export function WritePage() {
     creditActionCostLabel,
     creditRewriteCostLabel,
     qualityModeLabel,
+    premiumCreditWarning,
     creditBalance,
     creditLoading,
     creditError,
@@ -166,6 +167,7 @@ export function WritePage() {
     creditActionCostLabel,
     creditRewriteCostLabel,
     qualityModeLabel,
+    premiumCreditWarning,
     creditBalance,
     creditLoading,
     creditError,
@@ -227,6 +229,7 @@ export function WritePage() {
         creditActionCostLabel={creditActionCostLabel}
         creditRewriteCostLabel={creditRewriteCostLabel}
         qualityModeLabel={qualityModeLabel}
+        premiumCreditWarning={premiumCreditWarning}
         creditLoading={creditLoading}
         creditError={creditError}
         remainingAfterGenerate={remainingAfterGenerate}

@@ -68,8 +68,7 @@ export default tseslint.config(
   // Node-side: API, shared package, web e2e/config tooling.
   {
     files: [
-      "apps/api/**/*.{ts,mts,cts}",
-      "apps/api/**/*.js",
+      "apps/api/**/*.{js,mjs,ts,mts,cts}",
       "packages/**/*.ts",
       "apps/web/e2e/**/*.ts",
     ],

@@ -41,7 +41,7 @@ export function SettingsPage() {
   const costEstimates = [
     { label: "Tulis Beat dengan AI", cost: getProseBeatCreditCost(selectedTier) },
     { label: "Rewrite teks", cost: getProseRewriteCreditCost(selectedTier) },
-    { label: "Publish copy", cost: getPublishCopyCreditCost(selectedTier) },
+    { label: "Publish copy", cost: getPublishCopyCreditCost() },
   ];
 
   return (

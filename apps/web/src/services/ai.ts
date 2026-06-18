@@ -44,6 +44,8 @@ export {
   formatProseRewriteActionCostLabel,
   formatPublishCopyCreditCostLabel,
   formatPublishCopyTierCostsLabel,
+  formatCreditSuccessNotice,
+  formatPremiumQualityWarning,
   getProseBeatCreditCost,
   getProseRewriteCreditCost,
   getPublishCopyCreditCost,

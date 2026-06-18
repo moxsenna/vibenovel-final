@@ -8,8 +8,16 @@ import { aiGenerationFailureNotice, apiErrorMessage } from "@/lib/hook-fallback"
 import { DEMO_MODE_LABEL } from "@/lib/workflow-truth";
 import { resolveProjectIdForRoute } from "@/lib/project-context";
 import { CONCEPTS_PAGE_COPY, mockConcepts } from "@/mocks/concepts";
-import { resolveDisplayedCreditCost } from "@/services/ai-credit-display";
-import { fetchConcepts, generateConcepts, selectConcept } from "@/services/concepts";
+import {
+  formatCreditSuccessNotice,
+  resolveDisplayedCreditCost,
+} from "@/services/ai-credit-display";
+import {
+  buildConceptGenerationIdempotencyKey,
+  fetchConcepts,
+  generateConcepts,
+  selectConcept,
+} from "@/services/concepts";
 import { fetchCreditEstimate } from "@/services/credits";
 import { ROUTES } from "@/routes/paths";
 import type { StoryConcept } from "@/types";
@@ -126,9 +134,19 @@ export function useConceptsData(): ConceptsData {
     setGenerating(true);
     setNotice(null);
     try {
-      const result = await generateConcepts(projectId, token, {});
+      const result = await generateConcepts(projectId, token, {
+        idempotencyKey: buildConceptGenerationIdempotencyKey(projectId),
+      });
       setConcepts(result.concepts.map((c, i) => mapApiConceptToUi(c, projectId, i)));
       setSource("api");
+      setNotice(
+        formatCreditSuccessNotice(
+          "Tiga konsep cerita berhasil dibuat",
+          result.creditCost,
+          result.creditBalance?.balance ?? null,
+          result.idempotentReplay,
+        ),
+      );
     } catch (error) {
       setNotice(aiGenerationFailureNotice(error, "Gagal membuat konsep"));
     } finally {

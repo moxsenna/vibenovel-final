@@ -10,7 +10,7 @@ export function apiErrorMessage(error: unknown, fallback: string): string {
 }
 
 export const AI_FAILURE_REFUND_NOTICE =
-  "Kredit telah dikembalikan. Silakan coba lagi.";
+  "Kredit tidak terpakai atau sudah dikembalikan otomatis.";
 
 export function aiGenerationFailureNotice(error: unknown, prefix: string): string {
   const base =

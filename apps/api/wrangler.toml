@@ -28,10 +28,6 @@ PAYMENT_PROVIDER_MOCK = "true"
 PAYMENT_PROVIDER_MOCK_MODE = "success"
 AI_GENERATION_ENABLED = "false"
 AI_PROVIDER_MOCK = "true"
-AI_MODEL_HEMAT = "google/gemma-4-31b-it:free"
-AI_MODEL_SEIMBANG = "google/gemma-4-31b-it:free"
-AI_MODEL_TERBAIK = "google/gemma-4-31b-it:free"
-DEFAULT_AI_MODEL = "google/gemma-4-31b-it:free"
 
 # Production API on Cloudflare Workers. Secrets are uploaded with:
 #   npm run operator:production:worker-secrets -- -RequireLiveDuitku
@@ -51,10 +47,6 @@ AI_GENERATION_ENABLED = "true"
 AI_PROVIDER_MOCK = "false"
 OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
 AI_EMBEDDING_MODEL = "openai/text-embedding-3-small"
-AI_MODEL_HEMAT = "google/gemma-4-31b-it:free"
-AI_MODEL_SEIMBANG = "google/gemma-4-31b-it:free"
-AI_MODEL_TERBAIK = "google/gemma-4-31b-it:free"
-DEFAULT_AI_MODEL = "google/gemma-4-31b-it:free"
 
 # Duitku configuration is ready, but checkout stays off until the v2 launch gate.
 CREDIT_TOPUP_ENABLED = "false"

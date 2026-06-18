@@ -22,7 +22,7 @@ assert.equal(
   "server prose-rewrite estimate must override the offline fallback",
 );
 assert.equal(
-  getPublishCopyCreditCost(WRITER_QUALITY_MODES.seimbang, 555),
+  getPublishCopyCreditCost(555),
   555,
   "server publish estimate must override the offline fallback",
 );
@@ -41,7 +41,7 @@ assert.equal(
   "Biaya rewrite: 222 kredit",
 );
 assert.equal(
-  formatPublishCopyCreditCostLabel(WRITER_QUALITY_MODES.hemat, 111),
+  formatPublishCopyCreditCostLabel(111),
   "Biaya: 111 kredit",
 );
 assert.equal(

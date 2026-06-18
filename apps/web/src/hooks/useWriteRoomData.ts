@@ -20,6 +20,8 @@ import { mockChapterDraft } from "@/mocks/chapter";
 import {
   buildBeatProseIdempotencyKey,
   buildRewriteProseIdempotencyKey,
+  formatCreditSuccessNotice,
+  formatPremiumQualityWarning,
   formatProseBeatActionCostLabel,
   formatProseBeatCreditCostLabel,
   formatProseRewriteActionCostLabel,
@@ -257,6 +259,7 @@ export interface UseWriteRoomDataResult {
   creditActionCostLabel: string;
   creditRewriteCostLabel: string;
   qualityModeLabel: string;
+  premiumCreditWarning: string | null;
   creditBalance: number | null;
   creditLoading: boolean;
   creditError: string | null;
@@ -1221,10 +1224,14 @@ export function useWriteRoomData(): UseWriteRoomDataResult {
       const remaining =
         result.creditBalance?.balance ??
         (creditBalance != null ? Math.max(0, creditBalance.balance - cost) : null);
-      const balanceNote =
-        remaining != null ? ` Sisa: ${remaining}.` : "";
-      const replayNote = result.idempotentReplay ? " (hasil permintaan sebelumnya)" : "";
-      setAiNotice(`Narasi AI berhasil dibuat. Terpotong ${cost} kredit.${balanceNote}${replayNote}`);
+      setAiNotice(
+        formatCreditSuccessNotice(
+          "Narasi AI berhasil dibuat",
+          cost,
+          remaining,
+          result.idempotentReplay,
+        ),
+      );
     } catch (error) {
       if (error instanceof ApiClientError) {
         setAiError(mapAiGenerationErrorCode(error.code, error.details));
@@ -1346,10 +1353,13 @@ export function useWriteRoomData(): UseWriteRoomDataResult {
       const remaining =
         result.creditBalance?.balance ??
         (creditBalance != null ? Math.max(0, creditBalance.balance - cost) : null);
-      const balanceNote = remaining != null ? ` Sisa: ${remaining}.` : "";
-      const replayNote = result.idempotentReplay ? " (hasil permintaan sebelumnya)" : "";
       setRewriteNotice(
-        `Teks berhasil diperbaiki. Terpotong ${cost} kredit.${balanceNote}${replayNote}`,
+        formatCreditSuccessNotice(
+          "Teks berhasil diperbaiki",
+          cost,
+          remaining,
+          result.idempotentReplay,
+        ),
       );
     } catch (error) {
       if (error instanceof ApiClientError) {
@@ -1426,6 +1436,10 @@ export function useWriteRoomData(): UseWriteRoomDataResult {
     serverCreditCosts.proseRewrite,
   );
   const qualityModeLabel = formatQualityModeLabel(qualityMode);
+  const premiumCreditWarning = formatPremiumQualityWarning(
+    qualityMode,
+    proseBeatCreditCost,
+  );
   const showCreditUi = source === "api";
   const showPovKnowledgeSummary = creatorMode === "advanced";
   const knownBalance = creditBalance?.balance ?? null;
@@ -1541,6 +1555,7 @@ export function useWriteRoomData(): UseWriteRoomDataResult {
       creditActionCostLabel,
       creditRewriteCostLabel,
       qualityModeLabel,
+      premiumCreditWarning,
       creditBalance: knownBalance,
       creditLoading,
       creditError,
@@ -1603,6 +1618,7 @@ export function useWriteRoomData(): UseWriteRoomDataResult {
       creditTopupEnabled,
       creditLoading,
       creditRewriteCostLabel,
+      premiumCreditWarning,
       draft,
       hasProseForRewrite,
       insufficientCredit,

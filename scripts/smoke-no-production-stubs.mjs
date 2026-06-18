@@ -23,9 +23,8 @@ function parseTruthy(value) {
   return normalized === "true" || normalized === "1" || normalized === "yes";
 }
 
-/** Mirrors apps/api/src/env.ts mayUseDeterministicStoryStub */
-function mayUseDeterministicStoryStub(bindings) {
-  if (!parseTruthy(bindings.AI_GENERATION_ENABLED)) return true;
+/** Mirrors apps/api/src/env.ts allowDeterministicStoryStubs */
+function allowDeterministicStoryStubs(bindings) {
   return (
     parseTruthy(bindings.ALLOW_DETERMINISTIC_STORY_STUBS) ||
     parseTruthy(bindings.AI_PROVIDER_MOCK)
@@ -42,7 +41,7 @@ function assertLiveAiBlocksBeatStub() {
     AI_PROVIDER_MOCK: "false",
   };
   assert.equal(
-    mayUseDeterministicStoryStub(live),
+    allowDeterministicStoryStubs(live),
     false,
     "live AI without ALLOW_DETERMINISTIC_STORY_STUBS must not allow beat/summary stubs",
   );
@@ -51,7 +50,14 @@ function assertLiveAiBlocksBeatStub() {
     AI_PROVIDER_MOCK: "false",
     ALLOW_DETERMINISTIC_STORY_STUBS: "true",
   };
-  assert.equal(mayUseDeterministicStoryStub(allowed), true);
+  assert.equal(allowDeterministicStoryStubs(allowed), true);
+  assert.equal(
+    allowDeterministicStoryStubs({
+      AI_GENERATION_ENABLED: "true",
+      AI_PROVIDER_MOCK: "true",
+    }),
+    true,
+  );
 }
 
 function main() {
@@ -73,12 +79,12 @@ function main() {
   assertLiveAiBlocksBeatStub();
 
   const beat = readService("chapter-beat.ts");
-  assert.match(beat, /mayUseDeterministicStoryStub/);
-  assert.match(beat, /AI beat generation is not yet available/);
+  assert.match(beat, /allowDeterministicStoryStubs/);
+  assert.match(beat, /AI beat generation is unavailable/);
 
   const summary = readService("chapter-summary.ts");
-  assert.match(summary, /mayUseDeterministicStoryStub/);
-  assert.match(summary, /AI chapter summary is not yet available/);
+  assert.match(summary, /allowDeterministicStoryStubs/);
+  assert.match(summary, /AI chapter summary is unavailable/);
 
   console.log("\nPASS: production stub policy checks");
 }

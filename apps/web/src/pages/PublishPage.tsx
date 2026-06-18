@@ -44,7 +44,6 @@ export function PublishPage() {
     applyingSuggestionField,
     applyingAllSuggestions,
     publishCopyCreditCostLabel,
-    publishCopyQualityModeLabel,
     publishCopyCreditBalance,
     publishCopyCreditLoading,
     publishCopyCreditError,
@@ -148,7 +147,6 @@ export function PublishPage() {
               applyingSuggestionField={applyingSuggestionField}
               applyingAllSuggestions={applyingAllSuggestions}
               creditCostLabel={publishCopyCreditCostLabel}
-              qualityModeLabel={publishCopyQualityModeLabel}
               creditBalance={publishCopyCreditBalance}
               creditLoading={publishCopyCreditLoading}
               creditError={publishCopyCreditError}

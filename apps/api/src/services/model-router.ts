@@ -372,6 +372,7 @@ export async function generateWithModelRouter(
 
     return result;
   } catch (err) {
+    let finalError = err;
     if (
       fallbackConfig &&
       fallbackConfig.model !== config.model &&
@@ -402,11 +403,12 @@ export async function generateWithModelRouter(
         });
         return fallbackResult;
       } catch (fallbackErr) {
-        err = fallbackErr;
+        finalError = fallbackErr;
       }
     }
 
-    const code = err instanceof AppError ? err.code : "AI_PROVIDER_ERROR";
+    const code =
+      finalError instanceof AppError ? finalError.code : "AI_PROVIDER_ERROR";
     logGenerationEvent("error", {
       generationType: input.generationType,
       provider: config.provider,
@@ -414,6 +416,6 @@ export async function generateWithModelRouter(
       promptHash: input.promptHash,
       error_code: code,
     });
-    throw err;
+    throw finalError;
   }
 }

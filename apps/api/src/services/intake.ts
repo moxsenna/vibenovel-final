@@ -4,6 +4,7 @@ import {
   INTAKE_PHASES,
   INTAKE_SESSION_STATUSES,
   WORKFLOW_PHASES,
+  GENERATION_STATUSES,
   GENERATION_TYPES,
   WRITER_QUALITY_MODES,
   type DetectedSignal,
@@ -38,6 +39,7 @@ import {
 } from "./credit-ledger.js";
 import {
   createGenerationAttempt,
+  getGenerationAttemptByIdempotencyKey,
   markGenerationAttemptRunning,
   markGenerationAttemptSucceeded,
   markGenerationAttemptFailed,
@@ -51,6 +53,7 @@ import {
   buildNarraSystemPrompt,
   resolveNarraPhase,
 } from "./story-agent-context.js";
+import { parsePaidActionIdempotencyKey } from "./paid-action-idempotency.js";
 
 const SESSION_SELECT =
   "id, project_id, status, phase, progress_percent, summary, metadata, created_at, updated_at";
@@ -399,6 +402,46 @@ function parseJsonObject(value: unknown): JsonObject {
   return {};
 }
 
+async function getIntakeMessageRowById(
+  bindings: AppBindings,
+  projectId: string,
+  messageId: string,
+): Promise<IntakeMessageRow> {
+  const admin = createServiceRoleClient(bindings);
+  const { data, error } = await admin
+    .from("intake_messages")
+    .select(MESSAGE_SELECT)
+    .eq("id", messageId)
+    .eq("project_id", projectId)
+    .maybeSingle();
+
+  if (error || !data) {
+    console.error("intake_messages replay lookup failed");
+    throw AppError.internal("Failed to load intake replay");
+  }
+  return data as IntakeMessageRow;
+}
+
+async function getIntakeSessionRowById(
+  bindings: AppBindings,
+  projectId: string,
+  sessionId: string,
+): Promise<IntakeSessionRow> {
+  const admin = createServiceRoleClient(bindings);
+  const { data, error } = await admin
+    .from("intake_sessions")
+    .select(SESSION_SELECT)
+    .eq("id", sessionId)
+    .eq("project_id", projectId)
+    .maybeSingle();
+
+  if (error || !data) {
+    console.error("intake_sessions replay lookup failed");
+    throw AppError.internal("Failed to load intake replay session");
+  }
+  return data as IntakeSessionRow;
+}
+
 export async function listIntakeMessagesForOwner(
   bindings: AppBindings,
   ownerId: string,
@@ -422,6 +465,8 @@ export interface AppendMessageResult {
   userMessage: IntakeMessage;
   agentMessage: IntakeMessage;
   session: IntakeSession;
+  creditCost: number;
+  idempotentReplay: boolean;
 }
 
 export async function appendUserMessageForOwner(
@@ -439,6 +484,63 @@ export async function appendUserMessageForOwner(
   const entrypoint =
     typeof body.entrypoint === "string" ? body.entrypoint : undefined;
   const narraPhase = resolveNarraPhase({ requestedPhase, entrypoint });
+  const idempotencyKey = parsePaidActionIdempotencyKey(body.idempotencyKey);
+  const useMock = isAiProviderMock(bindings);
+  const aiEnabled = isAiGenerationEnabled(bindings);
+
+  if (aiEnabled && !useMock) {
+    const existing = await getGenerationAttemptByIdempotencyKey(
+      bindings,
+      ownerId,
+      idempotencyKey,
+    );
+    if (
+      existing?.status === GENERATION_STATUSES.succeeded &&
+      existing.outputEntityId
+    ) {
+      const userMessageId =
+        typeof existing.metadata.userMessageId === "string"
+          ? existing.metadata.userMessageId
+          : null;
+      const sessionId =
+        typeof existing.metadata.sessionId === "string"
+          ? existing.metadata.sessionId
+          : null;
+      if (!userMessageId || !sessionId) {
+        throw AppError.internal("Intake replay metadata is incomplete");
+      }
+
+      const [userRow, agentRow, sessionRow] = await Promise.all([
+        getIntakeMessageRowById(bindings, projectId, userMessageId),
+        getIntakeMessageRowById(bindings, projectId, existing.outputEntityId),
+        getIntakeSessionRowById(bindings, projectId, sessionId),
+      ]);
+      return {
+        userMessage: mapIntakeMessageRow(userRow),
+        agentMessage: mapIntakeMessageRow(agentRow),
+        session: mapIntakeSessionRow(sessionRow),
+        creditCost: existing.creditCost,
+        idempotentReplay: true,
+      };
+    }
+    if (
+      existing?.status === GENERATION_STATUSES.pending ||
+      existing?.status === GENERATION_STATUSES.running
+    ) {
+      throw new AppError(
+        "GENERATION_IN_PROGRESS",
+        "Intake reply is already in progress for this idempotency key",
+        409,
+      );
+    }
+    if (existing?.status === GENERATION_STATUSES.failed) {
+      throw new AppError(
+        "GENERATION_FAILED",
+        "Previous intake reply failed for this idempotency key",
+        422,
+      );
+    }
+  }
 
   if (body.role !== undefined && body.role !== null) {
     if (typeof body.role !== "string" || !MESSAGE_ROLE_SET.has(body.role)) {
@@ -474,10 +576,8 @@ export async function appendUserMessageForOwner(
   let agentRow: IntakeMessageRow | null = null;
   let attempt = null;
   let debited = false;
+  let chargedCreditCost = 0;
   const correlationId = generateCorrelationId();
-
-  const useMock = isAiProviderMock(bindings);
-  const aiEnabled = isAiGenerationEnabled(bindings);
 
   await admin
     .from("intake_sessions")
@@ -542,7 +642,6 @@ export async function appendUserMessageForOwner(
     ];
 
     const promptHash = await computePromptHashFromMessages(promptMessages);
-    const idempotencyKey = `intake-assistant-${projectId}-${crypto.randomUUID()}`;
     const generationType = GENERATION_TYPES.intake_assistant;
     const qualityMode = WRITER_QUALITY_MODES.hemat;
     const creditCost = getCreditCostForGeneration({
@@ -563,6 +662,8 @@ export async function appendUserMessageForOwner(
         actualGenerationType: "intake_assistant",
         billingAlias: "publish_copy",
         task: "10.31a",
+        userMessageId: userMsgRow.id,
+        sessionId: sessionRow.id,
       },
     });
 
@@ -626,7 +727,7 @@ export async function appendUserMessageForOwner(
 
       agentRow = dbAgentRow as IntakeMessageRow;
 
-      await markGenerationAttemptSucceeded(bindings, {
+      attempt = await markGenerationAttemptSucceeded(bindings, {
         attemptId: attempt.id,
         userId: ownerId,
         projectId,
@@ -638,6 +739,7 @@ export async function appendUserMessageForOwner(
         outputEntityType: "intake_message",
         correlationId,
       });
+      chargedCreditCost = attempt.creditCost;
     } catch (err) {
       if (debited) {
         try {
@@ -713,6 +815,8 @@ export async function appendUserMessageForOwner(
     userMessage: mapIntakeMessageRow(userMsgRow),
     agentMessage: mapIntakeMessageRow(agentRow),
     session: mapIntakeSessionRow(updatedSession as IntakeSessionRow),
+    creditCost: chargedCreditCost,
+    idempotentReplay: false,
   };
 }
 

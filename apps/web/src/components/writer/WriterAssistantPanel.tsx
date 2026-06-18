@@ -32,6 +32,7 @@ export interface WriterAssistantPanelProps {
   creditActionCostLabel?: string | null;
   creditRewriteCostLabel?: string | null;
   qualityModeLabel?: string | null;
+  premiumCreditWarning?: string | null;
   creditBalance?: number | null;
   creditLoading?: boolean;
   creditError?: string | null;
@@ -69,6 +70,7 @@ export function WriterAssistantPanel({
   creditActionCostLabel = null,
   creditRewriteCostLabel = null,
   qualityModeLabel = null,
+  premiumCreditWarning = null,
   creditBalance = null,
   creditLoading = false,
   creditError = null,
@@ -190,6 +192,11 @@ export function WriterAssistantPanel({
                 {creditActionCostLabel ? (
                   <p className="mt-1 font-body-sm text-body-sm text-on-surface-variant">
                     {creditActionCostLabel}
+                  </p>
+                ) : null}
+                {premiumCreditWarning ? (
+                  <p className="mt-2 rounded-lg border border-warning/30 bg-warning-soft px-3 py-2 font-body-sm text-body-sm text-on-surface">
+                    {premiumCreditWarning}
                   </p>
                 ) : null}
                 {remainingAfterGenerate != null && !insufficientCredit ? (
