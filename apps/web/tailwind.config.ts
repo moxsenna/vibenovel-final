@@ -133,7 +133,7 @@ const config: Config = {
         form: "720px",
         editor: "760px",
         detail: "1024px",
-        dashboard: "1200px",
+        dashboard: "1400px",
       },
     },
   },

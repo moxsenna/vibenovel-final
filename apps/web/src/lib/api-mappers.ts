@@ -26,6 +26,8 @@ import { DEMO_PROJECT_ID } from "@/mocks/projects";
 import { mockStoryFoundation } from "@/mocks/storyFoundation";
 import { ROUTES } from "@/routes/paths";
 import { shouldUseMocks } from "@/lib/env";
+import { formatProjectCardSecondaryLine } from "@/lib/project-title-helpers";
+import type { BadgeVariant } from "@/components/ui/Badge";
 import {
   buildHonestProgressSteps,
   buildHonestRecentExcerpt,
@@ -89,6 +91,15 @@ const FORMAT_LABELS: Record<string, string> = {
   desktop: "Format Desktop",
 };
 
+
+function recentStatusBadgeVariant(project: Project): BadgeVariant {
+  const phase = project.workflowPhase ?? "intake";
+  if (phase === "writing" || phase === "outline_locked") return "success";
+  if (phase === "foundation" || phase === "outline") return "warning";
+  if (project.status === "published") return "accent";
+  return "primary";
+}
+
 function formatRelativeTime(iso: string): string {
   const date = new Date(iso);
   if (Number.isNaN(date.getTime())) return "Baru saja";
@@ -106,18 +117,21 @@ function formatRelativeTime(iso: string): string {
 
 export function mapProjectToActiveCard(project: Project): DashboardActiveProject {
   const cta = resolveActiveProjectCta(project);
+  const lastEditedAbsolute = project.lastEditedAt;
   return {
     id: project.id,
     title: project.title,
     subtitle: project.genre ? `Kisah ${project.genre}` : "Proyek cerita Anda",
     genre: project.genre ?? "Cerita",
-    lastEditedLabel: formatRelativeTime(project.lastEditedAt),
+    lastEditedLabel: `Terakhir dikerjakan ${formatRelativeTime(project.lastEditedAt)}`,
+    lastEditedAbsolute,
     statusBadge: STATUS_BADGES[project.status] ?? "Aktif",
     currentChapter: project.currentChapter,
     writeRoute: cta.route,
     progressSteps: buildHonestProgressSteps(project),
     ctaLabel: cta.label,
     ctaDisabled: cta.disabled,
+    heroKicker: project.isActive ? "Lanjutkan" : "Terakhir dikerjakan",
   };
 }
 
@@ -125,14 +139,22 @@ export function mapProjectToRecentCard(
   project: Project,
   index: number,
 ): DashboardRecentProject {
+  const statusLabel = buildHonestRecentStatusLabel(project);
+  const progressLabel =
+    project.currentChapter > 0 ? `Bab ${project.currentChapter}` : undefined;
   return {
     id: project.id,
     title: project.title,
+    titleAbsolute: project.title,
     genre: project.genre ?? "Cerita",
     genreBadgeClass: GENRE_BADGE_CLASSES[index % GENRE_BADGE_CLASSES.length],
     excerpt: buildHonestRecentExcerpt(project),
     lastEditedLabel: formatRelativeTime(project.lastEditedAt),
-    statusLabel: buildHonestRecentStatusLabel(project),
+    lastEditedAbsolute: project.lastEditedAt,
+    statusLabel,
+    statusBadgeVariant: recentStatusBadgeVariant(project),
+    progressLabel,
+    secondaryLine: formatProjectCardSecondaryLine(project),
     bookmarked: project.isActive,
     route: resolveHonestProjectRoute(project),
   };

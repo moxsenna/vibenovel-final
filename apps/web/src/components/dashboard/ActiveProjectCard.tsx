@@ -17,6 +17,9 @@ function ProgressStepIcon({ status }: { status: DashboardProgressStep["status"] 
 }
 
 export function ActiveProjectCard({ project }: ActiveProjectCardProps) {
+  const kicker = project.heroKicker ?? "Lanjutkan";
+  const ctaFallback = project.ctaLabel ?? "Buka proyek";
+
   return (
     <div className="group relative flex flex-col overflow-hidden rounded-[20px] border border-border bg-surface p-lg shadow-sm lg:col-span-2">
       <div className="pointer-events-none absolute -right-20 -top-20 h-64 w-64 rounded-full bg-primary-soft opacity-50 blur-3xl transition-transform duration-700 group-hover:scale-110" />
@@ -27,16 +30,16 @@ export function ActiveProjectCard({ project }: ActiveProjectCardProps) {
         </Badge>
         <button
           type="button"
+          className="rounded-full p-2 text-muted-text transition-colors hover:bg-surface-soft hover:text-on-surface"
           aria-label="Opsi proyek"
-          className="text-on-surface-variant transition-colors hover:text-primary"
         >
-          <Icon name="more_vert" size={24} />
+          <Icon name="more_horiz" size={20} />
         </button>
       </div>
 
       <div className="relative z-10 flex-1">
         <p className="mb-2 font-label-md text-label-md uppercase tracking-wider text-primary">
-          Lanjut Tulis Bab
+          {kicker}
         </p>
         <h3 className="mb-xs font-headline-lg text-headline-lg text-on-surface">
           {project.title}
@@ -44,12 +47,14 @@ export function ActiveProjectCard({ project }: ActiveProjectCardProps) {
         <p className="mb-lg font-body-md text-body-md text-muted-text">{project.subtitle}</p>
 
         <div className="mb-lg flex flex-wrap items-center gap-4 text-muted-text">
-          <span className="flex items-center gap-1 font-label-sm text-label-sm">
+          <span className="flex items-center gap-1 font-body-sm text-body-sm">
             <Icon name="menu_book" size={16} />
-            {project.genre}
+            Bab {project.currentChapter || 1}
           </span>
-          <span aria-hidden="true">•</span>
-          <span className="flex items-center gap-1 font-label-sm text-label-sm">
+          <span
+            className="flex items-center gap-1 font-body-sm text-body-sm"
+            title={project.lastEditedAbsolute}
+          >
             <Icon name="schedule" size={16} />
             {project.lastEditedLabel}
           </span>
@@ -57,19 +62,12 @@ export function ActiveProjectCard({ project }: ActiveProjectCardProps) {
 
         <div className="mt-4 flex flex-col gap-2">
           {project.progressSteps.map((step) => (
-            <div
-              key={step.id}
-              className={`flex items-center gap-2 ${step.status === "pending" ? "opacity-50" : ""}`}
-            >
+            <div key={step.id} className="flex items-center gap-2">
               <ProgressStepIcon status={step.status} />
               <span
                 className={[
                   "font-body-sm text-body-sm",
-                  step.status === "current"
-                    ? "font-medium text-primary"
-                    : step.status === "done"
-                      ? "text-on-surface-variant"
-                      : "text-muted-text",
+                  step.status === "current" ? "font-medium text-on-surface" : "text-muted-text",
                 ].join(" ")}
               >
                 {step.label}
@@ -81,19 +79,15 @@ export function ActiveProjectCard({ project }: ActiveProjectCardProps) {
 
       <div className="relative z-10 mt-auto flex justify-end">
         {project.ctaDisabled ? (
-          <button
-            disabled
-            className="mt-4 inline-flex items-center gap-2 rounded-xl bg-surface-container-highest px-6 py-3 font-label-md text-label-md text-muted-text shadow-none cursor-not-allowed min-h-[44px]"
-          >
-            {project.ctaLabel ?? "Langkah Terkunci"}
-            <Icon name="lock" size={18} />
-          </button>
+          <span className="inline-flex min-h-[44px] items-center rounded-pill bg-surface-variant px-5 font-label-md text-label-md text-muted-text">
+            {project.ctaLabel ?? ctaFallback}
+          </span>
         ) : (
           <Link
             to={project.writeRoute}
-            className="mt-4 inline-flex items-center gap-2 rounded-xl bg-primary px-6 py-3 font-label-md text-label-md text-on-primary shadow-md transition-colors hover:bg-primary-dark min-h-[44px]"
+            className="inline-flex min-h-[44px] items-center gap-2 rounded-pill bg-primary px-5 font-label-md text-label-md text-on-primary shadow-sm transition-colors hover:bg-primary-dark"
           >
-            {project.ctaLabel ?? `Lanjut Tulis Bab ${project.currentChapter}`}
+            {project.ctaLabel ?? ctaFallback}
             <Icon name="arrow_forward" size={18} />
           </Link>
         )}

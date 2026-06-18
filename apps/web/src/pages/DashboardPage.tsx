@@ -7,6 +7,7 @@ import {
 } from "@/components/dashboard";
 import { IntegrationNotice } from "@/components/common/IntegrationNotice";
 import { useDashboardData } from "@/hooks/useDashboardData";
+import { useProjectBrowse } from "@/hooks/useProjectBrowse";
 
 /**
  * Dashboard Penulis — Sprint 1 Task 1.6 (+ Sprint 2 Task 2.13 API integration)
@@ -14,12 +15,19 @@ import { useDashboardData } from "@/hooks/useDashboardData";
  * Wrapped by AppShell via router layout.
  */
 export function DashboardPage() {
-  const { activeProject, recentProjects, usage, notice, loading, isEmpty } = useDashboardData();
+  const { activeProject, usage, notice, loading, isEmpty } = useDashboardData();
+  const browse = useProjectBrowse({
+    previewLimit: 6,
+    excludeProjectId: activeProject?.id ?? null,
+    includeArchived: true,
+  });
+
+  const hasProjects = Boolean(activeProject) || browse.total > 0 || !isEmpty;
 
   return (
     <div className="flex w-full flex-col gap-xl">
       <IntegrationNotice message={notice} />
-      <DashboardGreeting usage={usage} />
+      <DashboardGreeting usage={usage} hasProjects={hasProjects} />
 
       <div className="grid grid-cols-1 gap-lg lg:grid-cols-3">
         {activeProject ? (
@@ -36,7 +44,7 @@ export function DashboardPage() {
         </p>
       ) : null}
 
-      <RecentProjectsSection projects={recentProjects} />
+      <RecentProjectsSection browse={browse} />
     </div>
   );
 }

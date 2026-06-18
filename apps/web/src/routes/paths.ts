@@ -4,6 +4,7 @@ export const ROUTES = {
   login: "/login",
   start: "/start",
   dashboard: "/dashboard",
+  projects: "/projects",
   settings: "/settings",
   creditTopup: "/credits/topup",
   creditTopupMockReturn: "/credits/topup/mock-return",

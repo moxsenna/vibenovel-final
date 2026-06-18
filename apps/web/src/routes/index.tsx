@@ -2,6 +2,7 @@ import { Navigate, createBrowserRouter } from "react-router-dom";
 import { AppShell } from "@/components/layout";
 import { StartProjectPage } from "@/pages/StartProjectPage";
 import { DashboardPage } from "@/pages/DashboardPage";
+import { ProjectsIndexPage } from "@/pages/ProjectsIndexPage";
 import { IntakePage } from "@/pages/IntakePage";
 import { DraftImportPage } from "@/pages/DraftImportPage";
 import { ConceptsPage } from "@/pages/ConceptsPage";
@@ -37,6 +38,7 @@ export const router = createBrowserRouter([
     element: <AppShell />,
     children: [
       { path: "/start", element: <StartProjectPage /> },
+      { path: "/projects", element: <ProjectsIndexPage /> },
       { path: "/dashboard", element: <DashboardPage /> },
       { path: "/projects/:id/intake", element: <IntakePage /> },
       { path: "/projects/:id/import-draft", element: <DraftImportPage /> },
