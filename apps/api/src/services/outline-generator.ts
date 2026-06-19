@@ -897,6 +897,9 @@ export async function generateOutlineDraftWithAi(
       promptHash,
       promptMessages,
       temperature: 0.4,
+      metadata: {
+        targetChapterCount: options.targetChapterCount,
+      },
     });
 
     const parsed = parseLenientJsonObject(routerResult.text);

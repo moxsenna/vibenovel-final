@@ -10,7 +10,7 @@ import {
   type AiProposalType,
   type JsonObject,
 } from "@vibenovel/shared";
-import { isAiGenerationEnabled, isAiProviderMock, type AppBindings } from "../env.js";
+import { isAiGenerationEnabled, type AppBindings } from "../env.js";
 import {
   mapAiProposalResponse,
   type AiProposalResponse,
@@ -847,9 +847,9 @@ export async function generateFoundationProposalsForOwner(
     batchId,
   };
 
-  // Real AI when generation is enabled and not in provider-mock mode; otherwise
-  // the deterministic stub (offline/dev/AI-off) remains the honest fallback.
-  const useAi = isAiGenerationEnabled(bindings) && !isAiProviderMock(bindings);
+  // Any enabled AI provider follows the paid lifecycle. The deterministic stub
+  // is reserved for explicitly AI-disabled/offline operation.
+  const useAi = isAiGenerationEnabled(bindings);
   const drafts = useAi
     ? await generateFoundationDraftsWithAi(bindings, ownerId, projectId, genCtx)
     : buildProposalDrafts(genCtx);

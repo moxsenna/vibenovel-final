@@ -6,7 +6,6 @@ import {
 import {
   allowDeterministicStoryStubs,
   isAiGenerationEnabled,
-  isAiProviderMock,
   type AppBindings,
 } from "../env.js";
 import {
@@ -286,7 +285,7 @@ export async function generateChapterSummaryForOwner(
   let draft: GeneratedChapterSummaryDraft;
   let factProposalDrafts: ProposalDraft[] = [];
 
-  if (isAiGenerationEnabled(bindings) && !isAiProviderMock(bindings)) {
+  if (isAiGenerationEnabled(bindings)) {
     const aiResult = await generateChapterSummaryWithAi(
       bindings,
       ownerId,

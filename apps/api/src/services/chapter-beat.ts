@@ -7,7 +7,6 @@ import {
 import {
   allowDeterministicStoryStubs,
   isAiGenerationEnabled,
-  isAiProviderMock,
   type AppBindings,
 } from "../env.js";
 import { mapChapterBeatRow, type ChapterBeatRow } from "../lib/mappers.js";
@@ -155,7 +154,7 @@ export const STUB_BEAT_TEMPLATES: ReadonlyArray<{
 ];
 
 export function shouldUseAiBeatGeneration(bindings: AppBindings): boolean {
-  return isAiGenerationEnabled(bindings) && !isAiProviderMock(bindings);
+  return isAiGenerationEnabled(bindings);
 }
 
 async function generateBeatsWithDeterministicStub(

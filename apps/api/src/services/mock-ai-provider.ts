@@ -44,6 +44,153 @@ function buildMockChapterSummaryJson(input: ModelRouterGenerateInput): string {
   });
 }
 
+function buildMockFoundationJson(input: ModelRouterGenerateInput): string {
+  const h = input.promptHash.slice(0, 8);
+  return JSON.stringify({
+    premise:
+      `Laras menemukan surat lama yang membuktikan keluarganya dibangun di atas janji palsu. [mock-foundation:${h}]`,
+    mainConflict:
+      "Laras harus memilih antara melindungi ibunya atau membongkar kebohongan yang mengancam masa depan adiknya.",
+    readerPromise:
+      "Drama keluarga berlapis dengan petunjuk yang adil, pilihan emosional, dan kemenangan kecil di tiap fase.",
+    targetReader: "hp_serial",
+    genre: "Drama Misteri Keluarga",
+    tone: "Intim, tegang, dan penuh harapan",
+    protagonist: {
+      name: "Laras",
+      description:
+        "Arsiparis muda yang teliti tetapi terbiasa mengalah demi menjaga keluarganya tetap utuh.",
+      motivation:
+        "Memastikan adiknya tidak mewarisi konsekuensi dari kebohongan generasi sebelumnya.",
+    },
+    supportingCharacters: [
+      {
+        name: "Bima",
+        description:
+          "Adik Laras yang bersiap meninggalkan kota tanpa mengetahui konflik keluarga.",
+        motivation: "Membangun hidup mandiri tanpa memutus hubungan dengan keluarganya.",
+      },
+      {
+        name: "Ratih",
+        description:
+          "Ibu Laras yang menyimpan alasan rumit di balik surat lama tersebut.",
+        motivation: "Menjaga anak-anaknya dari kesalahan masa lalu.",
+      },
+    ],
+    facts: [
+      {
+        content: "Laras bekerja sebagai arsiparis dan terbiasa memeriksa dokumen lama.",
+        category: "identity",
+        importance: "core",
+      },
+      {
+        content: "Bima berencana meninggalkan kota dalam waktu dekat.",
+        category: "event",
+        importance: "major",
+      },
+      {
+        content: "Surat lama ditemukan di dalam kotak dokumen keluarga.",
+        category: "event",
+        importance: "major",
+      },
+    ],
+    styleTags: ["drama keluarga", "misteri emosional", "bab pendek"],
+    secret: {
+      summary:
+        "Ratih mengetahui penulis asli surat tersebut dan selama ini mengubah urutan kejadian.",
+    },
+    reason: `Fondasi mock deterministik untuk kontrak lokal. [mock-foundation:${h}]`,
+  });
+}
+
+function buildMockOutlineJson(input: ModelRouterGenerateInput): string {
+  const h = input.promptHash.slice(0, 8);
+  const requestedCount = input.metadata?.targetChapterCount;
+  const targetChapterCount =
+    typeof requestedCount === "number" &&
+    Number.isInteger(requestedCount) &&
+    requestedCount > 0
+      ? Math.min(requestedCount, 50)
+      : 10;
+  const chapters = Array.from({ length: targetChapterCount }, (_, index) => {
+    const chapterNumber = index + 1;
+    return {
+      title: `Jejak Surat ${chapterNumber}`,
+      summary:
+        `Laras mengikuti petunjuk ke-${chapterNumber} sambil menimbang dampaknya bagi Bima.`,
+      purpose:
+        chapterNumber === targetChapterCount
+          ? "Membayar konflik utama dan membuka konsekuensi musim berikutnya."
+          : "Mendorong penyelidikan dan menaikkan tekanan keluarga.",
+      chapterFunction:
+        chapterNumber === targetChapterCount
+          ? "payoff"
+          : chapterNumber % 4 === 0
+            ? "reveal"
+            : "escalation",
+      emotionalDirection:
+        chapterNumber === targetChapterCount
+          ? "satisfying"
+          : chapterNumber % 3 === 0
+            ? "hopeful"
+            : "tense",
+      hook: `Sebuah detail baru muncul pada dokumen ke-${chapterNumber}.`,
+      endingHook:
+        chapterNumber === targetChapterCount
+          ? "Laras menyadari keputusan terakhirnya mengubah masa depan keluarga."
+          : `Petunjuk berikutnya mengarah pada orang yang paling dipercaya Laras.`,
+      miniVictory:
+        chapterNumber % 3 === 0
+          ? "Laras memastikan satu bukti tidak dapat lagi disembunyikan."
+          : null,
+    };
+  });
+
+  return JSON.stringify({
+    seasonLabel: `Musim Surat yang Hilang [mock-outline:${h}]`,
+    arcSummary:
+      "Laras membongkar sejarah keluarganya setahap demi setahap sambil menjaga masa depan Bima.",
+    chapters,
+    openLoops: [
+      {
+        question: "Siapa penulis asli surat lama itu?",
+        readerFacingHint: "Tulisan tangan berbeda terlihat pada halaman terakhir.",
+        openedChapterNumber: 1,
+        payoffChapterNumber: Math.max(2, targetChapterCount - 1),
+        importance: "core",
+      },
+    ],
+    plannedReveals: [
+      {
+        title: "Asal surat lama",
+        hiddenTruth:
+          "Ratih menyalin surat dari dokumen lain untuk menyembunyikan keputusan keluarga.",
+        readerFacingHint: "Ada bekas tinta dan tanggal yang tidak konsisten.",
+        plannedChapterNumber: Math.max(2, targetChapterCount - 1),
+        forbiddenBeforeChapter: Math.max(2, targetChapterCount - 1),
+        riskLevel: "high",
+      },
+    ],
+    miniArcs: [
+      {
+        title: "Membuka Arsip",
+        premise: "Laras menguji kebenaran petunjuk pertama.",
+        payoff: "Satu versi sejarah keluarga terbukti salah.",
+      },
+    ],
+  });
+}
+
+function buildMockContinuityJson(input: ModelRouterGenerateInput): string {
+  const h = input.promptHash.slice(0, 8);
+  return JSON.stringify({
+    continuityWarnings: [],
+    factCandidates: [],
+    openLoopUpdates: [],
+    marker: `mock-continuity:${h}`,
+  });
+}
+
 function buildDeterministicProse(input: ModelRouterGenerateInput): string {
   const hashPrefix = input.promptHash.slice(0, 8);
   if (input.generationType === GENERATION_TYPES.intake_assistant) {
@@ -126,11 +273,23 @@ function buildDeterministicProse(input: ModelRouterGenerateInput): string {
       },
     ]);
   }
+  if (input.generationType === GENERATION_TYPES.foundation_proposal) {
+    return buildMockFoundationJson(input);
+  }
+  if (input.generationType === GENERATION_TYPES.outline_generation) {
+    return buildMockOutlineJson(input);
+  }
   if (input.generationType === GENERATION_TYPES.beat_generation) {
     return buildMockBeatGenerationJson(input);
   }
   if (input.generationType === GENERATION_TYPES.chapter_summary_generation) {
     return buildMockChapterSummaryJson(input);
+  }
+  if (
+    input.generationType === GENERATION_TYPES.continuity_delta ||
+    input.generationType === GENERATION_TYPES.summary_delta
+  ) {
+    return buildMockContinuityJson(input);
   }
   if (input.generationType === GENERATION_TYPES.prose_beat) {
     return `${MOCK_PROSE_BEAT_TEMPLATE}\n\n[mock:${hashPrefix}]`;

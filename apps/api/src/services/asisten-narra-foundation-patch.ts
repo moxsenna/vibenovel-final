@@ -9,7 +9,7 @@ import {
   type AiProposalType,
   type JsonObject,
 } from "@vibenovel/shared";
-import { isAiGenerationEnabled, isAiProviderMock, type AppBindings } from "../env.js";
+import { isAiGenerationEnabled, type AppBindings } from "../env.js";
 import { AppError } from "../errors.js";
 import {
   mapAiProposalResponse,
@@ -413,7 +413,7 @@ export async function generateFoundationProposalsFromNarraForOwner(
   const chatText = intake.messages.map((m) => `${m.role}: ${m.content}`).join("\n");
 
   const drafts =
-    isAiGenerationEnabled(bindings) && !isAiProviderMock(bindings)
+    isAiGenerationEnabled(bindings)
       ? await generateAiPatchDrafts({
           bindings,
           ownerId,

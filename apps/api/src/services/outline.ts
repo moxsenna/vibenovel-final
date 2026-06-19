@@ -6,7 +6,7 @@ import {
   type OpenLoop,
   type OutlinePlan,
 } from "@vibenovel/shared";
-import { isAiGenerationEnabled, isAiProviderMock, type AppBindings } from "../env.js";
+import { isAiGenerationEnabled, type AppBindings } from "../env.js";
 import {
   mapChapterOutlineRow,
   mapMiniArcRow,
@@ -531,9 +531,9 @@ export async function generateOutlineForOwner(
     await deleteOutlineChildren(bindings, existingPlan.id);
   }
 
-  // Real AI when generation is enabled and not in provider-mock mode; the
-  // deterministic stub remains the honest AI-off/offline fallback.
-  const useAi = isAiGenerationEnabled(bindings) && !isAiProviderMock(bindings);
+  // Any enabled AI provider follows the paid lifecycle. The deterministic stub
+  // remains reserved for explicitly AI-disabled/offline operation.
+  const useAi = isAiGenerationEnabled(bindings);
   const draft = useAi
     ? await generateOutlineDraftWithAi(bindings, ownerId, projectId, snapshot, {
         targetChapterCount: input.targetChapterCount,
