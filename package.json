@@ -38,6 +38,7 @@
     "test:atomic-grant-hosted": "npm run test:atomic-grant-hosted -w @vibenovel/api",
     "operator:staging:atomic-grant": "powershell -ExecutionPolicy Bypass -File scripts/operator-verify-hosted-atomic-grant.ps1",
     "operator:production:supabase:baseline": "powershell -ExecutionPolicy Bypass -File scripts/operator-production-supabase-baseline.ps1",
+    "operator:credit-v2:migrations": "powershell -ExecutionPolicy Bypass -File scripts/operator-credit-v2-migrations.ps1",
     "operator:production:api-web:deploy": "powershell -ExecutionPolicy Bypass -File scripts/operator-production-api-web-deploy.ps1",
     "operator:production:infra:unblock": "powershell -ExecutionPolicy Bypass -File scripts/operator-production-infra-unblock.ps1",
     "operator:production:ec2:provision": "powershell -ExecutionPolicy Bypass -File scripts/operator-production-ec2-provision.ps1",
