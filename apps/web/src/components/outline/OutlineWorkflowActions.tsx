@@ -8,6 +8,10 @@ export interface OutlineWorkflowActionsProps {
   approving: boolean;
   locking: boolean;
   apiMode: boolean;
+  creditCostLabel?: string | null;
+  creditLoading?: boolean;
+  creditError?: string | null;
+  creditInsufficient?: boolean;
   onGenerate?: () => void | Promise<void>;
   onApprove?: () => void | Promise<void>;
   onLock?: () => void | Promise<void>;
@@ -21,6 +25,10 @@ export function OutlineWorkflowActions({
   approving,
   locking,
   apiMode,
+  creditCostLabel = null,
+  creditLoading = false,
+  creditError = null,
+  creditInsufficient = false,
   onGenerate,
   onApprove,
   onLock,
@@ -36,17 +44,30 @@ export function OutlineWorkflowActions({
             Fondasi harus sudah dikunci. Buat rencana 10 bab awal dari fondasi cerita kamu.
           </p>
         </div>
-        {onGenerate && (
-          <Button
-            variant="primary"
-            className="w-full rounded-xl md:w-auto"
-            leftIcon={<Icon name="auto_awesome" size={20} />}
-            disabled={generating}
-            onClick={() => void onGenerate()}
-          >
-            {generating ? "Membuat rencana..." : "Buat Rencana 10 Bab"}
-          </Button>
-        )}
+        {onGenerate ? (
+          <div className="flex flex-col items-start gap-1 md:items-end">
+            <Button
+              variant="primary"
+              className="w-full rounded-xl md:w-auto"
+              leftIcon={<Icon name="auto_awesome" size={20} />}
+              disabled={generating || creditLoading || creditInsufficient}
+              onClick={() => void onGenerate()}
+            >
+              {generating ? "Membuat rencana..." : "Buat Rencana 10 Bab"}
+            </Button>
+            <p className="font-label-sm text-label-sm text-muted-text">
+              {creditLoading ? "Memuat biaya..." : creditCostLabel}
+            </p>
+            {creditError ? (
+              <p className="font-body-sm text-body-sm text-warning">{creditError}</p>
+            ) : null}
+            {creditInsufficient ? (
+              <p className="font-body-sm text-body-sm text-error">
+                Kredit tidak cukup.
+              </p>
+            ) : null}
+          </div>
+        ) : null}
       </div>
     );
   }

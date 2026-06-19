@@ -5,6 +5,10 @@ export interface FoundationProposalsPanelProps {
   proposals: UiFoundationProposal[];
   generating?: boolean;
   acceptingId?: string | null;
+  creditCostLabel?: string | null;
+  creditLoading?: boolean;
+  creditError?: string | null;
+  creditInsufficient?: boolean;
   onGenerate?: () => void | Promise<void>;
   onAccept?: (proposalId: string) => void | Promise<void>;
 }
@@ -20,6 +24,10 @@ export function FoundationProposalsPanel({
   proposals,
   generating = false,
   acceptingId = null,
+  creditCostLabel = null,
+  creditLoading = false,
+  creditError = null,
+  creditInsufficient = false,
   onGenerate,
   onAccept,
 }: FoundationProposalsPanelProps) {
@@ -31,14 +39,27 @@ export function FoundationProposalsPanel({
           <h3 className="font-headline-md text-headline-md text-on-surface">Usulan Cerita</h3>
         </div>
         {onGenerate && (
-          <Button
-            variant="secondary"
-            className="rounded-xl"
-            disabled={generating}
-            onClick={() => void onGenerate()}
-          >
-            {generating ? "Membuat usulan..." : "Buat Usulan Fondasi"}
-          </Button>
+          <div className="flex flex-col items-start gap-1 sm:items-end">
+            <Button
+              variant="secondary"
+              className="rounded-xl"
+              disabled={generating || creditLoading || creditInsufficient}
+              onClick={() => void onGenerate()}
+            >
+              {generating ? "Membuat usulan..." : "Buat Usulan Fondasi"}
+            </Button>
+            <p className="font-label-sm text-label-sm text-muted-text">
+              {creditLoading ? "Memuat biaya..." : creditCostLabel}
+            </p>
+            {creditError ? (
+              <p className="font-body-sm text-body-sm text-warning">{creditError}</p>
+            ) : null}
+            {creditInsufficient ? (
+              <p className="font-body-sm text-body-sm text-error">
+                Kredit tidak cukup.
+              </p>
+            ) : null}
+          </div>
         )}
       </div>
 

@@ -15,9 +15,16 @@ import { DEMO_MODE_LABEL } from "@/lib/workflow-truth";
 import { resolveProjectIdForRoute } from "@/lib/project-context";
 import { mockStoryFoundation } from "@/mocks/storyFoundation";
 import { ROUTES } from "@/routes/paths";
+import {
+  formatCreditSuccessNotice,
+  formatFoundationCreditCostLabel,
+  getFoundationCreditCost,
+} from "@/services/ai-credit-display";
+import { fetchCreditBalance, fetchCreditEstimate } from "@/services/credits";
 import { fetchFoundationBundle } from "@/services/foundation";
 import {
   acceptProposal,
+  buildFoundationGenerationIdempotencyKey,
   fetchFoundationProposals,
   fetchFoundationReadiness,
   generateFoundationProposals,
@@ -46,6 +53,12 @@ export interface FoundationFlowData {
   acceptProposalById: (proposalId: string) => Promise<void>;
   lockFoundationNow: () => Promise<void>;
   refresh: () => Promise<void>;
+  serverCreditCost: number | null;
+  creditBalance: number | null;
+  creditLoading: boolean;
+  creditError: string | null;
+  creditCostLabel: string;
+  creditInsufficient: boolean;
 }
 
 function formatLockError(error: ApiClientError): string {
@@ -88,6 +101,10 @@ export function useFoundationFlow(): FoundationFlowData {
   const [notice, setNotice] = useState<string | null>(null);
   const [lockNotice, setLockNotice] = useState<string | null>(null);
   const [projectId, setProjectId] = useState<string | null>(null);
+  const [serverCreditCost, setServerCreditCost] = useState<number | null>(null);
+  const [creditBalance, setCreditBalance] = useState<number | null>(null);
+  const [creditLoading, setCreditLoading] = useState(false);
+  const [creditError, setCreditError] = useState<string | null>(null);
   const matangkanDenganNarraRoute = projectId
     ? `${ROUTES.project.narra(projectId)}?mode=foundation`
     : null;
@@ -178,13 +195,65 @@ export function useFoundationFlow(): FoundationFlowData {
     void loadAll();
   }, [authLoading, apiMode, loadAll, useMocks]);
 
+  useEffect(() => {
+    if (!apiMode || !token || !projectId) {
+      setServerCreditCost(null);
+      setCreditBalance(null);
+      setCreditLoading(false);
+      setCreditError(null);
+      return;
+    }
+
+    let ignore = false;
+    setCreditLoading(true);
+    setCreditError(null);
+
+    void Promise.allSettled([
+      fetchCreditEstimate("foundation_setup", undefined, token),
+      fetchCreditBalance(token),
+    ]).then(([estimateResult, balanceResult]) => {
+      if (ignore) return;
+
+      if (estimateResult.status === "fulfilled") {
+        setServerCreditCost(estimateResult.value.creditCost);
+      } else {
+        setServerCreditCost(null);
+        setCreditError("Estimasi biaya belum bisa dimuat.");
+      }
+
+      if (balanceResult.status === "fulfilled") {
+        setCreditBalance(balanceResult.value?.balance ?? null);
+      } else {
+        setCreditBalance(null);
+        setCreditError((current) =>
+          current
+            ? `${current} Saldo belum bisa dimuat.`
+            : "Saldo belum bisa dimuat; server tetap memvalidasi saat klik.",
+        );
+      }
+      setCreditLoading(false);
+    });
+
+    return () => {
+      ignore = true;
+    };
+  }, [apiMode, projectId, token]);
+
   const generateProposals = useCallback(async () => {
     if (!apiMode || !token || !projectId) return;
+
+    const creditCost = getFoundationCreditCost(serverCreditCost);
+    if (creditBalance != null && creditBalance < creditCost) {
+      setNotice("Kredit tidak cukup untuk membuat usulan fondasi.");
+      return;
+    }
 
     setGenerating(true);
     setNotice(null);
     try {
-      await generateFoundationProposals(projectId, token, {});
+      const result = await generateFoundationProposals(projectId, token, {
+        idempotencyKey: buildFoundationGenerationIdempotencyKey(),
+      });
       const [proposalRows, readiness] = await Promise.all([
         fetchFoundationProposals(projectId, token, true),
         fetchFoundationReadiness(projectId, token),
@@ -194,12 +263,21 @@ export function useFoundationFlow(): FoundationFlowData {
         ...prev,
         readiness: mapReadinessApiToUi(readiness),
       }));
+      setCreditBalance(result.creditBalance?.balance ?? creditBalance);
+      setNotice(
+        formatCreditSuccessNotice(
+          "Usulan fondasi berhasil dibuat",
+          result.creditCost,
+          result.creditBalance?.balance ?? creditBalance,
+          result.idempotentReplay,
+        ),
+      );
     } catch (error) {
       setNotice(aiGenerationFailureNotice(error, "Gagal membuat usulan"));
     } finally {
       setGenerating(false);
     }
-  }, [apiMode, projectId, token]);
+  }, [apiMode, creditBalance, projectId, serverCreditCost, token]);
 
   const acceptProposalById = useCallback(
     async (proposalId: string) => {
@@ -307,6 +385,11 @@ export function useFoundationFlow(): FoundationFlowData {
     }
   }, [apiMode, projectId, token]);
 
+  const creditCost = getFoundationCreditCost(serverCreditCost);
+  const creditInsufficient =
+    creditBalance != null && creditBalance < creditCost;
+  const creditCostLabel = formatFoundationCreditCostLabel(serverCreditCost);
+
   return useMemo(
     () => ({
       foundation,
@@ -326,6 +409,12 @@ export function useFoundationFlow(): FoundationFlowData {
       acceptProposalById,
       lockFoundationNow,
       refresh: loadAll,
+      serverCreditCost,
+      creditBalance,
+      creditLoading,
+      creditError,
+      creditCostLabel,
+      creditInsufficient,
     }),
     [
       foundation,
@@ -345,6 +434,12 @@ export function useFoundationFlow(): FoundationFlowData {
       acceptProposalById,
       lockFoundationNow,
       loadAll,
+      serverCreditCost,
+      creditBalance,
+      creditLoading,
+      creditError,
+      creditCostLabel,
+      creditInsufficient,
     ],
   );
 }

@@ -33,6 +33,10 @@ export function FoundationPage() {
     generateNarraProposals,
     acceptProposalById,
     lockFoundationNow,
+    creditCostLabel,
+    creditLoading,
+    creditError,
+    creditInsufficient,
   } = useFoundationFlow();
   const { pageCopy } = foundation;
 
@@ -76,6 +80,10 @@ export function FoundationPage() {
           proposals={proposals}
           generating={generating}
           acceptingId={acceptingId}
+          creditCostLabel={creditCostLabel}
+          creditLoading={creditLoading}
+          creditError={creditError}
+          creditInsufficient={creditInsufficient}
           onGenerate={generateProposals}
           onAccept={acceptProposalById}
         />

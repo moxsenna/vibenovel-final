@@ -16,6 +16,8 @@ const PROSE_REWRITE_CREDIT_COSTS: Record<WriterQualityMode, number> = {
 };
 
 const PUBLISH_COPY_FALLBACK_CREDIT_COST = 400;
+const FOUNDATION_FALLBACK_CREDIT_COST = 2_000;
+const OUTLINE_FALLBACK_CREDIT_COST = 2_500;
 
 function formatCreditNumber(value: number): string {
   return value.toLocaleString("id-ID");
@@ -87,6 +89,38 @@ export function formatPublishCopyCreditCostLabel(
 ): string {
   const cost = getPublishCopyCreditCost(serverCreditCost);
   return `Biaya: ${cost} kredit`;
+}
+
+export function formatFoundationCreditCostLabel(
+  serverCreditCost?: number | null,
+): string {
+  const cost = getFoundationCreditCost(serverCreditCost);
+  return `Biaya: ${formatCreditNumber(cost)} kredit`;
+}
+
+export function formatOutlineCreditCostLabel(
+  serverCreditCost?: number | null,
+): string {
+  const cost = getOutlineCreditCost(serverCreditCost);
+  return `Biaya: ${formatCreditNumber(cost)} kredit`;
+}
+
+export function getFoundationCreditCost(
+  serverCreditCost?: number | null,
+): number {
+  return resolveDisplayedCreditCost(
+    serverCreditCost,
+    FOUNDATION_FALLBACK_CREDIT_COST,
+  );
+}
+
+export function getOutlineCreditCost(
+  serverCreditCost?: number | null,
+): number {
+  return resolveDisplayedCreditCost(
+    serverCreditCost,
+    OUTLINE_FALLBACK_CREDIT_COST,
+  );
 }
 
 export function formatPublishCopyTierCostsLabel(): string {

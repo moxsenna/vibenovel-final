@@ -1,5 +1,6 @@
 import type {
   ChapterOutline,
+  CreditBalance,
   MiniArc,
   OpenLoop,
   OutlinePlan,
@@ -51,6 +52,9 @@ export async function fetchTimeline(
 export interface GenerateOutlineResponse extends OutlineBundleResponse {
   created: boolean;
   regenerated: boolean;
+  creditCost: number;
+  creditBalance: CreditBalance | null;
+  idempotentReplay: boolean;
 }
 
 export interface OutlineWorkflowCheck {
@@ -129,4 +133,12 @@ export async function lockOutline(
     method: "POST",
     token,
   });
+}
+
+export function buildOutlineGenerationIdempotencyKey(): string {
+  const suffix =
+    typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
+      ? crypto.randomUUID()
+      : `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+  return `outline-${suffix}`;
 }

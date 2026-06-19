@@ -47,6 +47,10 @@ export function OutlinePage() {
     approveOutlinePlan,
     lockOutlinePlan,
     saveChapterEdits,
+    creditCostLabel,
+    creditLoading,
+    creditError,
+    creditInsufficient,
   } = useOutlineData();
 
   const { pageCopy } = outline;
@@ -96,6 +100,10 @@ export function OutlinePage() {
         approving={approving}
         locking={locking}
         apiMode={apiMode}
+        creditCostLabel={creditCostLabel}
+        creditLoading={creditLoading}
+        creditError={creditError}
+        creditInsufficient={creditInsufficient}
         onGenerate={generateOutlinePlan}
         onApprove={approveOutlinePlan}
         onLock={lockOutlinePlan}

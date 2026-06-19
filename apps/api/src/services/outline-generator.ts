@@ -817,7 +817,7 @@ export async function generateOutlineDraftWithAi(
   projectId: string,
   snapshot: OutlineCanonSnapshot,
   options: { targetChapterCount: number; seasonLabel?: string; arcSummary?: string },
-): Promise<OutlineGenerationDraft> {
+): Promise<{ draft: OutlineGenerationDraft; creditCost: number }> {
   const f = snapshot.foundation;
   const charLines = snapshot.characters
     .slice(0, 12)
@@ -932,7 +932,7 @@ export async function generateOutlineDraftWithAi(
       correlationId,
     });
 
-    return finalDraft;
+    return { draft: finalDraft, creditCost };
   } catch (err) {
     try {
       await refundCreditsForAttempt(bindings, {

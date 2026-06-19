@@ -1,4 +1,10 @@
-import type { AiProposal, Character, Fact, StoryFoundation } from "@vibenovel/shared";
+import type {
+  AiProposal,
+  Character,
+  CreditBalance,
+  Fact,
+  StoryFoundation,
+} from "@vibenovel/shared";
 import { apiRequest } from "@/lib/api";
 import type { FoundationBundleResponse } from "@/services/foundation";
 
@@ -7,6 +13,15 @@ export interface FoundationProposalsResponse {
 }
 
 export interface GenerateFoundationProposalsResponse {
+  proposals: AiProposal[];
+  created: boolean;
+  batchId: string | null;
+  creditCost: number;
+  creditBalance: CreditBalance | null;
+  idempotentReplay: boolean;
+}
+
+export interface GenerateFoundationNarraProposalsResponse {
   proposals: AiProposal[];
   created: boolean;
   batchId: string | null;
@@ -85,11 +100,19 @@ export async function generateFoundationProposals(
 export async function generateFoundationProposalsFromNarra(
   projectId: string,
   token?: string | null,
-): Promise<GenerateFoundationProposalsResponse> {
-  return apiRequest<GenerateFoundationProposalsResponse>(
+): Promise<GenerateFoundationNarraProposalsResponse> {
+  return apiRequest<GenerateFoundationNarraProposalsResponse>(
     `/api/projects/${projectId}/foundation/proposals/generate-from-narra`,
     { method: "POST", token },
   );
+}
+
+export function buildFoundationGenerationIdempotencyKey(): string {
+  const suffix =
+    typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
+      ? crypto.randomUUID()
+      : `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+  return `foundation-${suffix}`;
 }
 
 export async function fetchFoundationReadiness(

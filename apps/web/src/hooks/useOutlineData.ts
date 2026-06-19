@@ -18,7 +18,14 @@ import type { OutlineAdvancedControlValues, OutlineChapterDraft } from "@/compon
 import { mockOutline } from "@/mocks/outline";
 import type { ChapterOutline, CreatorMode, MiniArc, TimelineEvent } from "@vibenovel/shared";
 import {
+  formatCreditSuccessNotice,
+  formatOutlineCreditCostLabel,
+  getOutlineCreditCost,
+} from "@/services/ai-credit-display";
+import { fetchCreditBalance, fetchCreditEstimate } from "@/services/credits";
+import {
   approveOutline,
+  buildOutlineGenerationIdempotencyKey,
   fetchOutlineBundle,
   fetchTimeline,
   generateOutline,
@@ -83,6 +90,12 @@ export interface OutlineData {
   lockOutlinePlan: () => Promise<void>;
   saveChapterEdits: (chapterId: string) => Promise<void>;
   refresh: () => Promise<void>;
+  serverCreditCost: number | null;
+  creditBalance: number | null;
+  creditLoading: boolean;
+  creditError: string | null;
+  creditCostLabel: string;
+  creditInsufficient: boolean;
 }
 
 export function useOutlineData(): OutlineData {
@@ -117,6 +130,10 @@ export function useOutlineData(): OutlineData {
   const [projectId, setProjectId] = useState<string | null>(null);
   const [drafts, setDrafts] = useState<Record<string, OutlineChapterDraft>>({});
   const [creatorMode, setCreatorMode] = useState<CreatorMode>("simple");
+  const [serverCreditCost, setServerCreditCost] = useState<number | null>(null);
+  const [creditBalance, setCreditBalance] = useState<number | null>(null);
+  const [creditLoading, setCreditLoading] = useState(false);
+  const [creditError, setCreditError] = useState<string | null>(null);
   const [advancedControls, setAdvancedControls] =
     useState<OutlineAdvancedControlValues>(DEFAULT_ADVANCED_CONTROLS);
 
@@ -222,27 +239,97 @@ export function useOutlineData(): OutlineData {
     void loadOutline();
   }, [authLoading, apiMode, loadOutline, useMocks]);
 
+  useEffect(() => {
+    if (!apiMode || !token || !projectId) {
+      setServerCreditCost(null);
+      setCreditBalance(null);
+      setCreditLoading(false);
+      setCreditError(null);
+      return;
+    }
+
+    let ignore = false;
+    setCreditLoading(true);
+    setCreditError(null);
+
+    void Promise.allSettled([
+      fetchCreditEstimate("outline_10_chapters", undefined, token),
+      fetchCreditBalance(token),
+    ]).then(([estimateResult, balanceResult]) => {
+      if (ignore) return;
+
+      if (estimateResult.status === "fulfilled") {
+        setServerCreditCost(estimateResult.value.creditCost);
+      } else {
+        setServerCreditCost(null);
+        setCreditError("Estimasi biaya belum bisa dimuat.");
+      }
+
+      if (balanceResult.status === "fulfilled") {
+        setCreditBalance(balanceResult.value?.balance ?? null);
+      } else {
+        setCreditBalance(null);
+        setCreditError((current) =>
+          current
+            ? `${current} Saldo belum bisa dimuat.`
+            : "Saldo belum bisa dimuat; server tetap memvalidasi saat klik.",
+        );
+      }
+      setCreditLoading(false);
+    });
+
+    return () => {
+      ignore = true;
+    };
+  }, [apiMode, projectId, token]);
+
   const generateOutlinePlan = useCallback(async () => {
     if (!apiMode || !token || !projectId) return;
+
+    const creditCost = getOutlineCreditCost(serverCreditCost);
+    if (creditBalance != null && creditBalance < creditCost) {
+      setWorkflowNotice("Kredit tidak cukup untuk membuat outline.");
+      return;
+    }
 
     setGenerating(true);
     setWorkflowNotice(null);
     try {
       const body =
         creatorMode === "advanced"
-          ? { targetChapterCount: advancedControls.chapterCount }
-          : {};
+          ? {
+              targetChapterCount: advancedControls.chapterCount,
+              idempotencyKey: buildOutlineGenerationIdempotencyKey(),
+            }
+          : { idempotencyKey: buildOutlineGenerationIdempotencyKey() };
       const result = await generateOutline(projectId, token, body);
       applyBundle(projectId, result);
       setSource("api");
       setNotice(null);
-      setWorkflowNotice("Rencana 10 bab berhasil dibuat.");
+      setCreditBalance(result.creditBalance?.balance ?? creditBalance);
+      setWorkflowNotice(
+        formatCreditSuccessNotice(
+          "Rencana 10 bab berhasil dibuat",
+          result.creditCost,
+          result.creditBalance?.balance ?? creditBalance,
+          result.idempotentReplay,
+        ),
+      );
     } catch (error) {
       setWorkflowNotice(aiGenerationFailureNotice(error, "Gagal membuat rencana outline."));
     } finally {
       setGenerating(false);
     }
-  }, [advancedControls.chapterCount, apiMode, applyBundle, creatorMode, projectId, token]);
+  }, [
+    advancedControls.chapterCount,
+    apiMode,
+    applyBundle,
+    creatorMode,
+    creditBalance,
+    projectId,
+    serverCreditCost,
+    token,
+  ]);
 
   const updateAdvancedControl = useCallback(
     <K extends keyof OutlineAdvancedControlValues>(
@@ -386,6 +473,10 @@ export function useOutlineData(): OutlineData {
   const hasApiOutline = source === "api" && apiChapters.length > 0;
   const needsGenerate = apiMode && source === "api" && apiChapters.length === 0;
   const isLocked = outline.pageCopy.planBadge === "Outline Terkunci";
+  const creditCost = getOutlineCreditCost(serverCreditCost);
+  const creditInsufficient =
+    creditBalance != null && creditBalance < creditCost;
+  const creditCostLabel = formatOutlineCreditCostLabel(serverCreditCost);
 
   return useMemo(
     () => ({
@@ -418,6 +509,12 @@ export function useOutlineData(): OutlineData {
       lockOutlinePlan,
       saveChapterEdits,
       refresh: loadOutline,
+      serverCreditCost,
+      creditBalance,
+      creditLoading,
+      creditError,
+      creditCostLabel,
+      creditInsufficient,
     }),
     [
       outline,
@@ -449,6 +546,12 @@ export function useOutlineData(): OutlineData {
       lockOutlinePlan,
       saveChapterEdits,
       loadOutline,
+      serverCreditCost,
+      creditBalance,
+      creditLoading,
+      creditError,
+      creditCostLabel,
+      creditInsufficient,
     ],
   );
 }

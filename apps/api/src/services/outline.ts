@@ -2,6 +2,7 @@ import {
   OUTLINE_PLAN_STATUSES,
   WORKFLOW_PHASES,
   type ChapterOutline,
+  type CreditBalance,
   type MiniArc,
   type OpenLoop,
   type OutlinePlan,
@@ -32,6 +33,7 @@ import {
 } from "./outline-generator.js";
 import { loadOutlineCanonSnapshot } from "./outline-snapshot.js";
 import { getOwnedProjectRow } from "./project.js";
+import { getCreditBalanceForUser } from "./credit.js";
 
 const PLAN_SELECT =
   "id, project_id, status, season_label, arc_summary, retention_summary, target_chapter_count, planning_notes, metadata, locked_at, created_at, updated_at";
@@ -79,6 +81,9 @@ export interface OutlineBundle {
 export interface GenerateOutlineResult extends OutlineBundle {
   created: boolean;
   regenerated: boolean;
+  creditCost: number;
+  creditBalance: CreditBalance | null;
+  idempotentReplay: boolean;
 }
 
 async function fetchOutlinePlanRow(
@@ -515,7 +520,14 @@ export async function generateOutlineForOwner(
     const chapterCount = await countChapterOutlines(bindings, existingPlan.id);
     if (chapterCount > 0) {
       const bundle = await loadOutlineBundleRows(bindings, existingPlan);
-      return { ...bundle, created: false, regenerated: false };
+      return {
+        ...bundle,
+        created: false,
+        regenerated: false,
+        creditCost: 0,
+        creditBalance: await getCreditBalanceForUser(bindings, ownerId),
+        idempotentReplay: false,
+      };
     }
   }
 
@@ -534,24 +546,27 @@ export async function generateOutlineForOwner(
   // Any enabled AI provider follows the paid lifecycle. The deterministic stub
   // remains reserved for explicitly AI-disabled/offline operation.
   const useAi = isAiGenerationEnabled(bindings);
-  const draft = useAi
+  const generated = useAi
     ? await generateOutlineDraftWithAi(bindings, ownerId, projectId, snapshot, {
         targetChapterCount: input.targetChapterCount,
         seasonLabel: input.seasonLabel,
         arcSummary: input.arcSummary,
       })
-    : generateOutlineDraft(snapshot, {
-        targetChapterCount: input.targetChapterCount,
-        seasonLabel: input.seasonLabel,
-        arcSummary: input.arcSummary,
-      });
+    : {
+        draft: generateOutlineDraft(snapshot, {
+          targetChapterCount: input.targetChapterCount,
+          seasonLabel: input.seasonLabel,
+          arcSummary: input.arcSummary,
+        }),
+        creditCost: 0,
+      };
 
   const planRow = await persistOutlineDraft(
     bindings,
     projectId,
     existingPlan?.id ?? null,
     snapshot,
-    draft,
+    generated.draft,
   );
 
   await maybeAdvanceWorkflowPhase(bindings, ownerId, projectId);
@@ -561,5 +576,8 @@ export async function generateOutlineForOwner(
     ...bundle,
     created: !existingPlan,
     regenerated: Boolean(input.regenerate && existingPlan),
+    creditCost: generated.creditCost,
+    creditBalance: await getCreditBalanceForUser(bindings, ownerId),
+    idempotentReplay: false,
   };
 }

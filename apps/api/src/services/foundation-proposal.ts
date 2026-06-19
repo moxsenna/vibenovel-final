@@ -8,6 +8,7 @@ import {
   WRITER_QUALITY_MODES,
   type AiProposalRiskLevel,
   type AiProposalType,
+  type CreditBalance,
   type JsonObject,
 } from "@vibenovel/shared";
 import { isAiGenerationEnabled, type AppBindings } from "../env.js";
@@ -40,6 +41,7 @@ import { generateCorrelationId } from "./audit-snapshot.js";
 import { computePromptHashFromMessages } from "./prose-generation-prompt.js";
 import { listIntakeMessagesForOwner } from "./intake.js";
 import { assertPlanningOutputSpecificToProject } from "./planning-output-specificity.js";
+import { getCreditBalanceForUser } from "./credit.js";
 
 const PROPOSAL_SELECT =
   "id, project_id, proposal_type, status, risk_level, source, title, payload, review_note, reviewed_at, reviewed_by, merged_into_id, result_fact_id, result_character_id, created_at, updated_at";
@@ -634,7 +636,7 @@ async function generateFoundationDraftsWithAi(
   ownerId: string,
   projectId: string,
   ctx: GenerationContext,
-): Promise<ProposalDraft[]> {
+): Promise<{ drafts: ProposalDraft[]; creditCost: number }> {
   const { messages } = await listIntakeMessagesForOwner(bindings, ownerId, projectId);
   const intakeText = messages
     .filter((m) => m.role === "user")
@@ -749,7 +751,7 @@ async function generateFoundationDraftsWithAi(
       correlationId,
     });
 
-    return drafts;
+    return { drafts, creditCost };
   } catch (err) {
     try {
       await refundCreditsForAttempt(bindings, {
@@ -783,7 +785,14 @@ export async function generateFoundationProposalsForOwner(
   ownerId: string,
   projectId: string,
   body: Record<string, unknown>,
-): Promise<{ proposals: AiProposalResponse[]; created: boolean; batchId: string | null }> {
+): Promise<{
+  proposals: AiProposalResponse[];
+  created: boolean;
+  batchId: string | null;
+  creditCost: number;
+  creditBalance: CreditBalance | null;
+  idempotentReplay: boolean;
+}> {
   const regenerate =
     body.regenerate === true ||
     (typeof body.regenerate === "string" && body.regenerate === "true");
@@ -804,6 +813,9 @@ export async function generateFoundationProposalsForOwner(
       proposals: existingProposed.map(mapAiProposalResponse),
       created: false,
       batchId,
+      creditCost: 0,
+      creditBalance: await getCreditBalanceForUser(bindings, ownerId),
+      idempotentReplay: false,
     };
   }
 
@@ -850,13 +862,24 @@ export async function generateFoundationProposalsForOwner(
   // Any enabled AI provider follows the paid lifecycle. The deterministic stub
   // is reserved for explicitly AI-disabled/offline operation.
   const useAi = isAiGenerationEnabled(bindings);
-  const drafts = useAi
+  const generated = useAi
     ? await generateFoundationDraftsWithAi(bindings, ownerId, projectId, genCtx)
-    : buildProposalDrafts(genCtx);
+    : { drafts: buildProposalDrafts(genCtx), creditCost: 0 };
 
-  const proposals = await insertProposalDrafts(bindings, projectId, drafts);
+  const proposals = await insertProposalDrafts(
+    bindings,
+    projectId,
+    generated.drafts,
+  );
 
-  return { proposals, created: true, batchId };
+  return {
+    proposals,
+    created: true,
+    batchId,
+    creditCost: generated.creditCost,
+    creditBalance: await getCreditBalanceForUser(bindings, ownerId),
+    idempotentReplay: false,
+  };
 }
 
 export async function listFoundationProposalsForOwner(
