@@ -79,6 +79,16 @@ assert.match(
   hookFallbackSource,
   /Kredit tidak terpakai atau sudah dikembalikan otomatis\./,
 );
+assert.match(
+  hookFallbackSource,
+  /AI_PROVIDER_ERROR[\s\S]*Layanan AI sedang tidak tersedia/,
+  "provider errors must map to safe user-facing copy",
+);
+assert.doesNotMatch(
+  hookFallbackSource,
+  /\$\{prefix\}\s*\(\$\{error\.message\}\)/,
+  "AI generation failure copy must not expose raw API diagnostics",
+);
 
 const publishHookSource = readFileSync(
   new URL("../src/hooks/usePublishData.ts", import.meta.url),
