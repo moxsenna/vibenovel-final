@@ -11,9 +11,10 @@
 **Decision:** **GO for local engineering closure; NO-GO for hosted rollout**
 
 Hosted rollout remains blocked until staging credentials are available and the
-founder explicitly approves production mutation. No staging or production
-database, deployment, balance, ledger, or payment mutation was performed during
-this closure.
+founder explicitly approves production deployment/mutation. Read-only
+production preflight found migration 00021 already applied before this closure.
+No staging or production database, deployment, balance, ledger, or payment
+mutation was performed during this closure.
 
 ## 1. Implementation commits
 
@@ -39,6 +40,8 @@ implementation plan are reviewed.
 | `npm run verify:openrouter-models -w @vibenovel/api` | 0 | 11 active verified; 2 incompatible rejected |
 | `npm run operator:credit-v2:migrations -- -Environment local` | 0 | `PASS_ALREADY_APPLIED` |
 | Staging operator preflight | 2 (blocked) | Missing hosted migration credentials; no mutation |
+| `npm run operator:credit-v2:migrations -- -Environment production` | 0 | `PASS_ALREADY_APPLIED`; payment OFF |
+| `npm run deploy:api:production:dry-run` | 0 | production Worker bundle and bindings validated |
 | Browser plugin QA against local Node API, local Supabase, and mock AI provider | n/a | PASS after one leak fix |
 
 The final launch-gate run passed:
@@ -150,7 +153,11 @@ Full catalog evidence:
 |---|---|---|
 | Local | PASS | migrations 00017-00021 applied; products and FK integrity pass |
 | Staging | BLOCKED | `SUPABASE_ACCESS_TOKEN` and `SUPABASE_DB_PASSWORD` unavailable |
-| Production | NOT RUN | read-only preflight belongs to Task 8; mutation requires founder approval |
+| Production | `PASS_ALREADY_APPLIED` | read-only preflight found 00017-00021 applied; products/FKs pass; payment OFF |
+
+The production result describes remote state discovered by a dry-run. This
+closure did not apply the migration. Deployment of the closure commit remains
+pending explicit approval.
 
 Local active products were verified:
 
@@ -183,7 +190,8 @@ Known residual risks:
 
 1. Staging migration/deployment smoke cannot run without hosted Supabase
    credentials.
-2. Production migration and deployment have not been applied.
+2. Production migration 00021 is already present, but the closure commit has
+   not been deployed or smoke-tested on hosted infrastructure.
 3. No paid live OpenRouter generation sweep was run; catalog compatibility and
    deterministic mock integration are the current evidence.
 4. Lint has 44 pre-existing warnings, but zero errors.
@@ -194,5 +202,5 @@ Decision:
 
 - **GO** — implementation, local migration, billing lifecycle, UI transparency,
   routing verification, rollback controls, and local launch gate.
-- **NO-GO** — staging/production rollout until hosted preflight succeeds and the
-  founder supplies explicit approval for mutation.
+- **NO-GO** — deploying the closure commit until staging evidence is available
+  and the founder supplies explicit approval for hosted mutation.

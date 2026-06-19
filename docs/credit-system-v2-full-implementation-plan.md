@@ -1,6 +1,6 @@
 # Narraza Credit System v2 — Full Implementation Plan
 
-**Status:** Implemented and verified locally on 2026-06-19. Hosted staging is blocked on credentials; production migration/deploy is not applied; public payment remains OFF.
+**Status:** Implemented and verified locally on 2026-06-19. Hosted staging is blocked on credentials; production migration 00021 was already applied before this closure, but the closure commit is not deployed; public payment remains OFF.
 **Source of truth (product):** [docs/narraza-final-credit-system-agent-spec.md](narraza-final-credit-system-agent-spec.md)
 **Baseline audit verdict:** `PARTIAL GO`
 **Closure verdict:** `GO` for local engineering closure; `NO-GO` for hosted rollout pending staging evidence and explicit founder approval.
@@ -1006,7 +1006,7 @@ Hosted rollout acceptance remains open:
 
 - [ ] Apply and verify migration 00021 on staging.
 - [ ] Deploy and smoke the same closure commit on staging.
-- [ ] Run production read-only preflight.
+- [x] Run production read-only preflight: migrations 00017-00021 already applied, product/FK integrity PASS, payment OFF; API production dry-run PASS.
 - [ ] Obtain explicit founder approval before any production mutation.
 - [ ] Apply/deploy/verify production while keeping payment OFF.
 
