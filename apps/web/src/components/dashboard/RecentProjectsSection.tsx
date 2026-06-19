@@ -13,11 +13,17 @@ export interface RecentProjectsSectionProps {
   /** Legacy: static card list (mock-only paths). */
   projects?: DashboardRecentProject[];
   browse?: ProjectBrowseResult;
+  onEditTitle?: (projectId: string, title: string) => void;
+  onDeleteProject?: (projectId: string, title: string) => void;
+  manageActionsDisabled?: boolean;
 }
 
 export function RecentProjectsSection({
   projects: legacyProjects,
   browse,
+  onEditTitle,
+  onDeleteProject,
+  manageActionsDisabled,
 }: RecentProjectsSectionProps) {
   const cards: DashboardRecentProject[] = browse
     ? browse.items.map((p: Project, i) => mapProjectToRecentCard(p, i))
@@ -65,7 +71,13 @@ export function RecentProjectsSection({
       ) : (
         <div className="grid grid-cols-1 gap-lg md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {cards.map((project) => (
-            <RecentProjectCard key={project.id} project={project} />
+            <RecentProjectCard
+              key={project.id}
+              project={project}
+              onEditTitle={onEditTitle}
+              onDeleteProject={onDeleteProject}
+              manageActionsDisabled={manageActionsDisabled}
+            />
           ))}
         </div>
       )}

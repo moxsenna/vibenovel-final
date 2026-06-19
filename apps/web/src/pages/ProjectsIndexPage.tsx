@@ -4,11 +4,17 @@ import { ProjectToolbar } from "@/components/dashboard/ProjectToolbar";
 import { DashboardEmptyState } from "@/components/dashboard/DashboardEmptyState";
 import { mapProjectToRecentCard } from "@/lib/api-mappers";
 import { useProjectBrowse } from "@/hooks/useProjectBrowse";
+import { useProjectManageModals } from "@/hooks/useProjectManageModals";
+import { shouldUseMocks } from "@/lib/env";
 
 export function ProjectsIndexPage() {
-  const browse = useProjectBrowse({ includeArchived: true });
+  const browse = useProjectBrowse({ includeArchived: false });
+  const { openEdit, openDelete, modals } = useProjectManageModals({
+    onChanged: () => browse.refresh(),
+  });
 
   const cards = browse.items.map((p, i) => mapProjectToRecentCard(p, i));
+  const manageDisabled = shouldUseMocks() || browse.isMock;
 
   return (
     <div className="flex w-full flex-col gap-xl">
@@ -42,7 +48,13 @@ export function ProjectsIndexPage() {
       ) : (
         <div className="grid grid-cols-1 gap-lg md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {cards.map((project) => (
-            <RecentProjectCard key={project.id} project={project} />
+            <RecentProjectCard
+              key={project.id}
+              project={project}
+              onEditTitle={openEdit}
+              onDeleteProject={openDelete}
+              manageActionsDisabled={manageDisabled}
+            />
           ))}
         </div>
       )}
@@ -60,6 +72,8 @@ export function ProjectsIndexPage() {
           </Button>
         </div>
       ) : null}
+
+      {modals}
     </div>
   );
 }

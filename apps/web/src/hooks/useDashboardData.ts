@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { ApiClientError } from "@/lib/api";
 import {
@@ -29,6 +29,8 @@ export interface DashboardData {
   loading: boolean;
   notice: string | null;
   isEmpty: boolean;
+  /** Bump to reload projects from API (after rename/delete). */
+  reload: () => void;
 }
 
 export function useDashboardData(): DashboardData {
@@ -36,18 +38,21 @@ export function useDashboardData(): DashboardData {
   const useMocks = shouldUseMocks();
 
   const [activeProject, setActiveProject] = useState<DashboardActiveProject | null>(
-    useMocks ? mockDashboardActiveProject : null
+    useMocks ? mockDashboardActiveProject : null,
   );
   const [recentProjects, setRecentProjects] = useState<DashboardRecentProject[]>(
-    useMocks ? mockDashboardRecentProjects : []
+    useMocks ? mockDashboardRecentProjects : [],
   );
   const [usage, setUsage] = useState<DashboardUsageSummary>(
-    useMocks ? mockDashboardUsage : { label: "Pemakaian AI Bulan Ini", used: 0, total: 0 }
+    useMocks ? mockDashboardUsage : { label: "Pemakaian AI Bulan Ini", used: 0, total: 0 },
   );
   const [source, setSource] = useState<DataSource>(useMocks ? "mock" : "api");
   const [loading, setLoading] = useState(!useMocks);
   const [notice, setNotice] = useState<string | null>(null);
   const [isEmpty, setIsEmpty] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
+
+  const reload = useCallback(() => setReloadKey((k) => k + 1), []);
 
   const token = session?.access_token ?? null;
 
@@ -89,9 +94,9 @@ export function useDashboardData(): DashboardData {
           return;
         }
 
-        const others = projects.filter((p) => p.id !== active.id);
+        const visibleOthers = projects.filter((p) => p.id !== active.id);
         setActiveProject(mapProjectToActiveCard(active));
-        setRecentProjects(others.map((p, i) => mapProjectToRecentCard(p, i)));
+        setRecentProjects(visibleOthers.map((p, i) => mapProjectToRecentCard(p, i)));
         setUsage(mapCreditToUsage(creditBalance));
         setSource("api");
         setIsEmpty(false);
@@ -120,7 +125,7 @@ export function useDashboardData(): DashboardData {
     return () => {
       cancelled = true;
     };
-  }, [authLoading, token, useMocks]);
+  }, [authLoading, token, useMocks, reloadKey]);
 
   return useMemo(
     () => ({
@@ -131,7 +136,8 @@ export function useDashboardData(): DashboardData {
       loading,
       notice,
       isEmpty,
+      reload,
     }),
-    [activeProject, recentProjects, usage, source, loading, notice, isEmpty],
+    [activeProject, recentProjects, usage, source, loading, notice, isEmpty, reload],
   );
 }

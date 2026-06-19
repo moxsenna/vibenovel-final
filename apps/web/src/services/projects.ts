@@ -9,6 +9,10 @@ export interface CreateProjectInput {
   entryPath?: ProjectEntryPath;
 }
 
+export interface UpdateProjectInput {
+  title?: string;
+}
+
 export interface FetchProjectsOptions {
   /** When true, returns all projects for the owner (not only is_active). */
   includeArchived?: boolean;
@@ -74,6 +78,29 @@ export async function createProject(
   return apiRequest<Project>("/api/projects", {
     method: "POST",
     body: input,
+    token,
+  });
+}
+
+export async function updateProject(
+  projectId: string,
+  input: UpdateProjectInput,
+  token?: string | null,
+): Promise<Project> {
+  return apiRequest<Project>(`/api/projects/${projectId}`, {
+    method: "PATCH",
+    body: input,
+    token,
+  });
+}
+
+/** Soft-delete: sets is_active false (hidden from default lists). */
+export async function archiveProject(
+  projectId: string,
+  token?: string | null,
+): Promise<Project> {
+  return apiRequest<Project>(`/api/projects/${projectId}`, {
+    method: "DELETE",
     token,
   });
 }

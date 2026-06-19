@@ -1,9 +1,13 @@
 import { Link } from "react-router-dom";
 import { Badge, Icon } from "@/components/ui";
 import type { DashboardActiveProject, DashboardProgressStep } from "@/mocks/dashboard";
+import { ProjectCardActionsMenu } from "./ProjectCardActionsMenu";
 
 export interface ActiveProjectCardProps {
   project: DashboardActiveProject;
+  onEditTitle?: (projectId: string, title: string) => void;
+  onDeleteProject?: (projectId: string, title: string) => void;
+  manageActionsDisabled?: boolean;
 }
 
 function ProgressStepIcon({ status }: { status: DashboardProgressStep["status"] }) {
@@ -16,9 +20,15 @@ function ProgressStepIcon({ status }: { status: DashboardProgressStep["status"] 
   return <Icon name="radio_button_unchecked" size={18} className="text-muted-text" />;
 }
 
-export function ActiveProjectCard({ project }: ActiveProjectCardProps) {
+export function ActiveProjectCard({
+  project,
+  onEditTitle,
+  onDeleteProject,
+  manageActionsDisabled,
+}: ActiveProjectCardProps) {
   const kicker = project.heroKicker ?? "Lanjutkan";
   const ctaFallback = project.ctaLabel ?? "Buka proyek";
+  const showMenu = Boolean(onEditTitle && onDeleteProject) && !manageActionsDisabled;
 
   return (
     <div className="group relative flex flex-col overflow-hidden rounded-[20px] border border-border bg-surface p-lg shadow-sm lg:col-span-2">
@@ -28,13 +38,12 @@ export function ActiveProjectCard({ project }: ActiveProjectCardProps) {
         <Badge variant="success" icon={<Icon name="edit" size={14} />}>
           {project.statusBadge}
         </Badge>
-        <button
-          type="button"
-          className="rounded-full p-2 text-muted-text transition-colors hover:bg-surface-soft hover:text-on-surface"
-          aria-label="Opsi proyek"
-        >
-          <Icon name="more_horiz" size={20} />
-        </button>
+        {showMenu ? (
+          <ProjectCardActionsMenu
+            onEdit={() => onEditTitle!(project.id, project.title)}
+            onDelete={() => onDeleteProject!(project.id, project.title)}
+          />
+        ) : null}
       </div>
 
       <div className="relative z-10 flex-1">
