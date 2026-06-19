@@ -6,3 +6,5 @@ export { RecentProjectsSection } from "./RecentProjectsSection";
 export { DashboardEmptyState } from "./DashboardEmptyState";
 export { NoActiveProjectCard } from "./NoActiveProjectCard";
 export { WorkflowHint } from "./WorkflowHint";
+export { ProjectToolbar } from "./ProjectToolbar";
+export { ProjectCardActionsMenu } from "./ProjectCardActionsMenu";

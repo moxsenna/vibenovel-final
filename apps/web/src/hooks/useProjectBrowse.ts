@@ -39,6 +39,7 @@ export interface ProjectBrowseResult {
   setSort: (sort: ProjectListSortField) => void;
   setOrder: (order: ProjectListOrder) => void;
   loadMore: () => void;
+  refresh: () => void;
   loading: boolean;
   error: string | null;
   isMock: boolean;
@@ -156,6 +157,10 @@ export function useProjectBrowse(options: UseProjectBrowseOptions = {}): Project
     void load(nextCursor, true);
   }, [load, nextCursor, previewLimit]);
 
+  const refresh = useCallback(() => {
+    void load(null, false);
+  }, [load]);
+
   return useMemo(
     () => ({
       items,
@@ -167,10 +172,11 @@ export function useProjectBrowse(options: UseProjectBrowseOptions = {}): Project
       setSort: (sort: ProjectListSortField) => setState((s) => ({ ...s, sort })),
       setOrder: (order: ProjectListOrder) => setState((s) => ({ ...s, order })),
       loadMore,
+      refresh,
       loading,
       error,
       isMock: useMocks || !token,
     }),
-    [items, total, nextCursor, state, loadMore, loading, error, useMocks, token],
+    [items, total, nextCursor, state, loadMore, refresh, loading, error, useMocks, token],
   );
 }
