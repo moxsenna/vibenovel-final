@@ -18,7 +18,6 @@ import {
 import type { AppBindings } from "../env.js";
 import {
   isAiGenerationEnabled,
-  isAiProviderMock,
 } from "../env.js";
 import {
   mapDetectedSignalRow,
@@ -485,10 +484,9 @@ export async function appendUserMessageForOwner(
     typeof body.entrypoint === "string" ? body.entrypoint : undefined;
   const narraPhase = resolveNarraPhase({ requestedPhase, entrypoint });
   const idempotencyKey = parsePaidActionIdempotencyKey(body.idempotencyKey);
-  const useMock = isAiProviderMock(bindings);
   const aiEnabled = isAiGenerationEnabled(bindings);
 
-  if (aiEnabled && !useMock) {
+  if (aiEnabled) {
     const existing = await getGenerationAttemptByIdempotencyKey(
       bindings,
       ownerId,
@@ -592,7 +590,7 @@ export async function appendUserMessageForOwner(
     .eq("id", sessionRow.id)
     .eq("project_id", projectId);
 
-  if (aiEnabled && !useMock) {
+  if (aiEnabled) {
     const historyMessages = await listMessagesForSession(bindings, projectId, sessionRow.id, RECENT_MESSAGE_LIMIT);
 
     let foundationSummary: string | undefined;

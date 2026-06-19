@@ -13,7 +13,6 @@ import {
 import type { AppBindings } from "../env.js";
 import {
   isAiGenerationEnabled,
-  isAiProviderMock,
 } from "../env.js";
 import {
   mapProjectRow,
@@ -443,10 +442,9 @@ export async function generateConceptsForOwner(
   const idempotencyKey = parsePaidActionIdempotencyKey(body.idempotencyKey);
   const regenerate = assertOptionalBoolean(body.regenerate, "regenerate") ?? false;
   const basedOnSignals = assertOptionalBoolean(body.basedOnSignals, "basedOnSignals") ?? true;
-  const useMock = isAiProviderMock(bindings);
   const aiEnabled = isAiGenerationEnabled(bindings);
 
-  if (aiEnabled && !useMock) {
+  if (aiEnabled) {
     const existing = await getGenerationAttemptByIdempotencyKey(
       bindings,
       ownerId,
@@ -523,7 +521,7 @@ export async function generateConceptsForOwner(
   let concepts: StoryConcept[];
   let chargedCreditCost = 0;
 
-  if (aiEnabled && !useMock) {
+  if (aiEnabled) {
     const { messages } = await listIntakeMessagesForOwner(bindings, ownerId, projectId);
     const userMessages = messages.filter((m) => m.role === "user");
     if (userMessages.length === 0) {

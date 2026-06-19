@@ -1,5 +1,10 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
+import {
+  GENERATION_TYPES,
+  WRITER_QUALITY_MODES,
+} from "@vibenovel/shared";
+import { generateWithMockProvider } from "../src/services/mock-ai-provider.ts";
 
 const intakeSource = readFileSync(
   new URL("../src/services/intake.ts", import.meta.url),
@@ -47,6 +52,11 @@ for (const [label, source] of [
     /creditCost/,
     `${label} must return the successful action cost for UI transparency`,
   );
+  assert.doesNotMatch(
+    source,
+    /aiEnabled\s*&&\s*!useMock/,
+    `${label} must keep mock-provider success inside paid-action orchestration`,
+  );
 }
 
 assert.match(
@@ -58,6 +68,45 @@ assert.match(
   conceptWebSource,
   /idempotencyKey/,
   "concept generation requests must send an idempotency key",
+);
+
+const mockConfig = {
+  provider: "mock" as const,
+  model: "mock/credit-v2-contract",
+  maxOutputTokens: 3_000,
+  timeoutMs: 1_000,
+  temperature: 0.4,
+};
+
+const mockIntake = await generateWithMockProvider(
+  {
+    generationType: GENERATION_TYPES.intake_assistant,
+    qualityMode: WRITER_QUALITY_MODES.hemat,
+    promptHash: "intake-credit-v2-contract",
+  },
+  mockConfig,
+  "success",
+);
+assert.doesNotMatch(
+  mockIntake.text,
+  /^Mock output for /,
+  "mock intake must return a user-facing assistant reply",
+);
+
+const mockConcepts = await generateWithMockProvider(
+  {
+    generationType: GENERATION_TYPES.concept_generation,
+    qualityMode: WRITER_QUALITY_MODES.hemat,
+    promptHash: "concept-credit-v2-contract",
+  },
+  mockConfig,
+  "success",
+);
+const parsedMockConcepts = JSON.parse(mockConcepts.text) as unknown[];
+assert.equal(
+  parsedMockConcepts.length,
+  3,
+  "mock concept generation must return exactly three concepts",
 );
 
 console.log("PASS intake/concept paid-action idempotency contracts");
