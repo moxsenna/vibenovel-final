@@ -16,6 +16,12 @@ import {
   resolveModelForGeneration,
 } from "../src/services/model-router.ts";
 import { getModelCostConfig } from "../src/services/model-cost-map.ts";
+import {
+  REJECTED_OPENROUTER_MODEL_IDS,
+  VERIFIED_OPENROUTER_MODELS,
+  getVerifiedOpenRouterModel,
+  verifyOpenRouterModels,
+} from "../src/services/openrouter-model-verification.ts";
 
 const bindings: AppBindings = {
   AI_GENERATION_ENABLED: "true",
@@ -28,8 +34,8 @@ assert.deepEqual(FIXED_FEATURE_MODELS.intake_chat_reply, {
   fallback: "qwen/qwen3.7-plus",
 });
 assert.deepEqual(PROSE_MODELS.terbaik, {
-  primary: "anthropic/claude-opus-4.8",
-  fallback: "openai/gpt-5.2",
+  primary: "anthropic/claude-opus-4.6",
+  fallback: "google/gemini-3.1-pro-preview",
 });
 
 assert.deepEqual(
@@ -56,6 +62,19 @@ const verifiedModels = new Set(
   ].flatMap(({ primary, fallback }) => [primary, fallback]),
 );
 for (const model of verifiedModels) {
+  const verification = getVerifiedOpenRouterModel(model);
+  assert.ok(verification, `${model} must have a verified catalog record`);
+  assert.equal(verification.catalogMatch, "exact");
+  assert.ok(
+    Number.isFinite(Date.parse(verification.verifiedAt)),
+    `${model} must have a valid verification timestamp`,
+  );
+  assert.ok(verification.canonicalId.length > 0);
+  assert.ok(verification.contextLength > 0);
+  assert.ok(verification.inputUsdPer1M >= 0);
+  assert.ok(verification.outputUsdPer1M >= 0);
+  assert.ok(verification.supportedParameters.includes("max_tokens"));
+  assert.ok(verification.supportedParameters.includes("temperature"));
   assert.equal(MODEL_ALLOWLIST.has(model), true, `${model} must be allowlisted`);
   assert.notEqual(
     getModelCostConfig(model),
@@ -63,20 +82,26 @@ for (const model of verifiedModels) {
     `${model} must have provider pricing telemetry`,
   );
 }
+assert.deepEqual(
+  [...MODEL_ALLOWLIST].sort(),
+  Object.keys(VERIFIED_OPENROUTER_MODELS).sort(),
+  "the runtime allowlist must contain verified OpenRouter models only",
+);
 
-assert.deepEqual(getModelCostConfig("anthropic/claude-opus-4.8"), {
+assert.deepEqual(getModelCostConfig("anthropic/claude-opus-4.6"), {
   inputUsdPer1M: 5,
   outputUsdPer1M: 25,
 });
-assert.deepEqual(getModelCostConfig("openai/gpt-5.2"), {
-  inputUsdPer1M: 1.75,
-  outputUsdPer1M: 14,
+assert.deepEqual(getModelCostConfig("google/gemini-3.1-pro-preview"), {
+  inputUsdPer1M: 2,
+  outputUsdPer1M: 12,
 });
 
 for (const retired of [
   "google/gemma-2-9b-it",
   "google/gemini-flash-latest",
   "anthropic/claude-3.5-sonnet",
+  ...REJECTED_OPENROUTER_MODEL_IDS,
 ]) {
   assert.equal(
     MODEL_ALLOWLIST.has(retired),
@@ -84,6 +109,29 @@ for (const retired of [
     `${retired} must be removed after catalog verification failed`,
   );
 }
+
+const incompatible = verifyOpenRouterModels(
+  ["example/incompatible"],
+  [
+    {
+      id: "example/incompatible",
+      canonical_slug: "example/incompatible-20260619",
+      context_length: 200_000,
+      pricing: { prompt: "0.000001", completion: "0.000002" },
+      supported_parameters: ["max_tokens"],
+    },
+  ],
+  "2026-06-19T00:00:00Z",
+)[0];
+assert.equal(incompatible.status, "INCOMPATIBLE");
+assert.deepEqual(incompatible.missingRequiredParameters, ["temperature"]);
+
+const missing = verifyOpenRouterModels(
+  ["example/missing"],
+  [],
+  "2026-06-19T00:00:00Z",
+)[0];
+assert.equal(missing.status, "MISSING");
 
 assert.equal(
   resolveModelForGeneration(bindings, {
@@ -117,7 +165,7 @@ assert.equal(
   resolveModelForGeneration(
     {
       ...bindings,
-      AI_MODEL_TERBAIK: "anthropic/claude-opus-4.8",
+      AI_MODEL_TERBAIK: "anthropic/claude-opus-4.6",
     },
     {
       generationType: GENERATION_TYPES.publish_copy,

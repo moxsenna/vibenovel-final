@@ -67,8 +67,8 @@ export const PROSE_MODELS = {
     fallback: "mistralai/mistral-large-2512",
   },
   terbaik: {
-    primary: "anthropic/claude-opus-4.8",
-    fallback: "openai/gpt-5.2",
+    primary: "anthropic/claude-opus-4.6",
+    fallback: "google/gemini-3.1-pro-preview",
   },
 } as const satisfies Record<WriterQualityMode, ModelRouteCandidates>;
 

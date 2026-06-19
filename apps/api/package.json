@@ -35,6 +35,7 @@
     "test:atomic-grant-hosted": "tsx scripts/atomic-grant-hosted-staging.test.mts",
     "test:admin-guard": "node scripts/test-admin-guard.mjs",
     "test:credit-v2": "tsx scripts/credit-system-v2-contracts.test.mts",
+    "verify:openrouter-models": "tsx scripts/openrouter-model-verification.mts",
     "test:hosted-atomic-grant-probe": "tsx scripts/probe-hosted-atomic-grant.mts"
   },
   "dependencies": {

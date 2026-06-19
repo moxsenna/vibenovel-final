@@ -31,21 +31,12 @@ import {
   isProseModelRoutingGenerationType,
 } from "./model-routing-v2.js";
 import { callOpenRouterChatCompletion } from "./openrouter-client.js";
+import { VERIFIED_OPENROUTER_MODELS } from "./openrouter-model-verification.js";
 
-/** Hardcoded allowlist — client cannot pass arbitrary model ids. */
-export const MODEL_ALLOWLIST = new Set([
-  "google/gemini-3.1-flash-lite",
-  "qwen/qwen3.7-plus",
-  "minimax/minimax-m3",
-  "deepseek/deepseek-v4-flash",
-  "google/gemini-2.5-flash",
-  "mistralai/mistral-large-2512",
-  "anthropic/claude-opus-4.8",
-  "openai/gpt-5.2",
-  "google/gemma-4-31b-it:free",
-  "openrouter/free",
-  "anthropic/claude-3-haiku",
-]);
+/** Server-owned verified allowlist; clients cannot pass arbitrary model ids. */
+export const MODEL_ALLOWLIST = new Set(
+  Object.keys(VERIFIED_OPENROUTER_MODELS),
+);
 
 const QUALITY_TIMEOUT_MS: Record<WriterQualityMode, number> = {
   [WRITER_QUALITY_MODES.hemat]: 30_000,

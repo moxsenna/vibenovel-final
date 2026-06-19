@@ -1,3 +1,5 @@
+import { VERIFIED_OPENROUTER_MODELS } from "./openrouter-model-verification.js";
+
 /**
  * Internal approximate provider cost map — NOT used for user credit billing.
  * Unknown models return null without throwing. Re-verify pricing when allowlist changes.
@@ -27,69 +29,17 @@ export interface CalculateEstimatedCostResult {
   costModel?: string;
 }
 
-/**
- * Allowlisted model pricing (USD per 1M tokens).
- * Verified 2026-06-08: https://openrouter.ai/google/gemini-2.5-flash
- *   Input $0.30/M, Output $2.50/M
- */
-const MODEL_COST_MAP: Readonly<Record<string, ModelCostConfig>> = {
-  "google/gemini-3.1-flash-lite": {
-    inputUsdPer1M: 0.25,
-    outputUsdPer1M: 1.5,
-  },
-  "qwen/qwen3.7-plus": {
-    inputUsdPer1M: 0.32,
-    outputUsdPer1M: 1.28,
-  },
-  "minimax/minimax-m3": {
-    inputUsdPer1M: 0.3,
-    outputUsdPer1M: 1.2,
-  },
-  "deepseek/deepseek-v4-flash": {
-    inputUsdPer1M: 0.09,
-    outputUsdPer1M: 0.18,
-  },
-  "google/gemini-2.5-flash": {
-    inputUsdPer1M: 0.3,
-    outputUsdPer1M: 2.5,
-  },
-  "mistralai/mistral-large-2512": {
-    inputUsdPer1M: 0.5,
-    outputUsdPer1M: 1.5,
-  },
-  "anthropic/claude-opus-4.8": {
-    inputUsdPer1M: 5,
-    outputUsdPer1M: 25,
-  },
-  "openai/gpt-5.2": {
-    inputUsdPer1M: 1.75,
-    outputUsdPer1M: 14,
-  },
-  "google/gemini-2.5-flash:free": {
-    inputUsdPer1M: 0,
-    outputUsdPer1M: 0,
-  },
-  "google/gemma-4-31b-it:free": {
-    inputUsdPer1M: 0,
-    outputUsdPer1M: 0,
-  },
-  "google/gemma-2-9b-it:free": {
-    inputUsdPer1M: 0,
-    outputUsdPer1M: 0,
-  },
-  "openrouter/free": {
-    inputUsdPer1M: 0,
-    outputUsdPer1M: 0,
-  },
-  "meta-llama/llama-3-8b-instruct:free": {
-    inputUsdPer1M: 0,
-    outputUsdPer1M: 0,
-  },
-  "qwen/qwen-2.5-coder-32b-instruct:free": {
-    inputUsdPer1M: 0,
-    outputUsdPer1M: 0,
-  },
-};
+/** Allowlisted pricing snapshot normalized from the verified OpenRouter catalog. */
+const MODEL_COST_MAP: Readonly<Record<string, ModelCostConfig>> =
+  Object.fromEntries(
+    Object.values(VERIFIED_OPENROUTER_MODELS).map((model) => [
+      model.id,
+      {
+        inputUsdPer1M: model.inputUsdPer1M,
+        outputUsdPer1M: model.outputUsdPer1M,
+      },
+    ]),
+  );
 
 export function getModelCostConfig(model: string): ModelCostConfig | null {
   const trimmed = model.trim();
