@@ -1,12 +1,18 @@
 # Narraza Credit System v2 — Full Implementation Plan
 
-**Status:** Planning only — no code, no migration, no pricing change, no model routing change, no balance change, no payment behavior change.
+**Status:** Implemented and verified locally on 2026-06-19. Hosted staging is blocked on credentials; production migration/deploy is not applied; public payment remains OFF.
 **Source of truth (product):** [docs/narraza-final-credit-system-agent-spec.md](narraza-final-credit-system-agent-spec.md)
 **Baseline audit verdict:** `PARTIAL GO`
+**Closure verdict:** `GO` for local engineering closure; `NO-GO` for hosted rollout pending staging evidence and explicit founder approval.
+**Closure evidence:** [docs/audit/22-credit-system-v2-closure-report-2026-06-19.md](audit/22-credit-system-v2-closure-report-2026-06-19.md)
 **Author role:** Senior full-stack engineer / product architect / billing-safety reviewer / technical planner
 **Date context:** 2026-06-18
 
 > This document is the execution blueprint that a coding agent (or human) follows phase-by-phase. Each phase is independently shippable, independently reversible, and ordered so that price changes never land before the safety scaffolding that protects them.
+>
+> The phase descriptions below preserve the pre-implementation baseline and
+> rationale. Use the closure report for observed commands, commits, Browser QA,
+> migration state, and current GO/NO-GO.
 
 ---
 
@@ -982,19 +988,27 @@ Payment go-live is a separate founder switch AFTER Phase 10.
 
 ## 21. Final Acceptance Criteria
 
-The v2 program is complete when:
+Implementation acceptance as of 2026-06-19:
 
-1. All AI action prices resolve through **one** server function (`getCreditCost`); no authoritative price lives in the frontend or in a feature handler literal.
-2. Every new ledger debit/refund row carries a pricing snapshot (`featureKey`, `qualityMode`, `creditCost`, `creditPricingVersion`, `modelRoutingVersion`, `generationAttemptId`, `idempotencyKey`); historical rows are untouched.
-3. Refunds use the **original** debited amount.
-4. Top-up packages are v2 (20.000 / 55.000 / 130.000 / 300.000); old products retained (`is_active=false` if retired); historical orders intact.
-5. Intake 100, concept generate 1.000 (refinement 150 if built); user message free; refund-on-failure; idempotent.
-6. Prose mode pricing 800/1.500/7.500 (beat) etc.; quality mode affects **prose only**.
-7. Non-prose fixed-priced and **ignores** `qualityMode`; old clients not rejected.
-8. Model routing v2 documented and verified; production allowlist contains only confirmed models; routing decoupled from pricing.
-9. UI shows pre/post/failure credit messaging; no tokens/provider/model exposed; Terbaik warned.
-10. Full billing smoke matrix green; typecheck/API/web smoke pass; **public payment remains off until founder go-live**.
-11. Every phase has a verified rollback; no applied migration was edited; `00021` (and up) used for new migrations.
+- [x] All AI action prices resolve through **one** server function (`getCreditCost`); no authoritative price lives in the frontend or in a feature handler literal.
+- [x] Every new ledger debit/refund row carries a pricing snapshot (`featureKey`, `qualityMode`, `creditCost`, `creditPricingVersion`, `modelRoutingVersion`, `generationAttemptId`, `idempotencyKey`); historical rows are untouched.
+- [x] Refunds use the **original** debited amount.
+- [x] Top-up packages are v2 (20.000 / 55.000 / 130.000 / 300.000); old products are retained and historical-order FK integrity passes locally.
+- [x] Intake 100 and concept generate 1.000 are billed; user messages are free when AI is disabled; failure refund and replay idempotency pass.
+- [x] Prose mode pricing is 800/1.500/7.500 and rewrite is 500/900/4.500; quality mode affects prose only.
+- [x] Non-prose actions are fixed-price and mode-isolated.
+- [x] Model routing v2 is documented and constrained to catalog-verified records; routing remains decoupled from credit pricing.
+- [x] UI shows pre/post/failure credit messaging; Browser QA found no token/provider/model leakage after commit `8ddd246`; Terbaik is warned before spend.
+- [x] The local billing matrix, typecheck, API/web builds, and database-backed launch gate pass; **public payment remains OFF**.
+- [x] Rollback controls exist; no applied migration was edited; migration `00021` is additive and verified locally.
+
+Hosted rollout acceptance remains open:
+
+- [ ] Apply and verify migration 00021 on staging.
+- [ ] Deploy and smoke the same closure commit on staging.
+- [ ] Run production read-only preflight.
+- [ ] Obtain explicit founder approval before any production mutation.
+- [ ] Apply/deploy/verify production while keeping payment OFF.
 
 ---
 
