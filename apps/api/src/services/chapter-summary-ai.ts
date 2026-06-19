@@ -68,7 +68,7 @@ function buildSummarySystemPrompt(): string {
     '  "continuityWarnings": [{ "severity": "info"|"warning"|"critical", "title", "body" }]',
     "}",
     "Base summary ONLY on the provided chapter prose and outline hints.",
-    "Do NOT invent planning_truth, future spoilers beyond the prose, or internal system markers.",
+    "Do NOT invent hidden planning data, future spoilers beyond the prose, or internal system markers.",
     "newFacts are proposals — not canon. Use safe reader-facing language in revealProgress.safeNote.",
   ].join("\n");
 }
@@ -100,7 +100,7 @@ function buildSummaryUserPrompt(snapshot: SummaryGenerationSnapshot): string {
   }
 
   return [
-    "Konteks bab (aman — tanpa planning_truth):",
+    "Konteks bab aman untuk peringkasan:",
     outlineBits,
     "",
     "Naskah bab saat ini:",

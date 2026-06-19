@@ -817,7 +817,15 @@ export async function generateOutlineDraftWithAi(
   projectId: string,
   snapshot: OutlineCanonSnapshot,
   options: { targetChapterCount: number; seasonLabel?: string; arcSummary?: string },
-): Promise<{ draft: OutlineGenerationDraft; creditCost: number }> {
+  idempotencyKey: string,
+  persistDraft: (
+    draft: OutlineGenerationDraft,
+  ) => Promise<{ id: string }>,
+): Promise<{
+  draft: OutlineGenerationDraft;
+  creditCost: number;
+  persisted: { id: string };
+}> {
   const f = snapshot.foundation;
   const charLines = snapshot.characters
     .slice(0, 12)
@@ -846,7 +854,6 @@ export async function generateOutlineDraftWithAi(
   ];
 
   const promptHash = await computePromptHashFromMessages(promptMessages);
-  const idempotencyKey = `outline-generation-${projectId}-${crypto.randomUUID()}`;
   const correlationId = generateCorrelationId();
   const generationType = GENERATION_TYPES.outline_generation;
   const qualityMode = WRITER_QUALITY_MODES.hemat;
@@ -861,7 +868,10 @@ export async function generateOutlineDraftWithAi(
     promptHash,
     correlationId,
     qualityMode,
-    metadata: { task: "13.2" },
+    metadata: {
+      task: "13.2",
+      targetChapterCount: options.targetChapterCount,
+    },
   });
 
   try {
@@ -918,6 +928,7 @@ export async function generateOutlineDraftWithAi(
       seasonLabel: options.seasonLabel?.trim() || draft.seasonLabel,
       arcSummary: options.arcSummary?.trim() || draft.arcSummary,
     };
+    const persisted = await persistDraft(finalDraft);
 
     await markGenerationAttemptSucceeded(bindings, {
       attemptId: attempt.id,
@@ -927,12 +938,16 @@ export async function generateOutlineDraftWithAi(
       model: routerResult.model,
       inputTokens: routerResult.inputTokens,
       outputTokens: routerResult.outputTokens,
-      outputEntityId: "00000000-0000-0000-0000-000000000000",
+      outputEntityId: persisted.id,
       outputEntityType: "outline_plan",
       correlationId,
+      additionalMetadata: {
+        outlinePlanId: persisted.id,
+        targetChapterCount: options.targetChapterCount,
+      },
     });
 
-    return { draft: finalDraft, creditCost };
+    return { draft: finalDraft, creditCost, persisted };
   } catch (err) {
     try {
       await refundCreditsForAttempt(bindings, {

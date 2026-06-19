@@ -3,6 +3,7 @@ import {
   AI_PROPOSAL_SOURCES,
   AI_PROPOSAL_STATUSES,
   AI_PROPOSAL_TYPES,
+  GENERATION_STATUSES,
   GENERATION_TYPES,
   STORY_CONCEPT_STATUSES,
   WRITER_QUALITY_MODES,
@@ -33,6 +34,7 @@ import {
 } from "./credit-ledger.js";
 import {
   createGenerationAttempt,
+  getGenerationAttemptByIdempotencyKey,
   markGenerationAttemptFailed,
   markGenerationAttemptRunning,
   markGenerationAttemptSucceeded,
@@ -42,6 +44,7 @@ import { computePromptHashFromMessages } from "./prose-generation-prompt.js";
 import { listIntakeMessagesForOwner } from "./intake.js";
 import { assertPlanningOutputSpecificToProject } from "./planning-output-specificity.js";
 import { getCreditBalanceForUser } from "./credit.js";
+import { parsePaidActionIdempotencyKey } from "./paid-action-idempotency.js";
 
 const PROPOSAL_SELECT =
   "id, project_id, proposal_type, status, risk_level, source, title, payload, review_note, reviewed_at, reviewed_by, merged_into_id, result_fact_id, result_character_id, created_at, updated_at";
@@ -404,6 +407,17 @@ async function listExistingStubBatch(
   return rows.filter(isFoundationStubBatch);
 }
 
+async function listFoundationRowsForBatch(
+  bindings: AppBindings,
+  projectId: string,
+  batchId: string,
+): Promise<AiProposalRow[]> {
+  const rows = await listFoundationFlowRows(bindings, projectId);
+  return rows.filter(
+    (row) => parsePayload(row.payload).batchId === batchId,
+  );
+}
+
 async function listFoundationReviewRows(
   bindings: AppBindings,
   projectId: string,
@@ -546,6 +560,41 @@ function buildProposalDraftsFromAi(
     });
   }
 
+  const firstSupporting =
+    supporting.find(
+      (raw): raw is Record<string, unknown> =>
+        raw !== null &&
+        typeof raw === "object" &&
+        typeof (raw as Record<string, unknown>).name === "string",
+    ) ?? null;
+  const speechRule =
+    parsed.relationshipSpeechRule &&
+    typeof parsed.relationshipSpeechRule === "object"
+      ? (parsed.relationshipSpeechRule as Record<string, unknown>)
+      : {};
+  const supportingName = firstSupporting ? s(firstSupporting.name) : "";
+  if (supportingName) {
+    drafts.push({
+      proposalType: AI_PROPOSAL_TYPES.relationship_speech_rule,
+      title: `Aturan Bicara - ${protagonistName} & ${supportingName}`,
+      riskLevel: AI_PROPOSAL_RISK_LEVELS.low,
+      payload: {
+        ...baseMeta,
+        relationshipLabel: s(
+          speechRule.relationshipLabel,
+          `${protagonistName} - ${supportingName}`,
+        ),
+        characterAName: s(speechRule.characterAName, protagonistName),
+        characterBName: s(speechRule.characterBName, supportingName),
+        addressTerm: s(speechRule.addressTerm, supportingName),
+        speechStyle: s(
+          speechRule.speechStyle,
+          `${protagonistName} berbicara hangat dan tegas; ${supportingName} menjawab lebih langsung.`,
+        ),
+      },
+    });
+  }
+
   const facts = Array.isArray(parsed.facts) ? parsed.facts.slice(0, 6) : [];
   let factCount = 0;
   for (const raw of facts) {
@@ -623,6 +672,7 @@ const FOUNDATION_AI_SYSTEM_PROMPT =
   '  "tone": "nada emosional",\n' +
   '  "protagonist": { "name": "nama", "description": "1-2 kalimat", "motivation": "motivasi" },\n' +
   '  "supportingCharacters": [ { "name": "nama", "description": "...", "motivation": "..." } ],\n' +
+  '  "relationshipSpeechRule": { "relationshipLabel": "relasi", "characterAName": "nama protagonist", "characterBName": "nama supporting", "addressTerm": "panggilan", "speechStyle": "aturan gaya bicara" },\n' +
   '  "facts": [ { "content": "fakta", "category": "identity|relationship|family|event|motive|location", "importance": "minor|major|core" } ],\n' +
   '  "styleTags": ["tag1", "tag2"],\n' +
   '  "secret": { "summary": "rahasia besar yang ditahan" }\n' +
@@ -636,7 +686,8 @@ async function generateFoundationDraftsWithAi(
   ownerId: string,
   projectId: string,
   ctx: GenerationContext,
-): Promise<{ drafts: ProposalDraft[]; creditCost: number }> {
+  idempotencyKey: string,
+): Promise<{ proposals: AiProposalResponse[]; creditCost: number }> {
   const { messages } = await listIntakeMessagesForOwner(bindings, ownerId, projectId);
   const intakeText = messages
     .filter((m) => m.role === "user")
@@ -662,7 +713,6 @@ async function generateFoundationDraftsWithAi(
   ];
 
   const promptHash = await computePromptHashFromMessages(promptMessages);
-  const idempotencyKey = `foundation-generation-${projectId}-${crypto.randomUUID()}`;
   const correlationId = generateCorrelationId();
   const generationType = GENERATION_TYPES.foundation_proposal;
   const qualityMode = WRITER_QUALITY_MODES.hemat;
@@ -679,6 +729,7 @@ async function generateFoundationDraftsWithAi(
     qualityMode,
     metadata: {
       task: "13.1",
+      batchId: ctx.batchId,
     },
   });
 
@@ -737,6 +788,7 @@ async function generateFoundationDraftsWithAi(
       ctx.batchId,
       ctx.concept.title,
     );
+    const proposals = await insertProposalDrafts(bindings, projectId, drafts);
 
     await markGenerationAttemptSucceeded(bindings, {
       attemptId: attempt.id,
@@ -746,12 +798,17 @@ async function generateFoundationDraftsWithAi(
       model: routerResult.model,
       inputTokens: routerResult.inputTokens,
       outputTokens: routerResult.outputTokens,
-      outputEntityId: "00000000-0000-0000-0000-000000000000",
+      outputEntityId:
+        proposals[0]?.id ?? "00000000-0000-0000-0000-000000000000",
       outputEntityType: "ai_proposal",
       correlationId,
+      additionalMetadata: {
+        batchId: ctx.batchId,
+        proposalIds: proposals.map((proposal) => proposal.id),
+      },
     });
 
-    return { drafts, creditCost };
+    return { proposals, creditCost };
   } catch (err) {
     try {
       await refundCreditsForAttempt(bindings, {
@@ -793,12 +850,69 @@ export async function generateFoundationProposalsForOwner(
   creditBalance: CreditBalance | null;
   idempotentReplay: boolean;
 }> {
+  const aiEnabled = isAiGenerationEnabled(bindings);
+  const idempotencyKey = aiEnabled
+    ? parsePaidActionIdempotencyKey(body.idempotencyKey)
+    : null;
   const regenerate =
     body.regenerate === true ||
     (typeof body.regenerate === "string" && body.regenerate === "true");
 
   const projectRow = await getOwnedProjectRow(bindings, ownerId, projectId);
-  const concept = await loadSelectedConcept(bindings, projectRow);
+
+  if (aiEnabled && idempotencyKey) {
+    const existingAttempt = await getGenerationAttemptByIdempotencyKey(
+      bindings,
+      ownerId,
+      idempotencyKey,
+    );
+    if (existingAttempt?.status === GENERATION_STATUSES.succeeded) {
+      const batchId =
+        typeof existingAttempt.metadata.batchId === "string"
+          ? existingAttempt.metadata.batchId
+          : null;
+      if (!batchId) {
+        throw AppError.internal(
+          "Foundation generation replay metadata is incomplete",
+        );
+      }
+      const replayRows = await listFoundationRowsForBatch(
+        bindings,
+        projectId,
+        batchId,
+      );
+      if (replayRows.length === 0) {
+        throw AppError.internal(
+          "Foundation proposals for replay were not found",
+        );
+      }
+      return {
+        proposals: replayRows.map(mapAiProposalResponse),
+        created: false,
+        batchId,
+        creditCost: existingAttempt.creditCost,
+        creditBalance: await getCreditBalanceForUser(bindings, ownerId),
+        idempotentReplay: true,
+      };
+    }
+    if (
+      existingAttempt?.status === GENERATION_STATUSES.pending ||
+      existingAttempt?.status === GENERATION_STATUSES.running
+    ) {
+      throw new AppError(
+        "GENERATION_IN_PROGRESS",
+        "Foundation generation is already in progress for this idempotency key",
+        409,
+      );
+    }
+    if (existingAttempt?.status === GENERATION_STATUSES.failed) {
+      throw new AppError(
+        "GENERATION_FAILED",
+        "Previous foundation generation failed for this idempotency key",
+        422,
+      );
+    }
+  }
 
   const existingProposed = await listExistingStubBatch(
     bindings,
@@ -818,6 +932,8 @@ export async function generateFoundationProposalsForOwner(
       idempotentReplay: false,
     };
   }
+
+  const concept = await loadSelectedConcept(bindings, projectRow);
 
   const admin = createServiceRoleClient(bindings);
   const now = new Date().toISOString();
@@ -861,19 +977,26 @@ export async function generateFoundationProposalsForOwner(
 
   // Any enabled AI provider follows the paid lifecycle. The deterministic stub
   // is reserved for explicitly AI-disabled/offline operation.
-  const useAi = isAiGenerationEnabled(bindings);
-  const generated = useAi
-    ? await generateFoundationDraftsWithAi(bindings, ownerId, projectId, genCtx)
-    : { drafts: buildProposalDrafts(genCtx), creditCost: 0 };
-
-  const proposals = await insertProposalDrafts(
-    bindings,
-    projectId,
-    generated.drafts,
-  );
+  const generated =
+    aiEnabled && idempotencyKey
+      ? await generateFoundationDraftsWithAi(
+          bindings,
+          ownerId,
+          projectId,
+          genCtx,
+          idempotencyKey,
+        )
+      : {
+          proposals: await insertProposalDrafts(
+            bindings,
+            projectId,
+            buildProposalDrafts(genCtx),
+          ),
+          creditCost: 0,
+        };
 
   return {
-    proposals,
+    proposals: generated.proposals,
     created: true,
     batchId,
     creditCost: generated.creditCost,

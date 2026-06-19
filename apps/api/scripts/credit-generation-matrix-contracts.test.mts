@@ -31,6 +31,51 @@ for (const { file, source } of serviceSources) {
   );
 }
 
+const foundationSource = serviceSources.find(
+  ({ file }) => file === "foundation-proposal.ts",
+)!.source;
+const outlineSource = serviceSources.find(({ file }) => file === "outline.ts")!
+  .source;
+const chapterSummaryAiSource = readFileSync(
+  new URL("../src/services/chapter-summary-ai.ts", import.meta.url),
+  "utf8",
+);
+const summaryPromptBuilderSource =
+  chapterSummaryAiSource.match(
+    /function buildSummarySystemPrompt[\s\S]+?function inferFactRisk/,
+  )?.[0] ?? "";
+assert.doesNotMatch(
+  summaryPromptBuilderSource,
+  /planningTruth|planning_truth|packet_json|packetJson|context_packet|contextPacket|openrouter/i,
+  "chapter summary prompt builders must not contain terms rejected by prompt safety",
+);
+
+for (const [label, source] of [
+  ["foundation", foundationSource],
+  ["outline", outlineSource],
+] as const) {
+  assert.match(
+    source,
+    /parsePaidActionIdempotencyKey/,
+    `${label} generation must require a validated idempotency key for paid AI`,
+  );
+  assert.match(
+    source,
+    /getGenerationAttemptByIdempotencyKey/,
+    `${label} generation must look up prior attempts before charging`,
+  );
+  assert.match(
+    source,
+    /idempotentReplay:\s*true/,
+    `${label} generation must expose successful replay responses`,
+  );
+}
+assert.match(
+  foundationSource,
+  /metadata:\s*\{[\s\S]{0,200}\bbatchId\b/,
+  "foundation attempts must snapshot batchId for replay",
+);
+
 const costMatrix: Array<{
   generationType: GenerationType;
   qualityMode: WriterQualityMode;
@@ -147,6 +192,11 @@ const foundation = JSON.parse(
 assert.equal(typeof foundation.premise, "string");
 assert.equal(typeof foundation.mainConflict, "string");
 assert.equal(typeof foundation.readerPromise, "string");
+assert.ok(
+  foundation.relationshipSpeechRule &&
+    typeof foundation.relationshipSpeechRule === "object",
+  "mock foundation must include a relationship speech rule so relationship-heavy projects can lock",
+);
 assert.match(JSON.stringify(foundation), /mock-foundation:/);
 
 const outlineText = await mockText(GENERATION_TYPES.outline_generation);

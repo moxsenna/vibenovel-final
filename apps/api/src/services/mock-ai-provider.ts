@@ -77,6 +77,14 @@ function buildMockFoundationJson(input: ModelRouterGenerateInput): string {
         motivation: "Menjaga anak-anaknya dari kesalahan masa lalu.",
       },
     ],
+    relationshipSpeechRule: {
+      relationshipLabel: "Kakak dan adik",
+      characterAName: "Laras",
+      characterBName: "Bima",
+      addressTerm: "Dek",
+      speechStyle:
+        "Laras berbicara hangat tetapi tegas saat melindungi Bima, sementara Bima menjawab lebih santai dan langsung.",
+    },
     facts: [
       {
         content: "Laras bekerja sebagai arsiparis dan terbiasa memeriksa dokumen lama.",
@@ -159,6 +167,20 @@ function buildMockOutlineJson(input: ModelRouterGenerateInput): string {
         payoffChapterNumber: Math.max(2, targetChapterCount - 1),
         importance: "core",
       },
+      {
+        question: "Mengapa Ratih menyembunyikan tanggal sebenarnya?",
+        readerFacingHint: "Kalender keluarga memiliki satu halaman yang hilang.",
+        openedChapterNumber: 2,
+        payoffChapterNumber: Math.max(3, targetChapterCount - 2),
+        importance: "major",
+      },
+      {
+        question: "Apa yang akan dilakukan Bima setelah mengetahui kebenaran?",
+        readerFacingHint: "Rencana keberangkatannya mulai berubah.",
+        openedChapterNumber: 3,
+        payoffChapterNumber: targetChapterCount,
+        importance: "major",
+      },
     ],
     plannedReveals: [
       {
@@ -169,6 +191,15 @@ function buildMockOutlineJson(input: ModelRouterGenerateInput): string {
         plannedChapterNumber: Math.max(2, targetChapterCount - 1),
         forbiddenBeforeChapter: Math.max(2, targetChapterCount - 1),
         riskLevel: "high",
+      },
+      {
+        title: "Alasan Ratih bertahan",
+        hiddenTruth:
+          "Ratih menahan kebenaran karena keputusan lama itu pernah menyelamatkan Bima.",
+        readerFacingHint: "Ratih selalu menghindari pembicaraan tentang masa kecil Bima.",
+        plannedChapterNumber: targetChapterCount,
+        forbiddenBeforeChapter: targetChapterCount,
+        riskLevel: "medium",
       },
     ],
     miniArcs: [

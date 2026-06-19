@@ -1,4 +1,5 @@
 import {
+  GENERATION_STATUSES,
   OUTLINE_PLAN_STATUSES,
   WORKFLOW_PHASES,
   type ChapterOutline,
@@ -34,6 +35,10 @@ import {
 import { loadOutlineCanonSnapshot } from "./outline-snapshot.js";
 import { getOwnedProjectRow } from "./project.js";
 import { getCreditBalanceForUser } from "./credit.js";
+import {
+  getGenerationAttemptByIdempotencyKey,
+} from "./generation-attempt.js";
+import { parsePaidActionIdempotencyKey } from "./paid-action-idempotency.js";
 
 const PLAN_SELECT =
   "id, project_id, status, season_label, arc_summary, retention_summary, target_chapter_count, planning_notes, metadata, locked_at, created_at, updated_at";
@@ -188,6 +193,7 @@ function assertGenerateInput(raw: unknown): {
   regenerate: boolean;
   seasonLabel?: string;
   arcSummary?: string;
+  idempotencyKey?: unknown;
 } {
   if (raw === undefined || raw === null) {
     return { targetChapterCount: 10, regenerate: false };
@@ -248,7 +254,13 @@ function assertGenerateInput(raw: unknown): {
           })()
       : undefined;
 
-  return { targetChapterCount, regenerate, seasonLabel, arcSummary };
+  return {
+    targetChapterCount,
+    regenerate,
+    seasonLabel,
+    arcSummary,
+    idempotencyKey: body.idempotencyKey,
+  };
 }
 
 async function deleteOutlineChildren(
@@ -513,6 +525,53 @@ export async function generateOutlineForOwner(
 ): Promise<GenerateOutlineResult> {
   const input = assertGenerateInput(raw);
   await getOwnedProjectRow(bindings, ownerId, projectId);
+  const useAi = isAiGenerationEnabled(bindings);
+  const idempotencyKey = useAi
+    ? parsePaidActionIdempotencyKey(input.idempotencyKey)
+    : null;
+
+  if (useAi && idempotencyKey) {
+    const existingAttempt = await getGenerationAttemptByIdempotencyKey(
+      bindings,
+      ownerId,
+      idempotencyKey,
+    );
+    if (existingAttempt?.status === GENERATION_STATUSES.succeeded) {
+      const replayPlan = await fetchOutlinePlanRow(bindings, projectId);
+      if (
+        !replayPlan ||
+        (existingAttempt.outputEntityId &&
+          existingAttempt.outputEntityId !== replayPlan.id)
+      ) {
+        throw AppError.internal("Outline plan for replay was not found");
+      }
+      return {
+        ...(await loadOutlineBundleRows(bindings, replayPlan)),
+        created: false,
+        regenerated: false,
+        creditCost: existingAttempt.creditCost,
+        creditBalance: await getCreditBalanceForUser(bindings, ownerId),
+        idempotentReplay: true,
+      };
+    }
+    if (
+      existingAttempt?.status === GENERATION_STATUSES.pending ||
+      existingAttempt?.status === GENERATION_STATUSES.running
+    ) {
+      throw new AppError(
+        "GENERATION_IN_PROGRESS",
+        "Outline generation is already in progress for this idempotency key",
+        409,
+      );
+    }
+    if (existingAttempt?.status === GENERATION_STATUSES.failed) {
+      throw new AppError(
+        "GENERATION_FAILED",
+        "Previous outline generation failed for this idempotency key",
+        422,
+      );
+    }
+  }
 
   const existingPlan = await fetchOutlinePlanRow(bindings, projectId);
 
@@ -545,29 +604,45 @@ export async function generateOutlineForOwner(
 
   // Any enabled AI provider follows the paid lifecycle. The deterministic stub
   // remains reserved for explicitly AI-disabled/offline operation.
-  const useAi = isAiGenerationEnabled(bindings);
-  const generated = useAi
-    ? await generateOutlineDraftWithAi(bindings, ownerId, projectId, snapshot, {
+  let planRow: OutlinePlanRow;
+  let creditCost = 0;
+  if (useAi && idempotencyKey) {
+    const generated = await generateOutlineDraftWithAi(
+      bindings,
+      ownerId,
+      projectId,
+      snapshot,
+      {
         targetChapterCount: input.targetChapterCount,
         seasonLabel: input.seasonLabel,
         arcSummary: input.arcSummary,
-      })
-    : {
-        draft: generateOutlineDraft(snapshot, {
-          targetChapterCount: input.targetChapterCount,
-          seasonLabel: input.seasonLabel,
-          arcSummary: input.arcSummary,
-        }),
-        creditCost: 0,
-      };
-
-  const planRow = await persistOutlineDraft(
-    bindings,
-    projectId,
-    existingPlan?.id ?? null,
-    snapshot,
-    generated.draft,
-  );
+      },
+      idempotencyKey,
+      (draft) =>
+        persistOutlineDraft(
+          bindings,
+          projectId,
+          existingPlan?.id ?? null,
+          snapshot,
+          draft,
+        ),
+    );
+    planRow = generated.persisted as OutlinePlanRow;
+    creditCost = generated.creditCost;
+  } else {
+    const draft = generateOutlineDraft(snapshot, {
+      targetChapterCount: input.targetChapterCount,
+      seasonLabel: input.seasonLabel,
+      arcSummary: input.arcSummary,
+    });
+    planRow = await persistOutlineDraft(
+      bindings,
+      projectId,
+      existingPlan?.id ?? null,
+      snapshot,
+      draft,
+    );
+  }
 
   await maybeAdvanceWorkflowPhase(bindings, ownerId, projectId);
 
@@ -576,7 +651,7 @@ export async function generateOutlineForOwner(
     ...bundle,
     created: !existingPlan,
     regenerated: Boolean(input.regenerate && existingPlan),
-    creditCost: generated.creditCost,
+    creditCost,
     creditBalance: await getCreditBalanceForUser(bindings, ownerId),
     idempotentReplay: false,
   };
