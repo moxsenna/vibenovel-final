@@ -15,7 +15,8 @@
     "test:duitku-signature": "tsx scripts/duitku-callback-signature.test.mts",
     "test:atomic-grant": "tsx scripts/atomic-grant-rpc.test.mts",
     "test:atomic-grant-hosted": "tsx scripts/atomic-grant-hosted-staging.test.mts",
-    "test:hosted-atomic-grant-probe": "tsx scripts/probe-hosted-atomic-grant.mts"
+    "test:hosted-atomic-grant-probe": "tsx scripts/probe-hosted-atomic-grant.mts",
+    "test:long-fiction-baseline": "tsx scripts/long-fiction-hardening-baseline.test.mts"
   },
   "dependencies": {
     "@hono/node-server": "^1.13.7",
