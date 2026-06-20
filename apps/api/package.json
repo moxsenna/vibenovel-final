@@ -39,7 +39,8 @@
     "test:hosted-atomic-grant-probe": "tsx scripts/probe-hosted-atomic-grant.mts",
     "test:ai-model-registry": "tsx scripts/ai-model-registry-contracts.test.mts",
     "test:ai-routing-policy": "tsx scripts/ai-routing-policy-contracts.test.mts",
-    "test:ai-provider-transport": "tsx scripts/openai-compatible-provider-contracts.test.mts"
+    "test:ai-provider-transport": "tsx scripts/openai-compatible-provider-contracts.test.mts",
+    "test:generation-provider-events": "npm run build -w @vibenovel/shared && tsx scripts/generation-provider-events-contracts.test.mts"
   },
   "dependencies": {
     "@hono/node-server": "^1.13.7",

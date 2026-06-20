@@ -14,7 +14,7 @@ import { writeAuditLog } from "./audit.js";
 import { generateCorrelationId, sanitizeAuditMetadata } from "./audit-snapshot.js";
 
 const ATTEMPT_SELECT =
-  "id, project_id, user_id, chapter_outline_id, beat_id, writing_session_id, generation_type, status, idempotency_key, provider, model, prompt_hash, context_packet_log_id, input_tokens, output_tokens, estimated_cost_usd, credit_cost, error_code, error_message_safe, output_entity_type, output_entity_id, metadata, created_at, updated_at";
+  "id, project_id, user_id, chapter_outline_id, beat_id, writing_session_id, generation_type, status, idempotency_key, provider, model, logical_model, routing_policy_version, fallback_used, retry_count, provider_latency_ms, prompt_hash, context_packet_log_id, input_tokens, output_tokens, estimated_cost_usd, credit_cost, error_code, error_message_safe, output_entity_type, output_entity_id, metadata, created_at, updated_at";
 
 export interface GenerationAttemptRow {
   id: string;
@@ -28,6 +28,11 @@ export interface GenerationAttemptRow {
   idempotency_key: string;
   provider: string | null;
   model: string | null;
+  logical_model: string | null;
+  routing_policy_version: string | null;
+  fallback_used: boolean;
+  retry_count: number;
+  provider_latency_ms: number | null;
   prompt_hash: string | null;
   context_packet_log_id: string | null;
   input_tokens: number | null;
@@ -91,6 +96,11 @@ export function mapGenerationAttemptRow(row: GenerationAttemptRow): GenerationAt
     idempotencyKey: row.idempotency_key,
     provider: row.provider,
     model: row.model,
+    logicalModel: row.logical_model ?? null,
+    routingPolicyVersion: row.routing_policy_version ?? null,
+    fallbackUsed: row.fallback_used ?? false,
+    retryCount: row.retry_count ?? 0,
+    providerLatencyMs: row.provider_latency_ms ?? null,
     promptHash: row.prompt_hash,
     contextPacketLogId: row.context_packet_log_id,
     inputTokens: row.input_tokens,

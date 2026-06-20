@@ -265,6 +265,11 @@ export interface GenerationAttempt extends Timestamps {
   idempotencyKey: string;
   provider: string | null;
   model: string | null;
+  logicalModel: string | null;
+  routingPolicyVersion: string | null;
+  fallbackUsed: boolean;
+  retryCount: number;
+  providerLatencyMs: number | null;
   promptHash: string | null;
   contextPacketLogId: ID | null;
   inputTokens: number | null;
@@ -276,6 +281,43 @@ export interface GenerationAttempt extends Timestamps {
   outputEntityType: string | null;
   outputEntityId: ID | null;
   metadata: JsonObject;
+}
+
+export type GenerationProviderEventRole = "primary" | "fallback";
+
+export type GenerationProviderEventOutcome =
+  | "succeeded"
+  | "provider_error"
+  | "timeout"
+  | "rate_limited"
+  | "empty_output"
+  | "invalid_output"
+  | "unsafe_output"
+  | "credential_unavailable"
+  | "configuration_error";
+
+/**
+ * Admin-only diagnostics for one attempted provider call or skipped target.
+ * Never carries prompts, outputs, reasoning, raw response bodies, or secrets.
+ */
+export interface GenerationProviderEvent {
+  id: ID;
+  generationAttemptId: ID;
+  sequenceNumber: number;
+  routeRole: GenerationProviderEventRole;
+  provider: string;
+  logicalModel: string;
+  providerModelId: string;
+  retryNumber: number;
+  outcome: GenerationProviderEventOutcome;
+  errorCategory: string | null;
+  errorCodeSafe: string | null;
+  providerHttpStatus: number | null;
+  latencyMs: number | null;
+  inputTokens: number | null;
+  outputTokens: number | null;
+  estimatedCostUsd: number | null;
+  createdAt: ISODateTime;
 }
 
 /**
