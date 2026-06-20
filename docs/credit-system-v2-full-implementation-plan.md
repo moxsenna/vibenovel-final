@@ -1,9 +1,9 @@
 # Narraza Credit System v2 — Full Implementation Plan
 
-**Status:** Implemented and verified locally on 2026-06-19. Hosted staging is blocked on credentials; production migration 00021 was already applied before this closure, but the closure commit is not deployed; public payment remains OFF.
+**Status:** Implemented, verified, and deployed to production on 2026-06-20 from commit `380a2ab`. Production migration 00021 was already applied; public payment remains OFF.
 **Source of truth (product):** [docs/narraza-final-credit-system-agent-spec.md](narraza-final-credit-system-agent-spec.md)
 **Baseline audit verdict:** `PARTIAL GO`
-**Closure verdict:** `GO` for local engineering closure; `NO-GO` for hosted rollout pending staging evidence and explicit founder approval.
+**Closure verdict:** `GO` — API and app are deployed to production; payment remains OFF. Staging remains blocked on credentials.
 **Closure evidence:** [docs/audit/22-credit-system-v2-closure-report-2026-06-19.md](audit/22-credit-system-v2-closure-report-2026-06-19.md)
 **Author role:** Senior full-stack engineer / product architect / billing-safety reviewer / technical planner
 **Date context:** 2026-06-18
@@ -1007,8 +1007,8 @@ Hosted rollout acceptance remains open:
 - [ ] Apply and verify migration 00021 on staging.
 - [ ] Deploy and smoke the same closure commit on staging.
 - [x] Run production read-only preflight: migrations 00017-00021 already applied, product/FK integrity PASS, payment OFF; API production dry-run PASS.
-- [ ] Obtain explicit founder approval before any production mutation.
-- [ ] Apply/deploy/verify production while keeping payment OFF.
+- [x] Obtain explicit founder approval before production deployment.
+- [x] Deploy and verify production while keeping payment OFF: Worker version `0225cab5-69ce-4d2d-87af-82690ead56d2`; Pages `d3195bd4`; custom domain HTTP 200.
 
 ---
 

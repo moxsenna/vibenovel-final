@@ -8,13 +8,13 @@
 
 **Payment status:** OFF
 
-**Decision:** **GO for local engineering closure; NO-GO for hosted rollout**
+**Decision:** **Production deployed on 2026-06-20; payment remains OFF**
 
-Hosted rollout remains blocked until staging credentials are available and the
-founder explicitly approves production deployment/mutation. Read-only
-production preflight found migration 00021 already applied before this closure.
-No staging or production database, deployment, balance, ledger, or payment
-mutation was performed during this closure.
+The initial 2026-06-19 closure stopped before hosted mutation. On 2026-06-20 the
+founder explicitly requested a direct production deploy. Production migration
+00021 was already applied before the deploy; API and web were deployed from
+commit `380a2ab` while public payment remained OFF. Staging remains blocked on
+credentials and was not mutated.
 
 ## 1. Implementation commits
 
@@ -202,5 +202,45 @@ Decision:
 
 - **GO** — implementation, local migration, billing lifecycle, UI transparency,
   routing verification, rollback controls, and local launch gate.
-- **NO-GO** — deploying the closure commit until staging evidence is available
-  and the founder supplies explicit approval for hosted mutation.
+- **NO-GO** — hosted mutation without founder approval.
+
+## 9. Production deployment update — 2026-06-20
+
+The founder explicitly directed a direct production deploy. To avoid regressing
+the production edit/delete-project UI, commit `d4c5818` was integrated on top
+of the closure branch. The resulting deploy commit was:
+
+`380a2abaec10efb250b3e7427f367215e50dabf0`
+
+Fresh verification on that exact commit:
+
+- Credit System v2 launch gate: PASS;
+- database-backed smoke: 26 PASS;
+- typecheck/build/contracts: PASS;
+- lint: 0 errors, 44 pre-existing warnings;
+- production migration preflight: `00017`–`00021` already applied;
+- product and historical-order FK integrity: PASS;
+- payment flag: OFF.
+
+Deployment evidence:
+
+| Target | Result |
+|---|---|
+| API Worker | version `0225cab5-69ce-4d2d-87af-82690ead56d2` |
+| Pages production | `https://d3195bd4.narraza-web-production.pages.dev` |
+| App custom domain | `https://app.narraza.web.id`, HTTP 200 |
+| Production JS bundle | `assets/index-QBI3mufT.js` on preview and custom domain |
+
+Post-deploy health returned `appEnv=production`, AI enabled, OpenRouter secret
+available, and `creditTopupEnabled=false`.
+
+Current decision:
+
+- **GO** — Credit System v2 API and app deployment is live in production.
+- **Payment remains OFF** — checkout cannot start while
+  `creditTopupEnabled=false`.
+- **Residual verification** — no paid OpenRouter generation or authenticated
+  production debit/refund smoke was run during deployment.
+
+Detailed deployment evidence:
+[23-credit-v2-production-deploy-2026-06-20.md](23-credit-v2-production-deploy-2026-06-20.md).
