@@ -44,6 +44,9 @@ explains the observed production behavior.
 - No cross-browser-tab synchronization.
 - No automatic polling.
 - No balance animation redesign.
+- No new balance label in Foundation or Outline action panels. Those surfaces
+  keep their current cost and success-notice UI; the shared header is the
+  balance display for those routes.
 - No live paid OpenRouter smoke as part of implementation.
 
 ## 4. Considered approaches
@@ -259,12 +262,17 @@ response balance is absent or the action fails:
 - `useConceptsData`
 - `useFoundationFlow`
 - `useOutlineData`
-- `useWriteRoomData` for prose and rewrite
+- `useWriteRoomData` for beat generation, prose, and rewrite
+- `useSummaryData` for summary generation and delta extraction
 - `usePublishData`
 
 Feature-local balance state is removed from Foundation, Outline, Write, and
 Publish. Their panels read Context directly. Estimate state remains local
 because estimates are feature-specific, not global credit state.
+
+Beat generation, summary generation, delta extraction, and Narra foundation
+proposal generation currently do not return a complete `creditBalance` response.
+Those successful paths therefore call `refresh()` after the mutation.
 
 ### Dashboard
 
@@ -343,14 +351,18 @@ Use Playwright API mocks to prove:
 
 1. Header starts at 10,000.
 2. Foundation success returns 8,000.
-3. Header and Foundation panel show 8,000 without reload.
+3. Header shows 8,000 without reload, while the existing Foundation success
+   notice reports the same remaining balance.
 4. Outline success returns 5,500.
-5. Header and Outline panel show 5,500 without reload.
+5. Header shows 5,500 without reload, while the existing Outline success
+   notice reports the same remaining balance.
 6. Prose and Rewrite update the same header state.
-7. Publish success updates header and Publish panel.
-8. A success response without `creditBalance` triggers one balance refetch.
-9. A provider failure triggers balance refresh and keeps the refunded amount.
-10. Logout clears the global balance.
+7. Beat generation triggers one balance refetch.
+8. Summary and delta generation trigger balance refetches.
+9. Publish success updates header and Publish panel.
+10. A success response without `creditBalance` triggers one balance refetch.
+11. A provider failure triggers balance refresh and keeps the refunded amount.
+12. Logout clears the global balance.
 
 ## 12. Rollout and rollback
 
@@ -373,7 +385,10 @@ Rollback:
 
 - Header credit changes immediately after every paid AI success without reload.
 - Header shows the refunded/final balance after a failed paid AI action.
-- AI panels, Dashboard, Settings, Top-up, and Top-up Return share one balance.
+- Existing balance displays in Writer, Publish, Dashboard, Settings, Top-up,
+  and Top-up Return share one balance.
+- Foundation and Outline keep their existing cost/success UI; this change does
+  not add a second balance display to those panels.
 - No migrated surface calls `fetchCreditBalance` independently.
 - No client-side optimistic debit arithmetic determines authoritative balance.
 - A stale GET cannot overwrite a newer mutation balance.
