@@ -14,9 +14,11 @@ import {
   summarizeDraftContent,
 } from "../src/services/draft-import.ts";
 import {
+  buildDraftImportSignalExtractionRouterInput,
   extractDraftImportSignalsAiFirst,
   parseDraftImportSignalExtractionOutput,
 } from "../src/services/import/signal-extraction-ai.ts";
+import { createProviderEventSequence } from "../src/services/generation-provider-event.ts";
 
 const draftText = `
 Nadira menatap dapur mertuanya yang sempit. Suaminya pulang bersama perempuan lain,
@@ -252,22 +254,32 @@ const staleRomcomFallback = [
 
 const aiFirstResult = await extractDraftImportSignalsAiFirst({
   bindings: { AI_PROVIDER_MOCK: "false", AI_GENERATION_ENABLED: "true" } as AppBindings,
-  content: domesticDramaDraftText,
   fallbackSignals: staleRomcomFallback,
-  generate: async (input: ModelRouterGenerateInput): Promise<ModelRouterGenerateResult> => {
+  generationAttemptId: "11111111-1111-1111-1111-111111111111",
+  providerEventSequence: createProviderEventSequence(),
+  routerInput: await buildDraftImportSignalExtractionRouterInput(
+    domesticDramaDraftText,
+  ),
+  generate: async (input) => {
     assert.equal(input.generationType, GENERATION_TYPES.draft_import_signal_extraction);
     assert.equal(input.qualityMode, WRITER_QUALITY_MODES.hemat);
     assert.equal(input.temperature, 0.1);
     assert.ok(input.promptMessages?.some((message) => /JSON/i.test(message.content)));
     return {
       text: aiExtractionText,
+      output: [],
       provider: "openrouter",
+      logicalModel: "deepseek_flash",
       model: "google/gemini-2.5-flash:free",
       inputTokens: 300,
       outputTokens: 120,
       latencyMs: 42,
       finishReason: "stop",
       promptHash: input.promptHash,
+      routingPolicyVersion: "v3",
+      fallbackUsed: false,
+      retryCount: 0,
+      estimatedCostUsd: 0,
     };
   },
 });
@@ -280,8 +292,12 @@ assert.equal(
 
 const fallbackAfterAiError = await extractDraftImportSignalsAiFirst({
   bindings: { AI_PROVIDER_MOCK: "false", AI_GENERATION_ENABLED: "true" } as AppBindings,
-  content: domesticDramaDraftText,
   fallbackSignals: domesticSignals,
+  generationAttemptId: "22222222-2222-2222-2222-222222222222",
+  providerEventSequence: createProviderEventSequence(),
+  routerInput: await buildDraftImportSignalExtractionRouterInput(
+    domesticDramaDraftText,
+  ),
   generate: async () => {
     throw new AppError("AI_PROVIDER_ERROR", "simulated model failure", 502);
   },

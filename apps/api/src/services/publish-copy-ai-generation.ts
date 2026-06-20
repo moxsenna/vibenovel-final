@@ -49,6 +49,7 @@ import {
   type GenerationAttemptCostEstimateMetadata,
   type GenerationAttemptSafeSummary,
 } from "./generation-attempt.js";
+import { assertGenerationRouteCallable } from "./model-router.js";
 import { generateValidatedAiOutputWithSafeRepair } from "./prose-output-safe-repair.js";
 
 const PACKAGE_SELECT =
@@ -520,6 +521,11 @@ export async function improvePublishCopyForOwner(
     projectId,
     generationType,
     requestedCreditCost: creditCost,
+  });
+
+  assertGenerationRouteCallable(bindings, {
+    generationType,
+    qualityMode: effectiveQualityMode,
   });
 
   const correlationId = generateCorrelationId();

@@ -23,7 +23,11 @@ import {
 import { createServiceRoleClient } from "../lib/supabase.js";
 import { AppError } from "../errors.js";
 import { getOwnedProjectRow } from "./project.js";
-import { generateWithModelRouter } from "./model-router.js";
+import {
+  assertGenerationRouteCallable,
+  generateWithModelRouter,
+} from "./model-router.js";
+import { createProviderEventSequence } from "./generation-provider-event.js";
 import { getCreditCostForGeneration } from "./ai-credit-policy.js";
 import {
   CREDIT_LEDGER_REASONS,
@@ -666,6 +670,8 @@ async function generateFoundationDraftsWithAi(
   const qualityMode = WRITER_QUALITY_MODES.hemat;
   const creditCost = getCreditCostForGeneration({ generationType, qualityMode });
 
+  assertGenerationRouteCallable(bindings, { generationType, qualityMode });
+
   let attempt = await createGenerationAttempt(bindings, {
     projectId,
     userId: ownerId,
@@ -679,6 +685,7 @@ async function generateFoundationDraftsWithAi(
       task: "13.1",
     },
   });
+  const providerEventSequence = createProviderEventSequence();
 
   try {
     await debitCreditsForAttempt(bindings, {
@@ -708,27 +715,41 @@ async function generateFoundationDraftsWithAi(
 
   try {
     const routerResult = await generateWithModelRouter(bindings, {
+      generationAttemptId: attempt.id,
+      providerEventSequence,
       generationType,
       qualityMode,
       promptHash,
       promptMessages,
       temperature: 0.4,
+      validateOutput: (text) => {
+        let parsedOutput: unknown;
+        try {
+          parsedOutput = JSON.parse(stripJsonFences(text));
+        } catch {
+          throw new AppError(
+            "GENERATION_FAILED",
+            "AI mengembalikan format fondasi yang tidak valid. Coba lagi.",
+            502,
+          );
+        }
+        if (
+          !parsedOutput ||
+          typeof parsedOutput !== "object" ||
+          Array.isArray(parsedOutput)
+        ) {
+          throw new AppError(
+            "GENERATION_FAILED",
+            "AI tidak mengembalikan fondasi yang valid. Coba lagi.",
+            502,
+          );
+        }
+        assertPlanningOutputSpecificToProject(parsedOutput, "fondasi");
+        return parsedOutput as Record<string, unknown>;
+      },
     });
 
-    let parsed: unknown;
-    try {
-      parsed = JSON.parse(stripJsonFences(routerResult.text));
-    } catch {
-      throw new AppError(
-        "GENERATION_FAILED",
-        "AI mengembalikan format fondasi yang tidak valid. Coba lagi.",
-        502,
-      );
-    }
-    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
-      throw new AppError("GENERATION_FAILED", "AI tidak mengembalikan fondasi yang valid. Coba lagi.", 502);
-    }
-    assertPlanningOutputSpecificToProject(parsed, "fondasi");
+    const parsed = routerResult.output;
 
     const drafts = buildProposalDraftsFromAi(
       parsed as Record<string, unknown>,
@@ -742,6 +763,12 @@ async function generateFoundationDraftsWithAi(
       projectId,
       provider: routerResult.provider,
       model: routerResult.model,
+      logicalModel: routerResult.logicalModel,
+      routingPolicyVersion: routerResult.routingPolicyVersion,
+      fallbackUsed: routerResult.fallbackUsed,
+      retryCount: routerResult.retryCount,
+      providerLatencyMs: routerResult.latencyMs,
+      estimatedCostUsd: routerResult.estimatedCostUsd,
       inputTokens: routerResult.inputTokens,
       outputTokens: routerResult.outputTokens,
       outputEntityId: "00000000-0000-0000-0000-000000000000",

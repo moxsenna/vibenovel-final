@@ -1,7 +1,17 @@
+import { GENERATION_TYPES, WRITER_QUALITY_MODES } from "@vibenovel/shared";
 import { AppError } from "../errors.js";
 import type { AppBindings } from "../env.js";
 import { createServiceRoleClient } from "../lib/supabase.js";
 import { writeAuditLog } from "./audit.js";
+import { generateCorrelationId } from "./audit-snapshot.js";
+import {
+  createGenerationAttempt,
+  markGenerationAttemptFailed,
+  markGenerationAttemptRunning,
+  markGenerationAttemptSucceeded,
+} from "./generation-attempt.js";
+import { assertGenerationRouteCallable } from "./model-router.js";
+import { createProviderEventSequence } from "./generation-provider-event.js";
 import {
   buildDraftImportAiProposalRows,
   buildDraftImportProposalDrafts,
@@ -11,7 +21,10 @@ import {
   buildAuthorVoiceProposalDraft,
   extractAuthorVoiceFromDraft,
 } from "./import/style-extraction.js";
-import { extractDraftImportSignalsAiFirst } from "./import/signal-extraction-ai.js";
+import {
+  buildDraftImportSignalExtractionRouterInput,
+  extractDraftImportSignalsAiFirst,
+} from "./import/signal-extraction-ai.js";
 import { materializeDraftImportFoundationSeedForOwner } from "./import/foundation-seed.js";
 import { getOwnedProjectRow } from "./project.js";
 import { assertProposalPayloadSafe } from "./summary-safety.js";
@@ -789,11 +802,67 @@ export async function extractDraftImportSignalsForOwner(
 ): Promise<{ draftImport: DraftImportSummary; signals: DraftImportSignal[] }> {
   const row = await getOwnedDraftImportRow(bindings, ownerId, projectId, draftImportId);
   const fallbackSignalDrafts = extractDraftImportSignalsFromText(row.content_text);
+
+  const generationType = GENERATION_TYPES.draft_import_signal_extraction;
+  const qualityMode = WRITER_QUALITY_MODES.hemat;
+  assertGenerationRouteCallable(bindings, { generationType, qualityMode });
+  const routerInput = await buildDraftImportSignalExtractionRouterInput(
+    row.content_text,
+  );
+  const correlationId = generateCorrelationId();
+  let signalAttempt = await createGenerationAttempt(bindings, {
+    projectId,
+    userId: ownerId,
+    generationType,
+    idempotencyKey: `draft-import-signals-${draftImportId}-${crypto.randomUUID()}`,
+    creditCost: 0,
+    promptHash: routerInput.promptHash,
+    correlationId,
+    qualityMode,
+    metadata: { draftImportId, task: "draft_import_signal_extraction" },
+  });
+  signalAttempt = await markGenerationAttemptRunning(bindings, signalAttempt.id);
+  const providerEventSequence = createProviderEventSequence();
+
   const extraction = await extractDraftImportSignalsAiFirst({
     bindings,
-    content: row.content_text,
     fallbackSignals: fallbackSignalDrafts,
+    generationAttemptId: signalAttempt.id,
+    providerEventSequence,
+    routerInput,
   });
+
+  if (extraction.extractionMode === "ai" && extraction.providerResult) {
+    const pr = extraction.providerResult;
+    await markGenerationAttemptSucceeded(bindings, {
+      attemptId: signalAttempt.id,
+      userId: ownerId,
+      projectId,
+      provider: pr.provider,
+      model: pr.model,
+      logicalModel: pr.logicalModel,
+      routingPolicyVersion: pr.routingPolicyVersion,
+      fallbackUsed: pr.fallbackUsed,
+      retryCount: pr.retryCount,
+      providerLatencyMs: pr.latencyMs,
+      estimatedCostUsd: pr.estimatedCostUsd,
+      inputTokens: pr.inputTokens,
+      outputTokens: pr.outputTokens,
+      outputEntityId: draftImportId,
+      outputEntityType: "draft_import",
+      correlationId,
+    });
+  } else {
+    await markGenerationAttemptFailed(bindings, {
+      attemptId: signalAttempt.id,
+      userId: ownerId,
+      projectId,
+      errorCode: "AI_SIGNAL_FALLBACK",
+      errorMessage: "Deterministic fallback used for draft import signals",
+      correlationId,
+    });
+  }
+
   const signalDrafts = extraction.signals;
   const admin = createServiceRoleClient(bindings);
 

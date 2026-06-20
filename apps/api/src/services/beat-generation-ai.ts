@@ -25,7 +25,11 @@ import {
   markGenerationAttemptSucceeded,
   toGenerationAttemptSafeSummary,
 } from "./generation-attempt.js";
-import { generateWithModelRouter } from "./model-router.js";
+import {
+  assertGenerationRouteCallable,
+  generateWithModelRouter,
+} from "./model-router.js";
+import { createProviderEventSequence } from "./generation-provider-event.js";
 import { loadBeatGenerationSnapshot } from "./beat-generation-snapshot.js";
 import {
   buildBeatGenerationPromptMessages,
@@ -234,6 +238,8 @@ export async function generateBeatsWithAiForSession(
 
   const correlationId = generateCorrelationId();
 
+  assertGenerationRouteCallable(bindings, { generationType, qualityMode });
+
   let attempt = await createGenerationAttempt(bindings, {
     projectId,
     userId: ownerId,
@@ -247,6 +253,7 @@ export async function generateBeatsWithAiForSession(
     qualityMode,
     metadata: { regenerate, task: "12.2" },
   });
+  const providerEventSequence = createProviderEventSequence();
 
   try {
     await debitCreditsForAttempt(bindings, {
@@ -276,14 +283,17 @@ export async function generateBeatsWithAiForSession(
 
   try {
     const routerResult = await generateWithModelRouter(bindings, {
+      generationAttemptId: attempt.id,
+      providerEventSequence,
       generationType,
       qualityMode,
       promptHash,
       promptMessages,
       temperature: 0.35,
+      validateOutput: parseAndValidateBeatAiOutput,
     });
 
-    const drafts = parseAndValidateBeatAiOutput(routerResult.text);
+    const drafts = routerResult.output;
 
     const admin = createServiceRoleClient(bindings);
     const inserts = drafts.map((draft, index) => ({
@@ -320,6 +330,12 @@ export async function generateBeatsWithAiForSession(
       projectId,
       provider: routerResult.provider,
       model: routerResult.model,
+      logicalModel: routerResult.logicalModel,
+      routingPolicyVersion: routerResult.routingPolicyVersion,
+      fallbackUsed: routerResult.fallbackUsed,
+      retryCount: routerResult.retryCount,
+      providerLatencyMs: routerResult.latencyMs,
+      estimatedCostUsd: routerResult.estimatedCostUsd,
       inputTokens: routerResult.inputTokens,
       outputTokens: routerResult.outputTokens,
       outputEntityId: beatIds[0] ?? "00000000-0000-0000-0000-000000000000",

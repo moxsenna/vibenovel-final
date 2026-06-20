@@ -27,7 +27,11 @@ import {
   markGenerationAttemptRunning,
   markGenerationAttemptSucceeded,
 } from "./generation-attempt.js";
-import { generateWithModelRouter } from "./model-router.js";
+import {
+  assertGenerationRouteCallable,
+  generateWithModelRouter,
+} from "./model-router.js";
+import { createProviderEventSequence } from "./generation-provider-event.js";
 import { computePromptHashFromMessages } from "./prose-generation-prompt.js";
 import type { ProposalDraft } from "./chapter-delta-extractor.js";
 import {
@@ -337,6 +341,8 @@ export async function generateChapterSummaryWithAi(
   const idempotencyKey = `chapter-summary-generation-${projectId}-${crypto.randomUUID()}`;
   const correlationId = generateCorrelationId();
 
+  assertGenerationRouteCallable(bindings, { generationType, qualityMode });
+
   let attempt = await createGenerationAttempt(bindings, {
     projectId,
     userId: ownerId,
@@ -350,6 +356,7 @@ export async function generateChapterSummaryWithAi(
     qualityMode,
     metadata: { task: "12.3" },
   });
+  const providerEventSequence = createProviderEventSequence();
 
   try {
     await debitCreditsForAttempt(bindings, {
@@ -379,14 +386,17 @@ export async function generateChapterSummaryWithAi(
 
   try {
     const routerResult = await generateWithModelRouter(bindings, {
+      generationAttemptId: attempt.id,
+      providerEventSequence,
       generationType,
       qualityMode,
       promptHash,
       promptMessages,
       temperature: 0.35,
+      validateOutput: parseAndValidateChapterSummaryAiOutput,
     });
 
-    const ai = parseAndValidateChapterSummaryAiOutput(routerResult.text);
+    const ai = routerResult.output;
     const draft = buildDraftFromAi(snapshot, ai);
     const factProposalDrafts = buildFactProposalDrafts(snapshot, ai.newFacts);
 
@@ -396,6 +406,12 @@ export async function generateChapterSummaryWithAi(
       projectId,
       provider: routerResult.provider,
       model: routerResult.model,
+      logicalModel: routerResult.logicalModel,
+      routingPolicyVersion: routerResult.routingPolicyVersion,
+      fallbackUsed: routerResult.fallbackUsed,
+      retryCount: routerResult.retryCount,
+      providerLatencyMs: routerResult.latencyMs,
+      estimatedCostUsd: routerResult.estimatedCostUsd,
       inputTokens: routerResult.inputTokens,
       outputTokens: routerResult.outputTokens,
       outputEntityId: snapshot.chapterOutline.id,

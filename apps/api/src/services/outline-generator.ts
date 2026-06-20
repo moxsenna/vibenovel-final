@@ -21,7 +21,11 @@ import {
 import type { OutlineCanonSnapshot } from "./outline-snapshot.js";
 import type { AppBindings } from "../env.js";
 import { AppError } from "../errors.js";
-import { generateWithModelRouter } from "./model-router.js";
+import {
+  assertGenerationRouteCallable,
+  generateWithModelRouter,
+} from "./model-router.js";
+import { createProviderEventSequence } from "./generation-provider-event.js";
 import { getCreditCostForGeneration } from "./ai-credit-policy.js";
 import {
   CREDIT_LEDGER_REASONS,
@@ -852,6 +856,8 @@ export async function generateOutlineDraftWithAi(
   const qualityMode = WRITER_QUALITY_MODES.hemat;
   const creditCost = getCreditCostForGeneration({ generationType, qualityMode });
 
+  assertGenerationRouteCallable(bindings, { generationType, qualityMode });
+
   let attempt = await createGenerationAttempt(bindings, {
     projectId,
     userId: ownerId,
@@ -863,6 +869,7 @@ export async function generateOutlineDraftWithAi(
     qualityMode,
     metadata: { task: "13.2" },
   });
+  const providerEventSequence = createProviderEventSequence();
 
   try {
     await debitCreditsForAttempt(bindings, {
@@ -892,18 +899,28 @@ export async function generateOutlineDraftWithAi(
 
   try {
     const routerResult = await generateWithModelRouter(bindings, {
+      generationAttemptId: attempt.id,
+      providerEventSequence,
       generationType,
       qualityMode,
       promptHash,
       promptMessages,
       temperature: 0.4,
+      validateOutput: (text) => {
+        const parsedOutput = parseLenientJsonObject(text);
+        if (!parsedOutput) {
+          throw new AppError(
+            "GENERATION_FAILED",
+            "AI mengembalikan format outline yang tidak valid. Coba lagi.",
+            502,
+          );
+        }
+        assertPlanningOutputSpecificToProject(parsedOutput, "outline");
+        return parsedOutput;
+      },
     });
 
-    const parsed = parseLenientJsonObject(routerResult.text);
-    if (!parsed) {
-      throw new AppError("GENERATION_FAILED", "AI mengembalikan format outline yang tidak valid. Coba lagi.", 502);
-    }
-    assertPlanningOutputSpecificToProject(parsed, "outline");
+    const parsed = routerResult.output;
 
     const draft = buildOutlineDraftFromAi(
       parsed,
@@ -922,6 +939,12 @@ export async function generateOutlineDraftWithAi(
       projectId,
       provider: routerResult.provider,
       model: routerResult.model,
+      logicalModel: routerResult.logicalModel,
+      routingPolicyVersion: routerResult.routingPolicyVersion,
+      fallbackUsed: routerResult.fallbackUsed,
+      retryCount: routerResult.retryCount,
+      providerLatencyMs: routerResult.latencyMs,
+      estimatedCostUsd: routerResult.estimatedCostUsd,
       inputTokens: routerResult.inputTokens,
       outputTokens: routerResult.outputTokens,
       outputEntityId: "00000000-0000-0000-0000-000000000000",

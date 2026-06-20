@@ -32,7 +32,11 @@ import {
   markGenerationAttemptSucceeded,
 } from "./generation-attempt.js";
 import { listIntakeMessagesForOwner } from "./intake.js";
-import { generateWithModelRouter } from "./model-router.js";
+import {
+  assertGenerationRouteCallable,
+  generateWithModelRouter,
+} from "./model-router.js";
+import { createProviderEventSequence } from "./generation-provider-event.js";
 import { assertPlanningOutputSpecificToProject } from "./planning-output-specificity.js";
 import { getOwnedProjectRow } from "./project.js";
 import { computePromptHashFromMessages } from "./prose-generation-prompt.js";
@@ -267,6 +271,8 @@ async function generateAiPatchDrafts(input: {
   const idempotencyKey = `asisten-narra-foundation-${input.projectId}-${crypto.randomUUID()}`;
   const correlationId = generateCorrelationId();
 
+  assertGenerationRouteCallable(input.bindings, { generationType, qualityMode });
+
   let attempt = await createGenerationAttempt(input.bindings, {
     projectId: input.projectId,
     userId: input.ownerId,
@@ -281,6 +287,7 @@ async function generateAiPatchDrafts(input: {
       generator: ASISTEN_NARRA_FOUNDATION_PATCH_GENERATOR,
     },
   });
+  const providerEventSequence = createProviderEventSequence();
 
   try {
     await debitCreditsForAttempt(input.bindings, {
@@ -310,21 +317,35 @@ async function generateAiPatchDrafts(input: {
 
   try {
     const routerResult = await generateWithModelRouter(input.bindings, {
+      generationAttemptId: attempt.id,
+      providerEventSequence,
       generationType,
       qualityMode,
       promptHash,
       promptMessages,
       temperature: 0.4,
+      validateOutput: (text) => {
+        const parsedOutput = JSON.parse(stripJsonFences(text)) as unknown;
+        if (
+          !parsedOutput ||
+          typeof parsedOutput !== "object" ||
+          Array.isArray(parsedOutput)
+        ) {
+          throw new AppError(
+            "GENERATION_FAILED",
+            "Narra returned invalid foundation patch JSON",
+            502,
+          );
+        }
+        assertPlanningOutputSpecificToProject(parsedOutput, "Usulan Narra");
+        return parsedOutput as Record<string, unknown>;
+      },
     });
 
-    const parsed = JSON.parse(stripJsonFences(routerResult.text));
-    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
-      throw new AppError("GENERATION_FAILED", "Narra returned invalid foundation patch JSON", 502);
-    }
-    assertPlanningOutputSpecificToProject(parsed, "Usulan Narra");
+    const parsed = routerResult.output;
 
     const drafts = buildDraftsFromAiJson({
-      parsed: parsed as Record<string, unknown>,
+      parsed,
       sessionId: input.sessionId,
       readinessBefore: input.readinessBefore,
     });
@@ -335,6 +356,12 @@ async function generateAiPatchDrafts(input: {
       projectId: input.projectId,
       provider: routerResult.provider,
       model: routerResult.model,
+      logicalModel: routerResult.logicalModel,
+      routingPolicyVersion: routerResult.routingPolicyVersion,
+      fallbackUsed: routerResult.fallbackUsed,
+      retryCount: routerResult.retryCount,
+      providerLatencyMs: routerResult.latencyMs,
+      estimatedCostUsd: routerResult.estimatedCostUsd,
       inputTokens: routerResult.inputTokens,
       outputTokens: routerResult.outputTokens,
       outputEntityId: "00000000-0000-0000-0000-000000000000",

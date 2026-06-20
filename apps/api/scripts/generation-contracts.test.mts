@@ -11,13 +11,40 @@ import { AppError } from "../src/errors.ts";
 import { getCreditCostForGeneration } from "../src/services/ai-credit-policy.ts";
 import { parseAndValidateBeatAiOutput } from "../src/services/beat-generation-ai.ts";
 import { parseAndValidateChapterSummaryAiOutput } from "../src/services/chapter-summary-schema.ts";
-import { MODEL_ALLOWLIST, resolveModelForGeneration } from "../src/services/model-router.ts";
+import { resolveGenerationRoute } from "../src/services/ai-routing-policy.ts";
 
 const bindings: AppBindings = {
   AI_PROVIDER_MOCK: "true",
 };
 
-const LIVE_FREE_TEST_MODEL = "google/gemma-4-31b-it:free";
+// Structured engines must preflight the route, pass the attempt id, and supply
+// an output validator to the router's success boundary.
+for (const file of [
+  "src/services/intake.ts",
+  "src/services/concept.ts",
+  "src/services/foundation-proposal.ts",
+  "src/services/asisten-narra-foundation-patch.ts",
+  "src/services/outline-generator.ts",
+  "src/services/beat-generation-ai.ts",
+  "src/services/chapter-summary-ai.ts",
+]) {
+  const source = readFileSync(file, "utf8");
+  assert.match(source, /assertGenerationRouteCallable/, `${file} must preflight`);
+  assert.match(
+    source,
+    /generationAttemptId:\s*attempt\.id/,
+    `${file} must pass the attempt id`,
+  );
+  assert.match(source, /validateOutput:/, `${file} must pass a validator`);
+}
+
+// publish-copy validates through the safe-repair wrapper, but still preflights
+// and threads the attempt id into the router.
+{
+  const source = readFileSync("src/services/publish-copy-ai-generation.ts", "utf8");
+  assert.match(source, /assertGenerationRouteCallable/);
+  assert.match(source, /generationAttemptId:\s*attempt\.id/);
+}
 
 const planningGenerationContracts: Array<{
   key:
@@ -103,20 +130,18 @@ for (const contract of planningGenerationContracts) {
   }
 
   assert.equal(
-    resolveModelForGeneration(bindings, {
-      generationType,
-      qualityMode: WRITER_QUALITY_MODES.terbaik,
-    }).maxOutputTokens,
+    resolveGenerationRoute(generationType, WRITER_QUALITY_MODES.terbaik)
+      .maxOutputTokens,
     contract.tokenCap,
     `${contract.key} must resolve enough output tokens for planning JSON`,
   );
 }
 
 assert.equal(
-  resolveModelForGeneration(bindings, {
-    generationType: GENERATION_TYPES.publish_copy,
-    qualityMode: WRITER_QUALITY_MODES.terbaik,
-  }).maxOutputTokens,
+  resolveGenerationRoute(
+    GENERATION_TYPES.publish_copy,
+    WRITER_QUALITY_MODES.terbaik,
+  ).maxOutputTokens,
   800,
   "publish_copy must keep the short marketing-copy token cap",
 );
@@ -128,10 +153,10 @@ assert.equal(
 );
 
 assert.equal(
-  resolveModelForGeneration(bindings, {
-    generationType: GENERATION_TYPES.draft_import_signal_extraction,
-    qualityMode: WRITER_QUALITY_MODES.hemat,
-  }).maxOutputTokens,
+  resolveGenerationRoute(
+    GENERATION_TYPES.draft_import_signal_extraction,
+    WRITER_QUALITY_MODES.hemat,
+  ).maxOutputTokens,
   1800,
   "draft import signal extraction must have a bounded JSON token cap",
 );
@@ -149,37 +174,20 @@ assert.throws(
   "draft import signal extraction must not be billable while import review is in test mode",
 );
 
-assert.equal(
-  MODEL_ALLOWLIST.has(LIVE_FREE_TEST_MODEL),
-  true,
-  "the current OpenRouter free test model must be allowlisted",
-);
-
-assert.equal(
-  resolveModelForGeneration(
-    {
-      ...bindings,
-      AI_MODEL_HEMAT: LIVE_FREE_TEST_MODEL,
-    },
-    {
-      generationType: GENERATION_TYPES.draft_import_signal_extraction,
-      qualityMode: WRITER_QUALITY_MODES.hemat,
-    },
-  ).model,
-  "google/gemini-3.1-flash-lite",
-  "non-prose draft import routing must ignore prose tier overrides",
+assert.deepEqual(
+  resolveGenerationRoute(
+    GENERATION_TYPES.draft_import_signal_extraction,
+    WRITER_QUALITY_MODES.hemat,
+  ).primary,
+  { provider: "openrouter", model: "gemini_flash_lite" },
+  "draft import routing must resolve through the typed policy",
 );
 
 const wranglerToml = readFileSync("wrangler.toml", "utf8");
 assert.doesNotMatch(
   wranglerToml,
-  new RegExp(`DEFAULT_AI_MODEL = "${LIVE_FREE_TEST_MODEL}"`),
-  "deployment config must not bypass the v2 routing matrix with a global default",
-);
-assert.doesNotMatch(
-  wranglerToml,
-  /AI_MODEL_HEMAT = "google\/gemini-2\.5-flash:free"/,
-  "production Worker config must not use the unavailable Gemini free slug",
+  /DEFAULT_AI_MODEL/,
+  "deployment config must not bypass the typed policy with a global default",
 );
 
 const migrationSql = readFileSync(

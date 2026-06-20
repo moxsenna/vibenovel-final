@@ -29,7 +29,11 @@ import {
 import { createServiceRoleClient } from "../lib/supabase.js";
 import { AppError } from "../errors.js";
 import { getOwnedProjectRow } from "./project.js";
-import { generateWithModelRouter } from "./model-router.js";
+import {
+  assertGenerationRouteCallable,
+  generateWithModelRouter,
+} from "./model-router.js";
+import { createProviderEventSequence } from "./generation-provider-event.js";
 import {
   debitCreditsForAttempt,
   refundCreditsForAttempt,
@@ -656,6 +660,8 @@ export async function appendUserMessageForOwner(
       qualityMode,
     });
 
+    assertGenerationRouteCallable(bindings, { generationType, qualityMode });
+
     attempt = await createGenerationAttempt(bindings, {
       projectId,
       userId: ownerId,
@@ -673,6 +679,7 @@ export async function appendUserMessageForOwner(
         sessionId: sessionRow.id,
       },
     });
+    const providerEventSequence = createProviderEventSequence();
 
     try {
       await debitCreditsForAttempt(bindings, {
@@ -703,16 +710,22 @@ export async function appendUserMessageForOwner(
 
     try {
       const routerResult = await generateWithModelRouter(bindings, {
+        generationAttemptId: attempt.id,
+        providerEventSequence,
         generationType,
         qualityMode,
         promptHash,
         promptMessages,
+        validateOutput: (text) => ({
+          rawText: text,
+          envelope:
+            narraPhase === INTAKE_PHASES.foundation_refinement
+              ? null
+              : parseIntakeAiEnvelope(text),
+        }),
       });
-      const rawAgentText = routerResult.text;
-      const envelope =
-        narraPhase === INTAKE_PHASES.foundation_refinement
-          ? null
-          : parseIntakeAiEnvelope(rawAgentText);
+      const rawAgentText = routerResult.output.rawText;
+      const envelope = routerResult.output.envelope;
       agentContent = envelope?.reply?.trim() || rawAgentText;
 
       const { data: dbAgentRow, error: agentError } = await admin
@@ -777,6 +790,12 @@ export async function appendUserMessageForOwner(
         projectId,
         provider: routerResult.provider,
         model: routerResult.model,
+        logicalModel: routerResult.logicalModel,
+        routingPolicyVersion: routerResult.routingPolicyVersion,
+        fallbackUsed: routerResult.fallbackUsed,
+        retryCount: routerResult.retryCount,
+        providerLatencyMs: routerResult.latencyMs,
+        estimatedCostUsd: routerResult.estimatedCostUsd,
         inputTokens: routerResult.inputTokens,
         outputTokens: routerResult.outputTokens,
         outputEntityId: agentRow.id,

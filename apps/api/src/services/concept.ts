@@ -24,7 +24,11 @@ import {
 import { createServiceRoleClient } from "../lib/supabase.js";
 import { AppError } from "../errors.js";
 import { getOwnedProjectRow } from "./project.js";
-import { generateWithModelRouter } from "./model-router.js";
+import {
+  assertGenerationRouteCallable,
+  generateWithModelRouter,
+} from "./model-router.js";
+import { createProviderEventSequence } from "./generation-provider-event.js";
 import { getCreditCostForGeneration } from "./ai-credit-policy.js";
 import {
   debitCreditsForAttempt,
@@ -570,6 +574,8 @@ export async function generateConceptsForOwner(
     const qualityMode = WRITER_QUALITY_MODES.hemat;
     const creditCost = getCreditCostForGeneration({ generationType, qualityMode });
 
+    assertGenerationRouteCallable(bindings, { generationType, qualityMode });
+
     let attempt = await createGenerationAttempt(bindings, {
       projectId,
       userId: ownerId,
@@ -584,6 +590,7 @@ export async function generateConceptsForOwner(
         batchId,
       },
     });
+    const providerEventSequence = createProviderEventSequence();
 
     try {
       await debitCreditsForAttempt(bindings, {
@@ -613,42 +620,48 @@ export async function generateConceptsForOwner(
 
     try {
       const routerResult = await generateWithModelRouter(bindings, {
+        generationAttemptId: attempt.id,
+        providerEventSequence,
         generationType,
         qualityMode,
         promptHash,
         promptMessages,
         temperature: 0.4,
+        validateOutput: (text) => {
+          let cleanText = text.trim();
+          if (cleanText.startsWith("```json")) {
+            cleanText = cleanText.substring(7);
+          } else if (cleanText.startsWith("```")) {
+            cleanText = cleanText.substring(3);
+          }
+          if (cleanText.endsWith("```")) {
+            cleanText = cleanText.substring(0, cleanText.length - 3);
+          }
+          cleanText = cleanText.trim();
+
+          let parsedOutput: unknown;
+          try {
+            parsedOutput = JSON.parse(cleanText);
+          } catch {
+            throw new AppError(
+              "GENERATION_FAILED",
+              "AI mengembalikan format konsep yang tidak valid. Coba lagi.",
+              502,
+            );
+          }
+          if (!Array.isArray(parsedOutput) || parsedOutput.length !== 3) {
+            throw new AppError(
+              "GENERATION_FAILED",
+              "AI tidak mengembalikan tepat 3 konsep. Coba lagi.",
+              502,
+            );
+          }
+          assertPlanningOutputSpecificToProject(parsedOutput, "konsep");
+          return parsedOutput as Record<string, unknown>[];
+        },
       });
 
-      let cleanText = routerResult.text.trim();
-      if (cleanText.startsWith("```json")) {
-        cleanText = cleanText.substring(7);
-      } else if (cleanText.startsWith("```")) {
-        cleanText = cleanText.substring(3);
-      }
-      if (cleanText.endsWith("```")) {
-        cleanText = cleanText.substring(0, cleanText.length - 3);
-      }
-      cleanText = cleanText.trim();
-
-      let parsed: unknown;
-      try {
-        parsed = JSON.parse(cleanText);
-      } catch {
-        throw new AppError(
-          "GENERATION_FAILED",
-          "AI mengembalikan format konsep yang tidak valid. Coba lagi.",
-          502,
-        );
-      }
-      if (!Array.isArray(parsed) || parsed.length !== 3) {
-        throw new AppError(
-          "GENERATION_FAILED",
-          "AI tidak mengembalikan tepat 3 konsep. Coba lagi.",
-          502,
-        );
-      }
-      assertPlanningOutputSpecificToProject(parsed, "konsep");
+      const parsed = routerResult.output;
 
       const drafts: ConceptDraft[] = parsed.map((item) => ({
         title: String(item.title || "Untitled Concept").trim(),
@@ -674,6 +687,12 @@ export async function generateConceptsForOwner(
         projectId,
         provider: routerResult.provider,
         model: routerResult.model,
+        logicalModel: routerResult.logicalModel,
+        routingPolicyVersion: routerResult.routingPolicyVersion,
+        fallbackUsed: routerResult.fallbackUsed,
+        retryCount: routerResult.retryCount,
+        providerLatencyMs: routerResult.latencyMs,
+        estimatedCostUsd: routerResult.estimatedCostUsd,
         inputTokens: routerResult.inputTokens,
         outputTokens: routerResult.outputTokens,
         outputEntityId: concepts[0]?.id || "00000000-0000-0000-0000-000000000000",

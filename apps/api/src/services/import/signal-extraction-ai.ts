@@ -1,5 +1,6 @@
 import { GENERATION_TYPES, WRITER_QUALITY_MODES } from "@vibenovel/shared";
 import type { AppBindings } from "../../env.js";
+import { AppError } from "../../errors.js";
 import type {
   AiProviderId,
   ModelRouterGenerateInput,
@@ -7,8 +8,15 @@ import type {
   PromptMessage,
 } from "../ai-generation-types.js";
 import { generateWithModelRouter } from "../model-router.js";
+import type { ProviderEventSequence } from "../generation-provider-event.js";
 import { computePromptHashFromMessages } from "../prose-generation-prompt.js";
 import type { DraftImportSignalDraft } from "../draft-import.js";
+
+/** Router input minus the attempt-owned fields supplied by the parent. */
+export type DraftImportSignalRouterInputBase = Omit<
+  ModelRouterGenerateInput<DraftImportSignalDraft[]>,
+  "generationAttemptId" | "providerEventSequence" | "validateOutput"
+>;
 
 const AI_SIGNAL_SCHEMA_VERSION = "draft_import_signal_ai_v1";
 const PROMPT_DRAFT_MAX_CHARS = 90_000;
@@ -58,15 +66,19 @@ export interface DraftImportAiProviderMetadata {
 
 export interface DraftImportSignalAiFirstInput {
   bindings: AppBindings;
-  content: string;
   fallbackSignals: DraftImportSignalDraft[];
-  generate?: (input: ModelRouterGenerateInput) => Promise<ModelRouterGenerateResult>;
+  generationAttemptId: string;
+  providerEventSequence: ProviderEventSequence;
+  routerInput: DraftImportSignalRouterInputBase;
+  generate?: (
+    input: ModelRouterGenerateInput<DraftImportSignalDraft[]>,
+  ) => Promise<ModelRouterGenerateResult<DraftImportSignalDraft[]>>;
 }
 
 export interface DraftImportSignalAiFirstResult {
   signals: DraftImportSignalDraft[];
   extractionMode: DraftImportSignalExtractionMode;
-  providerResult?: ModelRouterGenerateResult;
+  providerResult?: ModelRouterGenerateResult<DraftImportSignalDraft[]>;
 }
 
 interface ParsedAiSignal {
@@ -218,7 +230,7 @@ function buildSignalExtractionPrompt(content: string): PromptMessage[] {
 
 export async function buildDraftImportSignalExtractionRouterInput(
   content: string,
-): Promise<ModelRouterGenerateInput> {
+): Promise<DraftImportSignalRouterInputBase> {
   const promptMessages = buildSignalExtractionPrompt(content);
   const promptHash = await computePromptHashFromMessages(promptMessages);
   return {
@@ -239,11 +251,31 @@ export async function extractDraftImportSignalsAiFirst(
   input: DraftImportSignalAiFirstInput,
 ): Promise<DraftImportSignalAiFirstResult> {
   try {
-    const routerInput = await buildDraftImportSignalExtractionRouterInput(input.content);
+    const fullInput: ModelRouterGenerateInput<DraftImportSignalDraft[]> = {
+      ...input.routerInput,
+      generationAttemptId: input.generationAttemptId,
+      providerEventSequence: input.providerEventSequence,
+      validateOutput: (text) => {
+        const signals = parseDraftImportSignalExtractionOutput(text, {
+          provider: "openrouter",
+          model: "pending",
+          promptHash: input.routerInput.promptHash,
+        });
+        if (signals.length === 0) {
+          throw new AppError(
+            "GENERATION_FAILED",
+            "Draft import signal extraction returned no valid signals",
+            502,
+          );
+        }
+        return signals;
+      },
+    };
     const providerResult = input.generate
-      ? await input.generate(routerInput)
-      : await generateWithModelRouter(input.bindings, routerInput);
+      ? await input.generate(fullInput)
+      : await generateWithModelRouter(input.bindings, fullInput);
 
+    // Rebuild signal metadata from the final provider/model, never "pending".
     const aiSignals = parseDraftImportSignalExtractionOutput(providerResult.text, {
       provider: providerResult.provider,
       model: providerResult.model,
