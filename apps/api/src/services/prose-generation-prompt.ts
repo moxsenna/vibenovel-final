@@ -6,6 +6,8 @@ import { assertWriterPacketSafe } from "./context-packet-safety.js";
 import { parsePacketJson } from "./context-packet-builder.js";
 import type { PromptMessage } from "./ai-generation-types.js";
 import type { ChapterBeatRow } from "../lib/mappers.js";
+import { serializeContext } from "./writer-context-serializer.js";
+import type { BudgetProfile } from "./writer-context-serializer.js";
 
 export interface ProseBeatPromptResult {
   promptMessages: PromptMessage[];
@@ -129,8 +131,20 @@ export async function buildProseBeatPromptFromPacket(
   packet: WriterContextPacket,
   beat: ChapterBeatRow,
   instruction?: string,
-): ProseBeatPromptResult {
-  const userContent = buildUserPromptSections(packet, beat, instruction);
+  profile: BudgetProfile = "conservative",
+): Promise<ProseBeatPromptResult> {
+  const serialized = serializeContext(packet, profile);
+
+  const beatSection = [
+    `Beat ${beat.beat_number}: ${beat.title}`,
+    `Beat goal: ${beat.summary}`,
+    beat.direction?.trim() ? `Direction: ${beat.direction.trim()}` : null,
+    instruction?.trim() ? `Writer note (bounded): ${instruction.trim()}` : null,
+  ]
+    .filter((s): s is string => s !== null)
+    .join("\n");
+
+  const userContent = `${serialized.text}\n\n[CURRENT BEAT]\n${beatSection}`;
 
   const promptMessages: PromptMessage[] = [
     { role: "system", content: SYSTEM_PROMPT },
