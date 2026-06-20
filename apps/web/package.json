@@ -8,6 +8,7 @@
     "build": "tsc --noEmit && vite build",
     "typecheck": "tsc --noEmit",
     "test:credit-v2-ui": "tsx scripts/credit-estimate-ui-contracts.test.mts && tsx scripts/credit-transparency-ui-contracts.test.mts",
+    "test:admin-generation-attempts-ui": "tsx scripts/admin-generation-attempts-ui-contracts.test.mts",
     "preview": "vite preview",
     "test:e2e": "playwright test",
     "test:e2e:sprint3": "playwright test e2e/sprint3-flow.spec.ts",

@@ -69,6 +69,14 @@ export interface AdminGenerationAttemptListItem {
   creditCost: number;
   provider: string | null;
   model: string | null;
+  logicalModel: string | null;
+  routingPolicyVersion: string | null;
+  fallbackUsed: boolean;
+  retryCount: number;
+  providerLatencyMs: number | null;
+  inputTokens: number | null;
+  outputTokens: number | null;
+  estimatedCostUsd: number | null;
   errorCode: string | null;
   errorMessageSafe: string | null;
   createdAt: string;
@@ -80,6 +88,31 @@ export interface AdminGenerationAttemptListItem {
 
 export interface AdminGenerationAttemptsListResponse {
   attempts: AdminGenerationAttemptListItem[];
+}
+
+export interface AdminGenerationProviderEvent {
+  id: string;
+  sequenceNumber: number;
+  routeRole: "primary" | "fallback";
+  provider: string;
+  logicalModel: string;
+  providerModelId: string;
+  retryNumber: number;
+  outcome: string;
+  errorCategory: string | null;
+  errorCodeSafe: string | null;
+  providerHttpStatus: number | null;
+  latencyMs: number | null;
+  inputTokens: number | null;
+  outputTokens: number | null;
+  estimatedCostUsd: number | null;
+  createdAt: string;
+}
+
+export interface AdminGenerationAttemptDetailResponse {
+  attempt: AdminGenerationAttemptListItem;
+  providerEvents: AdminGenerationProviderEvent[];
+  correlationId: string | null;
 }
 
 export interface AdminUserCreditSectionResponse {
@@ -158,6 +191,16 @@ export async function fetchAdminGenerationAttempts(
   return apiRequest<AdminGenerationAttemptsListResponse>(`/api/admin/generation-attempts${qs}`, {
     token,
   });
+}
+
+export async function fetchAdminGenerationAttempt(
+  attemptId: string,
+  token?: string | null,
+): Promise<AdminGenerationAttemptDetailResponse> {
+  return apiRequest<AdminGenerationAttemptDetailResponse>(
+    `/api/admin/generation-attempts/${attemptId}`,
+    { token },
+  );
 }
 
 export async function fetchAdminUserCredits(

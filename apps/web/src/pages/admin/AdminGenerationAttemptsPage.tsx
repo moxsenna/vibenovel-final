@@ -53,30 +53,51 @@ export function AdminGenerationAttemptsPage() {
         </Card>
       ) : (
         <Card padding="sm" className="overflow-x-auto">
-          <table className="w-full min-w-[800px] text-left font-body-sm text-body-sm">
+          <table className="w-full min-w-[980px] text-left font-body-sm text-body-sm">
             <thead>
               <tr className="border-b border-border text-muted-text">
-                <th className="px-3 py-2">Tipe</th>
+                <th className="px-3 py-2">Engine</th>
                 <th className="px-3 py-2">Status</th>
-                <th className="px-3 py-2">Model</th>
-                <th className="px-3 py-2">Kredit</th>
-                <th className="px-3 py-2">Pengguna</th>
+                <th className="px-3 py-2">Provider</th>
+                <th className="px-3 py-2">Logical model</th>
+                <th className="px-3 py-2">Provider model</th>
+                <th className="px-3 py-2">Fallback</th>
+                <th className="px-3 py-2">Latensi</th>
+                <th className="px-3 py-2">Biaya</th>
                 <th className="px-3 py-2">Error</th>
+                <th className="px-3 py-2">Pengguna</th>
               </tr>
             </thead>
             <tbody>
               {attempts.map((a) => (
                 <tr key={a.id} className="border-b border-border last:border-0">
-                  <td className="px-3 py-3">{a.generationType}</td>
+                  <td className="px-3 py-3">
+                    <Link
+                      to={ROUTES.admin.generationAttemptDetail(a.id)}
+                      className="text-primary hover:underline"
+                    >
+                      {a.generationType}
+                    </Link>
+                  </td>
                   <td className="px-3 py-3">{a.status}</td>
-                  <td className="px-3 py-3">{a.model ?? a.provider ?? "—"}</td>
-                  <td className="px-3 py-3">{a.creditCost}</td>
+                  <td className="px-3 py-3">{a.provider ?? "—"}</td>
+                  <td className="px-3 py-3">{a.logicalModel ?? "—"}</td>
+                  <td className="px-3 py-3 text-muted-text">{a.model ?? "—"}</td>
+                  <td className="px-3 py-3">{a.fallbackUsed ? "Ya" : "Tidak"}</td>
+                  <td className="px-3 py-3">
+                    {a.providerLatencyMs !== null ? `${a.providerLatencyMs} ms` : "—"}
+                  </td>
+                  <td className="px-3 py-3">
+                    {a.estimatedCostUsd !== null
+                      ? `$${a.estimatedCostUsd.toFixed(6)}`
+                      : "—"}
+                  </td>
+                  <td className="px-3 py-3 text-muted-text">{a.errorCode ?? "—"}</td>
                   <td className="px-3 py-3">
                     <Link to={ROUTES.admin.userDetail(a.userId)} className="text-primary hover:underline">
                       {a.ownerDisplayName ?? a.ownerEmail ?? a.userId.slice(0, 8)}
                     </Link>
                   </td>
-                  <td className="px-3 py-3 text-muted-text">{a.errorCode ?? "—"}</td>
                 </tr>
               ))}
             </tbody>

@@ -25,6 +25,7 @@ import { AdminProjectDetailPage } from "@/pages/admin/AdminProjectDetailPage";
 import { AdminProposalsPage } from "@/pages/admin/AdminProposalsPage";
 import { AdminProposalDetailPage } from "@/pages/admin/AdminProposalDetailPage";
 import { AdminGenerationAttemptsPage } from "@/pages/admin/AdminGenerationAttemptsPage";
+import { AdminGenerationAttemptDetailPage } from "@/pages/admin/AdminGenerationAttemptDetailPage";
 
 import { AdminSystemPage } from "@/pages/admin/AdminSystemPage";
 import { AdminAuditLogsPage } from "@/pages/admin/AdminAuditLogsPage";
@@ -70,6 +71,10 @@ export const router = createBrowserRouter([
       { path: "proposals", element: <AdminProposalsPage /> },
       { path: "proposals/:proposalId", element: <AdminProposalDetailPage /> },
       { path: "generation-attempts", element: <AdminGenerationAttemptsPage /> },
+      {
+        path: "generation-attempts/:attemptId",
+        element: <AdminGenerationAttemptDetailPage />,
+      },
       { path: "system", element: <AdminSystemPage /> },
       { path: "audit-logs", element: <AdminAuditLogsPage /> },
     ],
