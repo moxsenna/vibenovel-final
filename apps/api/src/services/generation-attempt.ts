@@ -55,6 +55,11 @@ export interface GenerationAttemptSafeSummary {
   creditCost: number;
   provider: string | null;
   model: string | null;
+  logicalModel: string | null;
+  routingPolicyVersion: string | null;
+  fallbackUsed: boolean;
+  retryCount: number;
+  providerLatencyMs: number | null;
   promptHash: string | null;
   inputTokens: number | null;
   outputTokens: number | null;
@@ -128,6 +133,11 @@ export function toGenerationAttemptSafeSummary(
     creditCost: attempt.creditCost,
     provider: attempt.provider,
     model: attempt.model,
+    logicalModel: attempt.logicalModel,
+    routingPolicyVersion: attempt.routingPolicyVersion,
+    fallbackUsed: attempt.fallbackUsed,
+    retryCount: attempt.retryCount,
+    providerLatencyMs: attempt.providerLatencyMs,
     promptHash: attempt.promptHash,
     inputTokens: attempt.inputTokens,
     outputTokens: attempt.outputTokens,
@@ -275,6 +285,11 @@ export async function markGenerationAttemptSucceeded(
     projectId: string;
     provider: string;
     model: string;
+    logicalModel?: string | null;
+    routingPolicyVersion?: string | null;
+    fallbackUsed?: boolean;
+    retryCount?: number;
+    providerLatencyMs?: number | null;
     inputTokens?: number;
     outputTokens?: number;
     outputEntityId: string;
@@ -296,6 +311,11 @@ export async function markGenerationAttemptSucceeded(
     status: GENERATION_STATUSES.succeeded,
     provider: input.provider,
     model: input.model,
+    logical_model: input.logicalModel ?? null,
+    routing_policy_version: input.routingPolicyVersion ?? null,
+    fallback_used: input.fallbackUsed ?? false,
+    retry_count: input.retryCount ?? 0,
+    provider_latency_ms: input.providerLatencyMs ?? null,
     input_tokens: input.inputTokens ?? null,
     output_tokens: input.outputTokens ?? null,
     estimated_cost_usd:
@@ -360,6 +380,46 @@ export async function markGenerationAttemptFailed(
   });
 
   return attempt;
+}
+
+export interface GenerationAttemptRoutingSummaryInput {
+  attemptId: string;
+  provider: string;
+  providerModelId: string;
+  logicalModel: string;
+  routingPolicyVersion: string;
+  fallbackUsed: boolean;
+  retryCount: number;
+  providerLatencyMs: number;
+  inputTokens?: number;
+  outputTokens?: number;
+  estimatedCostUsd?: number | null;
+}
+
+/**
+ * Persist the final route summary before a failed attempt rethrows, so that
+ * the subsequent markGenerationAttemptFailed only touches status/error fields
+ * while the provider/route summary is preserved for admin diagnostics.
+ */
+export async function updateGenerationAttemptRoutingSummary(
+  bindings: AppBindings,
+  input: GenerationAttemptRoutingSummaryInput,
+): Promise<GenerationAttempt> {
+  return updateGenerationAttemptStatus(bindings, input.attemptId, {
+    provider: input.provider,
+    model: input.providerModelId,
+    logical_model: input.logicalModel,
+    routing_policy_version: input.routingPolicyVersion,
+    fallback_used: input.fallbackUsed,
+    retry_count: input.retryCount,
+    provider_latency_ms: input.providerLatencyMs,
+    input_tokens: input.inputTokens ?? null,
+    output_tokens: input.outputTokens ?? null,
+    estimated_cost_usd:
+      typeof input.estimatedCostUsd === "number"
+        ? input.estimatedCostUsd
+        : null,
+  });
 }
 
 async function updateGenerationAttemptStatus(
