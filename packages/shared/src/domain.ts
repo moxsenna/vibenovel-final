@@ -636,6 +636,30 @@ export interface WriterPrecedingProseTail {
   sourceType: "same_chapter_previous_beat" | "previous_chapter_last_beat";
 }
 
+/**
+ * Server-only safety envelope — MUST NOT be sent to Writer model,
+ * returned to browser, included in public preview, or logged to raw audit metadata.
+ */
+export interface WriterSafetyEnvelope {
+  version: "writer_safety_v1";
+  projectId: string;
+  chapterOutlineId: string;
+  chapterNumber: number;
+  beatId: string | null;
+  futureRevealFactIds: string[];
+  forbiddenRevealPhrases: string[];
+  unknownFactConstraints: Array<{
+    characterId: string;
+    factId: string;
+    factText: string;
+  }>;
+  hardBeatConstraints: {
+    mustInclude: string[];
+    mustNotInclude: string[];
+    stopCondition: string | null;
+  };
+}
+
 export interface WriterContextPacket {
   meta: {
     projectId: ID;

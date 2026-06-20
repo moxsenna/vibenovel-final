@@ -187,6 +187,7 @@ export type {
   WriterCharacterSummaryV3,
   WriterKnowledgeSummary,
   WriterPrecedingProseTail,
+  WriterSafetyEnvelope,
   WritingSession,
   CharacterImportance,
   CreditBalance,

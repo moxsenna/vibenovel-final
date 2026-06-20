@@ -3,17 +3,32 @@ import { AppError } from "../errors.js";
 
 export const PACKET_MAX_BYTES = 64 * 1024;
 
-const FORBIDDEN_KEY_PATTERNS = [
-  /planningTruth/i,
-  /planning_truth/i,
-  /full_prompt/i,
-  /chapter_text/i,
-  /prose_text/i,
-  /openrouter/i,
-  /\bmodel\b/i,
-  /\bprovider\b/i,
-  /\btoken\b/i,
-];
+/**
+ * Recursive forbidden-key walker — checks object keys, not JSON string values.
+ * This prevents false positives on natural prose words like "model", "provider", "token".
+ */
+const FORBIDDEN_KEYS = new Set([
+  "planningTruth",
+  "planning_truth",
+  "full_prompt",
+  "chapter_text",
+  "prose_text",
+  "safety_envelope_json",
+  "safetyEnvelope",
+]);
+
+function hasForbiddenKey(obj: unknown): boolean {
+  if (obj === null || typeof obj !== "object") return false;
+  if (Array.isArray(obj)) {
+    return obj.some((item) => hasForbiddenKey(item));
+  }
+  const record = obj as Record<string, unknown>;
+  for (const key of Object.keys(record)) {
+    if (FORBIDDEN_KEYS.has(key)) return true;
+    if (hasForbiddenKey(record[key])) return true;
+  }
+  return false;
+}
 
 export interface PacketSafetyResult {
   planningTruthPresent: false;
@@ -63,8 +78,8 @@ export function extractForbiddenConcepts(title: string, hint: string | null): st
   return [...new Set(tokens)].slice(0, 12);
 }
 
-function containsForbiddenKey(json: string): boolean {
-  return FORBIDDEN_KEY_PATTERNS.some((pattern) => pattern.test(json));
+function containsForbiddenKey(packet: WriterContextPacket): boolean {
+  return hasForbiddenKey(packet);
 }
 
 function containsFutureContent(
@@ -95,8 +110,8 @@ export function assertWriterPacketSafe(
   const json = canonicalPacketJson(packet);
   const packetBytes = new TextEncoder().encode(json).length;
 
-  if (containsForbiddenKey(json)) {
-    console.error("context packet safety: forbidden key pattern detected");
+  if (containsForbiddenKey(packet)) {
+    console.error("context packet safety: forbidden key detected in packet structure");
     throw AppError.internal("Context packet failed safety checks");
   }
 
