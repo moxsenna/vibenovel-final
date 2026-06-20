@@ -1,3 +1,6 @@
+import type { AppBindings } from "../../env.js";
+import { createServiceRoleClient } from "../../lib/supabase.js";
+
 export interface SemanticRetrievalSnippet {
   sourceRef: string;
   chunkText: string;
@@ -6,9 +9,40 @@ export interface SemanticRetrievalSnippet {
 }
 
 /**
- * Match prose embeddings via RPC — requires migration 00023.
- * Stub returns empty array when the RPC function is not available.
+ * Match prose embeddings via RPC (requires migration 00023).
+ * Falls back to empty array if the RPC function is not available or query fails.
  */
-export async function matchProseEmbeddings(): Promise<SemanticRetrievalSnippet[]> {
-  return [];
+export async function matchProseEmbeddings(
+  bindings: AppBindings,
+  ownerId: string,
+  projectId: string,
+  queryEmbedding: number[],
+  matchCount = 5,
+  minSimilarity = 0.7,
+): Promise<SemanticRetrievalSnippet[]> {
+  try {
+    const admin = createServiceRoleClient(bindings);
+    const { data, error } = await admin.rpc("match_prose_embeddings", {
+      p_owner_id: ownerId,
+      p_project_id: projectId,
+      p_query_embedding: queryEmbedding,
+      p_match_count: Math.min(Math.max(matchCount, 1), 8),
+      p_min_similarity: minSimilarity,
+    });
+
+    if (error) {
+      console.error("semantic retrieval rpc failed:", error.message);
+      return [];
+    }
+
+    return ((data ?? []) as SemanticRetrievalSnippet[]).map((row) => ({
+      sourceRef: (row as Record<string, unknown>).sourceRef as string ?? (row as Record<string, unknown>).source_ref as string ?? "",
+      chunkText: (row as Record<string, unknown>).chunkText as string ?? (row as Record<string, unknown>).chunk_text as string ?? "",
+      similarity: (row as Record<string, unknown>).similarity as number ?? 0,
+      metadata: ((row as Record<string, unknown>).metadata as Record<string, unknown>) ?? {},
+    }));
+  } catch (err) {
+    console.error("semantic retrieval failed:", err);
+    return [];
+  }
 }
