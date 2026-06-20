@@ -586,6 +586,56 @@ export interface ForbiddenRevealEntry {
  * Full writer Context Packet — slice-only, backend-built.
  * Must NOT include full outline dump, future chapters, or planningTruth raw.
  */
+
+// --- Packet v3 structured types ---
+
+export interface PovKnowledgeFactSummary {
+  factId: string;
+  factText: string;
+  category: string;
+  certainty: string;
+}
+
+export interface WriterCanonFactSummary {
+  id: string;
+  text: string;
+  category: string;
+  importance: string;
+}
+
+export interface WriterCharacterStateSummary {
+  chapterNumber: number;
+  emotionalState: string | null;
+  physicalState: string | null;
+  currentGoal: string | null;
+  locationLabel: string | null;
+}
+
+export interface WriterCharacterSummaryV3 {
+  id: string;
+  name: string;
+  roleLabel: string;
+  descriptionSummary: string;
+  state: WriterCharacterStateSummary | null;
+}
+
+export interface WriterKnowledgeSummary {
+  characterId: string;
+  characterName: string;
+  knownFacts: PovKnowledgeFactSummary[];
+  suspectedFacts: PovKnowledgeFactSummary[];
+  partialFacts: PovKnowledgeFactSummary[];
+  falseBeliefs: PovKnowledgeFactSummary[];
+}
+
+export interface WriterPrecedingProseTail {
+  text: string;
+  sourceChapterNumber: number;
+  sourceBeatId: string;
+  sourceVersionId: string;
+  sourceType: "same_chapter_previous_beat" | "previous_chapter_last_beat";
+}
+
 export interface WriterContextPacket {
   meta: {
     projectId: ID;

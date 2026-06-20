@@ -472,6 +472,7 @@ export type ChapterProseSource =
 /** Context Packet builder version identifiers (string const — not a DB enum). */
 export const CONTEXT_PACKET_BUILDER_VERSIONS = {
   v1_stub: "context_packet_v1_stub",
+  v3: "context_packet_v3",
 } as const;
 export type ContextPacketBuilderVersion =
   (typeof CONTEXT_PACKET_BUILDER_VERSIONS)[keyof typeof CONTEXT_PACKET_BUILDER_VERSIONS];
