@@ -14,6 +14,7 @@ import {
   type OutputValidationReport,
 } from "./output-validator.js";
 import { generateWithModelRouter } from "./model-router.js";
+import type { ProviderEventSequence } from "./generation-provider-event.js";
 import { buildProseRepairInstruction } from "./safe-repair.js";
 
 /** Max extra provider calls after the initial generation (repair passes). */
@@ -42,6 +43,12 @@ export interface ValidatedAiProviderOutput {
   repairAttempts: number;
   totalInputTokens: number;
   totalOutputTokens: number;
+  logicalModel: string;
+  routingPolicyVersion: string;
+  fallbackUsed: boolean;
+  totalRetryCount: number;
+  totalProviderLatencyMs: number;
+  totalEstimatedCostUsd: number;
 }
 
 export function isBlockedValidationReport(report: OutputValidationReport): boolean {
@@ -82,10 +89,11 @@ export interface GenerateValidatedAiOutputWithSafeRepairInput {
   validationTextFromProvider?: (providerText: string) => string;
   /** Excerpt shown to the model on repair retries. Defaults to provider text. */
   repairExcerptFromProvider?: (providerText: string) => string;
-  persistContext?: {
+  persistContext: {
     projectId: string;
     userId: string;
     generationAttemptId: string;
+    providerEventSequence: ProviderEventSequence;
   };
 }
 
@@ -129,17 +137,26 @@ export async function generateValidatedAiOutputWithSafeRepair(
   let lastReport: OutputValidationReport | null = null;
   let totalInputTokens = 0;
   let totalOutputTokens = 0;
+  let totalRetryCount = 0;
+  let totalProviderLatencyMs = 0;
+  let totalEstimatedCostUsd = 0;
+  let fallbackUsed = false;
+  let logicalModel = "";
+  let routingPolicyVersion = "";
   let tokenBudgetBaseline: number | null = null;
   let lastProviderText = "";
 
   for (let pass = 0; pass <= PROSE_SAFE_REPAIR_MAX_RETRIES; pass++) {
     const providerResult = await generateWithModelRouter(bindings, {
+      generationAttemptId: persistContext.generationAttemptId,
+      providerEventSequence: persistContext.providerEventSequence,
       generationType: generationType as GenerationType,
       qualityMode: input.qualityMode,
       promptHash,
       promptMessages,
       metadata: input.metadata,
       temperature: input.temperature,
+      validateOutput: (text) => text,
     });
 
     lastProviderText = providerResult.text;
@@ -149,6 +166,12 @@ export async function generateValidatedAiOutputWithSafeRepair(
     }
     totalInputTokens += providerResult.inputTokens ?? 0;
     totalOutputTokens += providerResult.outputTokens ?? 0;
+    totalRetryCount += providerResult.retryCount;
+    totalProviderLatencyMs += providerResult.latencyMs;
+    totalEstimatedCostUsd += providerResult.estimatedCostUsd;
+    fallbackUsed = fallbackUsed || providerResult.fallbackUsed;
+    logicalModel = providerResult.logicalModel;
+    routingPolicyVersion = providerResult.routingPolicyVersion;
 
     const validationReport = validateAiOutput({
       outputText: resolveValidationText(providerResult.text, input),
@@ -188,6 +211,12 @@ export async function generateValidatedAiOutputWithSafeRepair(
         repairAttempts,
         totalInputTokens,
         totalOutputTokens,
+        logicalModel,
+        routingPolicyVersion,
+        fallbackUsed,
+        totalRetryCount,
+        totalProviderLatencyMs,
+        totalEstimatedCostUsd,
       };
     }
 

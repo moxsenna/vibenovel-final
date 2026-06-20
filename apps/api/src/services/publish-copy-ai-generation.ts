@@ -26,7 +26,6 @@ import {
   resolveQualityModeForGeneration,
 } from "./ai-credit-policy.js";
 import { assertAiGenerationAllowedForOwner } from "./ai-rate-limit.js";
-import { calculateEstimatedCostUsd } from "./model-cost-map.js";
 import { getOwnedProjectRow } from "./project.js";
 import {
   assertPublishUserTextSafe,
@@ -50,6 +49,7 @@ import {
   type GenerationAttemptSafeSummary,
 } from "./generation-attempt.js";
 import { assertGenerationRouteCallable } from "./model-router.js";
+import { createProviderEventSequence } from "./generation-provider-event.js";
 import { generateValidatedAiOutputWithSafeRepair } from "./prose-output-safe-repair.js";
 
 const PACKAGE_SELECT =
@@ -547,6 +547,7 @@ export async function improvePublishCopyForOwner(
       requestedFields: body.fields,
     },
   });
+  const providerEventSequence = createProviderEventSequence();
 
   let debited = false;
   try {
@@ -605,6 +606,7 @@ export async function improvePublishCopyForOwner(
         projectId,
         userId: ownerId,
         generationAttemptId: attempt.id,
+        providerEventSequence,
       },
     });
   } catch (err) {
@@ -655,26 +657,12 @@ export async function improvePublishCopyForOwner(
   let estimatedCostUsd: number | null = null;
   let costEstimateMetadata: GenerationAttemptCostEstimateMetadata = {};
 
-  if (providerResult.provider === "mock") {
-    estimatedCostUsd = 0;
-    costEstimateMetadata = {
-      costEstimateApproximate: true,
-      mockProvider: true,
-      costModel: providerResult.model,
-    };
-  } else {
-    const costResult = calculateEstimatedCostUsd({
-      model: providerResult.model,
-      inputTokens: providerResult.inputTokens,
-      outputTokens: providerResult.outputTokens,
-    });
-    estimatedCostUsd = costResult.estimatedCostUsd;
-    costEstimateMetadata = {
-      costEstimateApproximate: costResult.approximate,
-      ...(costResult.reason ? { costEstimateReason: costResult.reason } : {}),
-      ...(costResult.costModel ? { costModel: costResult.costModel } : {}),
-    };
-  }
+  estimatedCostUsd = validated.totalEstimatedCostUsd;
+  costEstimateMetadata = {
+    costEstimateApproximate: true,
+    ...(providerResult.provider === "mock" ? { mockProvider: true } : {}),
+    costModel: providerResult.model,
+  };
 
   const suggestionsMetadata = sanitizeSuggestionsForMetadata(suggestions);
 
@@ -684,6 +672,11 @@ export async function improvePublishCopyForOwner(
     projectId,
     provider: providerResult.provider,
     model: providerResult.model,
+    logicalModel: validated.logicalModel,
+    routingPolicyVersion: validated.routingPolicyVersion,
+    fallbackUsed: validated.fallbackUsed,
+    retryCount: validated.totalRetryCount,
+    providerLatencyMs: validated.totalProviderLatencyMs,
     inputTokens: providerResult.inputTokens,
     outputTokens: providerResult.outputTokens,
     outputEntityId: attempt.id,

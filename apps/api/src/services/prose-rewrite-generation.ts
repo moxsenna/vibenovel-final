@@ -21,7 +21,8 @@ import { getCreditCostForGeneration } from "./ai-credit-policy.js";
 import { assertAiGenerationAllowedForOwner } from "./ai-rate-limit.js";
 import { buildContextPacketForOwner } from "./context-packet-builder.js";
 import { getOwnedBeatRow } from "./chapter-beat.js";
-import { calculateEstimatedCostUsd } from "./model-cost-map.js";
+import { assertGenerationRouteCallable } from "./model-router.js";
+import { createProviderEventSequence } from "./generation-provider-event.js";
 import { getOwnedProjectRow } from "./project.js";
 import {
   getCurrentProseVersionRowForBeat,
@@ -482,6 +483,11 @@ export async function rewriteProseForOwner(
     requestedCreditCost: creditCost,
   });
 
+  assertGenerationRouteCallable(bindings, {
+    generationType: GENERATION_TYPES.prose_rewrite,
+    qualityMode: body.qualityMode,
+  });
+
   const correlationId = generateCorrelationId();
   let attempt = await createGenerationAttempt(bindings, {
     projectId,
@@ -501,6 +507,7 @@ export async function rewriteProseForOwner(
       sourceProseVersionId: sourceRow.id,
     },
   });
+  const providerEventSequence = createProviderEventSequence();
 
   let debited = false;
   try {
@@ -554,6 +561,7 @@ export async function rewriteProseForOwner(
         projectId,
         userId: ownerId,
         generationAttemptId: attempt.id,
+        providerEventSequence,
       },
     });
   } catch (err) {
@@ -605,29 +613,12 @@ export async function rewriteProseForOwner(
     throw err;
   }
 
-  let estimatedCostUsd: number | null = null;
-  let costEstimateMetadata: GenerationAttemptCostEstimateMetadata = {};
-
-  if (providerResult.provider === "mock") {
-    estimatedCostUsd = 0;
-    costEstimateMetadata = {
-      costEstimateApproximate: true,
-      mockProvider: true,
-      costModel: providerResult.model,
-    };
-  } else {
-    const costResult = calculateEstimatedCostUsd({
-      model: providerResult.model,
-      inputTokens: providerResult.inputTokens,
-      outputTokens: providerResult.outputTokens,
-    });
-    estimatedCostUsd = costResult.estimatedCostUsd;
-    costEstimateMetadata = {
-      costEstimateApproximate: costResult.approximate,
-      ...(costResult.reason ? { costEstimateReason: costResult.reason } : {}),
-      ...(costResult.costModel ? { costModel: costResult.costModel } : {}),
-    };
-  }
+  const estimatedCostUsd = validated.totalEstimatedCostUsd;
+  const costEstimateMetadata: GenerationAttemptCostEstimateMetadata = {
+    costEstimateApproximate: true,
+    ...(providerResult.provider === "mock" ? { mockProvider: true } : {}),
+    costModel: providerResult.model,
+  };
 
   attempt = await markGenerationAttemptSucceeded(bindings, {
     attemptId: attempt.id,
@@ -635,6 +626,11 @@ export async function rewriteProseForOwner(
     projectId,
     provider: providerResult.provider,
     model: providerResult.model,
+    logicalModel: validated.logicalModel,
+    routingPolicyVersion: validated.routingPolicyVersion,
+    fallbackUsed: validated.fallbackUsed,
+    retryCount: validated.totalRetryCount,
+    providerLatencyMs: validated.totalProviderLatencyMs,
     inputTokens: providerResult.inputTokens,
     outputTokens: providerResult.outputTokens,
     outputEntityId: saved.version.id,
