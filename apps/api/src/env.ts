@@ -19,12 +19,6 @@ export interface AppBindings {
   /** AI registry routing — second OpenAI-compatible provider (Worker-only). */
   TOKENROUTER_API_KEY?: string;
   TOKENROUTER_BASE_URL?: string;
-  DEFAULT_AI_MODEL?: string;
-  AI_MODEL_HEMAT?: string;
-  AI_MODEL_SEIMBANG?: string;
-  AI_MODEL_TERBAIK?: string;
-  /** Sprint 18 — server-side embedding model; must be allowlisted. */
-  AI_EMBEDDING_MODEL?: string;
   AI_TIMEOUT_MS?: string;
   AI_MAX_RETRIES?: string;
   AI_CREDIT_COST_PROSE_BEAT?: string;
@@ -331,9 +325,26 @@ export function getPaymentTimeoutMs(bindings: AppBindings): number {
   return DEFAULT_PAYMENT_TIMEOUT_MS;
 }
 
-export function getDefaultAiModel(bindings: AppBindings): string | undefined {
-  const model = bindings.DEFAULT_AI_MODEL?.trim();
-  return model || undefined;
+const LEGACY_AI_MODEL_ENV_KEYS = [
+  "DEFAULT_AI_MODEL",
+  "AI_MODEL_HEMAT",
+  "AI_MODEL_SEIMBANG",
+  "AI_MODEL_TERBAIK",
+  "AI_EMBEDDING_MODEL",
+] as const;
+
+/**
+ * Model/route overrides are forbidden: production routing must match the
+ * committed policy. Fail fast (rather than silently ignore) if a legacy
+ * override env is still set.
+ */
+export function assertNoLegacyAiModelEnv(
+  source: Record<string, string | undefined>,
+): void {
+  const active = LEGACY_AI_MODEL_ENV_KEYS.filter((key) => source[key]?.trim());
+  if (active.length > 0) {
+    throw new Error(`Legacy AI model env is forbidden: ${active.join(", ")}`);
+  }
 }
 
 export function getAiTimeoutMs(bindings: AppBindings): number {

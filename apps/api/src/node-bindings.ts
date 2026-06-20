@@ -1,4 +1,5 @@
 import type { AppBindings } from "./env.js";
+import { assertNoLegacyAiModelEnv } from "./env.js";
 
 const BINDING_ENV_KEYS: (keyof AppBindings)[] = [
   "SUPABASE_URL",
@@ -13,10 +14,6 @@ const BINDING_ENV_KEYS: (keyof AppBindings)[] = [
   "OPENROUTER_BASE_URL",
   "TOKENROUTER_API_KEY",
   "TOKENROUTER_BASE_URL",
-  "DEFAULT_AI_MODEL",
-  "AI_MODEL_HEMAT",
-  "AI_MODEL_SEIMBANG",
-  "AI_MODEL_TERBAIK",
   "AI_TIMEOUT_MS",
   "AI_MAX_RETRIES",
   "AI_CREDIT_COST_PROSE_BEAT",
@@ -46,6 +43,7 @@ const BINDING_ENV_KEYS: (keyof AppBindings)[] = [
 export function loadBindingsFromProcessEnv(
   source: NodeJS.ProcessEnv = process.env,
 ): AppBindings {
+  assertNoLegacyAiModelEnv(source);
   const bindings: AppBindings = {};
 
   for (const key of BINDING_ENV_KEYS) {

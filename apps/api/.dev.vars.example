@@ -18,10 +18,7 @@ ALLOWED_ORIGINS=http://localhost:5173,http://localhost:5174,http://localhost:517
 # OPENROUTER_BASE_URL=https://openrouter.ai/api/v1
 # TOKENROUTER_API_KEY=
 # TOKENROUTER_BASE_URL=https://api.tokenrouter.com/v1
-# DEFAULT_AI_MODEL=google/gemini-2.5-flash:free
-# AI_MODEL_HEMAT=google/gemini-2.5-flash:free
-# AI_MODEL_SEIMBANG=google/gemini-2.5-flash:free
-# AI_MODEL_TERBAIK=google/gemini-2.5-flash:free
+# Model/route overrides are removed — routing is fixed in ai-routing-policy.ts.
 # AI_TIMEOUT_MS=45000
 # AI_MAX_RETRIES=1
 # AI_CREDIT_COST_PROSE_BEAT=10

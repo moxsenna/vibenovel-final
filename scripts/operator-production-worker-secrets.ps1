@@ -97,6 +97,7 @@ if (-not $SkipDeploy) {
 Write-Host "Production Worker secret preflight" -ForegroundColor Cyan
 Write-Host "Supabase ref: $($prodRefAudit.ApiRef)"
 Write-Host "OpenRouter key: $(if (Get-RequiredEnv 'OPENROUTER_API_KEY') { '[set]' } else { '[not set]' })"
+Write-Host "TokenRouter key: $(if (Get-RequiredEnv 'TOKENROUTER_API_KEY') { '[set]' } else { '[not set]' })"
 Write-Host "Duitku merchant code: $(if (Get-RequiredEnv 'DUITKU_MERCHANT_CODE') { '[set]' } else { '[not set]' })"
 Write-Host "Duitku merchant key: $(if (Get-RequiredEnv 'DUITKU_MERCHANT_KEY') { '[set]' } else { '[not set]' })"
 
@@ -129,6 +130,8 @@ $secretNames = @(
   "SUPABASE_ANON_KEY",
   "SUPABASE_SERVICE_ROLE_KEY",
   "OPENROUTER_API_KEY",
+  # Optional until TokenRouter is activated via the routing-policy gate.
+  "TOKENROUTER_API_KEY",
   "DUITKU_MERCHANT_CODE",
   "DUITKU_MERCHANT_KEY"
 )

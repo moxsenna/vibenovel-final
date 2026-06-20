@@ -47,7 +47,6 @@ AI_GENERATION_ENABLED = "true"
 AI_PROVIDER_MOCK = "false"
 OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
 TOKENROUTER_BASE_URL = "https://api.tokenrouter.com/v1"
-AI_EMBEDDING_MODEL = "openai/text-embedding-3-small"
 
 # Duitku configuration is ready, but checkout stays off until the v2 launch gate.
 CREDIT_TOPUP_ENABLED = "false"

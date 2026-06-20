@@ -22,7 +22,8 @@ import {
   getFeatureKeyForGenerationType,
   type NarrazaAiFeature,
 } from "./ai-credit-policy.js";
-import { MODEL_ROUTING_VERSION } from "./model-routing-v2.js";
+/** Credit-ledger routing marker — independent of the AI routing policy version. */
+const MODEL_ROUTING_VERSION = "v2";
 import { getCreditBalanceForUser, preflightCreditBalance } from "./credit.js";
 import { TransactionPlan } from "./transaction.js";
 
