@@ -83,7 +83,7 @@
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "test:credit-v2": "npm run build:shared && npm run test:credit-v2 -w @vibenovel/api && npm run test:credit-v2-ui -w @vibenovel/web",
-    "test:ai-routing": "npm run build:shared && npm run test:ai-model-registry -w @vibenovel/api",
+    "test:ai-routing": "npm run build:shared && npm run test:ai-model-registry -w @vibenovel/api && npm run test:ai-routing-policy -w @vibenovel/api",
     "test:api:contracts": "npm run build -w @vibenovel/shared && npm run test:sprint14-safety -w @vibenovel/api && npm run test:prose-safe-repair-loop -w @vibenovel/api && npm run test:character-knowledge-validator -w @vibenovel/api && npm run test:sprint19-asisten-narra -w @vibenovel/api"
   },
   "engines": {

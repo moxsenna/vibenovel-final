@@ -347,7 +347,10 @@ export function getAiModelDeployment(
   key: AiLogicalModelKey,
   provider: AiLiveProviderId,
 ): AiModelDeployment {
-  const deployment = AI_MODEL_REGISTRY[key].deployments[provider];
+  // Read through the widened `AiModelDefinition` view so indexing by the
+  // provider union is well-typed; the narrow `as const` registry type only
+  // exposes the providers each model actually declares.
+  const deployment = getAiModel(key).deployments[provider];
   if (!deployment) {
     throw new AppError(
       "AI_NOT_CONFIGURED",
