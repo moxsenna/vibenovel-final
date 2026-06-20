@@ -9,6 +9,7 @@ const bindings: AppBindings = {
   AI_GENERATION_ENABLED: "true",
   AI_PROVIDER_MOCK: "false",
   OPENROUTER_API_KEY: "openrouter-key",
+  TOKENROUTER_API_KEY: "tokenrouter-key",
   CREDIT_TOPUP_ENABLED: "true",
   PAYMENT_PROVIDER_MOCK: "false",
   MAYAR_API_KEY: "mayar-key",
@@ -28,6 +29,7 @@ const expectedKeys = [
   "aiGenerationEnabled",
   "aiProviderMock",
   "hasOpenRouterApiKey",
+  "hasTokenRouterApiKey",
   "creditTopupEnabled",
   "paymentProviderMock",
   "appEnv",
@@ -58,6 +60,7 @@ assert.equal(flags.hasSupabaseServiceRoleKey, true);
 assert.equal(flags.aiGenerationEnabled, true);
 assert.equal(flags.aiProviderMock, false);
 assert.equal(flags.hasOpenRouterApiKey, true);
+assert.equal(flags.hasTokenRouterApiKey, true);
 assert.equal(flags.creditTopupEnabled, true);
 assert.equal(flags.paymentProviderMock, false);
 assert.equal(flags.appEnv, "production");

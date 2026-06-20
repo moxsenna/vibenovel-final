@@ -16,6 +16,9 @@ export interface AppBindings {
   /** Sprint 8 — Worker-only; never log or expose to client. */
   OPENROUTER_API_KEY?: string;
   OPENROUTER_BASE_URL?: string;
+  /** AI registry routing — second OpenAI-compatible provider (Worker-only). */
+  TOKENROUTER_API_KEY?: string;
+  TOKENROUTER_BASE_URL?: string;
   DEFAULT_AI_MODEL?: string;
   AI_MODEL_HEMAT?: string;
   AI_MODEL_SEIMBANG?: string;
@@ -64,6 +67,7 @@ export interface EnvPresenceFlags {
   aiGenerationEnabled: boolean;
   aiProviderMock: boolean;
   hasOpenRouterApiKey: boolean;
+  hasTokenRouterApiKey: boolean;
   creditTopupEnabled: boolean;
   paymentProviderMock: boolean;
   appEnv: string;
@@ -83,6 +87,7 @@ const DEFAULT_ALLOWED_ORIGINS =
   "http://localhost:5173,http://localhost:5174,http://localhost:5175";
 
 const DEFAULT_OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1";
+const DEFAULT_TOKENROUTER_BASE_URL = "https://api.tokenrouter.com/v1";
 const DEFAULT_AI_TIMEOUT_MS = 45_000;
 const DEFAULT_AI_MAX_RETRIES = 1;
 
@@ -144,6 +149,22 @@ export function getOpenRouterApiKey(bindings: AppBindings): string | undefined {
 
 export function hasOpenRouterApiKey(bindings: AppBindings): boolean {
   return Boolean(getOpenRouterApiKey(bindings));
+}
+
+export function getTokenRouterApiKey(
+  bindings: AppBindings,
+): string | undefined {
+  return bindings.TOKENROUTER_API_KEY?.trim() || undefined;
+}
+
+export function getTokenRouterBaseUrl(bindings: AppBindings): string {
+  return (
+    bindings.TOKENROUTER_BASE_URL?.trim() || DEFAULT_TOKENROUTER_BASE_URL
+  ).replace(/\/$/, "");
+}
+
+export function hasTokenRouterApiKey(bindings: AppBindings): boolean {
+  return Boolean(getTokenRouterApiKey(bindings));
 }
 
 export function isCreditTopupEnabled(bindings: AppBindings): boolean {
@@ -348,6 +369,7 @@ export function getEnvPresenceFlags(bindings: AppBindings): EnvPresenceFlags {
     aiGenerationEnabled: isAiGenerationEnabled(bindings),
     aiProviderMock: isAiProviderMock(bindings),
     hasOpenRouterApiKey: hasOpenRouterApiKey(bindings),
+    hasTokenRouterApiKey: hasTokenRouterApiKey(bindings),
     creditTopupEnabled: isCreditTopupEnabled(bindings),
     paymentProviderMock: isPaymentProviderMock(bindings),
     appEnv: getAppEnv(bindings),
