@@ -1457,3 +1457,25 @@ npm run smoke:staging -- -TargetName "node-local" -ApiBaseUrl "http://localhost:
 **Task 11.5:** EC2 deploy — **PARTIAL GO** ([`docs/68`](../../docs/68-aws-ec2-api-staging-deploy-report.md)).
 
 **Task 11.6:** HTTPS + web-to-AWS — **BLOCKED** ([`docs/69`](../../docs/69-aws-https-domain-and-web-to-aws-api-report.md)); `npm run operator:aws:https:gate -- -Domain <apex>`.
+
+## AI model registry & routing (operator notes)
+
+Engine2 AI routing is driven by two source-of-truth files:
+
+- **Model changes** (which logical model an engine uses): edit
+  `src/services/ai-routing-policy.ts` only.
+- **Provider model IDs, pricing, capabilities, verification**: edit
+  `src/services/ai-model-registry.ts` only. Raw provider model IDs must not
+  appear anywhere else (enforced by `test:ai-model-id-boundary`).
+- **Provider keys / base URLs**: env-only (`OPENROUTER_*`, `TOKENROUTER_*`).
+  There are **no** per-engine or global model override env vars; the legacy
+  `DEFAULT_AI_MODEL` / `AI_MODEL_*` / `AI_EMBEDDING_MODEL` are removed and now
+  fail fast at startup (`assertNoLegacyAiModelEnv`).
+- **Emergency shutdown**: set `AI_GENERATION_ENABLED=false`.
+- **Rollback**: revert the routing-policy commit for the affected engine and
+  redeploy — configuration-by-code, not env override.
+- **TokenRouter**: a `DOCUMENTED`, non-routed candidate. Its free promotion ends
+  **22 June 2026**; activation requires the optional gate (reverify pricing,
+  pass the live probe, promote to `VERIFIED`, then a separate one-engine
+  routing-policy commit). Immediate pricing reverification is required after the
+  promotion ends.
