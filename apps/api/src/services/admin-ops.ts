@@ -33,6 +33,8 @@ import {
   type GenerationAttemptRow,
   type GenerationAttemptSafeSummary,
 } from "./generation-attempt.js";
+import { listGenerationProviderEvents } from "./generation-provider-event.js";
+import type { GenerationProviderEvent } from "@vibenovel/shared";
 
 const PROFILE_SELECT =
   "id, display_name, email, default_language, plan_label, role, subscription_plan, created_at, updated_at";
@@ -90,6 +92,12 @@ export interface AdminProposalDetailResponse {
   proposal: AdminProposalListItem;
 }
 
+/**
+ * Inherits the safe routing summary from GenerationAttemptSafeSummary, which
+ * surfaces logicalModel, routingPolicyVersion, fallbackUsed, retryCount,
+ * providerLatencyMs, inputTokens, outputTokens, and estimatedCostUsd for the
+ * admin attempt list. No prompt/output/reasoning text is ever included.
+ */
 export interface AdminGenerationAttemptListItem extends GenerationAttemptSafeSummary {
   projectId: string;
   userId: string;
@@ -103,6 +111,8 @@ export interface AdminGenerationAttemptsListResponse {
 
 export interface AdminGenerationAttemptDetailResponse {
   attempt: AdminGenerationAttemptListItem;
+  providerEvents: GenerationProviderEvent[];
+  correlationId: string | null;
 }
 
 export interface AdminUserCreditSection {
@@ -460,6 +470,11 @@ export async function getAdminGenerationAttemptDetail(
   const mapped = mapGenerationAttemptRow(row);
   const summary = toGenerationAttemptSafeSummary(mapped);
   const labels = ownerLabels(ownerRow as ProfileRow | undefined);
+  const providerEvents = await listGenerationProviderEvents(bindings, attemptId);
+  const correlationId =
+    typeof mapped.metadata.correlationId === "string"
+      ? mapped.metadata.correlationId
+      : null;
 
   return {
     attempt: {
@@ -468,6 +483,8 @@ export async function getAdminGenerationAttemptDetail(
       userId: row.user_id,
       ...labels,
     },
+    providerEvents,
+    correlationId,
   };
 }
 
