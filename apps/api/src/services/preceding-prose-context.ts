@@ -1,5 +1,3 @@
-import type { WriterPrecedingProseTail } from "@vibenovel/shared";
-
 /* ------------------------------------------------------------------ */
 /*  Unicode-safe truncation                                            */
 /* ------------------------------------------------------------------ */
@@ -27,5 +25,3 @@ export interface LoadPrecedingProseTailInput {
   currentBeatNumber: number | null;
   currentChapterNumber: number;
 }
-
-const PRECEDING_MAX_CODEPOINTS = 900;

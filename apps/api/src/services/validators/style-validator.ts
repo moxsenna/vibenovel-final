@@ -4,9 +4,7 @@ export interface StyleFinding {
   message: string;
 }
 
-export function validateStyle(
-  prose: string,
-): StyleFinding[] {
+export function validateStyle(): StyleFinding[] {
   const findings: StyleFinding[] = [];
   return findings;
 }

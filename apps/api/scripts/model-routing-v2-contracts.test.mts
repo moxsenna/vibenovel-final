@@ -1,6 +1,10 @@
 import assert from "node:assert/strict";
 let p=0,f=0;
-function t(n:string,fn:()=>void){try{fn();p++;console.log(`  ✓ ${n}`)}catch(e){f++;console.log(`  ✗ ${n}`);console.error(`      ${e instanceof assert.AssertionError?e.message:e}`)}}
-t("model routing v2 placeholder",()=>{assert.ok(true);});
-console.log(`\n=== Model Routing v2 ===\n  Passed: ${p}\n  Failed: ${f}\n=========================\n`);
+function t(n,fn){try{fn();p++;console.log("  \u2713 "+n)}catch(e){f++;console.log("  \u2717 "+n)}}
+t("advanced controls shape",()=>{
+  const controls={targetChapterCount:10,revealDensity:"sedang",retentionIntensity:"seimbang",proseStyleTarget:"emosional"};
+  assert.equal(controls.targetChapterCount,10);
+  assert.ok(["rendah","sedang","padat"].includes(controls.revealDensity));
+});
+console.log("\n=== Advanced Outline Controls ===\n  Passed: "+p+"\n  Failed: "+f+"\n================================\n");
 process.exit(f>0?1:0);

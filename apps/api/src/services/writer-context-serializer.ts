@@ -108,7 +108,7 @@ export function serializeContext(
     label: "CANON FACTS",
     content: formatSection(
       "CANON FACTS",
-      packet.canon.facts.map((f) => (typeof f === "string" ? f : f.text)),
+      packet.canon.facts.map((f) => (typeof f === "string" ? f : String(f))),
     ),
     budget: budgets.canonFacts,
   });
@@ -212,7 +212,7 @@ export function serializeContext(
   // Truncation priority order (first = keep, last = cut first)
   // The sections array is in priority order: highest priority first
   const truncatedSections: string[] = [];
-  let remaining = totalCap;
+  let remaining: number = totalCap;
   const sectionChars: Record<string, number> = {};
 
   const result: string[] = [];

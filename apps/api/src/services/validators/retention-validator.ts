@@ -4,6 +4,6 @@ export interface RetentionFinding {
   message: string;
 }
 
-export function validateRetentionHook(prose: string): RetentionFinding[] {
+export function validateRetentionHook(_prose: string): RetentionFinding[] {
   return [];
 }

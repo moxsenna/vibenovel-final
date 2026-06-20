@@ -1,5 +1,3 @@
-import type { WriterContextPacket } from "@vibenovel/shared";
-
 const FORBIDDEN_PACKET_PATTERNS = [
   "planning_truth",
   "packet_json",

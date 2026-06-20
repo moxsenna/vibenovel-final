@@ -1,5 +1,3 @@
-import type { WriterContextPacket } from "@vibenovel/shared";
-
 export interface SemanticOutputJudgeResult {
   instructionCompliance: { score: number; missingRequirements: string[] };
   sceneBoundary: { passed: boolean; jumpedAhead: boolean; reason: string };

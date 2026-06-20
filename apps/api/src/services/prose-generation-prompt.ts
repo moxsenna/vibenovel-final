@@ -35,55 +35,6 @@ export async function computePromptHashFromMessages(
   return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, "0")).join("");
 }
 
-function buildUserPromptSections(
-  packet: WriterContextPacket,
-  beat: ChapterBeatRow,
-  instruction?: string,
-): string {
-  const sections: string[] = [
-    `Chapter ${packet.meta.chapterNumber}: ${packet.currentChapter.title}`,
-    `Beat ${beat.beat_number}: ${beat.title}`,
-    `Beat goal: ${beat.summary}`,
-  ];
-
-  if (beat.direction?.trim()) {
-    sections.push(`Direction: ${beat.direction.trim()}`);
-  }
-  if (packet.emotionalTarget.beatEmotionalShift) {
-    sections.push(`Emotional shift: ${packet.emotionalTarget.beatEmotionalShift}`);
-  }
-  if (packet.hookTarget.beatStopCondition) {
-    sections.push(`Stop condition: ${packet.hookTarget.beatStopCondition}`);
-  }
-
-  sections.push(`Premise: ${packet.foundation.premiseSummary}`);
-  sections.push(`Main conflict: ${packet.foundation.mainConflictSummary}`);
-  sections.push(`Reader promise: ${packet.foundation.readerPromise}`);
-
-  if (packet.constraints.mustInclude.length > 0) {
-    sections.push(`Must include: ${packet.constraints.mustInclude.join("; ")}`);
-  }
-  if (packet.constraints.mustNotInclude.length > 0) {
-    sections.push(`Must avoid: ${packet.constraints.mustNotInclude.join("; ")}`);
-  }
-  if (packet.revealGate.forbiddenConcepts.length > 0) {
-    sections.push(
-      `Forbidden concepts: ${packet.revealGate.forbiddenConcepts.slice(0, 12).join(", ")}`,
-    );
-  }
-  if (packet.constraints.mobileFormatRules.length > 0) {
-    sections.push(`Format: ${packet.constraints.mobileFormatRules.join(" ")}`);
-  }
-  if (packet.constraints.wordTarget) {
-    sections.push(`Target length: ~${packet.constraints.wordTarget} words`);
-  }
-  if (instruction?.trim()) {
-    sections.push(`Writer note (bounded): ${instruction.trim()}`);
-  }
-
-  return sections.join("\n");
-}
-
 async function loadSafePacketFromLog(
   bindings: AppBindings,
   projectId: string,

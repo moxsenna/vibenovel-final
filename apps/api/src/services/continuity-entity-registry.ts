@@ -11,14 +11,10 @@ export interface EntityRegistry {
 
 let charCounter = 0;
 let factCounter = 0;
-let loopCounter = 0;
-let revealCounter = 0;
 
 export function createEntityRegistry(): EntityRegistry {
   charCounter = 0;
   factCounter = 0;
-  loopCounter = 0;
-  revealCounter = 0;
   return { characters: [], facts: [], openLoops: [], reveals: [] };
 }
 
