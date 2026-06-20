@@ -6,6 +6,7 @@ import {
   getAiModelDeployment,
   getDeploymentCost,
   isAiLogicalModelKey,
+  isDeploymentPromotionExpired,
 } from "../src/services/ai-model-registry.ts";
 
 assert.equal(isAiLogicalModelKey("minimax_text"), true);
@@ -88,5 +89,17 @@ for (const model of Object.values(AI_MODEL_REGISTRY)) {
     `${deployment.modelId} pricing must equal audit 20`,
   );
 }
+
+// Promotion expiry safeguard: an OpenRouter catalog deployment never expires;
+// the TokenRouter promo expires after its date.
+assert.equal(isDeploymentPromotionExpired(openRouterMinimax), false);
+assert.equal(
+  isDeploymentPromotionExpired(tokenRouterMinimax, new Date("2026-06-01T00:00:00Z")),
+  false,
+);
+assert.equal(
+  isDeploymentPromotionExpired(tokenRouterMinimax, new Date("2026-07-01T00:00:00Z")),
+  true,
+);
 
 console.log("PASS AI model registry contracts");

@@ -19,6 +19,7 @@ import {
 import {
   getDeploymentCost,
   getAiModelDeployment,
+  isDeploymentPromotionExpired,
   type AiLiveProviderId,
 } from "./ai-model-registry.js";
 import {
@@ -59,6 +60,8 @@ export interface ModelRouterDependencies {
   ) => Promise<OpenAiCompatibleChatResult>;
   recordEvent?: (input: ProviderEventRecorderInput) => Promise<void>;
   sleep?: (ms: number) => Promise<void>;
+  /** Injectable clock for promotion-expiry evaluation (defaults to now). */
+  now?: Date;
 }
 
 function buildMessages(
@@ -257,6 +260,7 @@ export async function generateWithModelRouter<TOutput = string>(
     dependencies.callProvider ??
     ((callInput: ProviderChatCallInput) =>
       callLiveProviderChat(bindings, callInput));
+  const now = dependencies.now ?? new Date();
 
   const route = resolveRoute(input.generationType, input.qualityMode);
   const messages = buildMessages(input);
@@ -389,6 +393,41 @@ export async function generateWithModelRouter<TOutput = string>(
   for (const { target, role, maxRetries } of targets) {
     const deployment = getAiModelDeployment(target.model, target.provider);
     const fallbackUsed = role === "fallback";
+
+    // Auto-revert: an expired temporary promotion must not be routed to; treat
+    // it as non-callable and fall through to the explicit fallback.
+    if (isDeploymentPromotionExpired(deployment, now)) {
+      console.warn(
+        `[model-router] promotion expired for ${target.provider}:${target.model}; reverting to fallback`,
+      );
+      await recordEvent({
+        generationAttemptId: input.generationAttemptId,
+        sequenceNumber: seq(),
+        routeRole: role,
+        provider: target.provider,
+        logicalModel: target.model,
+        providerModelId: deployment.modelId,
+        retryNumber: 0,
+        outcome: "configuration_error",
+        errorCategory: "configuration_error",
+        errorCodeSafe: "AI_PROMOTION_EXPIRED",
+      });
+      lastError = new AppError(
+        "AI_NOT_CONFIGURED",
+        `${target.provider} promotion for ${target.model} has expired and needs reverification`,
+        503,
+      );
+      lastSummary = {
+        provider: target.provider,
+        providerModelId: deployment.modelId,
+        logicalModel: target.model,
+        fallbackUsed,
+        retryCount,
+        providerLatencyMs: 0,
+        estimatedCostUsd: null,
+      };
+      continue;
+    }
 
     if (!hasProviderCredential(bindings, target.provider)) {
       await recordEvent({

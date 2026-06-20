@@ -44,7 +44,8 @@
     "test:model-router-v3": "tsx scripts/model-router-v3-contracts.test.mts",
     "test:admin-generation-attempts": "tsx scripts/admin-generation-attempts-contracts.test.mts",
     "test:ai-model-id-boundary": "tsx scripts/ai-model-id-boundary.test.mts",
-    "test:ai-routing-v3-credit-invariance": "tsx scripts/ai-routing-v3-credit-invariance.test.mts"
+    "test:ai-routing-v3-credit-invariance": "tsx scripts/ai-routing-v3-credit-invariance.test.mts",
+    "verify:tokenrouter-minimax": "tsx --env-file=../../.env.production scripts/tokenrouter-minimax-probe.mts"
   },
   "dependencies": {
     "@hono/node-server": "^1.13.7",

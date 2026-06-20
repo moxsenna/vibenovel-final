@@ -189,4 +189,47 @@ assert.doesNotThrow(() =>
   }),
 );
 
+// Expired TokenRouter promotion must auto-revert to the OpenRouter fallback.
+const expiredCalls: Array<{ provider: string; modelId: string }> = [];
+const expiredEvents: string[] = [];
+const expiredResult = await generateWithModelRouter(
+  baseBindings,
+  {
+    generationAttemptId: "44444444-4444-4444-4444-444444444444",
+    providerEventSequence: createProviderEventSequence(),
+    generationType: GENERATION_TYPES.outline_generation,
+    qualityMode: WRITER_QUALITY_MODES.hemat,
+    promptHash: "hash",
+    promptMessages: [{ role: "user", content: "outline" }],
+    validateOutput: (text) => JSON.parse(text) as { chapters: unknown[] },
+  },
+  {
+    now: new Date("2026-07-01T00:00:00Z"),
+    resolveRoute() {
+      return {
+        routeKey: GENERATION_TYPES.outline_generation,
+        requires: ["textGeneration", "structuredJson"],
+        primary: { provider: "tokenrouter", model: "minimax_text" },
+        fallback: { provider: "openrouter", model: "qwen_plus" },
+        maxOutputTokens: 4000,
+        timeoutMs: 60_000,
+        primaryMaxRetries: 1,
+        temperature: 0.4,
+      };
+    },
+    async callProvider(input) {
+      expiredCalls.push({ provider: input.provider, modelId: input.modelId });
+      return { text: '{"chapters":[]}', inputTokens: 5, outputTokens: 3, latencyMs: 10 };
+    },
+    async recordEvent(input) {
+      expiredEvents.push(input.outcome);
+    },
+    async sleep() {},
+  },
+);
+assert.equal(expiredResult.fallbackUsed, true);
+assert.equal(expiredCalls.length, 1, "expired primary must not be called");
+assert.equal(expiredCalls[0].provider, "openrouter");
+assert.deepEqual(expiredEvents, ["configuration_error", "succeeded"]);
+
 console.log("PASS model router v3 contracts");

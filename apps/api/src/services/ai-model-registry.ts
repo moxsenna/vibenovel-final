@@ -367,3 +367,25 @@ export function getDeploymentCost(
 ): AiDeploymentPricing {
   return getAiModelDeployment(key, provider).pricing;
 }
+
+/**
+ * True when a temporary-promotion deployment has passed its `promotionEndsOn`.
+ * Routes pointing at an expired promotion must auto-revert to their fallback
+ * until the deployment is reverified, since the temporary (often zero) price is
+ * no longer valid. A date-only `promotionEndsOn` is interpreted as end-of-day
+ * UTC; operators should replace it with a full ISO timestamp once the dashboard
+ * expiry time and timezone are confirmed.
+ */
+export function isDeploymentPromotionExpired(
+  deployment: AiModelDeployment,
+  now: Date = new Date(),
+): boolean {
+  if (!deployment.promotionEndsOn) return false;
+  const raw = deployment.promotionEndsOn;
+  const iso = /^\d{4}-\d{2}-\d{2}$/.test(raw)
+    ? `${raw}T23:59:59.999Z`
+    : raw;
+  const end = Date.parse(iso);
+  if (Number.isNaN(end)) return false;
+  return now.getTime() > end;
+}
