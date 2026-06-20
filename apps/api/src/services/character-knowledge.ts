@@ -16,6 +16,7 @@ import {
 import { createServiceRoleClient } from "../lib/supabase.js";
 import { AppError } from "../errors.js";
 import { getOwnedProjectRow } from "./project.js";
+import type { CharacterKnowledgeConstraint } from "@vibenovel/shared";
 
 const CHARACTER_KNOWLEDGE_SELECT =
   "id, project_id, character_id, fact_id, knowledge_status, confidence, learned_at_chapter, learned_from, metadata, created_at, updated_at";
@@ -110,6 +111,56 @@ function factSummary(
     learnedAtChapter: row.learnedAtChapter,
     learnedFrom: row.learnedFrom,
   };
+}
+
+const KNOWLEDGE_STATUS_TO_ALLOWED_MODE: Record<string, CharacterKnowledgeConstraint["allowedMode"]> = {
+  [CHARACTER_KNOWLEDGE_STATUSES.knows]: "certain",
+  [CHARACTER_KNOWLEDGE_STATUSES.partially_knows]: "partial",
+  [CHARACTER_KNOWLEDGE_STATUSES.suspects]: "suspicion",
+  [CHARACTER_KNOWLEDGE_STATUSES.misbelieves]: "false_belief",
+};
+
+/**
+ * Build knowledge constraints from character knowledge rows and facts.
+ * Unknown facts are compiled as "forbidden" — they must not appear in Writer output.
+ */
+export function buildKnowledgeConstraints(
+  characterId: string,
+  knowledgeRows: Array<{ fact_id: string; knowledge_status: string }>,
+  allFacts: Array<{ id: string; text: string }>,
+): CharacterKnowledgeConstraint[] {
+  const constraints: CharacterKnowledgeConstraint[] = [];
+  const knownFactIds = new Set<string>();
+
+  for (const row of knowledgeRows) {
+    knownFactIds.add(row.fact_id);
+
+    const fact = allFacts.find((f) => f.id === row.fact_id);
+    if (!fact) continue;
+
+    const allowedMode = KNOWLEDGE_STATUS_TO_ALLOWED_MODE[row.knowledge_status] ?? "forbidden";
+
+    constraints.push({
+      characterId,
+      factId: row.fact_id,
+      factText: fact.text,
+      allowedMode,
+    });
+  }
+
+  // Unknown facts → forbidden
+  for (const fact of allFacts) {
+    if (!knownFactIds.has(fact.id)) {
+      constraints.push({
+        characterId,
+        factId: fact.id,
+        factText: fact.text,
+        allowedMode: "forbidden",
+      });
+    }
+  }
+
+  return constraints;
 }
 
 export function collectFutureRevealFactIds(
