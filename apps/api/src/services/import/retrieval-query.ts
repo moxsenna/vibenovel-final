@@ -1,5 +1,4 @@
 import type { AppBindings } from "../../env.js";
-import { createServiceRoleClient } from "../../lib/supabase.js";
 import { matchProseEmbeddings } from "./semantic-retrieval.js";
 import type { SemanticRetrievalSnippet } from "./semantic-retrieval.js";
 

@@ -35,11 +35,11 @@ export async function matchProseEmbeddings(
       return [];
     }
 
-    return ((data ?? []) as SemanticRetrievalSnippet[]).map((row) => ({
-      sourceRef: (row as Record<string, unknown>).sourceRef as string ?? (row as Record<string, unknown>).source_ref as string ?? "",
-      chunkText: (row as Record<string, unknown>).chunkText as string ?? (row as Record<string, unknown>).chunk_text as string ?? "",
-      similarity: (row as Record<string, unknown>).similarity as number ?? 0,
-      metadata: ((row as Record<string, unknown>).metadata as Record<string, unknown>) ?? {},
+    return ((data ?? []) as Record<string, unknown>[]).map((row) => ({
+      sourceRef: row.sourceRef as string ?? row.source_ref as string ?? "",
+      chunkText: row.chunkText as string ?? row.chunk_text as string ?? "",
+      similarity: row.similarity as number ?? 0,
+      metadata: (row.metadata as Record<string, unknown>) ?? {},
     }));
   } catch (err) {
     console.error("semantic retrieval failed:", err);
