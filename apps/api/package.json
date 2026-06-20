@@ -17,7 +17,8 @@
     "test:atomic-grant-hosted": "tsx scripts/atomic-grant-hosted-staging.test.mts",
     "test:hosted-atomic-grant-probe": "tsx scripts/probe-hosted-atomic-grant.mts",
     "test:long-fiction-baseline": "tsx scripts/long-fiction-hardening-baseline.test.mts",
-    "test:ai-rate-limit-v2": "tsx scripts/ai-rate-limit-v2-contracts.test.mts"
+    "test:ai-rate-limit-v2": "tsx scripts/ai-rate-limit-v2-contracts.test.mts",
+    "test:prose-orchestration-budget": "tsx scripts/prose-orchestration-budget.test.mts"
   },
   "dependencies": {
     "@hono/node-server": "^1.13.7",

@@ -25,7 +25,7 @@ import { calculateEstimatedCostUsd } from "./model-cost-map.js";
 import { generateWithModelRouter } from "./model-router.js";
 import { getOwnedProjectRow } from "./project.js";
 import { saveAiGeneratedProseVersionForOwner } from "./prose-draft.js";
-import { buildProseBeatPrompt } from "./prose-generation-prompt.js";
+import { buildProseBeatPromptFromPacket } from "./prose-generation-prompt.js";
 import { getOwnedWritingSessionRow } from "./write-session.js";
 import {
   createGenerationAttempt,
@@ -374,10 +374,8 @@ export async function generateProseBeatForOwner(
     beatId: body.beatId,
   });
 
-  const promptResult = await buildProseBeatPrompt(
-    bindings,
-    projectId,
-    packetResult.packetLogId,
+  const promptResult = await buildProseBeatPromptFromPacket(
+    packetResult.packet,
     beatRow,
     body.instruction,
   );

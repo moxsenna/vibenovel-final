@@ -30,7 +30,7 @@ import {
   saveAiRewrittenProseVersionForOwner,
 } from "./prose-draft.js";
 import {
-  buildProseRewritePrompt,
+  buildProseRewritePromptFromPacket,
   parseProseRewriteMode,
   PROSE_REWRITE_MODES,
   type ProseRewriteMode,
@@ -445,10 +445,8 @@ export async function rewriteProseForOwner(
     beatId: beatRow.id,
   });
 
-  const promptResult = await buildProseRewritePrompt(
-    bindings,
-    projectId,
-    packetResult.packetLogId,
+  const promptResult = await buildProseRewritePromptFromPacket(
+    packetResult.packet,
     beatRow,
     sourceRow.prose_text,
     body.rewriteMode,

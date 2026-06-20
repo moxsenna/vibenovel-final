@@ -121,6 +121,15 @@ export async function buildProseBeatPrompt(
   instruction?: string,
 ): Promise<ProseBeatPromptResult> {
   const packet = await loadSafePacketFromLog(bindings, projectId, packetLogId);
+  return buildProseBeatPromptFromPacket(packet, beat, instruction);
+}
+
+/** Build provider-safe prompt directly from in-memory packet — no DB re-read. */
+export async function buildProseBeatPromptFromPacket(
+  packet: WriterContextPacket,
+  beat: ChapterBeatRow,
+  instruction?: string,
+): ProseBeatPromptResult {
   const userContent = buildUserPromptSections(packet, beat, instruction);
 
   const promptMessages: PromptMessage[] = [
