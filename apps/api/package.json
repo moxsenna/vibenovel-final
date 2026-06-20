@@ -21,7 +21,8 @@
     "test:prose-orchestration-budget": "tsx scripts/prose-orchestration-budget.test.mts",
     "test:writer-context-v3": "tsx scripts/writer-context-v3-contracts.test.mts",
     "test:writer-safety-envelope": "tsx scripts/writer-safety-envelope-contracts.test.mts",
-    "test:writer-context-serializer": "tsx scripts/writer-context-serializer.test.mts"
+    "test:writer-context-serializer": "tsx scripts/writer-context-serializer.test.mts",
+    "test:preceding-prose-context": "tsx scripts/preceding-prose-context.test.mts"
   },
   "dependencies": {
     "@hono/node-server": "^1.13.7",
