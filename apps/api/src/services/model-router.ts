@@ -1,15 +1,6 @@
-import {
-  GENERATION_TYPES,
-  WRITER_QUALITY_MODES,
-  type GenerationType,
-  type WriterQualityMode,
-} from "@vibenovel/shared";
 import type { AppBindings } from "../env.js";
 import {
-  getAiMaxRetries,
   getAiProviderMockMode,
-  getDefaultAiModel,
-  hasOpenRouterApiKey,
   isAiGenerationEnabled,
   isAiProviderMock,
 } from "../env.js";
@@ -18,404 +9,544 @@ import type {
   ModelRouterGenerateInput,
   ModelRouterGenerateResult,
   ModelRouterResolveInput,
-  ResolvedModelConfig,
+  ProviderEventRecorderInput,
+  PromptMessage,
 } from "./ai-generation-types.js";
 import {
   assertPromptSafeForProvider,
   assertProviderOutputSafe,
 } from "./ai-prompt-safety.js";
-import { resolveQualityModeForGeneration } from "./ai-credit-policy.js";
-import { generateWithMockProvider } from "./mock-ai-provider.js";
 import {
-  getModelCandidatesForGeneration,
-  isProseModelRoutingGenerationType,
-} from "./model-routing-v2.js";
-import { callOpenRouterChatCompletion } from "./openrouter-client.js";
-
-/** Hardcoded allowlist — client cannot pass arbitrary model ids. */
-export const MODEL_ALLOWLIST = new Set([
-  "google/gemini-3.1-flash-lite",
-  "qwen/qwen3.7-plus",
-  "minimax/minimax-m3",
-  "deepseek/deepseek-v4-flash",
-  "google/gemini-2.5-flash",
-  "mistralai/mistral-large-2512",
-  "anthropic/claude-opus-4.8",
-  "openai/gpt-5.2",
-  "google/gemma-4-31b-it:free",
-  "openrouter/free",
-  "anthropic/claude-3-haiku",
-]);
-
-const QUALITY_TIMEOUT_MS: Record<WriterQualityMode, number> = {
-  [WRITER_QUALITY_MODES.hemat]: 30_000,
-  [WRITER_QUALITY_MODES.seimbang]: 45_000,
-  [WRITER_QUALITY_MODES.terbaik]: 60_000,
-};
-
-const QUALITY_MAX_OUTPUT_TOKENS: Record<WriterQualityMode, number> = {
-  [WRITER_QUALITY_MODES.hemat]: 800,
-  [WRITER_QUALITY_MODES.seimbang]: 1200,
-  [WRITER_QUALITY_MODES.terbaik]: 2000,
-};
-
-const GENERATION_TYPE_TOKEN_CAP: Record<GenerationType, number> = {
-  [GENERATION_TYPES.intake_assistant]: 1500,
-  [GENERATION_TYPES.concept_generation]: 3000,
-  [GENERATION_TYPES.foundation_proposal]: 3000,
-  [GENERATION_TYPES.draft_import_signal_extraction]: 1800,
-  [GENERATION_TYPES.outline_generation]: 4000,
-  [GENERATION_TYPES.beat_generation]: 3000,
-  [GENERATION_TYPES.chapter_summary_generation]: 3000,
-  [GENERATION_TYPES.continuity_delta]: 1500,
-  [GENERATION_TYPES.prose_beat]: 2000,
-  [GENERATION_TYPES.prose_rewrite]: 2000,
-  [GENERATION_TYPES.publish_copy]: 800,
-  [GENERATION_TYPES.summary_delta]: 1500,
-};
-
-const PLANNING_GENERATION_TYPES = new Set<GenerationType>([
-  GENERATION_TYPES.intake_assistant,
-  GENERATION_TYPES.concept_generation,
-  GENERATION_TYPES.foundation_proposal,
-  GENERATION_TYPES.draft_import_signal_extraction,
-  GENERATION_TYPES.outline_generation,
-  GENERATION_TYPES.beat_generation,
-  GENERATION_TYPES.chapter_summary_generation,
-  GENERATION_TYPES.continuity_delta,
-]);
+  getDeploymentCost,
+  getAiModelDeployment,
+  type AiLiveProviderId,
+} from "./ai-model-registry.js";
+import {
+  AI_ROUTING_POLICY_VERSION,
+  resolveGenerationRoute,
+  type AiRouteTarget,
+} from "./ai-routing-policy.js";
+import {
+  callLiveProviderChat,
+  hasProviderCredential,
+} from "./ai-provider-adapters.js";
+import type {
+  OpenAiCompatibleChatInput,
+  OpenAiCompatibleChatResult,
+} from "./openai-compatible-client.js";
+import {
+  createGenerationProviderEvent,
+  nextProviderEventSequence,
+  sanitizeProviderEventError,
+} from "./generation-provider-event.js";
+import { updateGenerationAttemptRoutingSummary } from "./generation-attempt.js";
+import { generateWithMockProvider } from "./mock-ai-provider.js";
 
 /** Hard upper bound for any server-side maxOutputTokensOverride. */
 const MAX_OUTPUT_TOKENS_CEILING = 4000;
-
-/**
- * Heavy structured planning generations (e.g. outline) need more wall-clock and
- * more attempts on slower/free models, which intermittently return empty or
- * non-JSON bodies. These tune resilience WITHOUT changing the configured model.
- */
-const HEAVY_PLANNING_TOKEN_THRESHOLD = 3000;
-const HEAVY_PLANNING_TIMEOUT_MS = 60_000;
-const PLANNING_RETRY_FLOOR = 3;
 const RETRY_BASE_DELAY_MS = 500;
 const RETRY_MAX_DELAY_MS = 4000;
 
-function assertModelAllowlisted(model: string): string {
-  const trimmed = model.trim();
-  if (!MODEL_ALLOWLIST.has(trimmed)) {
-    throw new AppError(
-      "AI_NOT_CONFIGURED",
-      "Resolved model is not in the server allowlist",
-      503,
-    );
-  }
-  return trimmed;
+export type ProviderChatCallInput = Omit<
+  OpenAiCompatibleChatInput,
+  "baseUrl" | "apiKey"
+>;
+
+export interface ModelRouterDependencies {
+  resolveRoute?: typeof resolveGenerationRoute;
+  callProvider?: (
+    input: ProviderChatCallInput,
+  ) => Promise<OpenAiCompatibleChatResult>;
+  recordEvent?: (input: ProviderEventRecorderInput) => Promise<void>;
+  sleep?: (ms: number) => Promise<void>;
 }
 
-function resolveModelFromEnv(
-  bindings: AppBindings,
-  qualityMode: WriterQualityMode,
-): string | undefined {
-  if (qualityMode === WRITER_QUALITY_MODES.hemat) {
-    return bindings.AI_MODEL_HEMAT?.trim();
+function buildMessages(
+  input: Pick<ModelRouterGenerateInput, "promptMessages" | "promptText">,
+): PromptMessage[] {
+  if (input.promptMessages && input.promptMessages.length > 0) {
+    return input.promptMessages;
   }
-  if (qualityMode === WRITER_QUALITY_MODES.seimbang) {
-    return bindings.AI_MODEL_SEIMBANG?.trim();
+  if (input.promptText !== undefined) {
+    return [{ role: "user", content: input.promptText }];
   }
-  return bindings.AI_MODEL_TERBAIK?.trim();
+  return [];
 }
 
-function pickAllowlistedModel(
-  bindings: AppBindings,
-  generationType: GenerationType,
-  qualityMode: WriterQualityMode,
-): string {
-  if (isProseModelRoutingGenerationType(generationType)) {
-    const envModel = resolveModelFromEnv(bindings, qualityMode);
-    if (envModel && MODEL_ALLOWLIST.has(envModel)) {
-      return envModel;
-    }
-  }
-
-  const candidates = getModelCandidatesForGeneration(
-    generationType,
-    qualityMode,
-  );
-  if (MODEL_ALLOWLIST.has(candidates.primary)) {
-    return candidates.primary;
-  }
-  if (MODEL_ALLOWLIST.has(candidates.fallback)) {
-    return candidates.fallback;
-  }
-
-  const defaultModel = getDefaultAiModel(bindings);
-  if (defaultModel && MODEL_ALLOWLIST.has(defaultModel)) {
-    return defaultModel;
-  }
-
-  return assertModelAllowlisted(candidates.primary);
-}
-
-/**
- * Resolves provider + model from generation type and quality tier only.
- * Never accepts client-supplied model identifiers.
- */
-export function resolveModelForGeneration(
-  bindings: AppBindings,
-  input: ModelRouterResolveInput,
-): ResolvedModelConfig {
-  const effectiveQualityMode = resolveQualityModeForGeneration(
-    input.generationType,
-    input.qualityMode,
-  );
-  const model = pickAllowlistedModel(
-    bindings,
-    input.generationType,
-    effectiveQualityMode,
-  );
-  const qualityCap = QUALITY_MAX_OUTPUT_TOKENS[effectiveQualityMode];
-  const typeCap = GENERATION_TYPE_TOKEN_CAP[input.generationType];
-  const maxOutputTokens = PLANNING_GENERATION_TYPES.has(input.generationType)
-    ? typeCap
-    : Math.min(qualityCap, typeCap);
-
-  const useMock = isAiProviderMock(bindings);
-
-  const isHeavyPlanning =
-    PLANNING_GENERATION_TYPES.has(input.generationType) &&
-    typeCap >= HEAVY_PLANNING_TOKEN_THRESHOLD;
-  const timeoutMs = isHeavyPlanning
-    ? Math.max(
-        QUALITY_TIMEOUT_MS[effectiveQualityMode],
-        HEAVY_PLANNING_TIMEOUT_MS,
-      )
-    : QUALITY_TIMEOUT_MS[effectiveQualityMode];
-
-  return {
-    provider: useMock ? "mock" : "openrouter",
-    model,
-    maxOutputTokens,
-    timeoutMs,
-    temperature: 0.7,
-  };
-}
-
-export function resolveFallbackModelForGeneration(
-  bindings: AppBindings,
-  input: ModelRouterResolveInput,
-): ResolvedModelConfig | null {
-  const primary = resolveModelForGeneration(bindings, input);
-  const effectiveQualityMode = resolveQualityModeForGeneration(
-    input.generationType,
-    input.qualityMode,
-  );
-  const fallback = getModelCandidatesForGeneration(
-    input.generationType,
-    effectiveQualityMode,
-  ).fallback;
-
-  if (fallback === primary.model || !MODEL_ALLOWLIST.has(fallback)) {
-    return null;
-  }
-  return { ...primary, model: fallback };
-}
-
-function applyInputOverrides(
-  config: ResolvedModelConfig,
-  input: ModelRouterGenerateInput,
-): ResolvedModelConfig {
-  const next = { ...config };
+function resolveMaxOutputTokens(
+  routeCap: number,
+  input: Pick<
+    ModelRouterGenerateInput,
+    "maxOutputTokens" | "maxOutputTokensOverride"
+  >,
+): number {
+  let cap = routeCap;
   if (input.maxOutputTokens !== undefined) {
-    next.maxOutputTokens = Math.min(
-      next.maxOutputTokens,
-      Math.max(1, Math.floor(input.maxOutputTokens)),
-    );
+    cap = Math.min(cap, Math.max(1, Math.floor(input.maxOutputTokens)));
   }
   if (input.maxOutputTokensOverride !== undefined) {
-    next.maxOutputTokens = Math.min(
+    cap = Math.min(
       MAX_OUTPUT_TOKENS_CEILING,
       Math.max(1, Math.floor(input.maxOutputTokensOverride)),
     );
   }
-  if (input.temperature !== undefined) {
-    next.temperature = Math.min(1, Math.max(0, input.temperature));
-  }
-  return next;
+  return cap;
 }
 
-function logGenerationEvent(
-  event: "start" | "success" | "error",
-  fields: Record<string, string | number | undefined>,
-): void {
-  const safeFields = { ...fields };
-  console.info(`[model-router] ${event}`, JSON.stringify(safeFields));
+function resolveTemperature(routeTemp: number, requested?: number): number {
+  if (requested === undefined) return routeTemp;
+  return Math.min(1, Math.max(0, requested));
 }
 
-function isRetryableProviderError(err: unknown): boolean {
-  if (!(err instanceof AppError)) return false;
+function isFallbackEligible(error: unknown): boolean {
   return (
-    err.code === "AI_PROVIDER_ERROR" ||
-    err.code === "AI_PROVIDER_TIMEOUT" ||
-    err.code === "AI_PROVIDER_RATE_LIMITED" ||
-    // Free/slow models intermittently return empty content; treat as transient.
-    err.code === "AI_OUTPUT_EMPTY"
+    error instanceof AppError &&
+    [
+      "AI_PROVIDER_ERROR",
+      "AI_PROVIDER_TIMEOUT",
+      "AI_PROVIDER_RATE_LIMITED",
+      "AI_OUTPUT_EMPTY",
+      "GENERATION_FAILED",
+    ].includes(error.code)
   );
 }
 
-/** Exponential backoff with jitter between provider retries. */
-async function delayBeforeRetry(attempt: number): Promise<void> {
-  const expo = Math.min(RETRY_BASE_DELAY_MS * 2 ** attempt, RETRY_MAX_DELAY_MS);
-  const jitter = Math.floor(Math.random() * RETRY_BASE_DELAY_MS);
-  await new Promise((resolve) => setTimeout(resolve, expo + jitter));
+function normalizeProviderText(text: string, stripThinkTags: boolean): string {
+  if (!stripThinkTags) return text.trim();
+  return text.replace(/<think>[\s\S]*?<\/think>/gi, "").trim();
 }
 
-async function invokeProvider(
+function providerHttpStatusOf(error: unknown): number | null {
+  if (
+    error instanceof AppError &&
+    error.details &&
+    typeof error.details === "object" &&
+    "providerHttpStatus" in error.details
+  ) {
+    const value = (error.details as { providerHttpStatus?: unknown })
+      .providerHttpStatus;
+    return typeof value === "number" ? value : null;
+  }
+  return null;
+}
+
+function roundUsd(value: number): number {
+  return Math.round(value * 1_000_000) / 1_000_000;
+}
+
+function estimateLiveProviderCost(
+  logicalModel: Parameters<typeof getDeploymentCost>[0],
+  provider: AiLiveProviderId,
+  inputTokens?: number,
+  outputTokens?: number,
+): number {
+  if (inputTokens === undefined || outputTokens === undefined) return 0;
+  const pricing = getDeploymentCost(logicalModel, provider);
+  return roundUsd(
+    (inputTokens / 1_000_000) * pricing.inputUsdPer1M +
+      (outputTokens / 1_000_000) * pricing.outputUsdPer1M,
+  );
+}
+
+async function backoff(
+  sleep: (ms: number) => Promise<void>,
+  attempt: number,
+): Promise<void> {
+  const expo = Math.min(RETRY_BASE_DELAY_MS * 2 ** attempt, RETRY_MAX_DELAY_MS);
+  const jitter = Math.floor(Math.random() * RETRY_BASE_DELAY_MS);
+  await sleep(expo + jitter);
+}
+
+interface FailureSummary {
+  provider: string;
+  providerModelId: string;
+  logicalModel: string;
+  fallbackUsed: boolean;
+  retryCount: number;
+  providerLatencyMs: number;
+  inputTokens?: number;
+  outputTokens?: number;
+  estimatedCostUsd: number | null;
+}
+
+async function persistFailureSummary(
   bindings: AppBindings,
-  input: ModelRouterGenerateInput,
-  config: ResolvedModelConfig,
-): Promise<ModelRouterGenerateResult> {
-  if (config.provider === "mock") {
-    return generateWithMockProvider(
-      input,
-      config,
-      getAiProviderMockMode(bindings),
+  attemptId: string,
+  summary: FailureSummary | null,
+): Promise<void> {
+  if (!summary) return;
+  try {
+    await updateGenerationAttemptRoutingSummary(bindings, {
+      attemptId,
+      provider: summary.provider,
+      providerModelId: summary.providerModelId,
+      logicalModel: summary.logicalModel,
+      routingPolicyVersion: AI_ROUTING_POLICY_VERSION,
+      fallbackUsed: summary.fallbackUsed,
+      retryCount: summary.retryCount,
+      providerLatencyMs: summary.providerLatencyMs,
+      inputTokens: summary.inputTokens,
+      outputTokens: summary.outputTokens,
+      estimatedCostUsd: summary.estimatedCostUsd,
+    });
+  } catch (error) {
+    // Telemetry persistence must never mask the user-facing generation error.
+    console.error(
+      "failed to persist routing summary",
+      error instanceof Error ? error.message : "",
     );
   }
-
-  if (!hasOpenRouterApiKey(bindings)) {
-    throw new AppError(
-      "AI_NOT_CONFIGURED",
-      "OpenRouter is not configured for live generation",
-      503,
-    );
-  }
-
-  // Heavy structured planning generations get a higher retry floor because
-  // free/slow models fail transiently more often on large JSON payloads.
-  const baseRetries = getAiMaxRetries(bindings);
-  const maxRetries = PLANNING_GENERATION_TYPES.has(input.generationType)
-    ? Math.max(baseRetries, PLANNING_RETRY_FLOOR)
-    : baseRetries;
-  let lastError: unknown;
-
-  for (let attempt = 0; attempt <= maxRetries; attempt += 1) {
-    try {
-      return await callOpenRouterChatCompletion(bindings, config, {
-        promptHash: input.promptHash,
-        promptMessages: input.promptMessages,
-        promptText: input.promptText,
-      });
-    } catch (err) {
-      lastError = err;
-      if (attempt < maxRetries && isRetryableProviderError(err)) {
-        await delayBeforeRetry(attempt);
-        continue;
-      }
-      throw err;
-    }
-  }
-
-  throw lastError;
 }
 
 /**
- * Model router boundary for AI generation.
- * Disabled when AI_GENERATION_ENABLED=false. No DB writes, no credit mutation.
+ * Preflight a route before any credit debit: resolve policy + registry and
+ * confirm at least one declared target has a configured credential.
  */
-export async function generateWithModelRouter(
+export function assertGenerationRouteCallable(
   bindings: AppBindings,
-  input: ModelRouterGenerateInput,
-): Promise<ModelRouterGenerateResult> {
-  if (!isAiGenerationEnabled(bindings)) {
+  input: ModelRouterResolveInput,
+): void {
+  const route = resolveGenerationRoute(input.generationType, input.qualityMode);
+  const targets = [route.primary, route.fallback].filter(
+    (target): target is AiRouteTarget => target !== null,
+  );
+  // Validate every declared deployment exists in the registry.
+  for (const target of targets) {
+    getAiModelDeployment(target.model, target.provider);
+  }
+  if (
+    !isAiProviderMock(bindings) &&
+    !targets.some((target) => hasProviderCredential(bindings, target.provider))
+  ) {
     throw new AppError(
-      "AI_DISABLED",
-      "AI generation is disabled",
+      "AI_NOT_CONFIGURED",
+      "No configured credential for the selected AI route",
       503,
     );
+  }
+}
+
+/**
+ * Model router boundary for AI generation. Resolves routes through the typed
+ * policy + registry, validates engine output as the success boundary, and
+ * records one safe provider event per attempt or skipped target.
+ */
+export async function generateWithModelRouter<TOutput = string>(
+  bindings: AppBindings,
+  input: ModelRouterGenerateInput<TOutput>,
+  dependencies: ModelRouterDependencies = {},
+): Promise<ModelRouterGenerateResult<TOutput>> {
+  if (!isAiGenerationEnabled(bindings)) {
+    throw new AppError("AI_DISABLED", "AI generation is disabled", 503);
   }
 
   assertPromptSafeForProvider(input.promptMessages, input.promptText);
 
-  const baseConfig = resolveModelForGeneration(bindings, {
-    generationType: input.generationType,
-    qualityMode: input.qualityMode,
-  });
-  const config = applyInputOverrides(baseConfig, input);
-  const fallbackBaseConfig = resolveFallbackModelForGeneration(bindings, {
-    generationType: input.generationType,
-    qualityMode: input.qualityMode,
-  });
-  const fallbackConfig = fallbackBaseConfig
-    ? applyInputOverrides(fallbackBaseConfig, input)
-    : null;
-
-  logGenerationEvent("start", {
-    generationType: input.generationType,
-    qualityMode: input.qualityMode,
-    provider: config.provider,
-    model: config.model,
-    promptHash: input.promptHash,
-  });
-
-  try {
-    const result = await invokeProvider(bindings, input, config);
-    assertProviderOutputSafe(result.text);
-
-    logGenerationEvent("success", {
-      generationType: input.generationType,
-      provider: result.provider,
-      model: result.model,
-      promptHash: result.promptHash,
-      inputTokens: result.inputTokens,
-      outputTokens: result.outputTokens,
-      latencyMs: result.latencyMs,
+  const resolveRoute = dependencies.resolveRoute ?? resolveGenerationRoute;
+  const recordEvent =
+    dependencies.recordEvent ??
+    (async (event: ProviderEventRecorderInput) => {
+      await createGenerationProviderEvent(bindings, event);
     });
+  const sleep =
+    dependencies.sleep ??
+    (async (ms: number) => {
+      await new Promise((resolve) => setTimeout(resolve, ms));
+    });
+  const callProvider =
+    dependencies.callProvider ??
+    ((callInput: ProviderChatCallInput) =>
+      callLiveProviderChat(bindings, callInput));
 
-    return result;
-  } catch (err) {
-    let finalError = err;
-    if (
-      fallbackConfig &&
-      fallbackConfig.model !== config.model &&
-      isRetryableProviderError(err)
-    ) {
-      logGenerationEvent("start", {
-        generationType: input.generationType,
-        qualityMode: input.qualityMode,
-        provider: fallbackConfig.provider,
-        model: fallbackConfig.model,
-        promptHash: input.promptHash,
-      });
-      try {
-        const fallbackResult = await invokeProvider(
-          bindings,
-          input,
-          fallbackConfig,
-        );
-        assertProviderOutputSafe(fallbackResult.text);
-        logGenerationEvent("success", {
+  const route = resolveRoute(input.generationType, input.qualityMode);
+  const messages = buildMessages(input);
+  const maxOutputTokens = resolveMaxOutputTokens(route.maxOutputTokens, input);
+  const temperature = resolveTemperature(route.temperature, input.temperature);
+  const validate =
+    input.validateOutput ?? ((text: string) => text as unknown as TOutput);
+  const seq = () => nextProviderEventSequence(input.providerEventSequence);
+
+  // Deterministic local mock path — no live credential required.
+  if (isAiProviderMock(bindings)) {
+    const logicalModel = route.primary.model;
+    const providerModelId = `mock/${logicalModel}`;
+    let raw: OpenAiCompatibleChatResult;
+    try {
+      raw = await generateWithMockProvider(
+        {
           generationType: input.generationType,
-          provider: fallbackResult.provider,
-          model: fallbackResult.model,
-          promptHash: fallbackResult.promptHash,
-          inputTokens: fallbackResult.inputTokens,
-          outputTokens: fallbackResult.outputTokens,
-          latencyMs: fallbackResult.latencyMs,
-        });
-        return fallbackResult;
-      } catch (fallbackErr) {
-        finalError = fallbackErr;
-      }
+          promptHash: input.promptHash,
+          metadata: input.metadata,
+        },
+        getAiProviderMockMode(bindings),
+      );
+    } catch (error) {
+      await recordEvent({
+        generationAttemptId: input.generationAttemptId,
+        sequenceNumber: seq(),
+        routeRole: "primary",
+        provider: "mock",
+        logicalModel,
+        providerModelId,
+        retryNumber: 0,
+        outcome: "provider_error",
+        ...sanitizeProviderEventError({
+          code: error instanceof AppError ? error.code : "AI_PROVIDER_ERROR",
+          message: error instanceof Error ? error.message : "",
+        }),
+      });
+      await persistFailureSummary(bindings, input.generationAttemptId, {
+        provider: "mock",
+        providerModelId,
+        logicalModel,
+        fallbackUsed: false,
+        retryCount: 0,
+        providerLatencyMs: 0,
+        estimatedCostUsd: 0,
+      });
+      throw error;
+    }
+    const text = normalizeProviderText(raw.text, false);
+    try {
+      assertProviderOutputSafe(text);
+      const output = validate(text);
+      await recordEvent({
+        generationAttemptId: input.generationAttemptId,
+        sequenceNumber: seq(),
+        routeRole: "primary",
+        provider: "mock",
+        logicalModel,
+        providerModelId,
+        retryNumber: 0,
+        outcome: "succeeded",
+        latencyMs: raw.latencyMs,
+        inputTokens: raw.inputTokens ?? null,
+        outputTokens: raw.outputTokens ?? null,
+        estimatedCostUsd: 0,
+      });
+      return {
+        text,
+        output,
+        provider: "mock",
+        logicalModel,
+        model: providerModelId,
+        inputTokens: raw.inputTokens,
+        outputTokens: raw.outputTokens,
+        latencyMs: raw.latencyMs,
+        finishReason: raw.finishReason,
+        promptHash: input.promptHash,
+        routingPolicyVersion: AI_ROUTING_POLICY_VERSION,
+        fallbackUsed: false,
+        retryCount: 0,
+        estimatedCostUsd: 0,
+      };
+    } catch (error) {
+      const code = error instanceof AppError ? error.code : "AI_PROVIDER_ERROR";
+      await recordEvent({
+        generationAttemptId: input.generationAttemptId,
+        sequenceNumber: seq(),
+        routeRole: "primary",
+        provider: "mock",
+        logicalModel,
+        providerModelId,
+        retryNumber: 0,
+        ...sanitizeProviderEventError({
+          code,
+          message: error instanceof Error ? error.message : "",
+        }),
+        outcome: sanitizeProviderEventError({ code, message: "" }).errorCategory,
+        latencyMs: raw.latencyMs,
+      });
+      await persistFailureSummary(bindings, input.generationAttemptId, {
+        provider: "mock",
+        providerModelId,
+        logicalModel,
+        fallbackUsed: false,
+        retryCount: 0,
+        providerLatencyMs: raw.latencyMs,
+        estimatedCostUsd: 0,
+      });
+      throw error;
+    }
+  }
+
+  // Live path: primary (with retries) then explicit fallback (no retry).
+  const targets: Array<{
+    target: AiRouteTarget;
+    role: "primary" | "fallback";
+    maxRetries: number;
+  }> = [
+    { target: route.primary, role: "primary", maxRetries: route.primaryMaxRetries },
+  ];
+  if (route.fallback) {
+    targets.push({ target: route.fallback, role: "fallback", maxRetries: 0 });
+  }
+
+  let retryCount = 0;
+  let lastError: unknown;
+  let lastSummary: FailureSummary | null = null;
+
+  for (const { target, role, maxRetries } of targets) {
+    const deployment = getAiModelDeployment(target.model, target.provider);
+    const fallbackUsed = role === "fallback";
+
+    if (!hasProviderCredential(bindings, target.provider)) {
+      await recordEvent({
+        generationAttemptId: input.generationAttemptId,
+        sequenceNumber: seq(),
+        routeRole: role,
+        provider: target.provider,
+        logicalModel: target.model,
+        providerModelId: deployment.modelId,
+        retryNumber: 0,
+        outcome: "credential_unavailable",
+        errorCategory: "configuration_error",
+        errorCodeSafe: "AI_NOT_CONFIGURED",
+      });
+      lastError = new AppError(
+        "AI_NOT_CONFIGURED",
+        `${target.provider} API key is not configured`,
+        503,
+      );
+      lastSummary = {
+        provider: target.provider,
+        providerModelId: deployment.modelId,
+        logicalModel: target.model,
+        fallbackUsed,
+        retryCount,
+        providerLatencyMs: 0,
+        estimatedCostUsd: null,
+      };
+      continue;
     }
 
-    const code =
-      finalError instanceof AppError ? finalError.code : "AI_PROVIDER_ERROR";
-    logGenerationEvent("error", {
-      generationType: input.generationType,
-      provider: config.provider,
-      model: config.model,
-      promptHash: input.promptHash,
-      error_code: code,
-    });
-    throw finalError;
+    for (let attempt = 0; attempt <= maxRetries; attempt += 1) {
+      const retryNumber = attempt;
+      let raw: OpenAiCompatibleChatResult | null = null;
+      try {
+        raw = await callProvider({
+          provider: target.provider,
+          modelId: deployment.modelId,
+          messages,
+          maxOutputTokens,
+          temperature,
+          timeoutMs: route.timeoutMs,
+        });
+        const cost = estimateLiveProviderCost(
+          target.model,
+          target.provider,
+          raw.inputTokens,
+          raw.outputTokens,
+        );
+        lastSummary = {
+          provider: target.provider,
+          providerModelId: deployment.modelId,
+          logicalModel: target.model,
+          fallbackUsed,
+          retryCount,
+          providerLatencyMs: raw.latencyMs,
+          inputTokens: raw.inputTokens,
+          outputTokens: raw.outputTokens,
+          estimatedCostUsd: cost,
+        };
+        const text = normalizeProviderText(
+          raw.text,
+          deployment.outputNormalization.stripThinkTags,
+        );
+        assertProviderOutputSafe(text);
+        const output = validate(text);
+
+        await recordEvent({
+          generationAttemptId: input.generationAttemptId,
+          sequenceNumber: seq(),
+          routeRole: role,
+          provider: target.provider,
+          logicalModel: target.model,
+          providerModelId: deployment.modelId,
+          retryNumber,
+          outcome: "succeeded",
+          latencyMs: raw.latencyMs,
+          inputTokens: raw.inputTokens ?? null,
+          outputTokens: raw.outputTokens ?? null,
+          estimatedCostUsd: cost,
+        });
+
+        return {
+          text,
+          output,
+          provider: target.provider,
+          logicalModel: target.model,
+          model: deployment.modelId,
+          inputTokens: raw.inputTokens,
+          outputTokens: raw.outputTokens,
+          latencyMs: raw.latencyMs,
+          finishReason: raw.finishReason,
+          promptHash: input.promptHash,
+          routingPolicyVersion: AI_ROUTING_POLICY_VERSION,
+          fallbackUsed,
+          retryCount,
+          estimatedCostUsd: cost,
+        };
+      } catch (rawError) {
+        // A validator may throw any error (e.g. JSON.parse). Treat non-AppError
+        // failures as a fallback-eligible invalid output; preserve real
+        // AppErrors so AI_OUTPUT_UNSAFE keeps its no-fallback semantics.
+        const error =
+          rawError instanceof AppError
+            ? rawError
+            : new AppError(
+                "GENERATION_FAILED",
+                "AI output failed validation",
+                502,
+              );
+        lastError = error;
+        const code = error.code;
+        const sanitized = sanitizeProviderEventError({
+          code,
+          message: error instanceof Error ? error.message : "",
+          providerHttpStatus: providerHttpStatusOf(error),
+        });
+        await recordEvent({
+          generationAttemptId: input.generationAttemptId,
+          sequenceNumber: seq(),
+          routeRole: role,
+          provider: target.provider,
+          logicalModel: target.model,
+          providerModelId: deployment.modelId,
+          retryNumber,
+          outcome: sanitized.errorCategory,
+          errorCategory: sanitized.errorCategory,
+          errorCodeSafe: sanitized.errorCodeSafe,
+          providerHttpStatus: sanitized.providerHttpStatus,
+          latencyMs: raw?.latencyMs ?? null,
+          inputTokens: raw?.inputTokens ?? null,
+          outputTokens: raw?.outputTokens ?? null,
+        });
+
+        if (!isFallbackEligible(error)) {
+          // Unsafe / non-retryable: no retry, no fallback.
+          await persistFailureSummary(
+            bindings,
+            input.generationAttemptId,
+            lastSummary,
+          );
+          throw error;
+        }
+
+        if (attempt < maxRetries) {
+          retryCount += 1;
+          await backoff(sleep, attempt);
+          continue;
+        }
+        // Retries for this target exhausted — move to the next target.
+        break;
+      }
+    }
   }
+
+  await persistFailureSummary(bindings, input.generationAttemptId, lastSummary);
+  throw (
+    lastError ??
+    new AppError("AI_PROVIDER_ERROR", "AI generation failed", 502)
+  );
 }

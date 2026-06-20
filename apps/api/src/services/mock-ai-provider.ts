@@ -1,11 +1,18 @@
-import { GENERATION_TYPES } from "@vibenovel/shared";
+import {
+  GENERATION_TYPES,
+  type GenerationType,
+  type JsonObject,
+} from "@vibenovel/shared";
 import { AppError } from "../errors.js";
-import type {
-  MockAiProviderMode,
-  ModelRouterGenerateInput,
-  ModelRouterGenerateResult,
-  ResolvedModelConfig,
-} from "./ai-generation-types.js";
+import type { MockAiProviderMode } from "./ai-generation-types.js";
+import type { OpenAiCompatibleChatResult } from "./openai-compatible-client.js";
+
+/** Minimal shape the deterministic mock needs from a generation request. */
+export interface MockGenerationInput {
+  generationType: GenerationType;
+  promptHash: string;
+  metadata?: JsonObject | null;
+}
 
 const MOCK_PROSE_BEAT_TEMPLATE =
   "Dia menahan napas. Ruangan itu terasa lebih sempit dari biasanya, " +
@@ -14,7 +21,7 @@ const MOCK_PROSE_BEAT_TEMPLATE =
   "untuk memastikan dunia di luar masih ada sebelum ia mengambil keputusan.";
 
 
-function buildMockBeatGenerationJson(input: ModelRouterGenerateInput): string {
+function buildMockBeatGenerationJson(input: MockGenerationInput): string {
   const h = input.promptHash.slice(0, 6);
   return JSON.stringify({
     beats: [
@@ -28,7 +35,7 @@ function buildMockBeatGenerationJson(input: ModelRouterGenerateInput): string {
   });
 }
 
-function buildMockChapterSummaryJson(input: ModelRouterGenerateInput): string {
+function buildMockChapterSummaryJson(input: MockGenerationInput): string {
   const h = input.promptHash.slice(0, 6);
   return JSON.stringify({
     synopsis: "Bab ini menutup satu konflik kecil sambil membuka taruhan yang lebih besar untuk pembaca. [mock:" + h + "]",
@@ -44,7 +51,7 @@ function buildMockChapterSummaryJson(input: ModelRouterGenerateInput): string {
   });
 }
 
-function buildDeterministicProse(input: ModelRouterGenerateInput): string {
+function buildDeterministicProse(input: MockGenerationInput): string {
   const hashPrefix = input.promptHash.slice(0, 8);
   if (input.generationType === GENERATION_TYPES.intake_assistant) {
     return JSON.stringify({
@@ -192,10 +199,9 @@ function estimateMockTokens(text: string): { input: number; output: number } {
  * Deterministic local provider — no network. Used when AI_PROVIDER_MOCK=true.
  */
 export async function generateWithMockProvider(
-  input: ModelRouterGenerateInput,
-  config: ResolvedModelConfig,
+  input: MockGenerationInput,
   mode: MockAiProviderMode,
-): Promise<ModelRouterGenerateResult> {
+): Promise<OpenAiCompatibleChatResult> {
   const started = Date.now();
 
   if (mode === "fail_provider") {
@@ -215,12 +221,9 @@ export async function generateWithMockProvider(
 
   return {
     text,
-    provider: "mock",
-    model: config.model,
     inputTokens: tokens.input,
     outputTokens: tokens.output,
     latencyMs: Date.now() - started,
     finishReason: "stop",
-    promptHash: input.promptHash,
   };
 }
