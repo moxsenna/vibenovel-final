@@ -133,16 +133,11 @@ assert.equal(chunks.every((chunk) => chunk.chunkText.length <= 190), true);
 assert.equal(chunks.every((chunk) => chunk.wordCount > 0), true);
 assert.equal(chunks.every((chunk) => chunk.chunkHash.length === 64), true);
 
-const embeddingConfig = resolveEmbeddingModel({
-  AI_EMBEDDING_MODEL: "openai/text-embedding-3-small",
-});
+const embeddingConfig = resolveEmbeddingModel();
 assert.equal(embeddingConfig.provider, "openrouter");
+assert.equal(embeddingConfig.logicalModel, "openai_embedding_small");
 assert.equal(embeddingConfig.model, "openai/text-embedding-3-small");
 assert.equal(embeddingConfig.dimensions, 1536);
-assert.throws(
-  () => resolveEmbeddingModel({ AI_EMBEDDING_MODEL: "raw-user/model-not-allowed" }),
-  /allowlist/,
-);
 
 const embeddingRequest = buildOpenRouterEmbeddingsRequest(
   embeddingConfig,

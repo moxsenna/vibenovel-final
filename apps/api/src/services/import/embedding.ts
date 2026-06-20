@@ -1,14 +1,21 @@
 import type { AppBindings } from "../../env.js";
-import { getAiTimeoutMs, getOpenRouterApiKey, getOpenRouterBaseUrl } from "../../env.js";
+import { getOpenRouterApiKey, getOpenRouterBaseUrl } from "../../env.js";
 import { AppError } from "../../errors.js";
 import type { DraftImportChunk } from "./chunking.js";
-
-const DEFAULT_EMBEDDING_MODEL = "openai/text-embedding-3-small";
+import { getEmbeddingRoute } from "../ai-routing-policy.js";
+import {
+  getAiModel,
+  getAiModelDeployment,
+  type AiLiveProviderId,
+  type AiLogicalModelKey,
+} from "../ai-model-registry.js";
 
 export interface EmbeddingModelConfig {
-  provider: "openrouter";
+  provider: AiLiveProviderId;
+  logicalModel: AiLogicalModelKey;
   model: string;
   dimensions: number;
+  timeoutMs: number;
 }
 
 export interface OpenRouterEmbeddingsRequest {
@@ -32,7 +39,8 @@ interface OpenRouterEmbeddingsResponse {
 }
 
 export interface EmbeddingResult {
-  provider: "openrouter";
+  provider: AiLiveProviderId;
+  logicalModel: AiLogicalModelKey;
   model: string;
   dimensions: number;
   embeddings: number[][];
@@ -57,30 +65,20 @@ export interface ProseEmbeddingInsertRow {
   metadata: Record<string, unknown>;
 }
 
-export const EMBEDDING_MODEL_ALLOWLIST: ReadonlyMap<string, EmbeddingModelConfig> = new Map([
-  [
-    "openai/text-embedding-3-small",
-    {
-      provider: "openrouter",
-      model: "openai/text-embedding-3-small",
-      dimensions: 1536,
-    },
-  ],
-]);
-
-export function resolveEmbeddingModel(
-  bindings: Pick<AppBindings, "AI_EMBEDDING_MODEL"> = {},
-): EmbeddingModelConfig {
-  const requested = bindings.AI_EMBEDDING_MODEL?.trim() || DEFAULT_EMBEDDING_MODEL;
-  const config = EMBEDDING_MODEL_ALLOWLIST.get(requested);
-  if (!config) {
-    throw new AppError(
-      "AI_NOT_CONFIGURED",
-      "Resolved embedding model is not in the server allowlist",
-      503,
-    );
-  }
-  return config;
+export function resolveEmbeddingModel(): EmbeddingModelConfig {
+  const route = getEmbeddingRoute("import_rag");
+  const model = getAiModel(route.primary.model);
+  const deployment = getAiModelDeployment(
+    route.primary.model,
+    route.primary.provider,
+  );
+  return {
+    provider: route.primary.provider,
+    logicalModel: route.primary.model,
+    model: deployment.modelId,
+    dimensions: model.embeddingDimensions ?? 0,
+    timeoutMs: route.timeoutMs,
+  };
 }
 
 export function buildOpenRouterEmbeddingsRequest(
@@ -163,6 +161,7 @@ export function parseOpenRouterEmbeddingsResponse(
   const sorted = [...parsed.data].sort((a, b) => (a.index ?? 0) - (b.index ?? 0));
   return {
     provider: config.provider,
+    logicalModel: config.logicalModel,
     model: parsed.model?.trim() || config.model,
     dimensions: config.dimensions,
     embeddings: sorted.map((item) => parseEmbeddingVector(item.embedding, config.dimensions)),
@@ -181,10 +180,10 @@ export async function embedTextsWithOpenRouter(
     throw new AppError("AI_NOT_CONFIGURED", "OpenRouter API key is not configured", 503);
   }
 
-  const config = resolveEmbeddingModel(bindings);
+  const config = resolveEmbeddingModel();
   const request = buildOpenRouterEmbeddingsRequest(config, input);
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), getAiTimeoutMs(bindings));
+  const timeoutId = setTimeout(() => controller.abort(), config.timeoutMs);
 
   try {
     const response = await fetcher(`${getOpenRouterBaseUrl(bindings).replace(/\/$/, "")}/embeddings`, {
@@ -249,6 +248,7 @@ export function buildProseEmbeddingInsertRows(input: {
     embedding_model: input.embeddingResult.model,
     metadata: {
       ...chunk.metadata,
+      logicalModel: input.embeddingResult.logicalModel,
       dimensions: input.embeddingResult.dimensions,
       inputTokens: input.embeddingResult.inputTokens ?? null,
       totalTokens: input.embeddingResult.totalTokens ?? null,
