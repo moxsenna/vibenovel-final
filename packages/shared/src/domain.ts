@@ -660,6 +660,14 @@ export interface WriterSafetyEnvelope {
   };
 }
 
+/** Knowledge constraint for character — server-only validator data. */
+export interface CharacterKnowledgeConstraint {
+  characterId: string;
+  factId: string;
+  factText: string;
+  allowedMode: "certain" | "partial" | "suspicion" | "false_belief" | "forbidden";
+}
+
 export interface WriterContextPacket {
   meta: {
     projectId: ID;
