@@ -18,6 +18,7 @@ import {
   refundCreditsForAttempt,
 } from "./credit-ledger.js";
 import { getCreditCostForGeneration } from "./ai-credit-policy.js";
+import { assertAiGenerationAllowedForOwner } from "./ai-rate-limit.js";
 import { buildContextPacketForOwner } from "./context-packet-builder.js";
 import { getOwnedBeatRow } from "./chapter-beat.js";
 import { calculateEstimatedCostUsd } from "./model-cost-map.js";
@@ -404,6 +405,12 @@ export async function generateProseBeatForOwner(
 
   let debited = false;
   try {
+    await assertAiGenerationAllowedForOwner(bindings, {
+      userId: ownerId,
+      projectId,
+      generationType: GENERATION_TYPES.prose_beat,
+      requestedCreditCost: creditCost,
+    });
     await debitCreditsForAttempt(bindings, {
       userId: ownerId,
       projectId,

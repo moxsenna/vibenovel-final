@@ -76,23 +76,32 @@ test(
 );
 
 /* ------------------------------------------------------------------ */
-/*  2. Default daily cap baseline                                      */
+/*  2. Default daily cap baseline — now has DEFAULT_DAILY_DEBIT_CAP_V2 */
 /* ------------------------------------------------------------------ */
 
 const rateLimitPath = resolve(ROOT, "src/services/ai-rate-limit.ts");
+const rateLimitSource = existsSync(rateLimitPath)
+  ? readFileSync(rateLimitPath, "utf-8")
+  : "";
 
 test(
-  "ai-rate-limit.ts does not exist (no daily cap on main)",
+  "ai-rate-limit.ts exists with DEFAULT_DAILY_DEBIT_CAP_V2",
   () => {
-    // Baseline: daily cap logic not yet added to main.
-    // Task 0.2 will create this file with DEFAULT_DAILY_DEBIT_CAP_V2 = 100_000.
     assert.ok(
-      !existsSync(rateLimitPath),
-      "BASELINE: ai-rate-limit.ts should not exist yet. " +
-        "If this fails, rate limit has been implemented — update assertion to verify DEFAULT_DAILY_DEBIT_CAP_V2 >= max cost.",
+      existsSync(rateLimitPath),
+      "ai-rate-limit.ts should exist after Task 0.2. " +
+        "If this fails, re-run Task 0.2.",
+    );
+    assert.ok(
+      rateLimitSource.includes("DEFAULT_DAILY_DEBIT_CAP_V2"),
+      "should export DEFAULT_DAILY_DEBIT_CAP_V2",
     );
   },
 );
+
+/* ------------------------------------------------------------------ */
+/*  3. Credit cost baseline — current costs are v1 (small)             */
+/* ------------------------------------------------------------------ */
 
 /* ------------------------------------------------------------------ */
 /*  3. Credit cost baseline — current costs are v1 (small)             */
