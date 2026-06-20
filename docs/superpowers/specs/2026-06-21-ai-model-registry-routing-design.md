@@ -20,7 +20,9 @@ All runtime routers, provider clients, cost calculations, verification scripts, 
 The following decisions are final for this scope:
 
 - Use two centralized files rather than one monolithic configuration file.
-- Use stable logical model keys such as `minimax_m3`.
+- Use stable, versionless model-family keys such as `minimax_text`.
+- Keep engine roles in routing policy; never encode roles such as `prose_premium`
+  into registry keys.
 - Keep provider-specific model IDs only in the model registry.
 - Select provider and model explicitly per engine in the routing policy.
 - Permit cross-provider fallback only when explicitly declared in the routing policy.
@@ -102,7 +104,7 @@ Representative shape:
 
 ```ts
 export const AI_MODEL_REGISTRY = {
-  minimax_m3: {
+  minimax_text: {
     modality: "text",
     capabilities: {
       textGeneration: true,
@@ -120,8 +122,10 @@ export const AI_MODEL_REGISTRY = {
           outputUsdPer1M: 0,
         },
         pricingKind: "temporary_promotion",
+        promotionEndsOn: "2026-06-22",
         verifiedAt: "2026-06-21T00:00:00.000Z",
         verificationSource: "tokenrouter-model-page",
+        verificationStatus: "documented",
       },
       openrouter: {
         modelId: "minimax/minimax-m3",
@@ -141,6 +145,25 @@ export const AI_MODEL_REGISTRY = {
 ```
 
 Temporary free access must be represented as deployment-specific pricing evidence, not as a permanent property of the logical model. When the promotion ends, the TokenRouter deployment record must be reverified or disabled.
+
+Logical keys identify a stable model family, not a provider deployment or a
+specific release. Examples:
+
+| Logical key | Current deployment family |
+|---|---|
+| `gemini_flash_lite` | Gemini Flash Lite |
+| `qwen_plus` | Qwen Plus |
+| `minimax_text` | MiniMax text/reasoning family |
+| `deepseek_flash` | DeepSeek Flash |
+| `gemini_flash` | Gemini Flash |
+| `mistral_large` | Mistral Large |
+| `claude_opus` | Claude Opus |
+| `gemini_pro` | Gemini Pro |
+| `openai_embedding_small` | OpenAI small embedding family |
+
+Changing a version within the same family changes only the deployment
+`modelId` and verification snapshot. Replacing the family itself is an explicit
+routing-policy change.
 
 ### 5.3 Provider deployment contract
 
@@ -213,8 +236,8 @@ export const AI_ROUTING_POLICY = {
   foundation_proposal: {
     requires: ["textGeneration", "structuredJson"],
     primary: {
-      provider: "tokenrouter",
-      model: "minimax_m3",
+      provider: "openrouter",
+      model: "minimax_text",
     },
     fallback: {
       provider: "openrouter",
@@ -224,8 +247,8 @@ export const AI_ROUTING_POLICY = {
   outline_generation: {
     requires: ["textGeneration", "structuredJson"],
     primary: {
-      provider: "tokenrouter",
-      model: "minimax_m3",
+      provider: "openrouter",
+      model: "minimax_text",
     },
     fallback: {
       provider: "openrouter",
@@ -236,7 +259,7 @@ export const AI_ROUTING_POLICY = {
     requires: ["embedding"],
     primary: {
       provider: "openrouter",
-      model: "text_embedding_3_small",
+      model: "openai_embedding_small",
     },
     fallback: null,
   },
@@ -269,11 +292,19 @@ Different engines may use different providers. The choice must be explicit in th
 Cross-provider fallback is allowed only when both targets are written in the route:
 
 ```ts
-primary: { provider: "tokenrouter", model: "minimax_m3" },
+primary: { provider: "tokenrouter", model: "minimax_text" },
 fallback: { provider: "openrouter", model: "qwen_plus" },
 ```
 
+This is a post-verification example, not the initial production policy.
+TokenRouter must remain absent from active production targets until the optional
+activation gate passes.
+
 The router must never search other providers or deployments automatically.
+
+`summary_delta` is a deprecated generation-type alias. While it remains in the
+shared enum for compatibility, it must reference the same canonical route
+object as `continuity_delta`; it must not duplicate the route configuration.
 
 ## 7. Configuration and Credentials
 
@@ -347,10 +378,15 @@ For each route:
 2. Check provider credential availability.
 3. Call primary.
 4. Validate provider output.
-5. Retry primary once for retryable failures.
+5. Retry primary according to `route.primaryMaxRetries`.
 6. If still failing, resolve the explicitly declared fallback.
 7. Call and validate fallback.
 8. Return success or fail the generation attempt and refund according to existing credit orchestration.
+
+The initial policy sets `primaryMaxRetries: 1`, so primary is called at most
+twice: the initial call plus one retry. Fallback is called at most once and is
+not retried. This asymmetry is intentional: fallback is the final bounded
+recovery attempt, not a second retry loop.
 
 Retryable/fallback-eligible failures:
 
@@ -401,6 +437,11 @@ Contracts must reject:
 
 Validation runs in contract tests and in a fail-fast configuration check used during startup/deployment.
 
+Only deployments referenced by the active routing policy must have status
+`VERIFIED`. A well-formed candidate deployment may remain `DOCUMENTED` in the
+registry without failing policy validation, provided no production route
+references it.
+
 ## 11. Cost and Credit Separation
 
 User credit pricing remains controlled by the existing credit policy. Changing provider, model, or provider price must not automatically change user credit cost.
@@ -414,9 +455,16 @@ logical model + provider
 → estimated provider cost
 ```
 
-Temporary TokenRouter free pricing applies only to the TokenRouter MiniMax M3 deployment. The OpenRouter deployment retains its own catalog pricing.
+Temporary TokenRouter free pricing applies only to the TokenRouter MiniMax M3
+candidate deployment and expires on 22 June 2026. No production route may use
+that candidate until a post-promotion price/capability verification and live
+probe pass. The OpenRouter deployment retains its own catalog pricing.
 
 Historical generation records must retain the pricing and routing snapshot used at execution time. Reverification must not rewrite historical costs.
+
+OpenRouter registry pricing must be generated or contract-checked against the
+restored 19 June 2026 verification snapshot. Manual copying without an automated
+diff is not sufficient.
 
 ## 12. Telemetry Data Model
 
@@ -461,6 +509,12 @@ Add an admin-only table named `generation_provider_events`, with one row per att
 - `output_tokens`;
 - `estimated_cost_usd`;
 - `created_at`.
+
+`sequence_number` is assigned by one in-memory counter owned by the complete
+generation attempt. Repair loops and repeated router calls for the same attempt
+must share that counter. The database unique constraint
+`(generation_attempt_id, sequence_number)` is a guard, not the sequence source;
+the persistence layer must not issue a `SELECT max(sequence_number)`.
 
 Allowed outcomes include:
 
@@ -544,6 +598,15 @@ Verification records must include:
 
 No verification process may change routing automatically.
 
+The TokenRouter deployment remains a non-routed candidate until all of these
+are true:
+
+- current post-promotion pricing is recorded;
+- `max_tokens` is accepted by the endpoint;
+- the structured-output live probe passes;
+- the deployment status is promoted to `VERIFIED`;
+- a separate routing-policy commit explicitly assigns it to an engine.
+
 ## 15. Migration Strategy
 
 ### Phase 1: Establish central sources
@@ -560,6 +623,10 @@ No verification process may change routing automatically.
 - Introduce shared OpenAI-compatible transport.
 - Retain focused OpenRouter and TokenRouter provider adapters.
 - Add MiniMax M3 TokenRouter deployment.
+
+The TokenRouter deployment is added as a `DOCUMENTED` candidate. Durable
+registry/policy, transport, telemetry, embedding, and admin work proceeds with
+all production routes on verified OpenRouter deployments.
 
 ### Phase 3: Router migration
 
@@ -590,18 +657,28 @@ No verification process may change routing automatically.
 - Update tests, examples, deployment scripts, and documentation.
 - Add a repository contract preventing raw provider model IDs outside approved locations.
 
+### Optional Phase 7: TokenRouter activation gate
+
+- Reverify TokenRouter pricing after the 22 June 2026 promotion ends.
+- Run the explicit `MiniMax-M3` compatibility probe.
+- Promote the candidate deployment to `VERIFIED` only after the probe passes.
+- Activate one low-risk engine in a separate routing-policy commit.
+- Expand to other compatible engines only after admin telemetry is reviewed.
+
 ## 16. Production Rollout
 
 1. Deploy additive telemetry schema.
 2. Deploy registry/policy and provider abstraction with current OpenRouter routes preserved.
-3. Verify OpenRouter and TokenRouter health without generation cost where possible.
-4. Activate TokenRouter MiniMax M3 for one low-risk compatible engine.
-5. Run an explicitly authorized live smoke and inspect the admin timeline.
-6. Activate TokenRouter for foundation, outline, and chapter beats incrementally.
-7. Keep unsuitable engines on their researched provider/model routes.
-8. Monitor invalid-output rate, fallback rate, latency, provider cost, and refund rate.
-9. Reverify or disable temporary promotional deployments when their access period ends.
-10. Remove legacy configuration after parity and rollback checks pass.
+3. Verify the durable OpenRouter parity routes and admin telemetry.
+4. Remove legacy configuration after parity and rollback checks pass.
+5. Keep TokenRouter unassigned while its deployment is only `DOCUMENTED`.
+6. After post-promotion verification, activate TokenRouter for one low-risk
+   compatible engine in a separate commit.
+7. Run an explicitly authorized live smoke and inspect the admin timeline.
+8. Expand to foundation, outline, chapter beats, or prose hemat incrementally
+   only when their quality evidence supports it.
+9. Keep unsuitable engines on their researched provider/model routes.
+10. Monitor invalid-output rate, fallback rate, latency, provider cost, and refund rate.
 
 ## 17. Testing Requirements
 
@@ -618,6 +695,8 @@ The implementation plan must include:
 - structured-output validation and fallback tests;
 - embedding modality and dimension tests;
 - provider-cost calculation tests;
+- an automated diff between OpenRouter registry prices and the restored audit
+  snapshot;
 - generation-provider-event sanitization tests;
 - admin list/detail API tests;
 - admin UI timeline tests;
@@ -648,7 +727,8 @@ The design is successfully implemented when:
 2. Every logical model and provider deployment resolves through `ai-model-registry.ts`.
 3. No engine contains raw provider model IDs.
 4. Provider-specific IDs, pricing, capability, and verification are not duplicated.
-5. TokenRouter MiniMax M3 can be selected only for explicitly assigned engines.
+5. Zero production engines use TokenRouter while its deployment is only
+   `DOCUMENTED`; activation requires the optional verification gate.
 6. Cross-provider fallback occurs only when declared in policy.
 7. Structured invalid output triggers retry/fallback before success is recorded.
 8. Unsafe output never triggers fallback.

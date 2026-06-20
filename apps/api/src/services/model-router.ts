@@ -60,7 +60,7 @@ const QUALITY_MAX_OUTPUT_TOKENS: Record<WriterQualityMode, number> = {
 };
 
 const GENERATION_TYPE_TOKEN_CAP: Record<GenerationType, number> = {
-  [GENERATION_TYPES.intake_assistant]: 800,
+  [GENERATION_TYPES.intake_assistant]: 1500,
   [GENERATION_TYPES.concept_generation]: 3000,
   [GENERATION_TYPES.foundation_proposal]: 3000,
   [GENERATION_TYPES.draft_import_signal_extraction]: 1800,

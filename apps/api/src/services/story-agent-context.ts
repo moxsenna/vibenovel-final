@@ -1,4 +1,6 @@
 import { INTAKE_PHASES, type IntakePhase } from "@vibenovel/shared";
+import type { IntakeFilledSignalSummary } from "./intake-extraction.js";
+import { buildIntakeExtractionInstructions } from "./intake-extraction.js";
 
 export type NarraPhase = IntakePhase;
 
@@ -12,6 +14,8 @@ export interface NarraPromptContext {
   projectTitle: string;
   foundationSummary?: string;
   readinessSummary?: string;
+  missingSignals?: string[];
+  filledSignals?: IntakeFilledSignalSummary[];
 }
 
 export function resolveNarraPhase(input: ResolveNarraPhaseInput): NarraPhase {
@@ -52,10 +56,12 @@ export function buildNarraSystemPrompt(ctx: NarraPromptContext): string {
     ].join("\n");
   }
 
-  return [
+  const ideaPrompt = [
     base,
     "Mode saat ini: idea intake.",
     `Judul proyek: ${ctx.projectTitle}`,
     "Tugasmu: bantu penulis mengumpulkan ide, tokoh, konflik, genre, tone, target pembaca, dan rahasia yang perlu ditahan.",
   ].join("\n");
+
+  return ideaPrompt + buildIntakeExtractionInstructions(ctx.missingSignals ?? [], ctx.filledSignals ?? []);
 }

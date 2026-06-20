@@ -267,6 +267,15 @@ assert.equal(
   "foundation_refinement",
 );
 
+const intakeIdeaPrompt = buildNarraSystemPrompt({
+  phase: "idea_collection",
+  projectTitle: "Cerita Uji",
+  missingSignals: ["genre", "tone"],
+});
+assert.match(intakeIdeaPrompt, /readyForConcept/);
+assert.match(intakeIdeaPrompt, /genre, tone/);
+assert.match(intakeIdeaPrompt, /Maksimal ~4 kalimat/);
+
 const narraPrompt = buildNarraSystemPrompt({
   phase: "foundation_refinement",
   projectTitle: "Meja Makan yang Selalu Genap",
@@ -285,6 +294,7 @@ assert.match(intakeServiceSql, /resolveNarraPhase/);
 assert.match(intakeServiceSql, /foundation_refinement/);
 assert.doesNotMatch(intakeServiceSql, /foundation_refinement_messages/);
 assert.doesNotMatch(intakeServiceSql, /foundation_refinement_sessions/);
+assert.match(intakeServiceSql, /recomputeIntakeProgressFromExistingSignals/);
 
 const foundationRoutesSql = readFileSync("src/routes/foundation.ts", "utf8");
 assert.match(

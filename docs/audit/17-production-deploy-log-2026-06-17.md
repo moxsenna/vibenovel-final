@@ -29,3 +29,25 @@ Operator: automated recovery session (Wrangler OAuth `moxsenna@gmail.com`).
 ## API health snapshot
 
 `GET https://api.narraza.web.id/api/health` → `ok: true`, `aiGenerationEnabled: true`, `appEnv: production`.
+
+---
+
+## Update 2026-06-18 (doc 113 dashboard UX)
+
+| Target | Action | Result |
+|--------|--------|--------|
+| **API** `api.narraza.web.id` | `npm run deploy:api:production:raw` | Version `a9af8a18-e02a-4981-b27e-1fbe7dc8d0c5` (commit `85d4264`) |
+| **App** `narraza-web-production` | `npm run deploy:web:production` | Preview `https://dddb8c8e.narraza-web-production.pages.dev` |
+
+Git: `85d4264` on `codex/narraza-audit-recovery-sprint-0` (pushed before deploy).
+
+**If UI unchanged:** hard refresh (`Ctrl+Shift+R`) on https://app.narraza.web.id — Pages custom domain follows `main` production deployment; allow ~1–2 min propagation.
+
+
+## Update 2026-06-19 (edit/delete project UI + API catch-up)
+
+| Target | Action | Result |
+|--------|--------|--------|
+| **App** `narraza-web-production` | `npm run deploy:web:production` | Web — commit `d4c5818` |
+| **API** `api.narraza.web.id` | `npm run deploy:api:production:raw` | Worker `adb67703-d750-4e92-970e-0ed215a76d23` (pagination, A1 filter, B1 naming) |
+| **DB** | — | **No migration** — archive uses `projects.is_active` |

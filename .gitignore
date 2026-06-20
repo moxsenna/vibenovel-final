@@ -1,6 +1,10 @@
 # Dependencies
 node_modules/
 
+# Local tooling / nested worktrees
+.codex-worktrees/
+.commandcode/
+
 # Build output
 dist/
 dist-node/

@@ -47,11 +47,14 @@ function buildMockChapterSummaryJson(input: ModelRouterGenerateInput): string {
 function buildDeterministicProse(input: ModelRouterGenerateInput): string {
   const hashPrefix = input.promptHash.slice(0, 8);
   if (input.generationType === GENERATION_TYPES.intake_assistant) {
-    return (
-      "Aku menangkap inti emosional ceritamu. Mari kita tajamkan siapa tokoh utama, " +
-      "tekanan terbesar yang ia hadapi, dan rahasia apa yang perlu ditahan agar " +
-      `pembaca terus penasaran. [mock-intake:${hashPrefix}]`
-    );
+    return JSON.stringify({
+      reply:
+        "Aku menangkap inti emosional ceritamu. Mari kita tajamkan siapa tokoh utama, " +
+        "tekanan terbesar yang ia hadapi, dan rahasia apa yang perlu ditahan agar " +
+        `pembaca terus penasaran. [mock-intake:${hashPrefix}]`,
+      signals: [{ type: "genre", label: "Mock Genre", value: "drama mock", confidence: 0.9 }],
+      readyForConcept: false,
+    });
   }
   if (input.generationType === GENERATION_TYPES.concept_generation) {
     return JSON.stringify([
