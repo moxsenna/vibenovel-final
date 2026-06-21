@@ -58,6 +58,7 @@
     "test:voice-lock": "tsx scripts/voice-lock.test.mts",
     "test:advanced-outline-controls": "tsx scripts/advanced-outline-controls.test.mts",
     "test:continuity-routes": "tsx scripts/continuity-routes-contracts.test.mts",
+    "test:story-control-routes": "tsx scripts/story-control-routes-contracts.test.mts",
     "test:generation-observability": "tsx scripts/generation-observability.test.mts",
     "test:long-serial-acceptance": "tsx scripts/long-serial-acceptance-contracts.test.mts",
     "test:marketing-claims": "tsx scripts/marketing-claims-contract.test.mts",

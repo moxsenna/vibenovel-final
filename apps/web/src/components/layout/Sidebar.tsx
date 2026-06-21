@@ -1,9 +1,12 @@
+import { useEffect, useState } from "react";
+import type { CreatorMode } from "@vibenovel/shared";
 import { Link, useNavigate } from "react-router-dom";
 import { Icon } from "@/components/ui";
 import { useAuth } from "@/context/AuthContext";
 import { resolveSidebarProjectId, useActiveProject } from "@/hooks/useActiveProject";
 import { shouldUseMocks } from "@/lib/env";
 import { ROUTES } from "@/routes/paths";
+import { fetchProjectSettings } from "@/services/settings";
 import { buildSidebarNavItems } from "@/utils/navigation";
 import { NavItem } from "./NavItem";
 
@@ -14,7 +17,30 @@ export function Sidebar() {
   const useMocks = shouldUseMocks();
   const { project: activeProject, source, loading } = useActiveProject();
   const projectId = resolveSidebarProjectId(activeProject, useMocks);
-  const navItems = buildSidebarNavItems(projectId, activeProject?.workflowPhase);
+  const [creatorMode, setCreatorMode] = useState<CreatorMode>("simple");
+  const navItems = buildSidebarNavItems(
+    projectId,
+    activeProject?.workflowPhase,
+    creatorMode,
+  );
+
+  useEffect(() => {
+    if (!projectId || !session?.access_token || useMocks) {
+      setCreatorMode("simple");
+      return;
+    }
+    let cancelled = false;
+    void fetchProjectSettings(projectId, session.access_token)
+      .then((settings) => {
+        if (!cancelled) setCreatorMode(settings.creatorMode);
+      })
+      .catch(() => {
+        if (!cancelled) setCreatorMode("simple");
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [projectId, session?.access_token, useMocks]);
 
   const mainItems = navItems.filter((item) => item.id !== "settings");
   const settingsItem = navItems.find((item) => item.id === "settings");

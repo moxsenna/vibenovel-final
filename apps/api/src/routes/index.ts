@@ -21,6 +21,7 @@ import { registerAiRoutes } from "./ai.js";
 import { registerDraftImportRoutes } from "./draft-import.js";
 import { registerAdminRoutes } from "./admin.js";
 import { registerContinuityRoutes } from "./continuity.js";
+import { registerStoryControlRoutes } from "./story-control.js";
 
 
 export function registerRoutes(app: Hono<AppEnv>): void {
@@ -44,5 +45,6 @@ export function registerRoutes(app: Hono<AppEnv>): void {
   registerAiRoutes(app);
   registerDraftImportRoutes(app);
   registerContinuityRoutes(app);
+  registerStoryControlRoutes(app);
   registerAdminRoutes(app);
 }

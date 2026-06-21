@@ -1,4 +1,5 @@
 import type { Hono } from "hono";
+import { AppError } from "../errors.js";
 import { authMiddleware } from "../middleware/auth.js";
 import { jsonSuccess } from "../response.js";
 import {
@@ -154,8 +155,26 @@ export function registerOutlineRoutes(app: Hono<AppEnv>): void {
     const ownerId = c.get("userId");
     const projectId = c.req.param("id");
     const revealId = c.req.param("revealId");
-    const body = await c.req.json();
-    const reveal = await updatePlannedRevealForOwner(c.env, ownerId, projectId, revealId, body);
+    const rawBody: unknown = await c.req.json().catch(() => null);
+    if (!rawBody || typeof rawBody !== "object" || Array.isArray(rawBody)) {
+      throw AppError.badRequest("Request body must be a JSON object");
+    }
+    const body = rawBody as Record<string, unknown>;
+    if (
+      body.planningTruth !== undefined &&
+      body.confirmation !== "UPDATE_PLANNING_TRUTH"
+    ) {
+      throw AppError.badRequest("Must send confirmation: UPDATE_PLANNING_TRUTH");
+    }
+    const sanitizedBody = { ...body };
+    delete sanitizedBody.confirmation;
+    const reveal = await updatePlannedRevealForOwner(
+      c.env,
+      ownerId,
+      projectId,
+      revealId,
+      sanitizedBody,
+    );
     return jsonSuccess(c, reveal);
   });
 

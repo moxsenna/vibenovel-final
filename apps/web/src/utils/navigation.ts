@@ -1,4 +1,4 @@
-import type { WorkflowPhase } from "@vibenovel/shared";
+import type { CreatorMode, WorkflowPhase } from "@vibenovel/shared";
 import { DEMO_PROJECT_ID } from "@/mocks/projects";
 import { ROUTES } from "@/routes/paths";
 import { resolveNavLocks } from "@/lib/workflow-truth";
@@ -17,6 +17,7 @@ export interface NavItemConfig {
 export function buildSidebarNavItems(
   projectId: string | null,
   workflowPhase?: WorkflowPhase | null,
+  creatorMode: CreatorMode = "simple",
 ): NavItemConfig[] {
   const locks = resolveNavLocks(workflowPhase);
   return [
@@ -50,6 +51,16 @@ export function buildSidebarNavItems(
       disabled: !projectId || !locks.outline,
       lockHint: !locks.outline ? "Kunci fondasi cerita terlebih dahulu." : undefined,
     },
+    ...(creatorMode === "advanced"
+      ? [{
+          id: "story-control",
+          label: "Story Control",
+          icon: "tune",
+          to: projectId ? ROUTES.project.storyControl(projectId) : ROUTES.start,
+          disabled: !projectId || !locks.outline,
+          lockHint: !locks.outline ? "Kunci fondasi cerita terlebih dahulu." : undefined,
+        }]
+      : []),
     {
       id: "write",
       label: "Ruang Tulis",
