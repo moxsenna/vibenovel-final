@@ -106,16 +106,16 @@ What is **verified built** (local + fixture; staging shell deployed):
 | Credit topup UI | ✅ Done | [`docs/53`](53-sprint-10-verification-report.md) |
 | Staging Mode A API + web shell | ✅ Done | [`docs/62`](62-staging-deploy-mode-a-report.md) |
 
-### Explicitly NOT claimed as done
+### Explicitly NOT claimed as done (updated 2026-06-16 — see [`docs/audit/12-docs-code-truth-matrix-2026-06-16.md`](audit/12-docs-code-truth-matrix-2026-06-16.md))
 
 | Area | Why |
 |---|---|
 | Full production payment | Staging BCA VA **GO**; enable **plan** in [`docs/73`](73-duitku-production-payment-enable-plan.md); production **NOT ENABLED** until founder Go |
 | Full voice learning / Voice DNA | Only rewrite tools exist; no style profile learning |
-| Full validator suite | Summary/delta/safety exist; automated validators + repair agent incomplete |
-| Draft import | Not started |
-| Creator Mode | Not started (editors for Story Bible, Reveal Schedule, etc.) |
-| Analytics dashboard / growth layer | Only audit/usage/cost observability primitives |
+| Full validator suite (`docs/09`) | `output-validator` + `validation_reports` shipped (Sprint 14); eight named validators incomplete |
+| Draft import | **Partial** — route/API/signals/RAG prep shipped (Sprints 15/18); closure [`docs/99`](99-sprint-15-draft-import-report.md); not full Persona C polish |
+| Creator Mode | **Partial** — `creator_mode` + advanced outline UI shipped (Sprint 16); closure [`docs/101-sprint-16-creator-mode-report.md`](101-sprint-16-creator-mode-report.md); full Story Bible editors backlog |
+| Analytics dashboard / growth layer | Only audit/usage/cost observability primitives; `writing_activity` not shipped |
 
 ### Staging condition (post Task 11.6 — 2026-06-09)
 

@@ -394,7 +394,7 @@ Live OpenRouter rewrite not tested in smoke.
 | POST | `/api/projects/:id/proposals` | Bearer JWT | Create manual proposal (`status: proposed`) |
 | GET | `/api/projects/:id/proposals/:proposalId` | Bearer JWT | Proposal detail |
 | PATCH | `/api/projects/:id/proposals/:proposalId` | Bearer JWT | Update proposed proposal only |
-| POST | `/api/projects/:id/proposals/:proposalId/accept` | Bearer JWT | Accept (status only — no canon promotion) |
+| POST | `/api/projects/:id/proposals/:proposalId/accept` | Bearer JWT | Accept + canon promotion for delta/summary types (`fact`, `character_update`, …); body optional `{ confirmHighRisk }`; foundation types → 409 (use foundation accept) |
 | POST | `/api/projects/:id/proposals/:proposalId/reject` | Bearer JWT | Reject proposal |
 | POST | `/api/projects/:id/proposals/:proposalId/merge` | Bearer JWT | Merge proposal |
 | GET | `/api/credits/balance` | Bearer JWT | Read-only credit balance for authenticated user |
@@ -1214,7 +1214,7 @@ Aliases: `characterAId`/`characterBId`, `fromCharacterName`/`toCharacterName`, `
 
 ### AI proposal queue (Task 2.11)
 
-Canon safety gate — proposals stay in queue until explicit accept/reject/merge. **Accept does not auto-promote to facts/characters/speech rules** (deferred to Task 2.11b / Sprint 3).
+Canon safety gate — proposals stay in queue until explicit accept/reject/merge. **Generic accept** (`POST .../proposals/:id/accept`): preflight → `promoteProposalToCanon` → mark accepted (Sprint 12.4). Foundation review types use `POST .../foundation/proposals/:id/accept`. Summary-linked proposals use `POST .../summary/:summaryId/proposals/:id/accept`.
 
 **`GET /api/projects/:id/proposals`** — default `status=proposed` only. Filters: `?status=`, `?type=`, `?riskLevel=`, `?includeResolved=true`.
 
@@ -1457,3 +1457,25 @@ npm run smoke:staging -- -TargetName "node-local" -ApiBaseUrl "http://localhost:
 **Task 11.5:** EC2 deploy — **PARTIAL GO** ([`docs/68`](../../docs/68-aws-ec2-api-staging-deploy-report.md)).
 
 **Task 11.6:** HTTPS + web-to-AWS — **BLOCKED** ([`docs/69`](../../docs/69-aws-https-domain-and-web-to-aws-api-report.md)); `npm run operator:aws:https:gate -- -Domain <apex>`.
+
+## AI model registry & routing (operator notes)
+
+Engine2 AI routing is driven by two source-of-truth files:
+
+- **Model changes** (which logical model an engine uses): edit
+  `src/services/ai-routing-policy.ts` only.
+- **Provider model IDs, pricing, capabilities, verification**: edit
+  `src/services/ai-model-registry.ts` only. Raw provider model IDs must not
+  appear anywhere else (enforced by `test:ai-model-id-boundary`).
+- **Provider keys / base URLs**: env-only (`OPENROUTER_*`, `TOKENROUTER_*`).
+  There are **no** per-engine or global model override env vars; the legacy
+  `DEFAULT_AI_MODEL` / `AI_MODEL_*` / `AI_EMBEDDING_MODEL` are removed and now
+  fail fast at startup (`assertNoLegacyAiModelEnv`).
+- **Emergency shutdown**: set `AI_GENERATION_ENABLED=false`.
+- **Rollback**: revert the routing-policy commit for the affected engine and
+  redeploy — configuration-by-code, not env override.
+- **TokenRouter**: a `DOCUMENTED`, non-routed candidate. Its free promotion ends
+  **22 June 2026**; activation requires the optional gate (reverify pricing,
+  pass the live probe, promote to `VERIFIED`, then a separate one-engine
+  routing-policy commit). Immediate pricing reverification is required after the
+  promotion ends.

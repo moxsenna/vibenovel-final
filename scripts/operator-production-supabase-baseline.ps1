@@ -174,6 +174,13 @@ if ($prodRef -eq $StagingProjectRef) {
 Write-Host "Production project ref: $prodRef" -ForegroundColor Gray
 Write-Host "Confirmed not staging: yes"
 
+$supabaseAudit = Test-ProductionSupabaseProjectRefAudit -StagingProjectRef $StagingProjectRef
+if (-not $supabaseAudit.Ok) {
+  Write-Host "BLOCKED: Supabase project ref audit - $($supabaseAudit.Message)" -ForegroundColor Red
+  exit 2
+}
+Write-Host "PASS Supabase project ref audit (api=$($supabaseAudit.ApiRef), web=$($supabaseAudit.WebRef), match=yes)" -ForegroundColor Green
+
 if ([string]::IsNullOrWhiteSpace($supabaseUrl) -or [string]::IsNullOrWhiteSpace($serviceRole) -or [string]::IsNullOrWhiteSpace($anonKey)) {
   Write-Host "BLOCKED: SUPABASE_URL, SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY required in .env.production" -ForegroundColor Red
   exit 2

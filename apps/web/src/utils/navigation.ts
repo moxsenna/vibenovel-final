@@ -28,10 +28,10 @@ export function buildSidebarNavItems(
       filledWhenActive: true,
     },
     {
-      id: "start",
-      label: "Mulai Proyek",
-      icon: "rocket_launch",
-      to: ROUTES.start,
+      id: "narra",
+      label: "Asisten Narra",
+      icon: "auto_awesome",
+      to: projectId ? ROUTES.project.narra(projectId) : ROUTES.start,
     },
     {
       id: "foundation",
@@ -108,8 +108,8 @@ export function isNavItemActive(itemPath: string, pathname: string): boolean {
     return false;
   }
 
-  // Intake & konsep berasal dari alur Mulai Proyek
-  if (itemPath === ROUTES.start && pathname.startsWith("/projects/")) {
+  // Intake & konsep berasal dari alur Asisten Narra
+  if ((itemPath === ROUTES.start || itemPath.includes("/intake")) && pathname.startsWith("/projects/")) {
     const pathSection = pathname.split("/")[3];
     return pathSection === "intake" || pathSection === "concepts";
   }

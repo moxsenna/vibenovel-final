@@ -2,6 +2,15 @@
 
 Dokumen ini adalah pemisah MVP vs Full. Jangan membuat blueprint MVP dan Full terpisah.
 
+## Status update
+
+Status per 2026-06-15: dokumen ini adalah historical MVP-to-Full outline. Untuk execution status gunakan `README.md`, `docs/61-roadmap-and-sprint-number-reconciliation.md`, dan sprint closure reports terbaru. Untuk backlog competitive/manuscript dan shipped-vs-planned engine, gunakan `docs/100-competitive-manuscript-teardown-and-gap-sprint-plan.md`.
+
+Catatan khusus:
+
+- Sprint 5 task 7 (`Accept/reject flow`) belum tuntas sebagai full UX version/diff. Backend version storage/list/get/set-current sudah ada, tapi writer-facing diff accept/reject tetap backlog `docs/100` Sprint 15.
+- Sprint 6 task 5 (`Timeline/character state update`) belum tuntas. `chapter_deltas` dan proposal promotion sudah ada, tetapi `character_states`, `character_knowledge`, dan `timeline_events` masih backlog `docs/100` Sprint 16-17.
+
 ## Sprint 0 — Documentation, Rules, and Repo Preparation
 
 Goal:
@@ -338,7 +347,7 @@ Tasks:
 4. Instruction Compliance Validator.
 5. Spoiler Validator basic.
 6. Prose Version save.
-7. Accept/reject flow.
+7. Accept/reject flow. Status update: partial only; full version/diff accept-reject UX remains backlog `docs/100` Sprint 15.
 8. Integration test with future reveal blocked.
 
 ---
@@ -356,7 +365,7 @@ Tasks:
 2. Delta extraction service.
 3. User approval UI.
 4. Fact proposal handling.
-5. Timeline/character state update.
+5. Timeline/character state update. Status update: not complete; target continuity backlog is `docs/100` Sprint 16-17.
 6. Tests.
 
 ---

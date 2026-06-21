@@ -27,7 +27,10 @@ export function FoundationPage() {
     locking,
     acceptingId,
     apiMode,
+    matangkanDenganNarraRoute,
+    generatingNarra,
     generateProposals,
+    generateNarraProposals,
     acceptProposalById,
     lockFoundationNow,
   } = useFoundationFlow();
@@ -61,7 +64,12 @@ export function FoundationPage() {
         </Badge>
       )}
 
-      <FoundationReadinessCard readiness={foundation.readiness} />
+      <FoundationReadinessCard
+        readiness={foundation.readiness}
+        matangkanRoute={matangkanDenganNarraRoute}
+        generatingNarra={generatingNarra}
+        onGenerateNarra={apiMode ? generateNarraProposals : undefined}
+      />
 
       {apiMode && (
         <FoundationProposalsPanel

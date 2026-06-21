@@ -1,4 +1,4 @@
-import type { WriterQualityMode } from "@vibenovel/shared";
+import type { CreatorMode, WriterQualityMode } from "@vibenovel/shared";
 import { apiRequest } from "@/lib/api";
 
 export interface ProjectSettingsApiResponse {
@@ -8,6 +8,9 @@ export interface ProjectSettingsApiResponse {
   defaultFormat: string;
   outputStylePreference?: string;
   mobileFormatPreference?: string;
+  targetLengthPlan?: string | null;
+  targetLengthBand?: string | null;
+  creatorMode: CreatorMode;
   defaultLanguage?: string | null;
   defaultGenre?: string | null;
 }
@@ -23,7 +26,7 @@ export async function fetchProjectSettings(
 
 export async function updateProjectSettings(
   projectId: string,
-  body: { qualityMode: WriterQualityMode },
+  body: { qualityMode?: WriterQualityMode; creatorMode?: CreatorMode },
   token?: string | null,
 ): Promise<ProjectSettingsApiResponse> {
   return apiRequest<ProjectSettingsApiResponse>(`/api/projects/${projectId}/settings`, {

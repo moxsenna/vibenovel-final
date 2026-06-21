@@ -1,9 +1,10 @@
-import { createBrowserRouter } from "react-router-dom";
+import { Navigate, createBrowserRouter } from "react-router-dom";
 import { AppShell } from "@/components/layout";
-import { LandingPage } from "@/pages/LandingPage";
 import { StartProjectPage } from "@/pages/StartProjectPage";
 import { DashboardPage } from "@/pages/DashboardPage";
+import { ProjectsIndexPage } from "@/pages/ProjectsIndexPage";
 import { IntakePage } from "@/pages/IntakePage";
+import { DraftImportPage } from "@/pages/DraftImportPage";
 import { ConceptsPage } from "@/pages/ConceptsPage";
 import { FoundationPage } from "@/pages/FoundationPage";
 import { OutlinePage } from "@/pages/OutlinePage";
@@ -14,16 +15,34 @@ import { SettingsPage } from "@/pages/SettingsPage";
 import { CreditTopupPage } from "@/pages/CreditTopupPage";
 import { CreditTopupReturnPage } from "@/pages/CreditTopupReturnPage";
 import { LoginPage } from "@/pages/LoginPage";
+import { AdminGuard } from "@/components/admin/AdminGuard";
+import { AdminShell } from "@/components/admin/AdminShell";
+import { AdminOverviewPage } from "@/pages/admin/AdminOverviewPage";
+import { AdminUsersPage } from "@/pages/admin/AdminUsersPage";
+import { AdminUserDetailPage } from "@/pages/admin/AdminUserDetailPage";
+import { AdminProjectsPage } from "@/pages/admin/AdminProjectsPage";
+import { AdminProjectDetailPage } from "@/pages/admin/AdminProjectDetailPage";
+import { AdminProposalsPage } from "@/pages/admin/AdminProposalsPage";
+import { AdminProposalDetailPage } from "@/pages/admin/AdminProposalDetailPage";
+import { AdminGenerationAttemptsPage } from "@/pages/admin/AdminGenerationAttemptsPage";
+import { AdminGenerationAttemptDetailPage } from "@/pages/admin/AdminGenerationAttemptDetailPage";
+
+import { AdminSystemPage } from "@/pages/admin/AdminSystemPage";
+import { AdminAuditLogsPage } from "@/pages/admin/AdminAuditLogsPage";
+import { ROUTES } from "@/routes/paths";
+
 
 export const router = createBrowserRouter([
-  { path: "/", element: <LandingPage /> },
+  { path: "/", element: <Navigate to="/login" replace /> },
   { path: "/login", element: <LoginPage /> },
   {
     element: <AppShell />,
     children: [
       { path: "/start", element: <StartProjectPage /> },
+      { path: "/projects", element: <ProjectsIndexPage /> },
       { path: "/dashboard", element: <DashboardPage /> },
       { path: "/projects/:id/intake", element: <IntakePage /> },
+      { path: "/projects/:id/import-draft", element: <DraftImportPage /> },
       { path: "/projects/:id/concepts", element: <ConceptsPage /> },
       { path: "/projects/:id/foundation", element: <FoundationPage /> },
       { path: "/projects/:id/outline", element: <OutlinePage /> },
@@ -34,6 +53,30 @@ export const router = createBrowserRouter([
       { path: "/credits/topup", element: <CreditTopupPage /> },
       { path: "/credits/topup/mock-return", element: <CreditTopupReturnPage /> },
       { path: "/credits/topup/return", element: <CreditTopupReturnPage /> },
+    ],
+  },
+  {
+    path: ROUTES.admin.root,
+    element: (
+      <AdminGuard>
+        <AdminShell />
+      </AdminGuard>
+    ),
+    children: [
+      { index: true, element: <AdminOverviewPage /> },
+      { path: "users", element: <AdminUsersPage /> },
+      { path: "users/:userId", element: <AdminUserDetailPage /> },
+      { path: "projects", element: <AdminProjectsPage /> },
+      { path: "projects/:projectId", element: <AdminProjectDetailPage /> },
+      { path: "proposals", element: <AdminProposalsPage /> },
+      { path: "proposals/:proposalId", element: <AdminProposalDetailPage /> },
+      { path: "generation-attempts", element: <AdminGenerationAttemptsPage /> },
+      {
+        path: "generation-attempts/:attemptId",
+        element: <AdminGenerationAttemptDetailPage />,
+      },
+      { path: "system", element: <AdminSystemPage /> },
+      { path: "audit-logs", element: <AdminAuditLogsPage /> },
     ],
   },
 ]);

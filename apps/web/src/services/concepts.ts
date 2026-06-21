@@ -1,4 +1,4 @@
-import type { StoryConcept } from "@vibenovel/shared";
+import type { CreditBalance, StoryConcept } from "@vibenovel/shared";
 import { apiRequest } from "@/lib/api";
 
 export interface ConceptsListResponse {
@@ -8,6 +8,20 @@ export interface ConceptsListResponse {
 export interface GenerateConceptsResponse {
   concepts: StoryConcept[];
   created: boolean;
+  creditCost: number;
+  creditBalance: CreditBalance | null;
+  idempotentReplay: boolean;
+}
+
+export interface GenerateConceptsInput {
+  idempotencyKey: string;
+  regenerate?: boolean;
+  basedOnSignals?: boolean;
+}
+
+export function buildConceptGenerationIdempotencyKey(projectId: string): string {
+  const suffix = Math.random().toString(36).slice(2, 10);
+  return `concept-${projectId}-${Date.now()}-${suffix}`;
 }
 
 export interface SelectConceptResponse {
@@ -31,8 +45,8 @@ export async function fetchConcepts(
 
 export async function generateConcepts(
   projectId: string,
-  token?: string | null,
-  body: Record<string, unknown> = {},
+  token: string | null | undefined,
+  body: GenerateConceptsInput,
 ): Promise<GenerateConceptsResponse> {
   return apiRequest<GenerateConceptsResponse>(
     `/api/projects/${projectId}/concepts/generate`,

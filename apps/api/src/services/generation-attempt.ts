@@ -14,7 +14,7 @@ import { writeAuditLog } from "./audit.js";
 import { generateCorrelationId, sanitizeAuditMetadata } from "./audit-snapshot.js";
 
 const ATTEMPT_SELECT =
-  "id, project_id, user_id, chapter_outline_id, beat_id, writing_session_id, generation_type, status, idempotency_key, provider, model, prompt_hash, context_packet_log_id, input_tokens, output_tokens, estimated_cost_usd, credit_cost, error_code, error_message_safe, output_entity_type, output_entity_id, metadata, created_at, updated_at";
+  "id, project_id, user_id, chapter_outline_id, beat_id, writing_session_id, generation_type, status, idempotency_key, provider, model, logical_model, routing_policy_version, fallback_used, retry_count, provider_latency_ms, prompt_hash, context_packet_log_id, input_tokens, output_tokens, estimated_cost_usd, credit_cost, error_code, error_message_safe, output_entity_type, output_entity_id, metadata, created_at, updated_at";
 
 export interface GenerationAttemptRow {
   id: string;
@@ -28,6 +28,11 @@ export interface GenerationAttemptRow {
   idempotency_key: string;
   provider: string | null;
   model: string | null;
+  logical_model: string | null;
+  routing_policy_version: string | null;
+  fallback_used: boolean;
+  retry_count: number;
+  provider_latency_ms: number | null;
   prompt_hash: string | null;
   context_packet_log_id: string | null;
   input_tokens: number | null;
@@ -50,6 +55,11 @@ export interface GenerationAttemptSafeSummary {
   creditCost: number;
   provider: string | null;
   model: string | null;
+  logicalModel: string | null;
+  routingPolicyVersion: string | null;
+  fallbackUsed: boolean;
+  retryCount: number;
+  providerLatencyMs: number | null;
   promptHash: string | null;
   inputTokens: number | null;
   outputTokens: number | null;
@@ -91,6 +101,11 @@ export function mapGenerationAttemptRow(row: GenerationAttemptRow): GenerationAt
     idempotencyKey: row.idempotency_key,
     provider: row.provider,
     model: row.model,
+    logicalModel: row.logical_model ?? null,
+    routingPolicyVersion: row.routing_policy_version ?? null,
+    fallbackUsed: row.fallback_used ?? false,
+    retryCount: row.retry_count ?? 0,
+    providerLatencyMs: row.provider_latency_ms ?? null,
     promptHash: row.prompt_hash,
     contextPacketLogId: row.context_packet_log_id,
     inputTokens: row.input_tokens,
@@ -118,6 +133,11 @@ export function toGenerationAttemptSafeSummary(
     creditCost: attempt.creditCost,
     provider: attempt.provider,
     model: attempt.model,
+    logicalModel: attempt.logicalModel,
+    routingPolicyVersion: attempt.routingPolicyVersion,
+    fallbackUsed: attempt.fallbackUsed,
+    retryCount: attempt.retryCount,
+    providerLatencyMs: attempt.providerLatencyMs,
     promptHash: attempt.promptHash,
     inputTokens: attempt.inputTokens,
     outputTokens: attempt.outputTokens,
@@ -265,6 +285,11 @@ export async function markGenerationAttemptSucceeded(
     projectId: string;
     provider: string;
     model: string;
+    logicalModel?: string | null;
+    routingPolicyVersion?: string | null;
+    fallbackUsed?: boolean;
+    retryCount?: number;
+    providerLatencyMs?: number | null;
     inputTokens?: number;
     outputTokens?: number;
     outputEntityId: string;
@@ -286,6 +311,11 @@ export async function markGenerationAttemptSucceeded(
     status: GENERATION_STATUSES.succeeded,
     provider: input.provider,
     model: input.model,
+    logical_model: input.logicalModel ?? null,
+    routing_policy_version: input.routingPolicyVersion ?? null,
+    fallback_used: input.fallbackUsed ?? false,
+    retry_count: input.retryCount ?? 0,
+    provider_latency_ms: input.providerLatencyMs ?? null,
     input_tokens: input.inputTokens ?? null,
     output_tokens: input.outputTokens ?? null,
     estimated_cost_usd:
@@ -352,6 +382,46 @@ export async function markGenerationAttemptFailed(
   return attempt;
 }
 
+export interface GenerationAttemptRoutingSummaryInput {
+  attemptId: string;
+  provider: string;
+  providerModelId: string;
+  logicalModel: string;
+  routingPolicyVersion: string;
+  fallbackUsed: boolean;
+  retryCount: number;
+  providerLatencyMs: number;
+  inputTokens?: number;
+  outputTokens?: number;
+  estimatedCostUsd?: number | null;
+}
+
+/**
+ * Persist the final route summary before a failed attempt rethrows, so that
+ * the subsequent markGenerationAttemptFailed only touches status/error fields
+ * while the provider/route summary is preserved for admin diagnostics.
+ */
+export async function updateGenerationAttemptRoutingSummary(
+  bindings: AppBindings,
+  input: GenerationAttemptRoutingSummaryInput,
+): Promise<GenerationAttempt> {
+  return updateGenerationAttemptStatus(bindings, input.attemptId, {
+    provider: input.provider,
+    model: input.providerModelId,
+    logical_model: input.logicalModel,
+    routing_policy_version: input.routingPolicyVersion,
+    fallback_used: input.fallbackUsed,
+    retry_count: input.retryCount,
+    provider_latency_ms: input.providerLatencyMs,
+    input_tokens: input.inputTokens ?? null,
+    output_tokens: input.outputTokens ?? null,
+    estimated_cost_usd:
+      typeof input.estimatedCostUsd === "number"
+        ? input.estimatedCostUsd
+        : null,
+  });
+}
+
 async function updateGenerationAttemptStatus(
   bindings: AppBindings,
   attemptId: string,
@@ -366,7 +436,8 @@ async function updateGenerationAttemptStatus(
     .single();
 
   if (error || !data) {
-    console.error("generation_attempts update failed");
+    // Log the provider/DB error class server-side without leaking it to clients.
+    console.error("generation_attempts update failed", error?.code ?? "", error?.message ?? "");
     throw AppError.internal("Failed to update generation attempt");
   }
 

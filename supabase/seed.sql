@@ -45,6 +45,16 @@ ON CONFLICT (id) DO UPDATE SET
   raw_user_meta_data = EXCLUDED.raw_user_meta_data,
   updated_at = now();
 
+UPDATE auth.users
+SET confirmation_token = '',
+    recovery_token = '',
+    email_change_token_new = '',
+    email_change = '',
+    phone_change_token = '',
+    email_change_token_current = '',
+    reauthentication_token = ''
+WHERE id = 'a0000000-0000-4000-8000-000000000001';
+
 INSERT INTO auth.identities (
   id,
   user_id,
@@ -163,6 +173,7 @@ INSERT INTO public.story_foundations (
   main_conflict,
   reader_promise,
   genre,
+  tone,
   target_reader,
   story_secrets_preview,
   style_tags,
@@ -178,6 +189,7 @@ VALUES (
   'Nadira terjebak antara bertahan demi anak-anak atau menghadapi pengkhianatan dan penghinaan keluarga — sambil membangun kekuatan untuk bangkit tanpa kehilangan harga dirinya.',
   E'Pengkhianatan yang menusuk dan terasa dekat dengan kehidupan sehari-hari\nProses bangkit yang perlahan tapi memuaskan dibaca\nPenyesalan orang yang pernah meremehkan Nadira\nBalas dendam emosional yang terasa adil, bukan instan',
   'Drama Misteri',
+  'Balas Dendam / Satisfying',
   'hp_serial',
   'Siska bukan sekadar nama asing — dia terhubung dengan masa lalu Arman yang sengaja disembunyikan dari Nadira.',
   '["Drama Rumah Tangga","Revenge Emosional","POV Perempuan","Serial Bab Pendek"]'::jsonb,

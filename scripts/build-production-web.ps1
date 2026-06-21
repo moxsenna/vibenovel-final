@@ -25,6 +25,12 @@ if (-not (Test-Path $envPath)) { throw "missing .env.production" }
 
 Import-DotEnvFile -Path $envPath
 
+$supabaseAudit = Test-ProductionSupabaseProjectRefAudit
+if (-not $supabaseAudit.Ok) {
+  throw "Supabase project ref audit failed: $($supabaseAudit.Message)"
+}
+Write-Host "PASS Supabase project ref audit (api=$($supabaseAudit.ApiRef), web=$($supabaseAudit.WebRef), match=yes)" -ForegroundColor Green
+
 $viteUrl = $env:VITE_SUPABASE_URL
 if ([string]::IsNullOrWhiteSpace($viteUrl)) { $viteUrl = $env:SUPABASE_URL }
 $viteAnon = $env:VITE_SUPABASE_ANON_KEY

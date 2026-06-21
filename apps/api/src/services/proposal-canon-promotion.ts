@@ -1,6 +1,7 @@
 import {
   AI_PROPOSAL_RISK_LEVELS,
   AI_PROPOSAL_TYPES,
+  CHARACTER_KNOWLEDGE_STATUSES,
   CHAPTER_SUMMARY_PROPOSAL_STATUSES,
   FACT_CANON_STATUSES,
   FACT_CATEGORIES,
@@ -37,8 +38,13 @@ const REVEAL_SELECT =
   "id, project_id, outline_plan_id, planned_chapter_outline_id, related_fact_id, related_proposal_id, title, planning_truth, reader_facing_hint, forbidden_before_chapter, status, risk_level, metadata, created_at, updated_at";
 const RULE_SELECT =
   "id, project_id, relationship_label, character_a_id, character_b_id, rule_text, examples, status, source, created_at, updated_at";
+const CHARACTER_STATE_SELECT =
+  "id, project_id, character_id, chapter_number, emotional_state, physical_state, current_goal, location_id, metadata, created_at, updated_at";
+const CHARACTER_KNOWLEDGE_SELECT =
+  "id, project_id, character_id, fact_id, knowledge_status, confidence, learned_at_chapter, learned_from, metadata, created_at, updated_at";
 
 const CATEGORY_SET = new Set<string>(Object.values(FACT_CATEGORIES));
+const KNOWLEDGE_STATUS_SET = new Set<string>(Object.values(CHARACTER_KNOWLEDGE_STATUSES));
 
 export interface PromotedEntity {
   entityType: string;
@@ -70,6 +76,108 @@ function resolveCategory(payload: JsonObject): string {
   const raw = payload.category;
   if (typeof raw === "string" && CATEGORY_SET.has(raw)) return raw;
   return FACT_CATEGORIES.event;
+}
+
+function resolveTargetCharacterId(payload: JsonObject): string {
+  const raw = payload.characterId ?? payload.targetEntityId;
+  if (typeof raw === "string" && raw.trim()) return raw.trim();
+  throw AppError.conflict("Continuity promotion requires characterId", {
+    missing: ["target_required"],
+  });
+}
+
+function resolveChapterNumber(payload: JsonObject): number {
+  const raw = payload.chapterNumber;
+  if (typeof raw === "number" && Number.isInteger(raw) && raw > 0) return raw;
+  throw AppError.conflict("Continuity promotion requires chapterNumber", {
+    missing: ["chapter_required"],
+  });
+}
+
+function resolveOptionalText(payload: JsonObject, key: string): string | null {
+  const raw = payload[key];
+  if (typeof raw !== "string") return null;
+  const trimmed = raw.trim();
+  return trimmed ? trimmed.slice(0, 1000) : null;
+}
+
+function resolveStateFields(payload: JsonObject): {
+  characterId: string;
+  chapterNumber: number;
+  emotionalState: string | null;
+  physicalState: string | null;
+  currentGoal: string | null;
+  locationId: string | null;
+  stateSummary: string | null;
+} {
+  const stateSummary = resolveOptionalText(payload, "stateSummary") ?? resolveOptionalText(payload, "changeSummary");
+  const emotionalState = resolveOptionalText(payload, "emotionalState");
+  const physicalState = resolveOptionalText(payload, "physicalState");
+  const currentGoal = resolveOptionalText(payload, "currentGoal") ?? stateSummary;
+  const locationId = resolveOptionalText(payload, "locationId");
+
+  if (!emotionalState && !physicalState && !currentGoal && !locationId && !stateSummary) {
+    throw AppError.conflict("Character state promotion requires a safe state field", {
+      missing: ["state_required"],
+    });
+  }
+
+  return {
+    characterId: resolveTargetCharacterId(payload),
+    chapterNumber: resolveChapterNumber(payload),
+    emotionalState,
+    physicalState,
+    currentGoal,
+    locationId,
+    stateSummary,
+  };
+}
+
+function resolveKnowledgeFields(payload: JsonObject): {
+  characterId: string;
+  factId: string;
+  knowledgeStatus: string;
+  confidence: number | null;
+  learnedAtChapter: number | null;
+  learnedFrom: string | null;
+  knowledgeSummary: string | null;
+} {
+  const factId = payload.factId;
+  if (typeof factId !== "string" || !factId.trim()) {
+    throw AppError.conflict("Character knowledge promotion requires factId", {
+      missing: ["fact_required"],
+    });
+  }
+
+  const status =
+    typeof payload.knowledgeStatus === "string"
+      ? payload.knowledgeStatus
+      : CHARACTER_KNOWLEDGE_STATUSES.knows;
+  if (!KNOWLEDGE_STATUS_SET.has(status)) {
+    throw AppError.badRequest("knowledgeStatus is invalid");
+  }
+
+  const confidenceRaw = payload.confidence;
+  const confidence =
+    typeof confidenceRaw === "number" && Number.isFinite(confidenceRaw)
+      ? Math.min(1, Math.max(0, confidenceRaw))
+      : null;
+
+  const learnedAtRaw = payload.learnedAtChapter ?? payload.chapterNumber;
+  const learnedAtChapter =
+    typeof learnedAtRaw === "number" && Number.isInteger(learnedAtRaw) && learnedAtRaw > 0
+      ? learnedAtRaw
+      : null;
+
+  return {
+    characterId: resolveTargetCharacterId(payload),
+    factId: factId.trim(),
+    knowledgeStatus: status,
+    confidence,
+    learnedAtChapter,
+    learnedFrom: resolveOptionalText(payload, "learnedFrom"),
+    knowledgeSummary: resolveOptionalText(payload, "knowledgeSummary"),
+  };
 }
 
 /** Validate promotion inputs without canon writes (validate-all-before-write). */
@@ -153,6 +261,12 @@ export function preflightPromotionToCanon(
       }
       return;
     }
+    case AI_PROPOSAL_TYPES.character_state_update:
+      resolveStateFields(payload);
+      return;
+    case AI_PROPOSAL_TYPES.character_knowledge_update:
+      resolveKnowledgeFields(payload);
+      return;
     default:
       throw AppError.conflict(`Proposal type "${proposal.proposal_type}" cannot be promoted`, {
         missing: ["unsupported_promotion"],
@@ -189,6 +303,20 @@ export async function compensateCanonPromotion(
       await admin
         .from("open_loops")
         .update({ status: OPEN_LOOP_STATUSES.dropped })
+        .eq("id", promoted.entityId)
+        .eq("project_id", projectId);
+      return;
+    case "character_state":
+      await admin
+        .from("character_states")
+        .delete()
+        .eq("id", promoted.entityId)
+        .eq("project_id", projectId);
+      return;
+    case "character_knowledge":
+      await admin
+        .from("character_knowledge")
+        .delete()
         .eq("id", promoted.entityId)
         .eq("project_id", projectId);
       return;
@@ -540,6 +668,139 @@ async function promoteRevealStatusUpdate(
   };
 }
 
+async function promoteCharacterStateUpdate(
+  bindings: AppBindings,
+  projectId: string,
+  proposal: AiProposalRow,
+): Promise<PromotedEntity> {
+  const payload = parsePayload(proposal);
+  assertProposalPayloadSafe(payload);
+  const fields = resolveStateFields(payload);
+
+  const admin = createServiceRoleClient(bindings);
+  const { data: existing, error: existingError } = await admin
+    .from("character_states")
+    .select("id")
+    .eq("project_id", projectId)
+    .eq("character_id", fields.characterId)
+    .eq("chapter_number", fields.chapterNumber)
+    .maybeSingle();
+
+  if (existingError) {
+    console.error("character_states duplicate lookup failed");
+    throw AppError.internal("Failed to promote character state update");
+  }
+
+  const metadata: JsonObject = {
+    acceptedFromProposalId: proposal.id,
+    ...(fields.stateSummary ? { stateSummary: fields.stateSummary } : {}),
+  };
+
+  const { data, error } = await admin
+    .from("character_states")
+    .upsert(
+      {
+        project_id: projectId,
+        character_id: fields.characterId,
+        chapter_number: fields.chapterNumber,
+        emotional_state: fields.emotionalState,
+        physical_state: fields.physicalState,
+        current_goal: fields.currentGoal,
+        location_id: fields.locationId,
+        metadata,
+      },
+      { onConflict: "character_id,chapter_number" },
+    )
+    .select(CHARACTER_STATE_SELECT)
+    .single();
+
+  if (error || !data) {
+    console.error("character_states upsert from proposal failed");
+    throw AppError.internal("Failed to promote character state update");
+  }
+
+  const row = data as { id: string; chapter_number: number; character_id: string };
+  return {
+    entityType: "character_state",
+    entityId: row.id,
+    created: !existing,
+    summary: {
+      characterId: row.character_id,
+      chapterNumber: row.chapter_number,
+      stateSummary: fields.stateSummary ?? fields.currentGoal,
+    },
+  };
+}
+
+async function promoteCharacterKnowledgeUpdate(
+  bindings: AppBindings,
+  projectId: string,
+  proposal: AiProposalRow,
+): Promise<PromotedEntity> {
+  const payload = parsePayload(proposal);
+  assertProposalPayloadSafe(payload);
+  const fields = resolveKnowledgeFields(payload);
+
+  const admin = createServiceRoleClient(bindings);
+  const { data: existing, error: existingError } = await admin
+    .from("character_knowledge")
+    .select("id")
+    .eq("project_id", projectId)
+    .eq("character_id", fields.characterId)
+    .eq("fact_id", fields.factId)
+    .maybeSingle();
+
+  if (existingError) {
+    console.error("character_knowledge duplicate lookup failed");
+    throw AppError.internal("Failed to promote character knowledge update");
+  }
+
+  const metadata: JsonObject = {
+    acceptedFromProposalId: proposal.id,
+    ...(fields.knowledgeSummary ? { knowledgeSummary: fields.knowledgeSummary } : {}),
+  };
+
+  const { data, error } = await admin
+    .from("character_knowledge")
+    .upsert(
+      {
+        project_id: projectId,
+        character_id: fields.characterId,
+        fact_id: fields.factId,
+        knowledge_status: fields.knowledgeStatus,
+        confidence: fields.confidence,
+        learned_at_chapter: fields.learnedAtChapter,
+        learned_from: fields.learnedFrom,
+        metadata,
+      },
+      { onConflict: "character_id,fact_id" },
+    )
+    .select(CHARACTER_KNOWLEDGE_SELECT)
+    .single();
+
+  if (error || !data) {
+    console.error("character_knowledge upsert from proposal failed");
+    throw AppError.internal("Failed to promote character knowledge update");
+  }
+
+  const row = data as {
+    id: string;
+    character_id: string;
+    fact_id: string;
+    knowledge_status: string;
+  };
+  return {
+    entityType: "character_knowledge",
+    entityId: row.id,
+    created: !existing,
+    summary: {
+      characterId: row.character_id,
+      factId: row.fact_id,
+      knowledgeStatus: row.knowledge_status,
+    },
+  };
+}
+
 export async function promoteProposalToCanon(
   bindings: AppBindings,
   projectId: string,
@@ -564,6 +825,10 @@ export async function promoteProposalToCanon(
         proposal,
         options.confirmHighRisk === true,
       );
+    case AI_PROPOSAL_TYPES.character_state_update:
+      return promoteCharacterStateUpdate(bindings, projectId, proposal);
+    case AI_PROPOSAL_TYPES.character_knowledge_update:
+      return promoteCharacterKnowledgeUpdate(bindings, projectId, proposal);
     default:
       throw AppError.conflict(`Proposal type "${proposal.proposal_type}" cannot be promoted`, {
         missing: ["unsupported_promotion"],

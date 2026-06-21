@@ -1,5 +1,10 @@
 import type { Hono } from "hono";
-import type { CreditBalance, CreditTopupProduct } from "@vibenovel/shared";
+import {
+  WRITER_QUALITY_MODES,
+  type CreditBalance,
+  type CreditTopupProduct,
+  type WriterQualityMode,
+} from "@vibenovel/shared";
 import { authMiddleware } from "../middleware/auth.js";
 import { AppError } from "../errors.js";
 import { jsonSuccess } from "../response.js";
@@ -11,6 +16,12 @@ import {
 } from "../services/credit-topup.js";
 import type { CreditTopupOrderSummary } from "../lib/mappers.js";
 import type { AppEnv } from "../types.js";
+import {
+  CREDIT_PRICING_VERSION,
+  getCreditCost,
+  isNarrazaAiFeature,
+  type NarrazaAiFeature,
+} from "../services/ai-credit-policy.js";
 
 export interface CreditBalanceResponseData {
   creditBalance: CreditBalance | null;
@@ -25,6 +36,47 @@ export interface CreditTopupCheckoutResponseData {
   paymentUrl: string;
   provider: string;
   idempotentReplay: boolean;
+}
+
+export interface CreditEstimateResponseData {
+  feature: NarrazaAiFeature;
+  qualityMode: WriterQualityMode | null;
+  creditCost: number;
+  creditPricingVersion: string;
+}
+
+const QUALITY_MODE_SET = new Set<string>(Object.values(WRITER_QUALITY_MODES));
+
+export function resolveCreditEstimate(input: {
+  feature?: unknown;
+  qualityMode?: unknown;
+}): CreditEstimateResponseData {
+  if (!isNarrazaAiFeature(input.feature)) {
+    throw AppError.badRequest("Unknown or missing AI feature");
+  }
+
+  let qualityMode: WriterQualityMode | undefined;
+  if (input.qualityMode !== undefined && input.qualityMode !== null && input.qualityMode !== "") {
+    if (
+      typeof input.qualityMode !== "string" ||
+      !QUALITY_MODE_SET.has(input.qualityMode)
+    ) {
+      throw AppError.badRequest(
+        "qualityMode must be hemat, seimbang, or terbaik",
+      );
+    }
+    qualityMode = input.qualityMode as WriterQualityMode;
+  }
+
+  return {
+    feature: input.feature,
+    qualityMode: qualityMode ?? null,
+    creditCost: getCreditCost({
+      feature: input.feature,
+      qualityMode,
+    }),
+    creditPricingVersion: CREDIT_PRICING_VERSION,
+  };
 }
 
 const FORBIDDEN_CHECKOUT_BODY_KEYS = new Set([
@@ -74,6 +126,14 @@ function resolveIdempotencyKey(
 }
 
 export function registerCreditRoutes(app: Hono<AppEnv>): void {
+  app.get("/api/credits/estimate", authMiddleware, async (c) => {
+    const body = resolveCreditEstimate({
+      feature: c.req.query("feature"),
+      qualityMode: c.req.query("qualityMode"),
+    });
+    return jsonSuccess(c, body);
+  });
+
   app.get("/api/credits/balance", authMiddleware, async (c) => {
     const userId = c.get("userId");
     const creditBalance = await getCreditBalanceForUser(c.env, userId);

@@ -22,6 +22,37 @@ function Get-RedactedValue {
   return ($Value.Substring(0, $VisiblePrefix) + "…[redacted]")
 }
 
+function Get-SupabaseProjectRefFromUrl {
+  param([string]$Url)
+  if ([string]::IsNullOrWhiteSpace($Url)) { return $null }
+  try {
+    $urlHost = ([Uri]$Url.Trim()).Host
+    if ($urlHost -match '^([a-z0-9]{20})\.supabase\.co$') { return $Matches[1] }
+  } catch { }
+  return $null
+}
+
+function Test-ProductionSupabaseProjectRefAudit {
+  param([string]$StagingProjectRef = "jdxyhrnibmmwlbtbokqo")
+
+  $apiRef = Get-SupabaseProjectRefFromUrl -Url $env:SUPABASE_URL
+  $webUrl = $env:VITE_SUPABASE_URL
+  if ([string]::IsNullOrWhiteSpace($webUrl)) { $webUrl = $env:SUPABASE_URL }
+  $webRef = Get-SupabaseProjectRefFromUrl -Url $webUrl
+
+  if ([string]::IsNullOrWhiteSpace($apiRef) -or [string]::IsNullOrWhiteSpace($webRef)) {
+    return @{ Ok = $false; ApiRef = $apiRef; WebRef = $webRef; Message = "missing Supabase project ref" }
+  }
+  if ($apiRef -eq $StagingProjectRef -or $webRef -eq $StagingProjectRef) {
+    return @{ Ok = $false; ApiRef = $apiRef; WebRef = $webRef; Message = "staging Supabase ref blocked" }
+  }
+  if ($apiRef -ne $webRef) {
+    return @{ Ok = $false; ApiRef = $apiRef; WebRef = $webRef; Message = "API and web Supabase refs differ" }
+  }
+
+  return @{ Ok = $true; ApiRef = $apiRef; WebRef = $webRef; Message = "match" }
+}
+
 function Import-DotEnvFile {
   param(
     [string]$Path,
@@ -207,11 +238,15 @@ function Invoke-StagingHealthCheck {
   $fail = 0
   $checks = @()
 
-  $appEnvOk = $AcceptAppEnvs -contains $envFlags.appEnv
-  $checks += @{ Name = "appEnv=$($envFlags.appEnv)"; Ok = $appEnvOk }
+  if ($null -ne $envFlags.PSObject.Properties["appEnv"]) {
+    $appEnvOk = $AcceptAppEnvs -contains $envFlags.appEnv
+    $checks += @{ Name = "appEnv=$($envFlags.appEnv)"; Ok = $appEnvOk }
+  }
   $checks += @{ Name = "creditTopupEnabled=false"; Ok = (-not [bool]$envFlags.creditTopupEnabled) }
   $checks += @{ Name = "paymentProviderMock=true"; Ok = ([bool]$envFlags.paymentProviderMock) }
-  $checks += @{ Name = "paymentProvider=mock"; Ok = ($envFlags.paymentProvider -eq "mock") }
+  if ($null -ne $envFlags.PSObject.Properties["paymentProvider"]) {
+    $checks += @{ Name = "paymentProvider=mock"; Ok = ($envFlags.paymentProvider -eq "mock") }
+  }
   $checks += @{ Name = "aiGenerationEnabled=false"; Ok = (-not [bool]$envFlags.aiGenerationEnabled) }
 
   if ($RequireSupabase) {

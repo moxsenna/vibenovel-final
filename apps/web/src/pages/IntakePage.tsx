@@ -13,7 +13,15 @@ import { useIntakeData } from "@/hooks/useIntakeData";
  * Wrapped by AppShell via router layout.
  */
 export function IntakePage() {
-  const { session, notice, loading, sending, apiMode, sendMessage } = useIntakeData();
+  const {
+    session,
+    notice,
+    loading,
+    sending,
+    apiMode,
+    creditEstimateLabel,
+    sendMessage,
+  } = useIntakeData();
 
   return (
     <div className="flex w-full flex-col">
@@ -23,7 +31,7 @@ export function IntakePage() {
 
       {loading ? (
         <p className="mb-4 font-body-sm text-body-sm text-muted-text" role="status">
-          Memuat sesi intake...
+          Memuat Asisten Narra...
         </p>
       ) : null}
 
@@ -37,6 +45,7 @@ export function IntakePage() {
           inputTip={session.inputTip}
           apiMode={apiMode}
           sending={sending}
+          creditEstimateLabel={creditEstimateLabel}
           onSendMessage={apiMode ? sendMessage : undefined}
         />
 

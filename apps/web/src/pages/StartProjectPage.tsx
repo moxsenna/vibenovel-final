@@ -11,8 +11,9 @@ import {
 } from "@/config/startProjectOptions";
 import { ApiClientError } from "@/lib/api";
 import { shouldUseMocks } from "@/lib/env";
+import { suggestedProjectTitle } from "@/lib/suggested-project-title";
 import { ROUTES } from "@/routes/paths";
-import { createProject } from "@/services/projects";
+import { createProject, fetchProjects } from "@/services/projects";
 
 /**
  * Mulai Proyek Baru — Sprint 1 Task 1.5 (+ Task 10.26 real project creation)
@@ -44,8 +45,13 @@ export function StartProjectPage() {
 
       setCreatingId(option.id);
       try {
+        const existing = await fetchProjects(token, { includeArchived: true });
+        const title = suggestedProjectTitle(
+          option.entryPath,
+          existing.map((p) => p.title),
+        );
         const project = await createProject(
-          { title: option.defaultTitle, entryPath: option.entryPath },
+          { title, entryPath: option.entryPath },
           token,
         );
         navigate(resolveStartProjectRoute(project.id, option.target));

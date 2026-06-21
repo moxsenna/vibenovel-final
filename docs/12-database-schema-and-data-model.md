@@ -2,7 +2,7 @@
 
 ## MVP tables
 
-MVP minimal perlu tabel/logical collections:
+MVP minimal perlu tabel/logical collections. Status per **2026-06-16**: lihat juga [`docs/audit/12-docs-code-truth-matrix-2026-06-16.md`](audit/12-docs-code-truth-matrix-2026-06-16.md).
 
 ```txt
 users / profiles
@@ -10,14 +10,30 @@ projects
 story_foundations
 characters
 facts
-reveals
-chapters
+ai_proposals
+planned_reveals
+chapter_outlines
 chapter_beats
-prose_versions
-qa_reports
+chapter_prose_versions
+context_packet_logs
+chapter_summaries
 chapter_deltas
-credits_ledger later
+chapter_summary_items
+chapter_summary_proposals
+generation_attempts
+credit_ledger
+credit_topup_products / credit_topup_orders / payment_webhook_events
+draft_imports / draft_import_signals
+validation_reports          — shipped 00012 (Sprint 14 safety)
+character_states              — shipped 00016 (Sprint 16)
+character_knowledge           — shipped 00016 (Sprint 16)
+timeline_events               — shipped 00015 (Sprint 17)
+mini_arcs                     — shipped 00015 (Sprint 17)
+prose_embeddings              — shipped 00017 (Sprint 18, pgvector)
+import_jobs                   — shipped 00017 (Sprint 18)
 ```
+
+**Migrations in repo:** `00001`–`00019` (`supabase/migrations/`). Hosted production may lag — operator must apply through latest migration per environment.
 
 ## Important design rules
 
@@ -26,23 +42,30 @@ credits_ledger later
 - AI-generated data harus punya source dan status.
 - User-edited prose harus menjadi accepted version bila disetujui.
 
-## Prose version
+## Chapter prose version
 
 ```ts
-ProseVersion {
+ChapterProseVersion {
   id: string
   projectId: string
-  chapterId: string
-  beatId?: string
+  chapterBeatId: string
   versionNumber: number
-  text: string
-  source: 'ai_generated' | 'user_edited' | 'ai_rewritten' | 'accepted' | 'published'
-  isCurrentAcceptedVersion: boolean
-  model?: string
-  contextPacketHash?: string
-  qaStatus?: 'passed' | 'warning' | 'failed'
+  proseText: string
+  wordCount: number
+  source: 'user_edited' | 'stub_deterministic' | 'ai_generated'
+  isCurrent: boolean
+  contextPacketLogId: string | null
+  metadata: Record<string, unknown>
+  createdAt: string
 }
 ```
+
+Notes:
+
+- `chapter_prose_versions` adalah draft storage, bukan canon facts.
+- Satu beat hanya boleh punya satu row `is_current = true`.
+- Status seperti `accepted` atau `published` bukan nilai `source`; accept/publish hidup di workflow summary/publish, bukan di enum prose source.
+- Model id, token, dan prompt raw tidak boleh menjadi response normal UI; pakai audit/generation attempt summary yang aman.
 
 ## Chapter Delta
 
@@ -62,6 +85,8 @@ ChapterDelta {
   continuityWarnings: string[]
 }
 ```
+
+Status saat ini: `chapter_deltas` dan `chapter_summary_items` sudah ada; kandidat canon masuk `ai_proposals`. Perubahan `character_states` / `character_knowledge` dan materialisasi `timeline_events` saat chapter close **shipped** (Sprint 16–17); voice/RAG canon tetap backlog.
 
 ## Sprint boundary
 

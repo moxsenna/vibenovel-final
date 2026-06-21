@@ -138,7 +138,7 @@ function Bootstrap-FoundationLocked {
   $proposals = Invoke-ApiRequest -Method POST -Path "/api/projects/$ProjectId/foundation/proposals/generate" -Headers $AuthHeaders -Body '{}'
   foreach ($p in $proposals.data.proposals) {
     if ($p.type -in @('foundation', 'character', 'fact', 'relationship_speech_rule', 'style')) {
-      Invoke-ApiRequest -Method POST -Path "/api/projects/$ProjectId/proposals/$($p.id)/accept" -Headers $AuthHeaders -Body '{}' | Out-Null
+      Invoke-ApiRequest -Method POST -Path "/api/projects/$ProjectId/foundation/proposals/$($p.id)/accept" -Headers $AuthHeaders -Body '{}' | Out-Null
     }
   }
   Invoke-ApiRequest -Method POST -Path "/api/projects/$ProjectId/foundation/lock" -Headers $AuthHeaders -Body '{}' | Out-Null

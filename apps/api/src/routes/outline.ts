@@ -14,6 +14,7 @@ import {
   generateOutlineForOwner,
   getOutlineBundleForOwner,
 } from "../services/outline.js";
+import { listTimelineEventsForOwner } from "../services/timeline.js";
 import {
   cancelPlannedRevealForOwner,
   createOpenLoopForOwner,
@@ -64,6 +65,14 @@ export function registerOutlineRoutes(app: Hono<AppEnv>): void {
     const projectId = c.req.param("id");
     const bundle = await getOutlineBundleForOwner(c.env, ownerId, projectId);
     return jsonSuccess(c, bundle);
+  });
+
+  // Sprint 17 — Advanced Mode continuity timeline (read-only; past/current events).
+  app.get("/api/projects/:id/timeline", authMiddleware, async (c) => {
+    const ownerId = c.get("userId");
+    const projectId = c.req.param("id");
+    const events = await listTimelineEventsForOwner(c.env, ownerId, projectId);
+    return jsonSuccess(c, { events });
   });
 
   app.post("/api/projects/:id/outline/generate", authMiddleware, async (c) => {

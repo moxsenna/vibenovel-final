@@ -4,6 +4,21 @@ Operational scripts for local verification and future CI helpers. **Not** runtim
 
 **Debt register:** [`docs/36-non-blocking-technical-debt-and-deferred-items.md`](../docs/36-non-blocking-technical-debt-and-deferred-items.md)
 
+
+### Docs ↔ code drift gate (Fase B)
+
+Run from **repo root** after doc edits, new migrations, or before a release candidate:
+
+```bash
+npm run check:docs-drift
+```
+
+| npm script | Script | Behavior |
+|---|---|---|
+| `check:docs-drift` | `docs-code-drift-check.mjs` | **Exit 1** on stale strings in `docs/03`, `docs/08`, `docs/12`; missing `docs/101-sprint-16-…` or stray `docs/100-sprint-16-…`; shipped tables `00015`–`00017` unreferenced in shared/API. **Warnings only** for stub markers (Fase C). |
+
+SSOT: [`docs/audit/12-docs-code-truth-matrix-2026-06-16.md`](../docs/audit/12-docs-code-truth-matrix-2026-06-16.md).
+
 ---
 
 ## Smoke command index (Task 5.8)
@@ -36,6 +51,7 @@ Run all commands from **repo root**. Windows/PowerShell primary.
 | `operator:aws:duitku:gate` | `operator-aws-duitku-mode-b.ps1` | Duitku Mode B on AWS EC2 (10.13b) | `.env.staging.duitku` + sandbox dashboard callback; `-Mode full -LiveCreate` |
 | `operator:staging:atomic-grant` | `operator-verify-hosted-atomic-grant.ps1` | Hosted staging migration 00010 + RPC verify (10.17) | `.env.staging` hosted `SUPABASE_*`; report [`docs/75`](../docs/75-apply-migration-00010-hosted-staging-report.md) |
 | `operator:production:supabase:baseline` | `operator-production-supabase-baseline.ps1` | Production Supabase baseline migrations `00001`–`00009` only (10.21) | Gitignored `.env.production` (new account); excludes `00010`; restores staging CLI link; report [`docs/79`](../docs/79-production-supabase-baseline-setup-report.md) |
+| `operator:production:worker-secrets` | `operator-production-worker-secrets.ps1` | Cloudflare Worker production secrets + deploy | `.env.production`; use `-- -RequireLiveDuitku` for live Duitku gate; never prints secret values |
 | `operator:production:infra:unblock` | `operator-production-infra-unblock.ps1` | Production infra preflight (10.23a) | AWS/EC2/DNS/Pages gate; report [`docs/82`](../docs/82-production-infra-unblock-report.md) |
 | `operator:production:ec2:provision` | `operator-production-ec2-provision.ps1` | Provision EC2+EIP (10.23b) | Profile `narraza-deploy`; ≠ staging IP |
 | `operator:production:api-web:deploy` | `operator-production-api-web-deploy.ps1` | Production API/app Mode A preflight (10.23) | Homepage `narraza.web.id`, app `app.narraza.web.id`, API `api.narraza.web.id` |

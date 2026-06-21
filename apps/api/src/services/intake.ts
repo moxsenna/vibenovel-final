@@ -4,11 +4,11 @@ import {
   INTAKE_PHASES,
   INTAKE_SESSION_STATUSES,
   WORKFLOW_PHASES,
+  GENERATION_STATUSES,
   GENERATION_TYPES,
   WRITER_QUALITY_MODES,
   type DetectedSignal,
   type DetectedSignalStatus,
-  type DetectedSignalType,
   type IntakeMessage,
   type IntakePhase,
   type IntakeSession,
@@ -17,7 +17,6 @@ import {
 import type { AppBindings } from "../env.js";
 import {
   isAiGenerationEnabled,
-  isAiProviderMock,
 } from "../env.js";
 import {
   mapDetectedSignalRow,
@@ -30,7 +29,11 @@ import {
 import { createServiceRoleClient } from "../lib/supabase.js";
 import { AppError } from "../errors.js";
 import { getOwnedProjectRow } from "./project.js";
-import { generateWithModelRouter } from "./model-router.js";
+import {
+  assertGenerationRouteCallable,
+  generateWithModelRouter,
+} from "./model-router.js";
+import { createProviderEventSequence } from "./generation-provider-event.js";
 import {
   debitCreditsForAttempt,
   refundCreditsForAttempt,
@@ -38,12 +41,27 @@ import {
 } from "./credit-ledger.js";
 import {
   createGenerationAttempt,
+  getGenerationAttemptByIdempotencyKey,
   markGenerationAttemptRunning,
   markGenerationAttemptSucceeded,
   markGenerationAttemptFailed,
 } from "./generation-attempt.js";
 import { generateCorrelationId } from "./audit-snapshot.js";
+import { getCreditCostForGeneration } from "./ai-credit-policy.js";
 import { computePromptHashFromMessages } from "./prose-generation-prompt.js";
+import { getFoundationBundleForOwner } from "./foundation.js";
+import { getFoundationReadinessForOwner } from "./foundation-readiness.js";
+import {
+  buildNarraSystemPrompt,
+  resolveNarraPhase,
+} from "./story-agent-context.js";
+import {
+  parseIntakeAiEnvelope,
+  REQUIRED_SIGNAL_TYPES,
+  type ExtractedSignalDraft,
+  type IntakeFilledSignalSummary,
+} from "./intake-extraction.js";
+import { parsePaidActionIdempotencyKey } from "./paid-action-idempotency.js";
 
 const SESSION_SELECT =
   "id, project_id, status, phase, progress_percent, summary, metadata, created_at, updated_at";
@@ -58,6 +76,7 @@ const PHASE_SET = new Set<string>(Object.values(INTAKE_PHASES));
 const SIGNAL_STATUS_SET = new Set<string>(Object.values(DETECTED_SIGNAL_STATUSES));
 const MESSAGE_ROLE_SET = new Set<string>(Object.values(INTAKE_MESSAGE_ROLES));
 
+
 const CONTENT_MAX_LENGTH = 8000;
 const DEFAULT_MESSAGE_LIMIT = 50;
 const MAX_MESSAGE_LIMIT = 200;
@@ -65,6 +84,9 @@ const RECENT_MESSAGE_LIMIT = 20;
 
 const AGENT_STUB_DEFAULT =
   "Aku menangkap beberapa arah cerita. Kita akan kumpulkan tokoh, konflik, janji pembaca, dan rahasia yang perlu ditahan.";
+
+const FOUNDATION_REFINEMENT_STUB =
+  "Aku sudah masuk mode mematangkan fondasi. Kita akan tajamkan motivasi tokoh, tekanan lawan, stakes, janji pembaca, dan gaya serial sebelum fondasi dikunci.";
 
 const FORBIDDEN_BODY_KEYS = new Set([
   "id",
@@ -80,12 +102,6 @@ const FORBIDDEN_BODY_KEYS = new Set([
   "updated_at",
 ]);
 
-interface ExtractedSignalDraft {
-  type: DetectedSignalType;
-  label: string;
-  value: string;
-  confidence: number;
-}
 
 function assertNoForbiddenKeys(body: Record<string, unknown>): void {
   for (const key of Object.keys(body)) {
@@ -142,10 +158,13 @@ function parseLimit(value: string | undefined, defaultLimit: number): number {
   return Math.min(parsed, MAX_MESSAGE_LIMIT);
 }
 
-function buildAgentStubReply(userContent: string): string {
+function buildAgentStubReply(userContent: string, phase?: IntakePhase): string {
+  if (phase === INTAKE_PHASES.foundation_refinement) {
+    return FOUNDATION_REFINEMENT_STUB;
+  }
   const lower = userContent.toLowerCase();
   if (/istri|suami|mertua|rumah tangga/.test(lower)) {
-    return "Aku menangkap nuansa drama rumah tangga. Ceritakan sedikit tentang tokoh utama dan apa yang paling menyakitkan baginya — kita kumpulkan konflik, janji pembaca, dan rahasia yang perlu ditahan.";
+    return "Aku menangkap nuansa cerita drama rumah tangga. Bagaimana dengan kelanjutan tokohnya?";
   }
   if (/balas dendam|bangkit|revenge/.test(lower)) {
     return "Ada energi bangkit dan balas dendam emosional di sini. Aku catat arah itu. Mau tambahkan detail tentang rahasia atau target pembacamu?";
@@ -386,6 +405,46 @@ function parseJsonObject(value: unknown): JsonObject {
   return {};
 }
 
+async function getIntakeMessageRowById(
+  bindings: AppBindings,
+  projectId: string,
+  messageId: string,
+): Promise<IntakeMessageRow> {
+  const admin = createServiceRoleClient(bindings);
+  const { data, error } = await admin
+    .from("intake_messages")
+    .select(MESSAGE_SELECT)
+    .eq("id", messageId)
+    .eq("project_id", projectId)
+    .maybeSingle();
+
+  if (error || !data) {
+    console.error("intake_messages replay lookup failed");
+    throw AppError.internal("Failed to load intake replay");
+  }
+  return data as IntakeMessageRow;
+}
+
+async function getIntakeSessionRowById(
+  bindings: AppBindings,
+  projectId: string,
+  sessionId: string,
+): Promise<IntakeSessionRow> {
+  const admin = createServiceRoleClient(bindings);
+  const { data, error } = await admin
+    .from("intake_sessions")
+    .select(SESSION_SELECT)
+    .eq("id", sessionId)
+    .eq("project_id", projectId)
+    .maybeSingle();
+
+  if (error || !data) {
+    console.error("intake_sessions replay lookup failed");
+    throw AppError.internal("Failed to load intake replay session");
+  }
+  return data as IntakeSessionRow;
+}
+
 export async function listIntakeMessagesForOwner(
   bindings: AppBindings,
   ownerId: string,
@@ -409,6 +468,8 @@ export interface AppendMessageResult {
   userMessage: IntakeMessage;
   agentMessage: IntakeMessage;
   session: IntakeSession;
+  creditCost: number;
+  idempotentReplay: boolean;
 }
 
 export async function appendUserMessageForOwner(
@@ -418,9 +479,70 @@ export async function appendUserMessageForOwner(
   body: Record<string, unknown>,
 ): Promise<AppendMessageResult> {
   assertNoForbiddenKeys(body);
-  await getOwnedProjectRow(bindings, ownerId, projectId);
+  const projectRow = await getOwnedProjectRow(bindings, ownerId, projectId);
 
   const content = assertMessageContent(body.content);
+  const requestedPhase =
+    typeof body.phase === "string" ? body.phase : undefined;
+  const entrypoint =
+    typeof body.entrypoint === "string" ? body.entrypoint : undefined;
+  const narraPhase = resolveNarraPhase({ requestedPhase, entrypoint });
+  const idempotencyKey = parsePaidActionIdempotencyKey(body.idempotencyKey);
+  const aiEnabled = isAiGenerationEnabled(bindings);
+
+  if (aiEnabled) {
+    const existing = await getGenerationAttemptByIdempotencyKey(
+      bindings,
+      ownerId,
+      idempotencyKey,
+    );
+    if (
+      existing?.status === GENERATION_STATUSES.succeeded &&
+      existing.outputEntityId
+    ) {
+      const userMessageId =
+        typeof existing.metadata.userMessageId === "string"
+          ? existing.metadata.userMessageId
+          : null;
+      const sessionId =
+        typeof existing.metadata.sessionId === "string"
+          ? existing.metadata.sessionId
+          : null;
+      if (!userMessageId || !sessionId) {
+        throw AppError.internal("Intake replay metadata is incomplete");
+      }
+
+      const [userRow, agentRow, sessionRow] = await Promise.all([
+        getIntakeMessageRowById(bindings, projectId, userMessageId),
+        getIntakeMessageRowById(bindings, projectId, existing.outputEntityId),
+        getIntakeSessionRowById(bindings, projectId, sessionId),
+      ]);
+      return {
+        userMessage: mapIntakeMessageRow(userRow),
+        agentMessage: mapIntakeMessageRow(agentRow),
+        session: mapIntakeSessionRow(sessionRow),
+        creditCost: existing.creditCost,
+        idempotentReplay: true,
+      };
+    }
+    if (
+      existing?.status === GENERATION_STATUSES.pending ||
+      existing?.status === GENERATION_STATUSES.running
+    ) {
+      throw new AppError(
+        "GENERATION_IN_PROGRESS",
+        "Intake reply is already in progress for this idempotency key",
+        409,
+      );
+    }
+    if (existing?.status === GENERATION_STATUSES.failed) {
+      throw new AppError(
+        "GENERATION_FAILED",
+        "Previous intake reply failed for this idempotency key",
+        422,
+      );
+    }
+  }
 
   if (body.role !== undefined && body.role !== null) {
     if (typeof body.role !== "string" || !MESSAGE_ROLE_SET.has(body.role)) {
@@ -441,7 +563,7 @@ export async function appendUserMessageForOwner(
       session_id: sessionRow.id,
       role: INTAKE_MESSAGE_ROLES.user,
       content,
-      metadata: { source: "api" },
+      metadata: { source: "api", phase: narraPhase, entrypoint: entrypoint ?? null },
     })
     .select(MESSAGE_SELECT)
     .single();
@@ -456,18 +578,70 @@ export async function appendUserMessageForOwner(
   let agentRow: IntakeMessageRow | null = null;
   let attempt = null;
   let debited = false;
+  let chargedCreditCost = 0;
   const correlationId = generateCorrelationId();
 
-  const useMock = isAiProviderMock(bindings);
-  const aiEnabled = isAiGenerationEnabled(bindings);
+  await admin
+    .from("intake_sessions")
+    .update({
+      phase: narraPhase,
+      metadata: {
+        ...parseJsonObject(sessionRow.metadata),
+        lastEntrypoint: entrypoint ?? null,
+        assistantName: "Asisten Narra",
+      },
+    })
+    .eq("id", sessionRow.id)
+    .eq("project_id", projectId);
 
-  if (aiEnabled && !useMock) {
+  if (aiEnabled) {
     const historyMessages = await listMessagesForSession(bindings, projectId, sessionRow.id, RECENT_MESSAGE_LIMIT);
 
-    const systemPrompt =
-      "Kamu adalah asisten intake cerita pintar yang ramah, hangat, membimbing, ringkas, dan tidak robotik. " +
-      "Tugasmu adalah menganalisis ide cerita pengguna, memberikan tanggapan singkat yang mendukung, meringkas arah cerita yang terdeteksi secara alami, dan mengajukan SATU pertanyaan follow-up yang berguna untuk menggali detail cerita lebih lanjut (misalnya tentang tokoh, konflik, rahasia, janji pembaca, target pembaca, genre, atau nada emosional). " +
-      "Jangan membuat fakta cerita yang berlebihan di luar apa yang diceritakan pengguna. Jangan membocorkan plot masa depan. Jawab dalam bahasa Indonesia yang ramah bagi penulis pemula.";
+    let foundationSummary: string | undefined;
+    let readinessSummary: string | undefined;
+
+    if (narraPhase === INTAKE_PHASES.foundation_refinement) {
+      const [foundationBundle, readiness] = await Promise.all([
+        getFoundationBundleForOwner(bindings, ownerId, projectId),
+        getFoundationReadinessForOwner(bindings, ownerId, projectId),
+      ]);
+      const f = foundationBundle.foundation;
+      const characterNames = foundationBundle.characters
+        .map((character) => character.name)
+        .slice(0, 6)
+        .join(", ");
+      const factSummary = foundationBundle.facts
+        .map((fact) => fact.text)
+        .slice(0, 5)
+        .join(" | ");
+
+      foundationSummary = [
+        `Premise: ${f.premise || "(belum diisi)"}`,
+        `Konflik: ${f.mainConflict || "(belum diisi)"}`,
+        `Janji pembaca: ${f.readerPromise || "(belum diisi)"}`,
+        `Genre/Tone: ${[f.genre, f.tone].filter(Boolean).join(" / ") || "(belum diisi)"}`,
+        `Tokoh: ${characterNames || "(belum ada)"}`,
+        `Fakta: ${factSummary || "(belum ada)"}`,
+      ].join("\n");
+      readinessSummary =
+        `${readiness.readinessScore}%, ${readiness.readinessLevel}, missing: ${readiness.missing.join(", ") || "tidak ada"}`;
+    }
+
+    const existingSignalsForPrompt =
+      narraPhase === INTAKE_PHASES.foundation_refinement
+        ? []
+        : await loadDetectedSignalRowsForSession(bindings, projectId, sessionRow.id);
+    const missingSignals = listMissingRequiredSignalTypes(existingSignalsForPrompt);
+    const filledSignals = listFilledRequiredSignalSummaries(existingSignalsForPrompt);
+
+    const systemPrompt = buildNarraSystemPrompt({
+      phase: narraPhase,
+      projectTitle: projectRow.title,
+      foundationSummary,
+      readinessSummary,
+      missingSignals,
+      filledSignals,
+    });
 
     const promptMessages = [
       { role: "system" as const, content: systemPrompt },
@@ -479,32 +653,43 @@ export async function appendUserMessageForOwner(
     ];
 
     const promptHash = await computePromptHashFromMessages(promptMessages);
-    const idempotencyKey = `intake-assistant-${projectId}-${crypto.randomUUID()}`;
+    const generationType = GENERATION_TYPES.intake_assistant;
+    const qualityMode = WRITER_QUALITY_MODES.hemat;
+    const creditCost = getCreditCostForGeneration({
+      generationType,
+      qualityMode,
+    });
+
+    assertGenerationRouteCallable(bindings, { generationType, qualityMode });
 
     attempt = await createGenerationAttempt(bindings, {
       projectId,
       userId: ownerId,
-      generationType: GENERATION_TYPES.publish_copy,
+      generationType,
       idempotencyKey,
-      creditCost: 1,
+      creditCost,
       promptHash,
       correlationId,
-      qualityMode: WRITER_QUALITY_MODES.hemat,
+      qualityMode,
       metadata: {
         actualGenerationType: "intake_assistant",
         billingAlias: "publish_copy",
         task: "10.31a",
+        userMessageId: userMsgRow.id,
+        sessionId: sessionRow.id,
       },
     });
+    const providerEventSequence = createProviderEventSequence();
 
     try {
       await debitCreditsForAttempt(bindings, {
         userId: ownerId,
         projectId,
         attemptId: attempt.id,
-        amount: 1,
+        amount: creditCost,
         reason: CREDIT_LEDGER_REASONS.generationDebit,
-        generationType: GENERATION_TYPES.publish_copy,
+        generationType,
+        qualityMode,
         idempotencyKey,
         correlationId,
       });
@@ -525,12 +710,23 @@ export async function appendUserMessageForOwner(
 
     try {
       const routerResult = await generateWithModelRouter(bindings, {
-        generationType: GENERATION_TYPES.publish_copy,
-        qualityMode: WRITER_QUALITY_MODES.hemat,
+        generationAttemptId: attempt.id,
+        providerEventSequence,
+        generationType,
+        qualityMode,
         promptHash,
         promptMessages,
+        validateOutput: (text) => ({
+          rawText: text,
+          envelope:
+            narraPhase === INTAKE_PHASES.foundation_refinement
+              ? null
+              : parseIntakeAiEnvelope(text),
+        }),
       });
-      agentContent = routerResult.text;
+      const rawAgentText = routerResult.output.rawText;
+      const envelope = routerResult.output.envelope;
+      agentContent = envelope?.reply?.trim() || rawAgentText;
 
       const { data: dbAgentRow, error: agentError } = await admin
         .from("intake_messages")
@@ -544,6 +740,8 @@ export async function appendUserMessageForOwner(
             attemptId: attempt.id,
             model: routerResult.model,
             provider: routerResult.provider,
+            envelopeParsed: Boolean(envelope),
+            readyForConcept: envelope?.readyForConcept ?? false,
           },
         })
         .select(MESSAGE_SELECT)
@@ -556,18 +754,55 @@ export async function appendUserMessageForOwner(
 
       agentRow = dbAgentRow as IntakeMessageRow;
 
-      await markGenerationAttemptSucceeded(bindings, {
+      if (narraPhase !== INTAKE_PHASES.foundation_refinement) {
+        if (envelope) {
+          await applySignalDraftsAndUpdateSession(
+            bindings,
+            projectId,
+            sessionRow.id,
+            envelope.signals,
+            userMsgRow.id,
+            "ai_envelope",
+            envelope.readyForConcept,
+          );
+        } else {
+          const userTextsForFallback = [
+            ...historyMessages
+              .filter((m) => m.role === INTAKE_MESSAGE_ROLES.user)
+              .map((m) => m.content),
+            content,
+          ].join("\n");
+          const fallbackDrafts = extractSignalsFromText(userTextsForFallback);
+          await applySignalDraftsAndUpdateSession(
+            bindings,
+            projectId,
+            sessionRow.id,
+            fallbackDrafts,
+            userMsgRow.id,
+            "deterministic_stub",
+          );
+        }
+      }
+
+      attempt = await markGenerationAttemptSucceeded(bindings, {
         attemptId: attempt.id,
         userId: ownerId,
         projectId,
         provider: routerResult.provider,
         model: routerResult.model,
+        logicalModel: routerResult.logicalModel,
+        routingPolicyVersion: routerResult.routingPolicyVersion,
+        fallbackUsed: routerResult.fallbackUsed,
+        retryCount: routerResult.retryCount,
+        providerLatencyMs: routerResult.latencyMs,
+        estimatedCostUsd: routerResult.estimatedCostUsd,
         inputTokens: routerResult.inputTokens,
         outputTokens: routerResult.outputTokens,
         outputEntityId: agentRow.id,
         outputEntityType: "intake_message",
         correlationId,
       });
+      chargedCreditCost = attempt.creditCost;
     } catch (err) {
       if (debited) {
         try {
@@ -575,9 +810,10 @@ export async function appendUserMessageForOwner(
             userId: ownerId,
             projectId,
             attemptId: attempt.id,
-            amount: 1,
+            amount: creditCost,
             reason: CREDIT_LEDGER_REASONS.generationRefund,
-            generationType: GENERATION_TYPES.publish_copy,
+            generationType,
+            qualityMode,
             idempotencyKey,
             correlationId,
           });
@@ -597,7 +833,7 @@ export async function appendUserMessageForOwner(
       throw err;
     }
   } else {
-    agentContent = buildAgentStubReply(content);
+    agentContent = buildAgentStubReply(content, narraPhase);
     const { data: dbAgentRow, error: agentError } = await admin
       .from("intake_messages")
       .insert({
@@ -617,12 +853,14 @@ export async function appendUserMessageForOwner(
     agentRow = dbAgentRow as IntakeMessageRow;
   }
 
-  await extractSignalsAndProgressInternal(
-    bindings,
-    projectId,
-    sessionRow.id,
-    userMsgRow.id,
-  );
+  if (!aiEnabled) {
+    await extractSignalsAndProgressInternal(
+      bindings,
+      projectId,
+      sessionRow.id,
+      userMsgRow.id,
+    );
+  }
 
   const { data: updatedSession, error: sessionError } = await admin
     .from("intake_sessions")
@@ -642,6 +880,8 @@ export async function appendUserMessageForOwner(
     userMessage: mapIntakeMessageRow(userMsgRow),
     agentMessage: mapIntakeMessageRow(agentRow),
     session: mapIntakeSessionRow(updatedSession as IntakeSessionRow),
+    creditCost: chargedCreditCost,
+    idempotentReplay: false,
   };
 }
 
@@ -796,15 +1036,37 @@ function extractSignalsFromText(text: string): ExtractedSignalDraft[] {
 }
 
 function computeProgressFromSignals(signals: Array<{ type: string; status?: string }>): number {
-  const activeSignals = signals.filter(s => s.status !== "dismissed");
-  const requiredTypes = ["genre", "protagonist", "core_conflict", "reader_promise", "target_reader", "secret_candidate", "tone"];
+  const activeSignals = signals.filter((s) => s.status !== "dismissed");
   let count = 0;
-  for (const type of requiredTypes) {
-    if (activeSignals.some(s => s.type === type)) {
+  for (const type of REQUIRED_SIGNAL_TYPES) {
+    if (activeSignals.some((s) => s.type === type)) {
       count++;
     }
   }
-  return Math.round((count / requiredTypes.length) * 100);
+  return Math.round((count / REQUIRED_SIGNAL_TYPES.length) * 100);
+}
+
+function listMissingRequiredSignalTypes(
+  signals: Array<{ type: string; status?: string }>,
+): string[] {
+  const activeSignals = signals.filter((s) => s.status !== DETECTED_SIGNAL_STATUSES.dismissed);
+  return REQUIRED_SIGNAL_TYPES.filter(
+    (type) => !activeSignals.some((s) => s.type === type),
+  );
+}
+
+function listFilledRequiredSignalSummaries(
+  signals: Array<{ type: string; label: string; value: string; status?: string }>,
+): IntakeFilledSignalSummary[] {
+  const activeSignals = signals.filter((s) => s.status !== DETECTED_SIGNAL_STATUSES.dismissed);
+  const summaries: IntakeFilledSignalSummary[] = [];
+  for (const type of REQUIRED_SIGNAL_TYPES) {
+    const row = activeSignals.find((s) => s.type === type);
+    if (row) {
+      summaries.push({ type, label: row.label, value: row.value });
+    }
+  }
+  return summaries;
 }
 
 async function upsertDetectedSignal(
@@ -814,22 +1076,27 @@ async function upsertDetectedSignal(
   draft: ExtractedSignalDraft,
   sourceMessageId: string | null,
   existing: DetectedSignalRow[],
-): Promise<DetectedSignalRow> {
+  extractor: "ai_envelope" | "deterministic_stub" = "deterministic_stub",
+): Promise<DetectedSignalRow | null> {
   const admin = createServiceRoleClient(bindings);
-  const normalizedValue = draft.value.trim().toLowerCase();
-
-  const match = existing.find(
-    (row) => row.type === draft.type && row.value.trim().toLowerCase() === normalizedValue,
-  );
+  const match = existing.find((row) => row.type === draft.type);
 
   if (match) {
+    if (
+      match.status === DETECTED_SIGNAL_STATUSES.confirmed ||
+      match.status === DETECTED_SIGNAL_STATUSES.dismissed
+    ) {
+      return null;
+    }
+
     const { data, error } = await admin
       .from("detected_signals")
       .update({
         label: draft.label,
+        value: draft.value,
         confidence: draft.confidence,
         source_message_id: sourceMessageId ?? match.source_message_id,
-        metadata: { ...parseJsonObject(match.metadata), extractor: "deterministic_stub" },
+        metadata: { ...parseJsonObject(match.metadata), extractor },
       })
       .eq("id", match.id)
       .eq("project_id", projectId)
@@ -854,7 +1121,7 @@ async function upsertDetectedSignal(
       confidence: draft.confidence,
       status: DETECTED_SIGNAL_STATUSES.detected,
       source_message_id: sourceMessageId,
-      metadata: { extractor: "deterministic_stub" },
+      metadata: { extractor },
     })
     .select(SIGNAL_SELECT)
     .single();
@@ -865,6 +1132,133 @@ async function upsertDetectedSignal(
   }
 
   return data as DetectedSignalRow;
+}
+
+async function loadDetectedSignalRowsForSession(
+  bindings: AppBindings,
+  projectId: string,
+  sessionId: string,
+): Promise<DetectedSignalRow[]> {
+  const admin = createServiceRoleClient(bindings);
+  const { data: existingRows, error: existingError } = await admin
+    .from("detected_signals")
+    .select(SIGNAL_SELECT)
+    .eq("project_id", projectId)
+    .eq("session_id", sessionId);
+
+  if (existingError) {
+    console.error("detected_signals select existing failed");
+    throw AppError.internal("Failed to load existing signals");
+  }
+
+  return (existingRows ?? []) as DetectedSignalRow[];
+}
+
+async function applySignalDraftsAndUpdateSession(
+  bindings: AppBindings,
+  projectId: string,
+  sessionId: string,
+  drafts: ExtractedSignalDraft[],
+  sourceMessageId: string | null,
+  extractor: "ai_envelope" | "deterministic_stub",
+  readyForConcept?: boolean,
+): Promise<{ progressPercent: number; nextPhase: IntakePhase; signals: DetectedSignalRow[] }> {
+  const admin = createServiceRoleClient(bindings);
+  const existing = await loadDetectedSignalRowsForSession(bindings, projectId, sessionId);
+  const upserted: DetectedSignalRow[] = [];
+
+  for (const draft of drafts) {
+    const row = await upsertDetectedSignal(
+      bindings,
+      projectId,
+      sessionId,
+      draft,
+      sourceMessageId,
+      [...existing, ...upserted],
+      extractor,
+    );
+    if (row) upserted.push(row);
+  }
+
+  const allSignals = [...existing];
+  for (const u of upserted) {
+    const idx = allSignals.findIndex((s) => s.id === u.id);
+    if (idx >= 0) {
+      allSignals[idx] = u;
+    } else {
+      allSignals.push(u);
+    }
+  }
+
+  const progressPercent = computeProgressFromSignals(allSignals);
+  const { data: currentSession } = await admin
+    .from("intake_sessions")
+    .select("phase, metadata")
+    .eq("id", sessionId)
+    .eq("project_id", projectId)
+    .maybeSingle();
+
+  const currentPhase = typeof currentSession?.phase === "string" ? currentSession.phase : "";
+  const nextPhase =
+    currentPhase === INTAKE_PHASES.foundation_refinement
+      ? INTAKE_PHASES.foundation_refinement
+      : progressPercent >= 80
+        ? INTAKE_PHASES.concept_generation
+        : INTAKE_PHASES.signal_detection;
+
+  const sessionMetadata = parseJsonObject(currentSession?.metadata);
+  if (readyForConcept) {
+    sessionMetadata.readyForConcept = true;
+  }
+
+  await admin
+    .from("intake_sessions")
+    .update({
+      progress_percent: progressPercent,
+      phase: nextPhase,
+      metadata: sessionMetadata,
+    })
+    .eq("id", sessionId)
+    .eq("project_id", projectId);
+
+  return { progressPercent, nextPhase, signals: allSignals };
+}
+
+async function recomputeIntakeProgressFromExistingSignals(
+  bindings: AppBindings,
+  projectId: string,
+  sessionId: string,
+): Promise<{ progressPercent: number; nextPhase: IntakePhase; signals: DetectedSignalRow[] }> {
+  const admin = createServiceRoleClient(bindings);
+  const existing = await loadDetectedSignalRowsForSession(bindings, projectId, sessionId);
+  const progressPercent = computeProgressFromSignals(existing);
+
+  const { data: currentSession } = await admin
+    .from("intake_sessions")
+    .select("phase, metadata")
+    .eq("id", sessionId)
+    .eq("project_id", projectId)
+    .maybeSingle();
+
+  const currentPhase = typeof currentSession?.phase === "string" ? currentSession.phase : "";
+  const nextPhase =
+    currentPhase === INTAKE_PHASES.foundation_refinement
+      ? INTAKE_PHASES.foundation_refinement
+      : progressPercent >= 80
+        ? INTAKE_PHASES.concept_generation
+        : INTAKE_PHASES.signal_detection;
+
+  await admin
+    .from("intake_sessions")
+    .update({
+      progress_percent: progressPercent,
+      phase: nextPhase,
+      metadata: parseJsonObject(currentSession?.metadata),
+    })
+    .eq("id", sessionId)
+    .eq("project_id", projectId);
+
+  return { progressPercent, nextPhase, signals: existing };
 }
 
 async function extractSignalsAndProgressInternal(
@@ -891,57 +1285,17 @@ async function extractSignalsAndProgressInternal(
   const messages = (userMessages ?? []) as IntakeMessageRow[];
   const combinedText = messages.map((m) => m.content).join("\n");
   const drafts = extractSignalsFromText(combinedText);
+  const sourceMessageId =
+    latestUserMessageId || (messages.length > 0 ? messages[messages.length - 1].id : null);
 
-  const { data: existingRows, error: existingError } = await admin
-    .from("detected_signals")
-    .select(SIGNAL_SELECT)
-    .eq("project_id", projectId)
-    .eq("session_id", sessionId);
-
-  if (existingError) {
-    console.error("detected_signals select existing failed");
-    throw AppError.internal("Failed to load existing signals");
-  }
-
-  const existing = (existingRows ?? []) as DetectedSignalRow[];
-  const sourceMessageId = latestUserMessageId || (messages.length > 0 ? messages[messages.length - 1].id : null);
-
-  const upserted: DetectedSignalRow[] = [];
-  for (const draft of drafts) {
-    const row = await upsertDetectedSignal(
-      bindings,
-      projectId,
-      sessionId,
-      draft,
-      sourceMessageId,
-      [...existing, ...upserted],
-    );
-    upserted.push(row);
-  }
-
-  const allSignals = [...existing];
-  for (const u of upserted) {
-    const idx = allSignals.findIndex((s) => s.id === u.id);
-    if (idx >= 0) {
-      allSignals[idx] = u;
-    } else {
-      allSignals.push(u);
-    }
-  }
-
-  const progressPercent = computeProgressFromSignals(allSignals);
-  const nextPhase = progressPercent >= 80 ? INTAKE_PHASES.concept_generation : INTAKE_PHASES.signal_detection;
-
-  await admin
-    .from("intake_sessions")
-    .update({
-      progress_percent: progressPercent,
-      phase: nextPhase,
-    })
-    .eq("id", sessionId)
-    .eq("project_id", projectId);
-
-  return { progressPercent, nextPhase, signals: allSignals };
+  return applySignalDraftsAndUpdateSession(
+    bindings,
+    projectId,
+    sessionId,
+    drafts,
+    sourceMessageId,
+    "deterministic_stub",
+  );
 }
 
 export async function extractDetectedSignalsForOwner(
@@ -951,7 +1305,12 @@ export async function extractDetectedSignalsForOwner(
 ): Promise<{ sessionId: string; signals: DetectedSignal[] }> {
   await getOwnedProjectRow(bindings, ownerId, projectId);
   const sessionRow = await getOrCreateActiveSessionRow(bindings, projectId);
-  await extractSignalsAndProgressInternal(bindings, projectId, sessionRow.id);
+
+  if (isAiGenerationEnabled(bindings)) {
+    await recomputeIntakeProgressFromExistingSignals(bindings, projectId, sessionRow.id);
+  } else {
+    await extractSignalsAndProgressInternal(bindings, projectId, sessionRow.id);
+  }
   const signals = await listSignalsForSession(bindings, projectId, sessionRow.id);
   return { sessionId: sessionRow.id, signals };
 }

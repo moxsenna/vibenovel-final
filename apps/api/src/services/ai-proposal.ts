@@ -17,6 +17,14 @@ import {
 import { createServiceRoleClient } from "../lib/supabase.js";
 import { AppError } from "../errors.js";
 import { writeAuditLog } from "./audit.js";
+import { generateCorrelationId, snapshotCanonPromotion } from "./audit-snapshot.js";
+import {
+  compensateCanonPromotion,
+  preflightPromotionToCanon,
+  promoteProposalToCanon,
+  type PromotedEntity,
+} from "./proposal-canon-promotion.js";
+import { classifyTransactionFailure } from "./transaction.js";
 import { getOwnedProjectRow } from "./project.js";
 
 const PROPOSAL_SELECT =
@@ -26,6 +34,24 @@ const TYPE_SET = new Set<string>(Object.values(AI_PROPOSAL_TYPES));
 const STATUS_SET = new Set<string>(Object.values(AI_PROPOSAL_STATUSES));
 const RISK_SET = new Set<string>(Object.values(AI_PROPOSAL_RISK_LEVELS));
 const SOURCE_SET = new Set<string>(Object.values(AI_PROPOSAL_SOURCES));
+
+/** Types promoted via generic POST .../proposals/:id/accept (Sprint 12.4). */
+const CANON_PROMOTABLE_TYPES = new Set<string>([
+  AI_PROPOSAL_TYPES.fact,
+  AI_PROPOSAL_TYPES.character_update,
+  AI_PROPOSAL_TYPES.relationship_update,
+  AI_PROPOSAL_TYPES.open_loop_update,
+  AI_PROPOSAL_TYPES.reveal_status_update,
+  AI_PROPOSAL_TYPES.character_state_update,
+  AI_PROPOSAL_TYPES.character_knowledge_update,
+]);
+
+const FOUNDATION_FLOW_TYPES = new Set<string>([
+  AI_PROPOSAL_TYPES.foundation,
+  AI_PROPOSAL_TYPES.style,
+  AI_PROPOSAL_TYPES.character,
+  AI_PROPOSAL_TYPES.relationship_speech_rule,
+]);
 
 const PROVIDER_SOURCE_PATTERNS = [
   /^openrouter$/i,
@@ -426,36 +452,151 @@ export async function updateProposalForOwner(
   return mapAiProposalResponse(afterRow);
 }
 
+export interface AcceptProposalResult {
+  proposal: AiProposalResponse;
+  promoted: PromotedEntity | null;
+  alreadyAccepted: boolean;
+}
+
 export async function acceptProposalForOwner(
   bindings: AppBindings,
   ownerId: string,
   projectId: string,
   proposalId: string,
-): Promise<AiProposalResponse> {
+  raw?: unknown,
+): Promise<AcceptProposalResult> {
+  await getOwnedProjectRow(bindings, ownerId, projectId);
   const beforeRow = await getOwnedProposalRow(bindings, ownerId, projectId, proposalId);
+
+  if (beforeRow.status === AI_PROPOSAL_STATUSES.accepted) {
+    return {
+      proposal: mapAiProposalResponse(beforeRow),
+      promoted: null,
+      alreadyAccepted: true,
+    };
+  }
+
   assertProposedStatus(beforeRow);
+
+  if (FOUNDATION_FLOW_TYPES.has(beforeRow.proposal_type)) {
+    throw AppError.conflict(
+      "Use POST /api/projects/:id/foundation/proposals/:proposalId/accept for foundation review proposals",
+      { missing: ["use_foundation_proposal_accept"] },
+    );
+  }
+
+  let confirmHighRisk = false;
+  if (raw !== undefined && raw !== null) {
+    if (typeof raw !== "object" || Array.isArray(raw)) {
+      throw AppError.badRequest("Request body must be a JSON object");
+    }
+    confirmHighRisk = (raw as Record<string, unknown>).confirmHighRisk === true;
+  }
 
   const admin = createServiceRoleClient(bindings);
   const now = new Date().toISOString();
-  const { data, error } = await admin
-    .from("ai_proposals")
-    .update({
-      status: AI_PROPOSAL_STATUSES.accepted,
-      reviewed_at: now,
-      reviewed_by: ownerId,
-    })
-    .eq("id", proposalId)
-    .eq("project_id", projectId)
-    .eq("status", AI_PROPOSAL_STATUSES.proposed)
-    .select(PROPOSAL_SELECT)
-    .single();
 
-  if (error || !data) {
-    console.error("ai_proposals accept failed");
-    throw AppError.internal("Failed to accept proposal");
+  if (!CANON_PROMOTABLE_TYPES.has(beforeRow.proposal_type)) {
+    throw AppError.conflict(
+      `Proposal type "${beforeRow.proposal_type}" cannot be accepted via the generic proposals endpoint`,
+      { missing: ["unsupported_generic_accept"] },
+    );
   }
 
-  const afterRow = data as AiProposalRow;
+  const correlationId = generateCorrelationId();
+  let promoted: PromotedEntity;
+
+  try {
+    preflightPromotionToCanon(beforeRow, { confirmHighRisk });
+    promoted = await promoteProposalToCanon(bindings, projectId, beforeRow, {
+      confirmHighRisk,
+    });
+  } catch (err) {
+    const errorCode = classifyTransactionFailure(err);
+    await writeAuditLog(bindings, {
+      userId: ownerId,
+      projectId,
+      action: "canon_promotion_failed",
+      entityType: "ai_proposal",
+      entityId: proposalId,
+      metadata: {
+        correlationId,
+        task: "generic_proposal_accept",
+        proposalId,
+        proposalType: beforeRow.proposal_type,
+        riskLevel: beforeRow.risk_level,
+        errorCode,
+        highRiskConfirmed: confirmHighRisk,
+      },
+    });
+    throw err;
+  }
+
+  await writeAuditLog(bindings, {
+    userId: ownerId,
+    projectId,
+    action: "canon_promotion_applied",
+    entityType: "ai_proposal",
+    entityId: proposalId,
+    metadata: {
+      correlationId,
+      task: "generic_proposal_accept",
+      proposalId,
+      proposalType: beforeRow.proposal_type,
+      riskLevel: beforeRow.risk_level,
+      highRiskConfirmed: confirmHighRisk,
+      ...snapshotCanonPromotion(promoted),
+    },
+  });
+
+  const proposalUpdates: Record<string, unknown> = {
+    status: AI_PROPOSAL_STATUSES.accepted,
+    reviewed_at: now,
+    reviewed_by: ownerId,
+  };
+  if (promoted.entityType === "fact") {
+    proposalUpdates.result_fact_id = promoted.entityId;
+  }
+  if (promoted.entityType === "character") {
+    proposalUpdates.result_character_id = promoted.entityId;
+  }
+
+  let afterRow: AiProposalRow;
+  try {
+    const { data, error } = await admin
+      .from("ai_proposals")
+      .update(proposalUpdates)
+      .eq("id", proposalId)
+      .eq("project_id", projectId)
+      .eq("status", AI_PROPOSAL_STATUSES.proposed)
+      .select(PROPOSAL_SELECT)
+      .single();
+
+    if (error || !data) {
+      console.error("ai_proposals accept after promotion failed");
+      throw AppError.internal("Failed to accept proposal");
+    }
+    afterRow = data as AiProposalRow;
+  } catch (err) {
+    await compensateCanonPromotion(bindings, projectId, promoted);
+    await writeAuditLog(bindings, {
+      userId: ownerId,
+      projectId,
+      action: "canon_promotion_failed",
+      entityType: "ai_proposal",
+      entityId: proposalId,
+      metadata: {
+        correlationId,
+        task: "generic_proposal_accept",
+        proposalId,
+        proposalType: beforeRow.proposal_type,
+        errorCode: classifyTransactionFailure(err),
+        failureStage: "accept_status_update",
+      },
+    });
+    throw err;
+  }
+
   await writeAuditLog(bindings, {
     userId: ownerId,
     projectId,
@@ -463,15 +604,22 @@ export async function acceptProposalForOwner(
     entityType: "ai_proposal",
     entityId: proposalId,
     metadata: {
+      correlationId,
       proposalType: afterRow.proposal_type,
       riskLevel: afterRow.risk_level,
-      note: "status_only_no_canon_promotion",
+      promotedEntityType: promoted.entityType,
+      promotedEntityId: promoted.entityId,
+      canonPromotion: true,
     },
     beforeData: proposalSnapshot(beforeRow),
     afterData: proposalSnapshot(afterRow),
   });
 
-  return mapAiProposalResponse(afterRow);
+  return {
+    proposal: mapAiProposalResponse(afterRow),
+    promoted,
+    alreadyAccepted: false,
+  };
 }
 
 export async function rejectProposalForOwner(

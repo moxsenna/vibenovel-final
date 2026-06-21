@@ -57,7 +57,7 @@ test.describe("Sprint 3 web smoke — API mode", () => {
 
     const intakePath = `/projects/${projectId}/intake`;
     await page.goto(intakePath);
-    await expect(page.getByText("Memuat sesi intake...")).toBeHidden({ timeout: 20_000 });
+    await expect(page.getByText("Memuat Asisten Narra...")).toBeHidden({ timeout: 20_000 });
 
     const chatInput = page.getByPlaceholder("Ketik ide ceritamu di sini...");
     await expect(chatInput).toBeVisible({ timeout: 20_000 });

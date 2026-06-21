@@ -1,121 +1,140 @@
+import type { GenerationType } from "@vibenovel/shared";
+import type { AppBindings } from "../env.js";
 import { AppError } from "../errors.js";
 import { createServiceRoleClient } from "../lib/supabase.js";
 import { DEFAULT_DAILY_DEBIT_CAP_V2 } from "./ai-credit-policy.js";
-import type { AppBindings } from "../env.js";
-
-/* ------------------------------------------------------------------ */
-/*  Types                                                              */
-/* ------------------------------------------------------------------ */
 
 export interface AiRateLimitSnapshot {
   dailyDebitedCredits: number;
   dailyDebitCap: number;
   recentFailureCount: number;
   cooldownFailureThreshold: number;
+  requestedCreditCost?: number;
 }
 
-export interface AiRateLimitForOwnerInput {
+export interface LoadAiRateLimitSnapshotInput {
   userId: string;
   projectId: string;
-  generationType: string;
+  generationType: GenerationType;
   requestedCreditCost: number;
 }
 
-/* ------------------------------------------------------------------ */
-/*  Pure guard — no I/O, fully testable                                */
-/* ------------------------------------------------------------------ */
+const DEFAULT_COOLDOWN_FAILURE_THRESHOLD = 3;
+const FAILURE_WINDOW_MINUTES = 30;
 
-/**
- * Core rate-limit guard. Throws AppError if daily cap exceeded or
- * failure cooldown is active.
- */
+function startOfUtcDay(): string {
+  const now = new Date();
+  return new Date(
+    Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()),
+  ).toISOString();
+}
+
+function failureWindowStart(): string {
+  return new Date(Date.now() - FAILURE_WINDOW_MINUTES * 60_000).toISOString();
+}
+
 export function assertAiGenerationAllowed(
   snapshot: AiRateLimitSnapshot,
-  requested: number = 0,
+  requestedCreditCost = snapshot.requestedCreditCost ?? 0,
 ): void {
-  if (snapshot.dailyDebitedCredits + requested > snapshot.dailyDebitCap) {
+  if (snapshot.dailyDebitedCredits + requestedCreditCost > snapshot.dailyDebitCap) {
     throw new AppError(
       "AI_DAILY_CAP_EXCEEDED",
-      `Daily generation cap of ${snapshot.dailyDebitCap} credits exceeded. ` +
-        `Current: ${snapshot.dailyDebitedCredits}, Requested: ${requested}`,
+      "Daily AI credit cap reached for this project",
       429,
+      {
+        dailyDebitedCredits: snapshot.dailyDebitedCredits,
+        dailyDebitCap: snapshot.dailyDebitCap,
+        requestedCreditCost,
+      },
     );
   }
 
   if (snapshot.recentFailureCount >= snapshot.cooldownFailureThreshold) {
     throw new AppError(
       "AI_FAILURE_COOLDOWN",
-      `Generation blocked due to ${snapshot.recentFailureCount} recent failures. ` +
-        `Threshold: ${snapshot.cooldownFailureThreshold}`,
+      "Too many recent AI generation failures; try again later",
       429,
+      {
+        recentFailureCount: snapshot.recentFailureCount,
+        cooldownFailureThreshold: snapshot.cooldownFailureThreshold,
+      },
     );
   }
 }
 
-/* ------------------------------------------------------------------ */
-/*  Loader — reads daily debits and failure count from DB              */
-/* ------------------------------------------------------------------ */
-
 export async function loadAiRateLimitSnapshot(
   bindings: AppBindings,
-  projectId: string,
+  input: LoadAiRateLimitSnapshotInput,
 ): Promise<AiRateLimitSnapshot> {
   const admin = createServiceRoleClient(bindings);
+  let dailyDebitCap = DEFAULT_DAILY_DEBIT_CAP_V2;
 
-  // Sum today's generation debits for this project
-  const todayStart = new Date();
-  todayStart.setUTCHours(0, 0, 0, 0);
+  try {
+    const { data: capRow } = await admin
+      .from("ai_usage_daily_caps")
+      .select("daily_credit_cap")
+      .eq("user_id", input.userId)
+      .eq("project_id", input.projectId)
+      .maybeSingle();
+    const cap = (capRow as { daily_credit_cap?: number } | null)?.daily_credit_cap;
+    if (
+      typeof cap === "number" &&
+      Number.isInteger(cap) &&
+      cap >= input.requestedCreditCost
+    ) {
+      dailyDebitCap = cap;
+    }
+  } catch {
+    dailyDebitCap = DEFAULT_DAILY_DEBIT_CAP_V2;
+  }
 
-  const { data: ledgerData } = await admin
+  const { data: debitRows, error: debitError } = await admin
     .from("credit_ledger")
     .select("amount")
-    .eq("project_id", projectId)
+    .eq("user_id", input.userId)
+    .eq("project_id", input.projectId)
     .eq("direction", "debit")
     .eq("reason", "generation_debit")
-    .gte("created_at", todayStart.toISOString());
+    .gte("created_at", startOfUtcDay());
 
-  const dailyDebitedCredits =
-    ledgerData?.reduce(
-      (sum: number, row: { amount: number }) => sum + (row.amount ?? 0),
-      0,
-    ) ?? 0;
+  if (debitError) {
+    console.error("credit_ledger daily AI cap query failed");
+    throw AppError.internal("Failed to verify AI usage cap");
+  }
 
-  // Count recent failures (last 30 minutes)
-  const thirtyMinAgo = new Date(Date.now() - 30 * 60 * 1000).toISOString();
-  const { count: failureCount } = await admin
+  const dailyDebitedCredits = ((debitRows ?? []) as { amount: number }[]).reduce(
+    (sum, row) => sum + (Number(row.amount) || 0),
+    0,
+  );
+
+  const { count, error: failureError } = await admin
     .from("generation_attempts")
     .select("id", { count: "exact", head: true })
-    .eq("project_id", projectId)
+    .eq("user_id", input.userId)
+    .eq("project_id", input.projectId)
+    .eq("generation_type", input.generationType)
     .eq("status", "failed")
-    .gte("created_at", thirtyMinAgo);
+    .gte("updated_at", failureWindowStart());
 
-  // Check project-level override
-  const { data: capRow } = await admin
-    .from("ai_usage_daily_caps")
-    .select("daily_debit_cap")
-    .eq("project_id", projectId)
-    .maybeSingle();
-
-  const dailyDebitCap =
-    (capRow as { daily_debit_cap: number } | null)?.daily_debit_cap ??
-    DEFAULT_DAILY_DEBIT_CAP_V2;
+  if (failureError) {
+    console.error("generation_attempts cooldown query failed");
+    throw AppError.internal("Failed to verify AI failure cooldown");
+  }
 
   return {
     dailyDebitedCredits,
     dailyDebitCap,
-    recentFailureCount: failureCount ?? 0,
-    cooldownFailureThreshold: 3,
+    recentFailureCount: count ?? 0,
+    cooldownFailureThreshold: DEFAULT_COOLDOWN_FAILURE_THRESHOLD,
+    requestedCreditCost: input.requestedCreditCost,
   };
 }
 
-/* ------------------------------------------------------------------ */
-/*  Convenience guard — loads + checks in one call                     */
-/* ------------------------------------------------------------------ */
-
 export async function assertAiGenerationAllowedForOwner(
   bindings: AppBindings,
-  input: AiRateLimitForOwnerInput,
+  input: LoadAiRateLimitSnapshotInput,
 ): Promise<void> {
-  const snapshot = await loadAiRateLimitSnapshot(bindings, input.projectId);
-  assertAiGenerationAllowed(snapshot, input.requestedCreditCost);
+  const snapshot = await loadAiRateLimitSnapshot(bindings, input);
+  assertAiGenerationAllowed(snapshot);
 }

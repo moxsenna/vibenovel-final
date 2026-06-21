@@ -21,8 +21,8 @@ import { getCreditCostForGeneration } from "./ai-credit-policy.js";
 import { assertAiGenerationAllowedForOwner } from "./ai-rate-limit.js";
 import { buildContextPacketForOwner } from "./context-packet-builder.js";
 import { getOwnedBeatRow } from "./chapter-beat.js";
-import { calculateEstimatedCostUsd } from "./model-cost-map.js";
-import { generateWithModelRouter } from "./model-router.js";
+import { assertGenerationRouteCallable } from "./model-router.js";
+import { createProviderEventSequence } from "./generation-provider-event.js";
 import { getOwnedProjectRow } from "./project.js";
 import { saveAiGeneratedProseVersionForOwner } from "./prose-draft.js";
 import { buildProseBeatPromptFromPacket } from "./prose-generation-prompt.js";
@@ -42,6 +42,10 @@ import {
 import { generateCorrelationId } from "./audit-snapshot.js";
 import { createServiceRoleClient } from "../lib/supabase.js";
 import { getProseVersionForOwner } from "./prose-draft.js";
+import { collectPovForbiddenFactTexts } from "./character-knowledge-validator.js";
+import { listFactsForOwner } from "./fact.js";
+import { buildProseValidationContextFromPacket } from "./prose-validation-context.js";
+import { generateValidatedAiOutputWithSafeRepair } from "./prose-output-safe-repair.js";
 
 const IDEMPOTENCY_KEY_MAX = 120;
 const INSTRUCTION_MAX = 500;
@@ -262,6 +266,7 @@ async function handleProviderFailure(
     projectId: string;
     amount: number;
     generationType: typeof GENERATION_TYPES.prose_beat;
+    qualityMode: WriterQualityMode;
     idempotencyKey: string;
     correlationId: string;
     err: unknown;
@@ -280,6 +285,7 @@ async function handleProviderFailure(
       amount: input.amount,
       reason: CREDIT_LEDGER_REASONS.generationRefund,
       generationType: input.generationType,
+      qualityMode: input.qualityMode,
       idempotencyKey: input.idempotencyKey,
       correlationId: input.correlationId,
     });
@@ -374,6 +380,13 @@ export async function generateProseBeatForOwner(
     beatId: body.beatId,
   });
 
+  const writerPacket = packetResult.packet;
+  const canonFacts = await listFactsForOwner(bindings, ownerId, projectId, false);
+  const povForbiddenFactTexts = collectPovForbiddenFactTexts(
+    canonFacts,
+    writerPacket.continuity.povKnowledge,
+  );
+
   const promptResult = await buildProseBeatPromptFromPacket(
     packetResult.packet,
     beatRow,
@@ -381,6 +394,18 @@ export async function generateProseBeatForOwner(
   );
 
   const creditCost = getCreditCostForGeneration({
+    generationType: GENERATION_TYPES.prose_beat,
+    qualityMode: body.qualityMode,
+  });
+
+  await assertAiGenerationAllowedForOwner(bindings, {
+    userId: ownerId,
+    projectId,
+    generationType: GENERATION_TYPES.prose_beat,
+    requestedCreditCost: creditCost,
+  });
+
+  assertGenerationRouteCallable(bindings, {
     generationType: GENERATION_TYPES.prose_beat,
     qualityMode: body.qualityMode,
   });
@@ -400,6 +425,7 @@ export async function generateProseBeatForOwner(
     qualityMode: body.qualityMode,
     correlationId,
   });
+  const providerEventSequence = createProviderEventSequence();
 
   let debited = false;
   try {
@@ -416,6 +442,7 @@ export async function generateProseBeatForOwner(
       amount: creditCost,
       reason: CREDIT_LEDGER_REASONS.generationDebit,
       generationType: GENERATION_TYPES.prose_beat,
+      qualityMode: body.qualityMode,
       idempotencyKey: body.idempotencyKey,
       correlationId,
     });
@@ -437,14 +464,26 @@ export async function generateProseBeatForOwner(
 
   attempt = await markGenerationAttemptRunning(bindings, attempt.id);
 
-  let providerResult;
+  let validated;
   try {
-    providerResult = await generateWithModelRouter(bindings, {
+    validated = await generateValidatedAiOutputWithSafeRepair({
+      bindings,
       generationType: GENERATION_TYPES.prose_beat,
       qualityMode: body.qualityMode,
       promptHash: promptResult.promptHash,
       promptMessages: promptResult.promptMessages,
+      validationContext: buildProseValidationContextFromPacket(
+        packetResult.preview,
+        writerPacket,
+        povForbiddenFactTexts,
+      ),
       metadata: { beatNumber: beatRow.beat_number },
+      persistContext: {
+        projectId,
+        userId: ownerId,
+        generationAttemptId: attempt.id,
+        providerEventSequence,
+      },
     });
   } catch (err) {
     if (debited) {
@@ -454,6 +493,7 @@ export async function generateProseBeatForOwner(
         projectId,
         amount: creditCost,
         generationType: GENERATION_TYPES.prose_beat,
+        qualityMode: body.qualityMode,
         idempotencyKey: body.idempotencyKey,
         correlationId,
         err,
@@ -461,6 +501,8 @@ export async function generateProseBeatForOwner(
     }
     throw err;
   }
+
+  const providerResult = validated.providerResult;
 
   let saved;
   try {
@@ -470,7 +512,7 @@ export async function generateProseBeatForOwner(
       projectId,
       body.beatId,
       {
-        proseText: providerResult.text,
+        proseText: validated.text,
         contextPacketLogId: packetResult.packetLogId,
       },
     );
@@ -482,6 +524,7 @@ export async function generateProseBeatForOwner(
         projectId,
         amount: creditCost,
         generationType: GENERATION_TYPES.prose_beat,
+        qualityMode: body.qualityMode,
         idempotencyKey: body.idempotencyKey,
         correlationId,
         err,
@@ -490,29 +533,12 @@ export async function generateProseBeatForOwner(
     throw err;
   }
 
-  let estimatedCostUsd: number | null = null;
-  let costEstimateMetadata: GenerationAttemptCostEstimateMetadata = {};
-
-  if (providerResult.provider === "mock") {
-    estimatedCostUsd = 0;
-    costEstimateMetadata = {
-      costEstimateApproximate: true,
-      mockProvider: true,
-      costModel: providerResult.model,
-    };
-  } else {
-    const costResult = calculateEstimatedCostUsd({
-      model: providerResult.model,
-      inputTokens: providerResult.inputTokens,
-      outputTokens: providerResult.outputTokens,
-    });
-    estimatedCostUsd = costResult.estimatedCostUsd;
-    costEstimateMetadata = {
-      costEstimateApproximate: costResult.approximate,
-      ...(costResult.reason ? { costEstimateReason: costResult.reason } : {}),
-      ...(costResult.costModel ? { costModel: costResult.costModel } : {}),
-    };
-  }
+  const estimatedCostUsd = validated.totalEstimatedCostUsd;
+  const costEstimateMetadata: GenerationAttemptCostEstimateMetadata = {
+    costEstimateApproximate: true,
+    ...(providerResult.provider === "mock" ? { mockProvider: true } : {}),
+    costModel: providerResult.model,
+  };
 
   attempt = await markGenerationAttemptSucceeded(bindings, {
     attemptId: attempt.id,
@@ -520,6 +546,11 @@ export async function generateProseBeatForOwner(
     projectId,
     provider: providerResult.provider,
     model: providerResult.model,
+    logicalModel: validated.logicalModel,
+    routingPolicyVersion: validated.routingPolicyVersion,
+    fallbackUsed: validated.fallbackUsed,
+    retryCount: validated.totalRetryCount,
+    providerLatencyMs: validated.totalProviderLatencyMs,
     inputTokens: providerResult.inputTokens,
     outputTokens: providerResult.outputTokens,
     outputEntityId: saved.version.id,

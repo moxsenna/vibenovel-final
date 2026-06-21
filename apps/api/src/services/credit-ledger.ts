@@ -5,6 +5,7 @@ import {
   type CreditLedgerDirection,
   type CreditLedgerEntry,
   type GenerationType,
+  type WriterQualityMode,
 } from "@vibenovel/shared";
 import type { AppBindings } from "../env.js";
 import { AppError } from "../errors.js";
@@ -16,6 +17,13 @@ import {
 import { createServiceRoleClient } from "../lib/supabase.js";
 import { writeAuditLog } from "./audit.js";
 import { sanitizeAuditMetadata } from "./audit-snapshot.js";
+import {
+  CREDIT_PRICING_VERSION,
+  getFeatureKeyForGenerationType,
+  type NarrazaAiFeature,
+} from "./ai-credit-policy.js";
+/** Credit-ledger routing marker — independent of the AI routing policy version. */
+const MODEL_ROUTING_VERSION = "v2";
 import { getCreditBalanceForUser, preflightCreditBalance } from "./credit.js";
 import { TransactionPlan } from "./transaction.js";
 
@@ -31,6 +39,11 @@ export interface CreditMutationBaseInput {
   amount: number;
   reason: string;
   generationType?: GenerationType;
+  featureKey?: NarrazaAiFeature;
+  qualityMode: WriterQualityMode;
+  creditPricingVersion?: string;
+  modelRoutingVersion?: string;
+  model?: string;
   correlationId?: string;
   idempotencyKey?: string;
 }
@@ -51,12 +64,45 @@ function assertPositiveAmount(amount: number): void {
   }
 }
 
-function buildLedgerMetadata(input: CreditMutationBaseInput): Record<string, unknown> {
-  const metadata: Record<string, unknown> = {};
+export function buildLedgerMetadata(
+  input: CreditMutationBaseInput,
+  inheritedPricingSnapshot?: Record<string, unknown>,
+): Record<string, unknown> {
+  const inherited = inheritedPricingSnapshot ?? {};
+  const featureKey =
+    inherited.featureKey ??
+    input.featureKey ??
+    (input.generationType
+      ? getFeatureKeyForGenerationType(input.generationType)
+      : undefined);
+
+  const metadata: Record<string, unknown> = {
+    featureKey,
+    qualityMode: inherited.qualityMode ?? input.qualityMode,
+    creditCost: inherited.creditCost ?? input.amount,
+    creditPricingVersion:
+      inherited.creditPricingVersion ??
+      input.creditPricingVersion ??
+      CREDIT_PRICING_VERSION,
+    modelRoutingVersion:
+      inherited.modelRoutingVersion ??
+      input.modelRoutingVersion ??
+      MODEL_ROUTING_VERSION,
+    model: inherited.model ?? input.model,
+    generationAttemptId:
+      inherited.generationAttemptId ?? input.attemptId,
+  };
   if (input.idempotencyKey) metadata.idempotencyKey = input.idempotencyKey;
   if (input.correlationId) metadata.correlationId = input.correlationId;
   if (input.generationType) metadata.generationType = input.generationType;
   return sanitizeAuditMetadata(metadata);
+}
+
+export function resolveRefundAmountFromDebit(
+  debit: Pick<CreditLedgerEntry, "amount">,
+): number {
+  assertPositiveAmount(debit.amount);
+  return debit.amount;
 }
 
 async function findExistingLedgerEntry(
@@ -332,8 +378,6 @@ export async function refundCreditsForAttempt(
   bindings: AppBindings,
   input: CreditMutationBaseInput,
 ): Promise<CreditLedgerOperationResult> {
-  assertPositiveAmount(input.amount);
-
   const existingRefund = await findExistingLedgerEntry(bindings, {
     userId: input.userId,
     attemptId: input.attemptId,
@@ -361,6 +405,7 @@ export async function refundCreditsForAttempt(
       404,
     );
   }
+  const refundAmount = resolveRefundAmountFromDebit(existingDebit);
 
   const balanceRow = await loadBalanceRow(bindings, input.userId);
   if (!balanceRow) {
@@ -371,8 +416,11 @@ export async function refundCreditsForAttempt(
     );
   }
 
-  const balanceAfter = balanceRow.balance + input.amount;
-  const metadata = buildLedgerMetadata(input);
+  const balanceAfter = balanceRow.balance + refundAmount;
+  const metadata = buildLedgerMetadata(
+    { ...input, amount: refundAmount },
+    existingDebit.metadata,
+  );
   const plan = new TransactionPlan();
   let ledgerEntry: CreditLedgerEntry | null = null;
 
@@ -382,7 +430,7 @@ export async function refundCreditsForAttempt(
         userId: input.userId,
         projectId: input.projectId,
         attemptId: input.attemptId,
-        amount: input.amount,
+        amount: refundAmount,
         direction: CREDIT_LEDGER_DIRECTIONS.refund,
         reason: input.reason,
         balanceAfter,

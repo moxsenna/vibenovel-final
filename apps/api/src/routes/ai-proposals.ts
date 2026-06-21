@@ -57,8 +57,15 @@ export function registerAiProposalRoutes(app: Hono<AppEnv>): void {
       const ownerId = c.get("userId");
       const projectId = c.req.param("id");
       const proposalId = c.req.param("proposalId");
-      const proposal = await acceptProposalForOwner(c.env, ownerId, projectId, proposalId);
-      return jsonSuccess(c, proposal);
+      const raw = await c.req.json().catch(() => undefined);
+      const result = await acceptProposalForOwner(
+        c.env,
+        ownerId,
+        projectId,
+        proposalId,
+        raw,
+      );
+      return jsonSuccess(c, result);
     },
   );
 

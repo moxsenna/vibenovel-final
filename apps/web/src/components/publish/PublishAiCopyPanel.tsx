@@ -37,7 +37,6 @@ export interface PublishAiCopyPanelProps {
   applyingSuggestionField?: PublishCopyAiField | null;
   applyingAllSuggestions?: boolean;
   creditCostLabel?: string | null;
-  qualityModeLabel?: string | null;
   creditBalance?: number | null;
   creditLoading?: boolean;
   creditError?: string | null;
@@ -65,7 +64,6 @@ export function PublishAiCopyPanel({
   applyingSuggestionField = null,
   applyingAllSuggestions = false,
   creditCostLabel = null,
-  qualityModeLabel = null,
   creditBalance = null,
   creditLoading = false,
   creditError = null,
@@ -172,7 +170,6 @@ export function PublishAiCopyPanel({
           <div className="flex flex-col gap-1 font-body-sm text-body-sm text-muted-text">
             <span>{formatPublishCopyTierCostsLabel()}</span>
             {creditCostLabel ? <span>{creditCostLabel}</span> : null}
-            {qualityModeLabel ? <span>Mode kualitas: {qualityModeLabel}</span> : null}
             {creditLoading ? <span>Memuat saldo kredit…</span> : null}
             {creditError ? <span>{creditError}</span> : null}
             {!creditLoading && creditBalance != null ? (

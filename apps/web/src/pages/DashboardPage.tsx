@@ -7,6 +7,9 @@ import {
 } from "@/components/dashboard";
 import { IntegrationNotice } from "@/components/common/IntegrationNotice";
 import { useDashboardData } from "@/hooks/useDashboardData";
+import { useProjectBrowse } from "@/hooks/useProjectBrowse";
+import { useProjectManageModals } from "@/hooks/useProjectManageModals";
+import { shouldUseMocks } from "@/lib/env";
 
 /**
  * Dashboard Penulis — Sprint 1 Task 1.6 (+ Sprint 2 Task 2.13 API integration)
@@ -14,16 +17,37 @@ import { useDashboardData } from "@/hooks/useDashboardData";
  * Wrapped by AppShell via router layout.
  */
 export function DashboardPage() {
-  const { activeProject, recentProjects, usage, notice, loading, isEmpty } = useDashboardData();
+  const useMocks = shouldUseMocks();
+  const { activeProject, usage, notice, loading, isEmpty, reload } = useDashboardData();
+  const browse = useProjectBrowse({
+    previewLimit: 6,
+    excludeProjectId: activeProject?.id ?? null,
+    includeArchived: false,
+  });
+
+  const { openEdit, openDelete, modals } = useProjectManageModals({
+    onChanged: () => {
+      reload();
+      browse.refresh();
+    },
+  });
+
+  const hasProjects = Boolean(activeProject) || browse.total > 0 || !isEmpty;
+  const manageDisabled = useMocks || browse.isMock;
 
   return (
     <div className="flex w-full flex-col gap-xl">
       <IntegrationNotice message={notice} />
-      <DashboardGreeting usage={usage} />
+      <DashboardGreeting usage={usage} hasProjects={hasProjects} />
 
       <div className="grid grid-cols-1 gap-lg lg:grid-cols-3">
         {activeProject ? (
-          <ActiveProjectCard project={activeProject} />
+          <ActiveProjectCard
+            project={activeProject}
+            onEditTitle={openEdit}
+            onDeleteProject={openDelete}
+            manageActionsDisabled={manageDisabled}
+          />
         ) : isEmpty ? (
           <NoActiveProjectCard />
         ) : null}
@@ -36,7 +60,14 @@ export function DashboardPage() {
         </p>
       ) : null}
 
-      <RecentProjectsSection projects={recentProjects} />
+      <RecentProjectsSection
+        browse={browse}
+        onEditTitle={openEdit}
+        onDeleteProject={openDelete}
+        manageActionsDisabled={manageDisabled}
+      />
+
+      {modals}
     </div>
   );
 }
