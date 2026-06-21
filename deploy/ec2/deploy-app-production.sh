@@ -17,6 +17,7 @@ set -euo pipefail
 APP_DIR="${APP_DIR:-/opt/vibenovel}"
 REPO_URL="${REPO_URL:-}"
 REPO_BRANCH="${REPO_BRANCH:-main}"
+COMPOSE_FILE="${COMPOSE_FILE:-docker-compose.production.yml}"
 
 cd "$APP_DIR"
 
@@ -31,21 +32,29 @@ if grep -q 'CREDIT_TOPUP_ENABLED=true' .env.production 2>/dev/null; then
   exit 1
 fi
 
+if [[ -d .git ]]; then
+  git rev-parse HEAD > .last-deploy-commit
+fi
+
 if [[ -n "$REPO_URL" && ! -d .git ]]; then
   git clone --branch "$REPO_BRANCH" --depth 1 "$REPO_URL" .
 elif [[ -d .git ]]; then
   git fetch origin "$REPO_BRANCH"
   git checkout "$REPO_BRANCH"
-  git pull --ff-only origin "$REPO_BRANCH" || true
+  git pull --ff-only origin "$REPO_BRANCH"
 else
   echo "WARN: No .git and REPO_URL unset — assuming rsync/scp already placed files in $APP_DIR"
 fi
 
-docker compose -f docker-compose.production.yml up -d --build
-docker compose -f docker-compose.production.yml ps
-docker compose -f docker-compose.production.yml logs --tail=50 api
+docker compose -f "$COMPOSE_FILE" config --quiet
+docker compose -f "$COMPOSE_FILE" build api
+docker compose -f "$COMPOSE_FILE" up -d --no-deps api
+docker compose -f "$COMPOSE_FILE" ps
+docker compose -f "$COMPOSE_FILE" logs --tail=50 api
 
 echo "==> Local health check"
 curl -sf http://127.0.0.1:8787/api/health | head -c 500
 echo ""
-echo "==> Deploy complete. Configure Caddy for api.narraza.web.id + public smoke."
+echo "==> Deploy complete. Public health must pass before traffic approval."
+echo "Rollback commit recorded in $APP_DIR/.last-deploy-commit."
+echo "Rollback: git checkout \$(cat .last-deploy-commit) && docker compose -f $COMPOSE_FILE up -d --build api"

@@ -1885,7 +1885,7 @@ git commit -m "feat: add advanced story control center"
 - Modify: `deploy/caddy/Caddyfile.production.example`
 - Modify: `scripts/operator-production-api-web-deploy.ps1`
 - Modify: `docs/78-production-environment-foundation-plan.md`
-- Create: `docs/115-node-production-cutover-runbook.md`
+- Create: `docs/116-node-production-cutover-runbook.md` (renumbered because `docs/115-intake-foundation-quality-closure-report.md` already exists)
 
 ### Keputusan
 
@@ -1922,7 +1922,7 @@ docker compose -f docker-compose.production.yml config
 - [ ] **Step 6: Commit**
 
 ```powershell
-git add docker-compose.production.yml deploy/ec2/deploy-app-production.sh deploy/caddy/Caddyfile.production.example scripts/operator-production-api-web-deploy.ps1 docs/78-production-environment-foundation-plan.md docs/115-node-production-cutover-runbook.md
+git add docker-compose.production.yml deploy/ec2/deploy-app-production.sh deploy/caddy/Caddyfile.production.example scripts/operator-production-api-web-deploy.ps1 docs/78-production-environment-foundation-plan.md docs/116-node-production-cutover-runbook.md
 git commit -m "ops: prepare Node production cutover for heavy AI flows"
 ```
 

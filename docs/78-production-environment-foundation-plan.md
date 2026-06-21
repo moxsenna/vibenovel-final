@@ -421,3 +421,19 @@ Production: NOT deployed; payment OFF
 Next: Founder approval Task 10.23 → execute Phases 3–7 per docs/80 (Phases 1–2 GO per docs/79)
 Then: Task 10.19 for migration 00010 (separate approval)
 ```
+
+---
+
+## 11. Long-fiction heavy-flow runtime decision (2026-06-21)
+
+The production target for outline/prose generation is the Node API behind Caddy:
+
+```text
+api.narraza.web.id -> Caddy -> Node API :8787 -> production Supabase
+```
+
+- `RUNTIME_TARGET=node` is declared by production Compose and forced by the Node entrypoint.
+- Caddy waits up to 180 seconds for response headers on heavy AI routes.
+- The API container uses `restart: unless-stopped`, a health check, graceful stop, and bounded JSON logs.
+- Worker deployment is not an interchangeable fallback for heavy routes unless a separate parity test proves identical timeout, bindings, credit refund, validation, and persistence behavior.
+- Cutover and rollback procedure: `docs/116-node-production-cutover-runbook.md`.

@@ -119,6 +119,24 @@ Write-Host "Forbidden staging EC2: $StagingEc2Ip"
 Write-Host "Forbidden staging Supabase: $StagingProjectRef"
 Write-Host "Mode: $Mode"
 
+$composePath = Join-Path $RepoRoot "docker-compose.production.yml"
+$caddyPath = Join-Path $RepoRoot "deploy\caddy\Caddyfile.production.example"
+$composeSource = Get-Content $composePath -Raw
+$caddySource = Get-Content $caddyPath -Raw
+if ($composeSource -notmatch 'RUNTIME_TARGET:\s*node') {
+  Write-Host "BLOCKED: production compose does not declare Node runtime" -ForegroundColor Red
+  exit 2
+}
+if ($composeSource -notmatch 'restart:\s*unless-stopped') {
+  Write-Host "BLOCKED: production compose restart policy missing" -ForegroundColor Red
+  exit 2
+}
+if ($caddySource -notmatch 'response_header_timeout\s+180s') {
+  Write-Host "BLOCKED: Caddy heavy-flow timeout is below required 120 seconds" -ForegroundColor Red
+  exit 2
+}
+Write-Host "PASS Node runtime, restart policy, and 180s reverse-proxy timeout" -ForegroundColor Green
+
 $envPath = Join-Path $RepoRoot ".env.production"
 $envOk, $envMsg = Test-ModeAEnvFile -Path $envPath
 if (-not $envOk) {

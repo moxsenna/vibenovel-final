@@ -4,5 +4,16 @@
 # DNS: A record api.narraza.web.id -> production EIP (not staging 13.212.245.32).
 
 api.narraza.web.id {
-	reverse_proxy 127.0.0.1:8787
+	encode zstd gzip
+	log {
+		output stdout
+		format json
+	}
+	reverse_proxy 127.0.0.1:8787 {
+		transport http {
+			dial_timeout 10s
+			response_header_timeout 180s
+		}
+		flush_interval -1
+	}
 }
