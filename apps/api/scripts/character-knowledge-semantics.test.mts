@@ -1,19 +1,50 @@
 import assert from "node:assert/strict";
-import type { CharacterKnowledgeConstraint } from "@vibenovel/shared";
-let p=0,f=0;
-function t(n,fn){try{fn();p++;console.log("  \u2713 "+n)}catch(e){f++;console.log("  \u2717 "+n);console.error("      "+(e.message||e))}}
-t("CharacterKnowledgeConstraint certain mode ok",()=>{
-  const c:CharacterKnowledgeConstraint={characterId:"c1",factId:"f1",factText:"test",allowedMode:"certain"};
-  assert.equal(c.allowedMode,"certain");
+import {
+  buildKnowledgeConstraints,
+  categorizeKnowledge,
+} from "../src/services/character-knowledge.js";
+
+const facts = [
+  { id: "known", text: "Nadira kidal." },
+  { id: "partial", text: "Kunci disimpan di gudang timur." },
+  { id: "suspect", text: "Rama bekerja untuk dewan." },
+  { id: "false", text: "Sari adalah pengkhianat." },
+  { id: "unknown", text: "Arman adalah ayah kandung Rama." },
+];
+const rows = [
+  { fact_id: "known", knowledge_status: "knows" },
+  { fact_id: "partial", knowledge_status: "partially_knows" },
+  { fact_id: "suspect", knowledge_status: "suspects" },
+  { fact_id: "false", knowledge_status: "misbelieves" },
+];
+
+const constraints = buildKnowledgeConstraints("character-1", rows, facts);
+assert.equal(
+  constraints.find((constraint) => constraint.factId === "known")?.allowedMode,
+  "certain",
+);
+assert.equal(
+  constraints.find((constraint) => constraint.factId === "partial")?.allowedMode,
+  "partial",
+);
+assert.equal(
+  constraints.find((constraint) => constraint.factId === "suspect")?.allowedMode,
+  "suspicion",
+);
+assert.equal(
+  constraints.find((constraint) => constraint.factId === "false")?.allowedMode,
+  "false_belief",
+);
+assert.equal(
+  constraints.find((constraint) => constraint.factId === "unknown")?.allowedMode,
+  "forbidden",
+);
+
+assert.deepEqual(categorizeKnowledge(rows), {
+  knownIds: ["known"],
+  suspectedIds: ["suspect"],
+  partialIds: ["partial"],
+  falseBeliefIds: ["false"],
 });
-t("CharacterKnowledgeConstraint forbidden mode ok",()=>{
-  const c:CharacterKnowledgeConstraint={characterId:"c1",factId:"f1",factText:"test",allowedMode:"forbidden"};
-  assert.equal(c.allowedMode,"forbidden");
-});
-t("buildKnowledgeConstraints referenced in module",()=>{
-  // Contract: knowledge constraints must handle knows→certain, unknown→forbidden
-  const modes=["certain","partial","suspicion","false_belief","forbidden"] as const;
-  assert.equal(modes.length,5);
-});
-console.log("\n=== Knowledge Semantics ===\n  Passed: "+p+"\n  Failed: "+f+"\n===========================\n");
-process.exit(f>0?1:0);
+
+console.log("PASS character knowledge semantics");

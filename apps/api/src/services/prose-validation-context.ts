@@ -1,4 +1,7 @@
-import type { WriterContextPacket } from "@vibenovel/shared";
+import type {
+  WriterContextPacket,
+  WriterSafetyEnvelope,
+} from "@vibenovel/shared";
 import type { ProseOutputValidationContext } from "./prose-output-safe-repair.js";
 
 const MIN_HOOK_KEYWORD_LEN = 5;
@@ -28,6 +31,7 @@ export function buildProseValidationContextFromPacket(
   preview: { mustInclude: string[]; mustNotInclude: string[] },
   writerPacket: WriterContextPacket,
   povForbiddenFactTexts: string[],
+  safetyEnvelope?: WriterSafetyEnvelope,
 ): ProseOutputValidationContext {
   const hookKeywords = [...new Set(collectHookKeywordCandidates(writerPacket))].slice(
     0,
@@ -36,8 +40,12 @@ export function buildProseValidationContextFromPacket(
   const tone = writerPacket.foundation.tone?.trim() ?? null;
 
   return {
-    forbiddenConcepts: preview.mustNotInclude,
-    mustInclude: preview.mustInclude,
+    forbiddenConcepts: [
+      ...(safetyEnvelope?.forbiddenRevealPhrases ?? []),
+      ...(safetyEnvelope?.hardBeatConstraints.mustNotInclude ?? preview.mustNotInclude),
+    ],
+    mustInclude:
+      safetyEnvelope?.hardBeatConstraints.mustInclude ?? preview.mustInclude,
     povForbiddenFactTexts,
     retentionHookKeywords: hookKeywords,
     styleToneHint: tone && tone.length >= 4 ? tone : null,

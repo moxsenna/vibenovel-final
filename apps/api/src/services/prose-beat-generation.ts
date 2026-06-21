@@ -8,7 +8,7 @@ import {
   type WriterQualityMode,
 } from "@vibenovel/shared";
 import type { AppBindings } from "../env.js";
-import { isAiGenerationEnabled } from "../env.js";
+import { getWriterContextBudgetProfile, isAiGenerationEnabled } from "../env.js";
 import { AppError } from "../errors.js";
 import type { ChapterBeatRow } from "../lib/mappers.js";
 import { getCreditBalanceForUser } from "./credit.js";
@@ -391,6 +391,7 @@ export async function generateProseBeatForOwner(
     packetResult.packet,
     beatRow,
     body.instruction,
+    getWriterContextBudgetProfile(bindings),
   );
 
   const creditCost = getCreditCostForGeneration({
@@ -476,6 +477,7 @@ export async function generateProseBeatForOwner(
         packetResult.preview,
         writerPacket,
         povForbiddenFactTexts,
+        packetResult.safetyEnvelope,
       ),
       metadata: { beatNumber: beatRow.beat_number },
       persistContext: {

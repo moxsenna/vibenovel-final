@@ -1,4 +1,5 @@
 import type { WriterContextPacket } from "@vibenovel/shared";
+import { normalizeCanonFacts } from "./writer-context-normalizer.js";
 
 /* ------------------------------------------------------------------ */
 /*  Budget tables                                                      */
@@ -108,7 +109,9 @@ export function serializeContext(
     label: "CANON FACTS",
     content: formatSection(
       "CANON FACTS",
-      packet.canon.facts.map((f) => (typeof f === "string" ? f : String(f))),
+      normalizeCanonFacts(packet).map(
+        (fact) => `${fact.text} [${fact.category}; ${fact.importance}]`,
+      ),
     ),
     budget: budgets.canonFacts,
   });
@@ -117,16 +120,37 @@ export function serializeContext(
     label: "RELEVANT CHARACTERS AND CURRENT STATE",
     content: formatSection(
       "RELEVANT CHARACTERS AND CURRENT STATE",
-      packet.canon.characters.map(
-        (c) => `${c.name} (${c.roleLabel}): ${c.descriptionSummary}`,
-      ),
+      packet.canon.characters.map((character) => {
+        const state = "state" in character ? character.state : null;
+        const stateParts = state
+          ? [
+              state.emotionalState && `emotion=${state.emotionalState}`,
+              state.physicalState && `physical=${state.physicalState}`,
+              state.currentGoal && `goal=${state.currentGoal}`,
+              state.locationLabel && `location=${state.locationLabel}`,
+              `as-of chapter ${state.chapterNumber}`,
+            ].filter(Boolean)
+          : [];
+        return `${character.name} (${character.roleLabel}): ${character.descriptionSummary}${
+          stateParts.length > 0 ? ` | ${stateParts.join("; ")}` : ""
+        }`;
+      }),
     ),
     budget: budgets.charactersAndState,
   });
 
   sections.push({
     label: "CHARACTER KNOWLEDGE",
-    content: "[Character knowledge constraints — not yet populated]",
+    content: formatSection(
+      "CHARACTER KNOWLEDGE",
+      (packet.continuity.knowledgeByCharacter ?? []).flatMap((knowledge) => [
+        `${knowledge.characterName}:`,
+        ...knowledge.knownFacts.map((fact) => `KNOWN: ${fact.text}`),
+        ...knowledge.suspectedFacts.map((fact) => `SUSPECTS: ${fact.text}`),
+        ...knowledge.partialFacts.map((fact) => `PARTIAL: ${fact.text}`),
+        ...knowledge.falseBeliefs.map((fact) => `FALSE BELIEF: ${fact.text}`),
+      ]),
+    ),
     budget: budgets.knowledge,
   });
 
@@ -152,7 +176,12 @@ export function serializeContext(
 
   sections.push({
     label: "PRECEDING CURRENT PROSE TAIL",
-    content: "[Preceding prose — populated during generation]",
+    content: packet.continuity.precedingProseTail
+      ? [
+          "Continue smoothly from this prior text. Preserve continuity, but do not repeat it verbatim:",
+          `"${packet.continuity.precedingProseTail.text}"`,
+        ].join("\n")
+      : "",
     budget: budgets.precedingProseTail,
   });
 
@@ -160,7 +189,7 @@ export function serializeContext(
     label: "PAST TIMELINE",
     content: formatSection(
       "PAST TIMELINE",
-      packet.continuity.unresolvedThreadLabels,
+      packet.continuity.recentTimeline ?? [],
     ),
     budget: budgets.timeline,
   });
@@ -187,13 +216,21 @@ export function serializeContext(
 
   sections.push({
     label: "RETRIEVED DRAFT MEMORY — CONTEXT ONLY",
-    content: "[No retrieval memory available]",
+    content: formatSection(
+      "RETRIEVED DRAFT MEMORY — CONTEXT ONLY",
+      (packet.continuity.retrievalMemory ?? []).map(
+        (snippet) =>
+          `${snippet.text} [source=${snippet.sourceRef}${
+            snippet.similarity === null ? "" : `; similarity=${snippet.similarity.toFixed(3)}`
+          }]`,
+      ),
+    ),
     budget: budgets.retrievalMemory,
   });
 
   sections.push({
     label: "STYLE RULES",
-    content: "[Style rules — not yet populated]",
+    content: formatSection("STYLE RULES", packet.continuity.styleRules ?? []),
     budget: budgets.styleRules,
   });
 
@@ -258,7 +295,7 @@ export function serializeContext(
 /*  Helpers                                                            */
 /* ------------------------------------------------------------------ */
 
-function formatSection(label: string, items: string[]): string {
-  if (items.length === 0) return `[${label}]`;
+function formatSection(_label: string, items: string[]): string {
+  if (items.length === 0) return "";
   return items.filter((s) => s.trim()).join("\n");
 }

@@ -32,3 +32,11 @@ AS $$
   ORDER BY pe.embedding <=> p_query_embedding
   LIMIT LEAST(GREATEST(p_match_count, 1), 8);
 $$;
+
+REVOKE ALL ON FUNCTION public.match_prose_embeddings(
+  uuid, uuid, vector, integer, double precision
+) FROM PUBLIC, anon, authenticated;
+
+GRANT EXECUTE ON FUNCTION public.match_prose_embeddings(
+  uuid, uuid, vector, integer, double precision
+) TO service_role;

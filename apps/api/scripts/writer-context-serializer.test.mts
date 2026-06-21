@@ -60,8 +60,24 @@ const minimalPacket: WriterContextPacket = {
     readerPromise: null,
   },
   canon: {
-    characters: [],
-    facts: ["Fact one", "Fact two"],
+    characters: [
+      {
+        id: "c1",
+        name: "Nadira",
+        roleLabel: "protagonist",
+        descriptionSummary: "Pemimpin tim.",
+        state: {
+          chapterNumber: 4,
+          emotionalState: "cemas",
+          physicalState: "lengan terluka",
+          currentGoal: "menemukan Rama",
+          locationLabel: "stasiun",
+        },
+      },
+    ],
+    facts: [
+      { id: "f1", text: "Nadira kidal.", category: "character", importance: "high" },
+    ],
     speechRules: [],
   },
   currentChapter: {
@@ -79,6 +95,59 @@ const minimalPacket: WriterContextPacket = {
     previousChapterSummaries: ["In chapter 4, the hero discovered the truth."],
     openLoopsActive: [],
     unresolvedThreadLabels: [],
+    recentTimeline: ["Bab 4: Nadira tiba di stasiun."],
+    retrievalMemory: [
+      {
+        sourceRef: "draft:12",
+        text: "Nadira selalu mengetuk meja saat gugup.",
+        similarity: 0.91,
+        readOnly: true,
+        usage: "context_only",
+        metadata: {},
+      },
+    ],
+    povKnowledge: {
+      characterId: "c1",
+      knownFacts: [
+        {
+          factId: "f1",
+          text: "Nadira kidal.",
+          confidence: 1,
+          learnedAtChapter: 1,
+          learnedFrom: "canon",
+        },
+      ],
+      suspectedFacts: [],
+      partialFacts: [],
+      falseBeliefs: [],
+      unknownFactCount: 1,
+    },
+    knowledgeByCharacter: [
+      {
+        characterId: "c1",
+        characterName: "Nadira",
+        knownFacts: [
+          {
+            factId: "f1",
+            text: "Nadira kidal.",
+            confidence: 1,
+            learnedAtChapter: 1,
+            learnedFrom: "canon",
+          },
+        ],
+        suspectedFacts: [],
+        partialFacts: [],
+        falseBeliefs: [],
+      },
+    ],
+    precedingProseTail: {
+      text: "Pintu kereta menutup tepat ketika Nadira berbalik.",
+      sourceChapterNumber: 5,
+      sourceBeatId: "beat-1",
+      sourceVersionId: "version-1",
+      sourceType: "same_chapter_previous_beat",
+    },
+    styleRules: ["Paragraf pendek.", "Dialog tajam."],
   },
   revealGate: {
     allowedBreadcrumbs: [],
@@ -143,6 +212,16 @@ test("serializeContext full output ≤ 35,100 chars", () => {
 test("serializeContext produces non-empty text", () => {
   const result = serializeContext(minimalPacket, "conservative");
   assert.ok(result.text.length > 0);
+});
+
+test("serializeContext renders real state, knowledge, prose tail, retrieval, and style", () => {
+  const result = serializeContext(minimalPacket, "conservative");
+  assert.match(result.text, /lengan terluka/);
+  assert.match(result.text, /Nadira kidal/);
+  assert.match(result.text, /Pintu kereta menutup/);
+  assert.match(result.text, /mengetuk meja saat gugup/);
+  assert.match(result.text, /Dialog tajam/);
+  assert.doesNotMatch(result.text, /not yet populated|No retrieval memory available/i);
 });
 
 /* ------------------------------------------------------------------ */

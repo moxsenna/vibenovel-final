@@ -712,6 +712,8 @@ export const AUDIT_ACTIONS = {
   payment_webhook_failed: "payment_webhook_failed",
   credit_topup_granted: "credit_topup_granted",
   credit_topup_grant_failed: "credit_topup_grant_failed",
+  continuity_state_updated: "continuity_state_updated",
+  continuity_knowledge_updated: "continuity_knowledge_updated",
 } as const;
 export type AuditAction = (typeof AUDIT_ACTIONS)[keyof typeof AUDIT_ACTIONS];
 
@@ -747,6 +749,8 @@ export const AUDIT_ENTITY_TYPES = {
   credit_topup_product: "credit_topup_product",
   credit_topup_order: "credit_topup_order",
   payment_webhook_event: "payment_webhook_event",
+  character_state: "character_state",
+  character_knowledge: "character_knowledge",
 } as const;
 export type AuditEntityType = (typeof AUDIT_ENTITY_TYPES)[keyof typeof AUDIT_ENTITY_TYPES];
 

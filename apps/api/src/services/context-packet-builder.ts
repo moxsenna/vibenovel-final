@@ -1,7 +1,6 @@
 import {
   MOBILE_FORMAT_PREFERENCES,
   PLANNED_REVEAL_STATUSES,
-  type CharacterSafeSummary,
   type ForbiddenRevealEntry,
   type JsonObject,
   type OpenLoopSafeSummary,
@@ -9,6 +8,7 @@ import {
   type SpeechRuleSummary,
   type WriterContextPacket,
   type WriterContextPacketPreview,
+  type WriterSafetyEnvelope,
 } from "@vibenovel/shared";
 import type { AppBindings } from "../env.js";
 import { createServiceRoleClient } from "../lib/supabase.js";
@@ -30,11 +30,12 @@ import {
   attachReadOnlyRetrievalMemoryToPacket,
   buildReadOnlyRetrievalSnippets,
 } from "./import/retrieval-memory.js";
+import { retrieveRelevantDraftMemory } from "./import/retrieval-query.js";
+import { buildWriterSafetyEnvelope } from "./writer-safety-envelope.js";
 
 const PREVIOUS_SUMMARY_MAX = 500;
 const MAX_PREVIOUS_SUMMARIES = 20;
 const MAX_FACTS = 50;
-const MAX_CHARACTERS = 20;
 const MAX_RETRIEVAL_MEMORY_SNIPPETS = 5;
 const RETRIEVAL_MEMORY_SNIPPET_MAX_CHARS = 500;
 
@@ -67,6 +68,7 @@ export interface BuildContextPacketResult {
 export interface BuiltWriterContextArtifact {
   packetLogId: string;
   packet: WriterContextPacket;
+  safetyEnvelope: WriterSafetyEnvelope;
   preview: WriterContextPacketPreview;
   safety: ContextPacketSafetyMeta;
 }
@@ -96,17 +98,6 @@ function buildMobileFormatRules(format: string): string[] {
     "Dialog dan narasi seimbang untuk scroll mobile.",
     "Hindari blok teks panjang.",
   ];
-}
-
-function buildCharacterSummaries(
-  characters: Awaited<ReturnType<typeof loadWriteContextSnapshot>>["characters"],
-): CharacterSafeSummary[] {
-  return characters.slice(0, MAX_CHARACTERS).map((ch) => ({
-    id: ch.id,
-    name: ch.name,
-    roleLabel: ch.roleLabel,
-    descriptionSummary: truncateText(ch.description, 300),
-  }));
 }
 
 function buildSpeechRuleSummaries(
@@ -207,37 +198,30 @@ function buildPovKnowledgeSummary(
 async function loadRetrievalMemorySnippetsForPacket(
   bindings: AppBindings,
   ownerId: string,
-  projectId: string,
+  snapshot: Awaited<ReturnType<typeof loadWriteContextSnapshot>>,
 ): Promise<WriterContextPacket["continuity"]["retrievalMemory"]> {
-  const admin = createServiceRoleClient(bindings);
-  const { data, error } = await admin
-    .from("prose_embeddings")
-    .select("source_ref, chunk_text, draft_import_id, metadata, created_at")
-    .eq("project_id", projectId)
-    .eq("owner_id", ownerId)
-    .order("created_at", { ascending: false })
-    .limit(MAX_RETRIEVAL_MEMORY_SNIPPETS);
-
-  if (error) {
-    console.error("prose_embeddings select for context packet failed");
-    throw AppError.internal("Failed to load retrieval memory");
-  }
-
-  const rows = ((data ?? []) as Array<{
-    source_ref: string;
-    chunk_text: string;
-    draft_import_id: string | null;
-    metadata: Record<string, unknown> | null;
-  }>).map((row) => ({
-    sourceRef: row.source_ref,
-    chunkText: row.chunk_text,
-    similarity: null,
-    metadata: {
-      source: "imported_draft",
-      draftImportId: row.draft_import_id,
-      scope: "read_only_memory",
+  if (!snapshot.beat) return [];
+  const rows = await retrieveRelevantDraftMemory(
+    bindings,
+    ownerId,
+    snapshot.project.id,
+    {
+      chapterTitle: snapshot.currentChapter.title,
+      chapterPurpose: snapshot.currentChapter.purpose,
+      beatTitle: snapshot.beat.title,
+      beatSummary: snapshot.beat.summary,
+      beatDirection: snapshot.beat.direction,
+      mustInclude: snapshot.beat.mustInclude,
+      relevantCharacterNames: snapshot.relevantCharacters.map(
+        (character) => character.name,
+      ),
+      activeOpenLoopQuestions: filterActiveOpenLoops(
+        snapshot.openLoops,
+        snapshot.chapterNumberByOutlineId,
+        snapshot.currentChapter.chapterNumber,
+      ).map((loop) => loop.question),
     },
-  }));
+  );
 
   return buildReadOnlyRetrievalSnippets(rows, {
     topK: MAX_RETRIEVAL_MEMORY_SNIPPETS,
@@ -276,10 +260,7 @@ function buildWriterPacketFromSnapshot(
   );
 
   const mustInclude = snapshot.beat?.mustInclude ?? [];
-  const mustNotInclude = [
-    ...(snapshot.beat?.mustNotInclude ?? []),
-    ...revealGate.forbiddenConcepts,
-  ];
+  const mustNotInclude = snapshot.beat?.mustNotInclude ?? [];
 
   return {
     meta: {
@@ -307,8 +288,13 @@ function buildWriterPacketFromSnapshot(
       readerPromise: snapshot.concept.reader_promise,
     },
     canon: {
-      characters: buildCharacterSummaries(snapshot.characters),
-      facts: snapshot.facts.slice(0, MAX_FACTS).map((f) => f.text),
+      characters: snapshot.relevantCharacters,
+      facts: snapshot.facts.slice(0, MAX_FACTS).map((fact) => ({
+        id: fact.id,
+        text: fact.text,
+        category: fact.category,
+        importance: fact.importance,
+      })),
       speechRules: buildSpeechRuleSummaries(snapshot.speechRules),
     },
     currentChapter: {
@@ -329,8 +315,16 @@ function buildWriterPacketFromSnapshot(
       recentTimeline: buildPastTimelineSummaries(snapshot.pastTimelineEvents, currentNumber),
       retrievalMemory: [],
       povKnowledge: snapshot.povKnowledge,
+      knowledgeByCharacter: snapshot.knowledgeByCharacter,
+      precedingProseTail: snapshot.precedingProseTail,
+      styleRules: [],
     },
-    revealGate,
+    revealGate: {
+      allowedBreadcrumbs: revealGate.allowedBreadcrumbs,
+      allowedReveals: revealGate.allowedReveals,
+      forbiddenReveals: [],
+      forbiddenConcepts: [],
+    },
     emotionalTarget: {
       chapterEmotion: current.emotionalDirection,
       beatEmotionalShift: snapshot.beat?.emotionalShift ?? null,
@@ -346,6 +340,49 @@ function buildWriterPacketFromSnapshot(
       mobileFormatRules: buildMobileFormatRules(snapshot.mobileFormat),
     },
   };
+}
+
+function buildSafetyEnvelopeFromSnapshot(
+  snapshot: Awaited<ReturnType<typeof loadWriteContextSnapshot>>,
+): WriterSafetyEnvelope {
+  const revealGate = buildRevealGate(
+    snapshot.plannedReveals,
+    snapshot.currentChapter.chapterNumber,
+  );
+  const knownPovFactIds = new Set([
+    ...snapshot.povKnowledge.knownFacts,
+    ...snapshot.povKnowledge.suspectedFacts,
+    ...snapshot.povKnowledge.partialFacts,
+    ...snapshot.povKnowledge.falseBeliefs,
+  ].map((fact) => fact.factId));
+
+  return buildWriterSafetyEnvelope({
+    projectId: snapshot.project.id,
+    chapterOutlineId: snapshot.currentChapter.id,
+    chapterNumber: snapshot.currentChapter.chapterNumber,
+    beatId: snapshot.beat?.id ?? null,
+    futureRevealFactIds: [
+      ...collectFutureRevealFactIds(
+        snapshot.plannedReveals,
+        snapshot.currentChapter.chapterNumber,
+      ),
+    ],
+    forbiddenRevealPhrases: revealGate.forbiddenConcepts,
+    unknownFactConstraints: snapshot.currentChapter.povCharacterId
+      ? snapshot.facts
+          .filter((fact) => !knownPovFactIds.has(fact.id))
+          .map((fact) => ({
+            characterId: snapshot.currentChapter.povCharacterId!,
+            factId: fact.id,
+            factText: fact.text,
+          }))
+      : [],
+    hardBeatConstraints: {
+      mustInclude: snapshot.beat?.mustInclude ?? [],
+      mustNotInclude: snapshot.beat?.mustNotInclude ?? [],
+      stopCondition: snapshot.beat?.stopCondition ?? null,
+    },
+  });
 }
 
 export function buildPreviewFromPacket(
@@ -432,9 +469,14 @@ export async function buildContextPacketForOwner(
 
   const snapshot = await loadWriteContextSnapshot(bindings, ownerId, projectId, input);
   const generatedAt = new Date().toISOString();
+  const safetyEnvelope = buildSafetyEnvelopeFromSnapshot(snapshot);
 
   let packet = buildWriterPacketFromSnapshot(snapshot, generatedAt, "pending");
-  const retrievalMemory = await loadRetrievalMemorySnippetsForPacket(bindings, ownerId, projectId);
+  const retrievalMemory = await loadRetrievalMemorySnippetsForPacket(
+    bindings,
+    ownerId,
+    snapshot,
+  );
   packet = attachReadOnlyRetrievalMemoryToPacket(packet, retrievalMemory);
   const packetHash = await computePacketHash(packet);
   packet = {
@@ -466,6 +508,8 @@ export async function buildContextPacketForOwner(
       packet_hash: packetHash,
       packet_json: packet as unknown as JsonObject,
       builder_version: snapshot.builderVersion,
+      safety_envelope_json: safetyEnvelope as unknown as JsonObject,
+      safety_version: safetyEnvelope.version,
     })
     .select("id")
     .single();
@@ -484,6 +528,7 @@ export async function buildContextPacketForOwner(
   return {
     packetLogId,
     packet,
+    safetyEnvelope,
     preview,
     safety: {
       planningTruthPresent: false,

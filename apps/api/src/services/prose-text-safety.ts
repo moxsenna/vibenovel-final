@@ -6,8 +6,9 @@ const FORBIDDEN_PACKET_PATTERNS = [
 ];
 
 export function assertProseTextSafe(prose: string): void {
+  const normalized = prose.toLowerCase();
   for (const pattern of FORBIDDEN_PACKET_PATTERNS) {
-    if (prose.includes(pattern)) {
+    if (normalized.includes(pattern)) {
       throw new Error(`Prose contains forbidden pattern: ${pattern}`);
     }
   }

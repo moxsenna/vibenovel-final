@@ -13,6 +13,9 @@ import {
   type PovKnowledgeSnapshot,
   type RelationshipSpeechRule,
   type TimelineEvent,
+  type WriterCharacterSummaryV3,
+  type WriterKnowledgeSummary,
+  type WriterPrecedingProseTail,
 } from "@vibenovel/shared";
 import type { AppBindings } from "../env.js";
 import {
@@ -39,6 +42,9 @@ import {
   collectFutureRevealFactIds,
   listCharacterKnowledgeForOwner,
 } from "./character-knowledge.js";
+import { loadLatestCharacterStateSnapshotsForOwnedProject } from "./character-state.js";
+import { loadPrecedingCurrentProseTail } from "./preceding-prose-context.js";
+import { selectRelevantCharacters } from "./relevant-character-selector.js";
 
 const FOUNDATION_SELECT =
   "id, project_id, premise, main_conflict, reader_promise, tone, genre, target_reader, story_secrets_preview, style_tags, readiness_percent, readiness_status, status, is_locked, locked_at, created_at, updated_at";
@@ -98,6 +104,9 @@ export interface WriteContextSnapshot {
   povKnowledge: PovKnowledgeSnapshot;
   /** Sprint 17 — past/current continuity events only (chapter_number < current). */
   pastTimelineEvents: TimelineEvent[];
+  relevantCharacters: WriterCharacterSummaryV3[];
+  knowledgeByCharacter: WriterKnowledgeSummary[];
+  precedingProseTail: WriterPrecedingProseTail | null;
   beat: ChapterBeat | null;
   characters: Character[];
   facts: Fact[];
@@ -305,9 +314,40 @@ export async function loadWriteContextSnapshot(
     beat = mapChapterBeatRow(beatRow);
   }
 
+  const safeCharacters = characters.map((character) => ({
+    id: character.id,
+    name: character.name,
+    roleLabel: character.roleLabel,
+    descriptionSummary: character.description.slice(0, 300),
+  }));
+  const mainCharacterIds = characters
+    .filter((character) => /(protagon|utama|main)/i.test(character.roleLabel))
+    .map((character) => character.id);
+  const relevantCharacterBase = selectRelevantCharacters({
+    povCharacterId: currentRow.pov_character_id,
+    mainCharacterIds,
+    beatSummaryTokens: beat ? [beat.summary] : [],
+    beatDirectionTokens: beat?.direction ? [beat.direction] : [],
+    mustIncludeTokens: beat?.mustInclude ?? [],
+    allCharacters: safeCharacters,
+    speechLinks: speechRules.map((rule) => ({
+      characterAId: rule.characterAId,
+      characterBId: rule.characterBId,
+    })),
+  });
+  const relevantCharacterIds = relevantCharacterBase.map((character) => character.id);
+  const previousRow = previousRows.at(-1) ?? null;
+
   const admin = createServiceRoleClient(bindings);
 
-  const [loopsRes, revealsRes, timelineRes] = await Promise.all([
+  const [
+    loopsRes,
+    revealsRes,
+    timelineRes,
+    allKnowledgeRows,
+    stateByCharacter,
+    precedingProseTail,
+  ] = await Promise.all([
     admin
       .from("open_loops")
       .select(LOOP_SELECT)
@@ -326,6 +366,22 @@ export async function loadWriteContextSnapshot(
       .eq("project_id", projectId)
       .lt("chapter_number", currentNumber)
       .order("relative_order", { ascending: true }),
+    listCharacterKnowledgeForOwner(bindings, ownerId, projectId),
+    loadLatestCharacterStateSnapshotsForOwnedProject(
+      bindings,
+      projectId,
+      relevantCharacterIds,
+      currentNumber,
+    ),
+    loadPrecedingCurrentProseTail(bindings, {
+      projectId,
+      currentChapterOutlineId: currentRow.id,
+      previousChapterOutlineId: previousRow?.id ?? null,
+      previousChapterNumber: previousRow?.chapter_number ?? null,
+      currentBeatId: beat?.id ?? null,
+      currentBeatNumber: beat?.beatNumber ?? null,
+      currentChapterNumber: currentNumber,
+    }),
   ]);
 
   if (loopsRes.error) {
@@ -345,20 +401,59 @@ export async function loadWriteContextSnapshot(
     mapOpenLoopRowSafe,
   );
   const plannedReveals = (revealsRes.data ?? []) as PlannedRevealSafeRow[];
+  const futureRevealFactIds = collectFutureRevealFactIds(plannedReveals, currentNumber);
   const povKnowledgeRows = currentRow.pov_character_id
-    ? await listCharacterKnowledgeForOwner(
-        bindings,
-        ownerId,
-        projectId,
-        currentRow.pov_character_id,
-      )
+    ? allKnowledgeRows.filter((row) => row.characterId === currentRow.pov_character_id)
     : [];
   const povKnowledge = buildPovKnowledgeSnapshot({
     povCharacterId: currentRow.pov_character_id,
     facts,
     knowledgeRows: povKnowledgeRows,
-    futureRevealFactIds: collectFutureRevealFactIds(plannedReveals, currentNumber),
+    futureRevealFactIds,
   });
+
+  const relevantCharacters: WriterCharacterSummaryV3[] = relevantCharacterBase.map(
+    (character) => {
+      const state = stateByCharacter.get(character.id);
+      const locationLabel =
+        typeof state?.metadata.locationLabel === "string"
+          ? state.metadata.locationLabel
+          : state?.locationId ?? null;
+      return {
+        ...character,
+        state: state
+          ? {
+              chapterNumber: state.chapterNumber,
+              emotionalState: state.emotionalState,
+              physicalState: state.physicalState,
+              currentGoal: state.currentGoal,
+              locationLabel,
+            }
+          : null,
+      };
+    },
+  );
+
+  const knowledgeByCharacter: WriterKnowledgeSummary[] = relevantCharacterBase.map(
+    (character) => {
+      const snapshot = buildPovKnowledgeSnapshot({
+        povCharacterId: character.id,
+        facts,
+        knowledgeRows: allKnowledgeRows.filter(
+          (row) => row.characterId === character.id,
+        ),
+        futureRevealFactIds,
+      });
+      return {
+        characterId: character.id,
+        characterName: character.name,
+        knownFacts: snapshot.knownFacts,
+        suspectedFacts: snapshot.suspectedFacts,
+        partialFacts: snapshot.partialFacts,
+        falseBeliefs: snapshot.falseBeliefs,
+      };
+    },
+  );
 
   const pastTimelineEvents = ((timelineRes.data ?? []) as TimelineEventRow[]).map(
     mapTimelineEventRow,
@@ -378,12 +473,15 @@ export async function loadWriteContextSnapshot(
     plannedReveals,
     povKnowledge,
     pastTimelineEvents,
+    relevantCharacters,
+    knowledgeByCharacter,
+    precedingProseTail,
     beat,
     characters,
     facts,
     speechRules,
     mobileFormat,
-    builderVersion: CONTEXT_PACKET_BUILDER_VERSIONS.v1_stub,
+    builderVersion: CONTEXT_PACKET_BUILDER_VERSIONS.v3,
   };
 }
 

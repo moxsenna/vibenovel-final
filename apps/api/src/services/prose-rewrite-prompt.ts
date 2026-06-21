@@ -7,6 +7,10 @@ import { parsePacketJson } from "./context-packet-builder.js";
 import type { PromptMessage } from "./ai-generation-types.js";
 import type { ChapterBeatRow } from "../lib/mappers.js";
 import { computePromptHashFromMessages } from "./prose-generation-prompt.js";
+import {
+  serializeContext,
+  type BudgetProfile,
+} from "./writer-context-serializer.js";
 
 export const PROSE_REWRITE_MODES = {
   improve_emotion: "improve_emotion",
@@ -64,10 +68,13 @@ function buildRewriteUserSections(
   sourceProseText: string,
   rewriteMode: ProseRewriteMode,
   instruction?: string,
+  profile: BudgetProfile = "conservative",
 ): string {
+  const serializedContext = serializeContext(packet, profile);
   const sections: string[] = [
     `Rewrite mode: ${rewriteMode}`,
     `Mode goal: ${MODE_INSTRUCTIONS[rewriteMode]}`,
+    serializedContext.text,
     `Chapter ${packet.meta.chapterNumber}: ${packet.currentChapter.title}`,
     `Beat ${beat.beat_number}: ${beat.title}`,
     `Beat goal: ${beat.summary}`,
@@ -81,11 +88,6 @@ function buildRewriteUserSections(
   }
   if (packet.constraints.mustNotInclude.length > 0) {
     sections.push(`Must avoid: ${packet.constraints.mustNotInclude.join("; ")}`);
-  }
-  if (packet.revealGate.forbiddenConcepts.length > 0) {
-    sections.push(
-      `Forbidden concepts: ${packet.revealGate.forbiddenConcepts.slice(0, 12).join(", ")}`,
-    );
   }
   if (rewriteMode === PROSE_REWRITE_MODES.custom && instruction?.trim()) {
     sections.push(`Writer instruction: ${instruction.trim()}`);
@@ -135,6 +137,7 @@ export async function buildProseRewritePrompt(
   sourceProseText: string,
   rewriteMode: ProseRewriteMode,
   instruction?: string,
+  profile: BudgetProfile = "conservative",
 ): Promise<ProseRewritePromptResult> {
   const packet = await loadSafePacketFromLog(bindings, projectId, packetLogId);
   return buildProseRewritePromptFromPacket(
@@ -143,6 +146,7 @@ export async function buildProseRewritePrompt(
     sourceProseText,
     rewriteMode,
     instruction,
+    profile,
   );
 }
 
@@ -153,6 +157,7 @@ export async function buildProseRewritePromptFromPacket(
   sourceProseText: string,
   rewriteMode: ProseRewriteMode,
   instruction?: string,
+  profile: BudgetProfile = "conservative",
 ): Promise<ProseRewritePromptResult> {
   const userContent = buildRewriteUserSections(
     packet,
@@ -160,6 +165,7 @@ export async function buildProseRewritePromptFromPacket(
     sourceProseText,
     rewriteMode,
     instruction,
+    profile,
   );
 
   const promptMessages: PromptMessage[] = [

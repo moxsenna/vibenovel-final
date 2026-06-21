@@ -860,8 +860,8 @@ export interface WriterContextPacket {
     readerPromise: string | null;
   };
   canon: {
-    characters: CharacterSafeSummary[];
-    facts: string[];
+    characters: Array<CharacterSafeSummary | WriterCharacterSummaryV3>;
+    facts: Array<string | WriterCanonFactSummary>;
     speechRules: SpeechRuleSummary[];
   };
   currentChapter: {
@@ -885,6 +885,12 @@ export interface WriterContextPacket {
     retrievalMemory: RetrievalMemorySnippet[];
     /** Sprint 16: POV-only knowledge; unsafe future reveal facts are omitted. */
     povKnowledge: PovKnowledgeSnapshot;
+    /** Packet v3: knowledge grouped for every relevant character. */
+    knowledgeByCharacter?: WriterKnowledgeSummary[];
+    /** Current selected prose immediately preceding the active beat. */
+    precedingProseTail?: WriterPrecedingProseTail | null;
+    /** Operational, author-approved style rules only. */
+    styleRules?: string[];
   };
   revealGate: {
     allowedBreadcrumbs: string[];

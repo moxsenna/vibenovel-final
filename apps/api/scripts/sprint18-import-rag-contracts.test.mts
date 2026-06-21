@@ -655,7 +655,12 @@ assert.doesNotMatch(
 const contextPacketBuilderSql = readFileSync("src/services/context-packet-builder.ts", "utf8");
 assert.match(contextPacketBuilderSql, /loadRetrievalMemorySnippetsForPacket/);
 assert.match(contextPacketBuilderSql, /retrievalMemory/);
-assert.match(contextPacketBuilderSql, /\.from\("prose_embeddings"\)/);
+assert.match(contextPacketBuilderSql, /retrieveRelevantDraftMemory/);
+assert.doesNotMatch(
+  contextPacketBuilderSql,
+  /\.from\("prose_embeddings"\)[\s\S]*\.order\("created_at"/,
+  "Writer context must use semantic retrieval, not latest-chunk selection",
+);
 
 const importJobServiceSql = readFileSync("src/services/import/job-progress.ts", "utf8");
 assert.match(importJobServiceSql, /\.from\("import_jobs"\)/);

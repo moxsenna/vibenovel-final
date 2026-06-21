@@ -6,7 +6,11 @@
  * Run: npm run test:preceding-prose-context -w @vibenovel/api
  */
 import assert from "node:assert/strict";
-import { takeLastCodePoints } from "../src/services/preceding-prose-context.js";
+import {
+  selectPrecedingProseTailFromRows,
+  takeLastCodePoints,
+} from "../src/services/preceding-prose-context.js";
+import { assertProseTextSafe } from "../src/services/prose-text-safety.js";
 import type { WriterPrecedingProseTail } from "@vibenovel/shared";
 
 let passed = 0;
@@ -76,14 +80,128 @@ test("WriterPrecedingProseTail has correct shape", () => {
   assert.equal(tail.text, "She walked through the door.");
 });
 
+const proseRows = [
+  {
+    id: "v-current-1",
+    proseText: "Beat one current.",
+    isCurrent: true,
+    chapterOutlineId: "chapter-5",
+    chapterNumber: 5,
+    beatId: "beat-5-1",
+    beatNumber: 1,
+  },
+  {
+    id: "v-current-2",
+    proseText: "Beat two current.",
+    isCurrent: true,
+    chapterOutlineId: "chapter-5",
+    chapterNumber: 5,
+    beatId: "beat-5-2",
+    beatNumber: 2,
+  },
+  {
+    id: "v-old-2",
+    proseText: "Beat two obsolete.",
+    isCurrent: false,
+    chapterOutlineId: "chapter-5",
+    chapterNumber: 5,
+    beatId: "beat-5-2",
+    beatNumber: 2,
+  },
+  {
+    id: "v-prev-last",
+    proseText: "Previous chapter ending.",
+    isCurrent: true,
+    chapterOutlineId: "chapter-4",
+    chapterNumber: 4,
+    beatId: "beat-4-4",
+    beatNumber: 4,
+  },
+];
+
+test("same chapter selects the immediate previous beat current version", () => {
+  const tail = selectPrecedingProseTailFromRows(proseRows, {
+    currentChapterOutlineId: "chapter-5",
+    currentChapterNumber: 5,
+    previousChapterOutlineId: "chapter-4",
+    previousChapterNumber: 4,
+    currentBeatId: "beat-5-3",
+    currentBeatNumber: 3,
+  });
+  assert.equal(tail?.sourceVersionId, "v-current-2");
+  assert.equal(tail?.sourceType, "same_chapter_previous_beat");
+  assert.equal(tail?.text, "Beat two current.");
+});
+
+test("first beat selects the last current beat from the previous chapter", () => {
+  const tail = selectPrecedingProseTailFromRows(proseRows, {
+    currentChapterOutlineId: "chapter-5",
+    currentChapterNumber: 5,
+    previousChapterOutlineId: "chapter-4",
+    previousChapterNumber: 4,
+    currentBeatId: "beat-5-1",
+    currentBeatNumber: 1,
+  });
+  assert.equal(tail?.sourceVersionId, "v-prev-last");
+  assert.equal(tail?.sourceType, "previous_chapter_last_beat");
+});
+
+test("missing immediate predecessor does not skip to an older beat", () => {
+  const rowsWithoutBeatTwo = proseRows.filter((row) => row.beatNumber !== 2);
+  const tail = selectPrecedingProseTailFromRows(rowsWithoutBeatTwo, {
+    currentChapterOutlineId: "chapter-5",
+    currentChapterNumber: 5,
+    previousChapterOutlineId: "chapter-4",
+    previousChapterNumber: 4,
+    currentBeatId: "beat-5-3",
+    currentBeatNumber: 3,
+  });
+  assert.equal(tail, null);
+});
+
+test("non-current prose versions are excluded", () => {
+  const onlyObsolete = proseRows.filter((row) => row.id === "v-old-2");
+  const tail = selectPrecedingProseTailFromRows(onlyObsolete, {
+    currentChapterOutlineId: "chapter-5",
+    currentChapterNumber: 5,
+    previousChapterOutlineId: "chapter-4",
+    previousChapterNumber: 4,
+    currentBeatId: "beat-5-3",
+    currentBeatNumber: 3,
+  });
+  assert.equal(tail, null);
+});
+
+test("first beat without previous chapter returns null", () => {
+  const tail = selectPrecedingProseTailFromRows(proseRows, {
+    currentChapterOutlineId: "chapter-1",
+    currentChapterNumber: 1,
+    previousChapterOutlineId: null,
+    previousChapterNumber: null,
+    currentBeatId: "beat-1-1",
+    currentBeatNumber: 1,
+  });
+  assert.equal(tail, null);
+});
+
 /* ------------------------------------------------------------------ */
 /*  3. Prose text safety — key-based, not value-based                  */
 /* ------------------------------------------------------------------ */
 
-test("natural prose containing 'provider' passes safety (placeholder assertion)", () => {
-  // Full prose-text-safety.ts implementation validates key-based detection,
-  // not word-level blacklist. Placeholder until prose-draft.ts integration.
-  assert.ok(true, "prose safety uses recursive key walker, not value regex");
+test("natural prose containing model, provider, and token passes safety", () => {
+  assert.doesNotThrow(() =>
+    assertProseTextSafe(
+      "Ia bekerja sebagai model. Provider listrik mengirim token baru malam itu.",
+    ),
+  );
+});
+
+test("structured internal packet dump fails prose safety", () => {
+  assert.throws(() =>
+    assertProseTextSafe(
+      '{"packet_json":{"planning_truth":"rahasia"},"full_prompt":"internal"}',
+    ),
+  );
 });
 
 /* ------------------------------------------------------------------ */

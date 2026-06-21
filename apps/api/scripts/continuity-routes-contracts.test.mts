@@ -1,14 +1,49 @@
 import assert from "node:assert/strict";
-let p=0,f=0;
-function t(n,fn){try{fn();p++;console.log("  \u2713 "+n)}catch(e){f++;console.log("  \u2717 "+n)}}
-t("continuity API path format",()=>{
-  const path="/api/projects/:id/continuity/characters/:characterId/state";
-  assert.ok(path.includes(":id"));
-  assert.ok(path.includes(":characterId"));
+import { readFileSync } from "node:fs";
+import {
+  parseContinuityKnowledgeUpdate,
+  parseContinuityStateUpdate,
+} from "../src/routes/continuity.js";
+
+const state = parseContinuityStateUpdate({
+  confirmation: "UPDATE_CONTINUITY_STATE",
+  chapterNumber: 4,
+  emotionalState: "cemas",
+  physicalState: "terluka",
 });
-t("continuity knowledge path format",()=>{
-  const path="/api/projects/:id/continuity/characters/:characterId/knowledge";
-  assert.ok(path.includes("knowledge"));
+assert.equal(state.chapterNumber, 4);
+assert.equal(state.physicalState, "terluka");
+assert.throws(() => parseContinuityStateUpdate({ chapterNumber: 4 }));
+assert.throws(() =>
+  parseContinuityStateUpdate({
+    confirmation: "UPDATE_CONTINUITY_STATE",
+    chapterNumber: 0,
+  }),
+);
+
+const knowledge = parseContinuityKnowledgeUpdate({
+  confirmation: "UPDATE_CONTINUITY_KNOWLEDGE",
+  knowledgeStatus: "suspects",
+  confidence: 0.6,
+  learnedAtChapter: 3,
 });
-console.log("\n=== Continuity Routes ===\n  Passed: "+p+"\n  Failed: "+f+"\n==========================\n");
-process.exit(f>0?1:0);
+assert.equal(knowledge.knowledgeStatus, "suspects");
+assert.equal(knowledge.confidence, 0.6);
+assert.throws(() =>
+  parseContinuityKnowledgeUpdate({
+    confirmation: "UPDATE_CONTINUITY_KNOWLEDGE",
+    knowledgeStatus: "invented",
+  }),
+);
+
+const routesIndex = readFileSync("src/routes/index.ts", "utf8");
+assert.match(routesIndex, /registerContinuityRoutes\(app\)/);
+
+const routeSource = readFileSync("src/routes/continuity.ts", "utf8");
+assert.match(routeSource, /upsertCharacterStateForOwner/);
+assert.match(routeSource, /upsertCharacterKnowledgeForOwner/);
+assert.match(routeSource, /continuity_state_updated/);
+assert.match(routeSource, /continuity_knowledge_updated/);
+assert.doesNotMatch(routeSource, /Stub|return \[\]/);
+
+console.log("PASS continuity route behavior contracts");

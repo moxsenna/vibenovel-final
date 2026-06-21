@@ -11,6 +11,8 @@ export function buildWriterSafetyEnvelope(input: {
   beatId: string | null;
   futureRevealFactIds: string[];
   forbiddenRevealPhrases: string[];
+  unknownFactConstraints?: WriterSafetyEnvelope["unknownFactConstraints"];
+  hardBeatConstraints?: WriterSafetyEnvelope["hardBeatConstraints"];
 }): WriterSafetyEnvelope {
   return {
     version: "writer_safety_v1",
@@ -20,8 +22,8 @@ export function buildWriterSafetyEnvelope(input: {
     beatId: input.beatId,
     futureRevealFactIds: input.futureRevealFactIds,
     forbiddenRevealPhrases: input.forbiddenRevealPhrases,
-    unknownFactConstraints: [],
-    hardBeatConstraints: {
+    unknownFactConstraints: input.unknownFactConstraints ?? [],
+    hardBeatConstraints: input.hardBeatConstraints ?? {
       mustInclude: [],
       mustNotInclude: [],
       stopCondition: null,

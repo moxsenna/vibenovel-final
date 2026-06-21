@@ -13,6 +13,11 @@ export interface RetrievalQueryInput {
   activeOpenLoopQuestions: string[];
 }
 
+export interface RetrievalQueryDependencies {
+  embedText?: (bindings: AppBindings, text: string) => Promise<number[] | null>;
+  match?: typeof matchProseEmbeddings;
+}
+
 /**
  * Build combined query text from beat context for embedding.
  */
@@ -75,13 +80,22 @@ export async function retrieveRelevantDraftMemory(
   ownerId: string,
   projectId: string,
   input: RetrievalQueryInput,
+  dependencies: RetrievalQueryDependencies = {},
 ): Promise<SemanticRetrievalSnippet[]> {
   const queryText = buildRetrievalQueryText(input);
   if (!queryText.trim()) return [];
 
-  const embedding = await embedTextViaOpenRouter(bindings, queryText);
+  const embedding = await (dependencies.embedText ?? embedTextViaOpenRouter)(
+    bindings,
+    queryText,
+  );
   if (!embedding) return [];
 
-  const snippets = await matchProseEmbeddings(bindings, ownerId, projectId, embedding);
+  const snippets = await (dependencies.match ?? matchProseEmbeddings)(
+    bindings,
+    ownerId,
+    projectId,
+    embedding,
+  );
   return snippets.slice(0, 5);
 }

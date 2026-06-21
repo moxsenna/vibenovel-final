@@ -149,6 +149,43 @@ export async function getCharacterStateSnapshotForOwner(
   return data ? mapCharacterStateRow(data as CharacterStateRow) : null;
 }
 
+/**
+ * Batched state loader for a project whose ownership has already been verified
+ * by the caller. Returns the latest state at or before `chapterNumber`.
+ */
+export async function loadLatestCharacterStateSnapshotsForOwnedProject(
+  bindings: AppBindings,
+  projectId: string,
+  characterIds: string[],
+  chapterNumber: number,
+): Promise<Map<string, CharacterState>> {
+  assertPositiveChapterNumber(chapterNumber);
+  if (characterIds.length === 0) return new Map();
+
+  const admin = createServiceRoleClient(bindings);
+  const { data, error } = await admin
+    .from("character_states")
+    .select(CHARACTER_STATE_SELECT)
+    .eq("project_id", projectId)
+    .in("character_id", characterIds)
+    .lte("chapter_number", chapterNumber)
+    .order("chapter_number", { ascending: false });
+
+  if (error) {
+    if (isMissingRelationError(error)) return new Map();
+    console.error("character_states batched snapshot select failed");
+    throw AppError.internal("Failed to load character state snapshots");
+  }
+
+  const latestByCharacter = new Map<string, CharacterState>();
+  for (const row of (data ?? []) as CharacterStateRow[]) {
+    if (!latestByCharacter.has(row.character_id)) {
+      latestByCharacter.set(row.character_id, mapCharacterStateRow(row));
+    }
+  }
+  return latestByCharacter;
+}
+
 export async function upsertCharacterStateForOwner(
   bindings: AppBindings,
   ownerId: string,
