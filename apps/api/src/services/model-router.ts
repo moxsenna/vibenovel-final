@@ -111,6 +111,7 @@ function isFallbackEligible(error: unknown): boolean {
       "AI_PROVIDER_ERROR",
       "AI_PROVIDER_TIMEOUT",
       "AI_PROVIDER_RATE_LIMITED",
+      "AI_PROVIDER_QUOTA_EXHAUSTED",
       "AI_OUTPUT_EMPTY",
       "GENERATION_FAILED",
     ].includes(error.code)

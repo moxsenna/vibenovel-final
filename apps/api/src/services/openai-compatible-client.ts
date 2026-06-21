@@ -47,6 +47,17 @@ function providerError(
   });
 }
 
+/**
+ * Detect a quota/credit-exhaustion signal in a provider error body without
+ * retaining or exposing the raw body (which may carry a masked token). Covers
+ * common English phrasings and TokenRouter's Chinese quota message.
+ */
+export function isQuotaExhaustedSignal(body: string): boolean {
+  return /quota|remainquota|insufficient|exhaust|balance|额度|用尽|余额/i.test(
+    body,
+  );
+}
+
 export async function callOpenAiCompatibleChat(
   input: OpenAiCompatibleChatInput,
   fetcher: typeof fetch = fetch,
@@ -86,6 +97,16 @@ export async function callOpenAiCompatibleChat(
       );
     }
     if (!response.ok) {
+      // Read the body once for a safe quota signal; never store/expose it.
+      const errorBody = await response.text().catch(() => "");
+      if (isQuotaExhaustedSignal(errorBody)) {
+        throw providerError(
+          "AI_PROVIDER_QUOTA_EXHAUSTED",
+          "AI provider token quota is exhausted",
+          502,
+          response.status,
+        );
+      }
       throw providerError(
         "AI_PROVIDER_ERROR",
         "AI provider rejected the request",

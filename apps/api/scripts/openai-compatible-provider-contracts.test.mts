@@ -1,8 +1,10 @@
 import assert from "node:assert/strict";
 import type { AppBindings } from "../src/env.ts";
+import { AppError } from "../src/errors.ts";
 import {
   buildOpenAiCompatibleChatRequest,
   callOpenAiCompatibleChat,
+  isQuotaExhaustedSignal,
 } from "../src/services/openai-compatible-client.ts";
 import {
   getProviderRuntime,
@@ -69,5 +71,45 @@ assert.equal(requestedUrl, "https://api.tokenrouter.com/v1/chat/completions");
 assert.equal(result.text, '{"ok":true}');
 assert.equal(result.inputTokens, 12);
 assert.equal(result.outputTokens, 6);
+
+// Quota-exhaustion detection (covers TokenRouter's Chinese 401 body).
+assert.equal(isQuotaExhaustedSignal("token.RemainQuota = 0"), true);
+assert.equal(isQuotaExhaustedSignal("该令牌额度已用尽"), true);
+assert.equal(isQuotaExhaustedSignal("model not found"), false);
+
+// A quota 401 maps to a specific safe code (never echoes the masked token),
+// and the router treats it as fallback-eligible.
+await assert.rejects(
+  callOpenAiCompatibleChat(
+    {
+      provider: "tokenrouter",
+      baseUrl: "https://api.tokenrouter.com/v1",
+      apiKey: "tokenrouter-secret",
+      modelId: "MiniMax-M3",
+      messages: [{ role: "user", content: "hi" }],
+      maxOutputTokens: 50,
+      temperature: 0,
+      timeoutMs: 5000,
+    },
+    async () =>
+      new Response(
+        JSON.stringify({
+          error: {
+            code: "",
+            message: "[sk-xxx***yyy] 该令牌额度已用尽 token.RemainQuota = 0",
+            type: "api_error",
+          },
+        }),
+        { status: 401, headers: { "Content-Type": "application/json" } },
+      ),
+  ),
+  (error: unknown) => {
+    assert.ok(error instanceof AppError);
+    assert.equal(error.code, "AI_PROVIDER_QUOTA_EXHAUSTED");
+    // The safe message must not leak the provider body / token.
+    assert.doesNotMatch(error.message, /sk-|令牌|RemainQuota/);
+    return true;
+  },
+);
 
 console.log("PASS OpenAI-compatible provider contracts");
