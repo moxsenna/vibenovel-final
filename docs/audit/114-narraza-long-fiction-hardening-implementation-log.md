@@ -1,5 +1,9 @@
 # Narraza Long-Fiction Reliability Hardening — Implementation Log
 
+> Historical log. Use `docs/audit/114-final-completion-evidence.md` for the
+> current integrated status and corrected release verdict. Earlier “complete”
+> wording below predates the final production-evidence audit.
+
 > Branch: `codex/long-fiction-hardening-phase0`
 > Base: `main` (Sprint 13)
 > Generated: 20 Juni 2026
