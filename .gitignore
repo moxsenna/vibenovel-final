@@ -53,6 +53,14 @@ npm-debug.log*
 graphify-out/
 **/graphify-out/
 
+# Local UX review / screenshots (not source)
+narraza-*.png
+narraza-ux-*.md
+ux-review-shots/
+
+# Codex local worktrees
+.codex-worktrees/
+
 # Editor (optional — uncomment if team prefers)
 # .vscode/
 # .idea/
