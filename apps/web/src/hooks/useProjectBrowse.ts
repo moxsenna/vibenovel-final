@@ -115,13 +115,15 @@ export function useProjectBrowse(options: UseProjectBrowseOptions = {}): Project
           limit: pageLimit,
           cursor,
         });
-        let nextItems = page.items;
+        // Defensive: a malformed/empty projects page must never crash the
+        // dashboard (RecentProjectsSection maps over items).
+        let nextItems = page.items ?? [];
         if (excludeProjectId) {
           nextItems = nextItems.filter((p) => p.id !== excludeProjectId);
         }
         setItems((prev) => (append ? [...prev, ...nextItems] : nextItems));
-        setTotal(page.total);
-        setNextCursor(page.nextCursor);
+        setTotal(page.total ?? nextItems.length);
+        setNextCursor(page.nextCursor ?? null);
       } catch (err) {
         setError(
           err instanceof ApiClientError

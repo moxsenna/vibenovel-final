@@ -220,9 +220,9 @@ test.describe("auth and settings regressions", () => {
     await page.reload();
 
     await expect(page.locator('input[name="quality_mode"][value="terbaik"]')).toBeChecked();
-    await expect(page.getByText("Tulis Beat dengan AI: 20 kredit")).toBeVisible();
-    await expect(page.getByText("Rewrite teks: 12 kredit")).toBeVisible();
-    await expect(page.getByText("Publish copy: 12 kredit")).toBeVisible();
+    await expect(page.getByText("Tulis Beat dengan AI: 7500 kredit")).toBeVisible();
+    await expect(page.getByText("Rewrite teks: 4500 kredit")).toBeVisible();
+    await expect(page.getByText("Publish copy: 400 kredit")).toBeVisible();
     await expect(page.getByText(/Memuat pemakaian kuota/i)).toHaveCount(0);
   });
 });
