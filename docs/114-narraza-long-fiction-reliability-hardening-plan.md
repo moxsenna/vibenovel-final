@@ -2267,7 +2267,7 @@ git commit -m "docs: align Narraza claims with verified evidence"
 **Files:**
 
 - Create: `scripts/narraza-long-fiction-release-gate.ps1`
-- Create: `docs/116-long-fiction-release-checklist.md`
+- Create: `docs/117-long-fiction-release-checklist.md` (`docs/116` is used by the Node cutover runbook)
 - Modify: `package.json`
 
 Commands:
@@ -2325,7 +2325,7 @@ Script harus menjalankan command secara fail-fast, tetapi tetap menulis hasil se
 
 - [ ] **Step 3: Tulis checklist operasional**
 
-`docs/116-long-fiction-release-checklist.md` harus memuat owner tiap gate, lokasi evidence, rollback trigger, dan keputusan GO/NO-GO.
+`docs/117-long-fiction-release-checklist.md` harus memuat owner tiap gate, lokasi evidence, rollback trigger, dan keputusan GO/NO-GO.
 
 - [ ] **Step 4: Jalankan release gate**
 
@@ -2338,7 +2338,7 @@ Expected: exit code `0` hanya saat `releaseReady=true`; selain itu exit code non
 - [ ] **Step 5: Commit**
 
 ```powershell
-git add scripts/narraza-long-fiction-release-gate.ps1 docs/116-long-fiction-release-checklist.md package.json
+git add scripts/narraza-long-fiction-release-gate.ps1 docs/117-long-fiction-release-checklist.md package.json
 git commit -m "chore: add long fiction release gate"
 ```
 

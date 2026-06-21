@@ -1,13 +1,28 @@
 import assert from "node:assert/strict";
-let p=0,f=0;
-function t(n,fn){try{fn();p++;console.log("  \u2713 "+n)}catch(e){f++;console.log("  \u2717 "+n)}}
-t("marketing claims verified against 30-chapter evidence",()=>{
-  const MAX_CLAIM_WITHOUT_EVIDENCE="belum terverifikasi";
-  assert.equal(typeof MAX_CLAIM_WITHOUT_EVIDENCE,"string");
-});
-t("claim texts must not promise 500+ chapters",()=>{
-  const badClaims=["500+ Bab","ratusan bab","ingat seluruh cerita"];
-  for(const c of badClaims) assert.ok(c.length>0);
-});
-console.log("\n=== Marketing Claims Contract ===\n  Passed: "+p+"\n  Failed: "+f+"\n=================================\n");
-process.exit(f>0?1:0);
+import { readFileSync } from "node:fs";
+
+const homepage = readFileSync("../../apps/homepage/index.html", "utf8");
+const vision = readFileSync("../../docs/01-product-vision-and-positioning.md", "utf8");
+const combined = `${homepage}\n${vision}`;
+
+for (const unsupported of [
+  "500+ Bab",
+  "ratusan bab",
+  "ingat seluruh cerita",
+  "Kanon berlaku konsisten hingga ratusan bab",
+  "Deteksi otomatis saat tulisan bertentangan dengan kanon",
+]) {
+  assert.doesNotMatch(combined, new RegExp(unsupported, "i"));
+}
+
+assert.match(
+  homepage,
+  /Memori cerita terstruktur untuk membantu menjaga detail penting/i,
+);
+assert.match(
+  homepage,
+  /pemeriksaan otomatis untuk sejumlah konflik canon dan continuity/i,
+);
+assert.doesNotMatch(combined, /Diuji pada alur serial 30 bab/i);
+
+console.log("PASS marketing claims remain within verified evidence");

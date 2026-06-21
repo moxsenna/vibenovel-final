@@ -20,7 +20,7 @@ Tujuan produk bukan hanya menghasilkan teks, tetapi membantu penulis:
 
 - membangun cerita dari ide mentah,
 - mengubah obrolan ringan menjadi fondasi cerita terstruktur,
-- menjaga konsistensi cerita sampai puluhan/ratusan bab,
+- membantu menjaga konsistensi cerita bersambung melalui memori terstruktur,
 - mengatur kapan rahasia boleh dibuka,
 - menjaga siapa tahu apa dalam cerita,
 - menjaga karakter, timeline, style, dan voice,
