@@ -79,6 +79,9 @@ export interface EnvPresenceFlags {
   hasDuitkuCallbackUrl: boolean;
   duitkuCallbackUrlIsPublic: boolean;
   duitkuSmokeCallbackFixture: boolean;
+  contextBudgetProfile: "conservative" | "full";
+  semanticJudgeMode: "off" | "shadow" | "enforce";
+  runtime: "worker" | "node";
 }
 
 const DEFAULT_APP_ENV = "development";
@@ -386,6 +389,12 @@ export function getAllowedOrigins(bindings: AppBindings): string[] {
 
 /** Safe flags for /health — never exposes secret values. */
 export function getEnvPresenceFlags(bindings: AppBindings): EnvPresenceFlags {
+  const semanticJudgeMode =
+    bindings.SEMANTIC_JUDGE_MODE?.trim().toLowerCase() === "off"
+      ? "off"
+      : bindings.SEMANTIC_JUDGE_MODE?.trim().toLowerCase() === "enforce"
+        ? "enforce"
+        : "shadow";
   return {
     hasSupabaseUrl: Boolean(bindings.SUPABASE_URL?.trim()),
     hasSupabaseAnonKey: Boolean(bindings.SUPABASE_ANON_KEY?.trim()),
@@ -406,6 +415,9 @@ export function getEnvPresenceFlags(bindings: AppBindings): EnvPresenceFlags {
     hasDuitkuCallbackUrl: hasDuitkuCallbackUrl(bindings),
     duitkuCallbackUrlIsPublic: isDuitkuCallbackUrlPublic(bindings),
     duitkuSmokeCallbackFixture: isDuitkuSmokeCallbackFixtureEnabled(bindings),
+    contextBudgetProfile: getWriterContextBudgetProfile(bindings),
+    semanticJudgeMode,
+    runtime: bindings.RUNTIME_TARGET === "node" ? "node" : "worker",
   };
 }
 
