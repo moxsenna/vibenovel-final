@@ -18,13 +18,16 @@ import {
 } from "./ai-prompt-safety.js";
 import {
   getDeploymentCost,
+  getAiModel,
   getAiModelDeployment,
   isDeploymentPromotionExpired,
+  type AiModelDeployment,
   type AiLiveProviderId,
 } from "./ai-model-registry.js";
 import {
   AI_ROUTING_POLICY_VERSION,
   resolveGenerationRoute,
+  type AiCapabilityRequirement,
   type AiRouteTarget,
 } from "./ai-routing-policy.js";
 import {
@@ -137,6 +140,59 @@ function roundUsd(value: number): number {
   return Math.round(value * 1_000_000) / 1_000_000;
 }
 
+function addOptionalTotal(
+  current: number | undefined,
+  value: number | undefined,
+): number | undefined {
+  if (value === undefined) return current;
+  return (current ?? 0) + value;
+}
+
+interface TargetConfigurationFailure {
+  code: string;
+  message: string;
+}
+
+function getTargetConfigurationFailure(
+  target: AiRouteTarget,
+  deployment: AiModelDeployment,
+  requires: readonly AiCapabilityRequirement[],
+  now: Date,
+): TargetConfigurationFailure | null {
+  if (isDeploymentPromotionExpired(deployment, now)) {
+    return {
+      code: "AI_PROMOTION_EXPIRED",
+      message: `${target.provider} promotion for ${target.model} has expired and needs reverification`,
+    };
+  }
+  if (deployment.verificationStatus !== "verified") {
+    return {
+      code: "AI_DEPLOYMENT_UNVERIFIED",
+      message: `${target.provider} deployment for ${target.model} is not verified`,
+    };
+  }
+  const model = getAiModel(target.model);
+  const missingCapability = requires.find(
+    (capability) => !model.capabilities[capability],
+  );
+  if (missingCapability) {
+    return {
+      code: "AI_CAPABILITY_MISMATCH",
+      message: `${target.model} lacks required capability ${missingCapability}`,
+    };
+  }
+  if (
+    model.modality === "text" &&
+    !deployment.supportedParameters.includes("max_tokens")
+  ) {
+    return {
+      code: "AI_PARAMETER_UNSUPPORTED",
+      message: `${target.provider} deployment for ${target.model} does not support max_tokens`,
+    };
+  }
+  return null;
+}
+
 function estimateLiveProviderCost(
   logicalModel: Parameters<typeof getDeploymentCost>[0],
   provider: AiLiveProviderId,
@@ -201,6 +257,24 @@ async function persistFailureSummary(
   }
 }
 
+async function recordProviderEventBestEffort(
+  recordEvent: (input: ProviderEventRecorderInput) => Promise<void>,
+  event: ProviderEventRecorderInput,
+): Promise<void> {
+  try {
+    await recordEvent(event);
+  } catch (error) {
+    console.error(
+      "failed to persist generation provider event",
+      error instanceof AppError
+        ? error.code
+        : error instanceof Error
+          ? error.name
+          : "",
+    );
+  }
+}
+
 /**
  * Preflight a route before any credit debit: resolve policy + registry and
  * confirm at least one declared target has a configured credential.
@@ -213,17 +287,25 @@ export function assertGenerationRouteCallable(
   const targets = [route.primary, route.fallback].filter(
     (target): target is AiRouteTarget => target !== null,
   );
-  // Validate every declared deployment exists in the registry.
-  for (const target of targets) {
-    getAiModelDeployment(target.model, target.provider);
-  }
-  if (
-    !isAiProviderMock(bindings) &&
-    !targets.some((target) => hasProviderCredential(bindings, target.provider))
-  ) {
+  const now = new Date();
+  const hasCallableTarget = targets.some((target) => {
+    const deployment = getAiModelDeployment(target.model, target.provider);
+    const configurationFailure = getTargetConfigurationFailure(
+      target,
+      deployment,
+      route.requires,
+      now,
+    );
+    return (
+      configurationFailure === null &&
+      (isAiProviderMock(bindings) ||
+        hasProviderCredential(bindings, target.provider))
+    );
+  });
+  if (!hasCallableTarget) {
     throw new AppError(
       "AI_NOT_CONFIGURED",
-      "No configured credential for the selected AI route",
+      "No verified compatible provider target is callable for the selected AI route",
       503,
     );
   }
@@ -285,7 +367,7 @@ export async function generateWithModelRouter<TOutput = string>(
         getAiProviderMockMode(bindings),
       );
     } catch (error) {
-      await recordEvent({
+      await recordProviderEventBestEffort(recordEvent, {
         generationAttemptId: input.generationAttemptId,
         sequenceNumber: seq(),
         routeRole: "primary",
@@ -314,7 +396,7 @@ export async function generateWithModelRouter<TOutput = string>(
     try {
       assertProviderOutputSafe(text);
       const output = validate(text);
-      await recordEvent({
+      await recordProviderEventBestEffort(recordEvent, {
         generationAttemptId: input.generationAttemptId,
         sequenceNumber: seq(),
         routeRole: "primary",
@@ -346,7 +428,7 @@ export async function generateWithModelRouter<TOutput = string>(
       };
     } catch (error) {
       const code = error instanceof AppError ? error.code : "AI_PROVIDER_ERROR";
-      await recordEvent({
+      await recordProviderEventBestEffort(recordEvent, {
         generationAttemptId: input.generationAttemptId,
         sequenceNumber: seq(),
         routeRole: "primary",
@@ -389,18 +471,26 @@ export async function generateWithModelRouter<TOutput = string>(
   let retryCount = 0;
   let lastError: unknown;
   let lastSummary: FailureSummary | null = null;
+  let totalInputTokens: number | undefined;
+  let totalOutputTokens: number | undefined;
+  let totalProviderLatencyMs = 0;
+  let totalEstimatedCostUsd: number | null = null;
 
   for (const { target, role, maxRetries } of targets) {
     const deployment = getAiModelDeployment(target.model, target.provider);
     const fallbackUsed = role === "fallback";
 
-    // Auto-revert: an expired temporary promotion must not be routed to; treat
-    // it as non-callable and fall through to the explicit fallback.
-    if (isDeploymentPromotionExpired(deployment, now)) {
+    const configurationFailure = getTargetConfigurationFailure(
+      target,
+      deployment,
+      route.requires,
+      now,
+    );
+    if (configurationFailure) {
       console.warn(
-        `[model-router] promotion expired for ${target.provider}:${target.model}; reverting to fallback`,
+        `[model-router] ${configurationFailure.code.toLowerCase()} for ${target.provider}:${target.model}; reverting to fallback`,
       );
-      await recordEvent({
+      await recordProviderEventBestEffort(recordEvent, {
         generationAttemptId: input.generationAttemptId,
         sequenceNumber: seq(),
         routeRole: role,
@@ -410,11 +500,11 @@ export async function generateWithModelRouter<TOutput = string>(
         retryNumber: 0,
         outcome: "configuration_error",
         errorCategory: "configuration_error",
-        errorCodeSafe: "AI_PROMOTION_EXPIRED",
+        errorCodeSafe: configurationFailure.code,
       });
       lastError = new AppError(
         "AI_NOT_CONFIGURED",
-        `${target.provider} promotion for ${target.model} has expired and needs reverification`,
+        configurationFailure.message,
         503,
       );
       lastSummary = {
@@ -423,14 +513,16 @@ export async function generateWithModelRouter<TOutput = string>(
         logicalModel: target.model,
         fallbackUsed,
         retryCount,
-        providerLatencyMs: 0,
-        estimatedCostUsd: null,
+        providerLatencyMs: totalProviderLatencyMs,
+        inputTokens: totalInputTokens,
+        outputTokens: totalOutputTokens,
+        estimatedCostUsd: totalEstimatedCostUsd,
       };
       continue;
     }
 
     if (!hasProviderCredential(bindings, target.provider)) {
-      await recordEvent({
+      await recordProviderEventBestEffort(recordEvent, {
         generationAttemptId: input.generationAttemptId,
         sequenceNumber: seq(),
         routeRole: role,
@@ -453,8 +545,10 @@ export async function generateWithModelRouter<TOutput = string>(
         logicalModel: target.model,
         fallbackUsed,
         retryCount,
-        providerLatencyMs: 0,
-        estimatedCostUsd: null,
+        providerLatencyMs: totalProviderLatencyMs,
+        inputTokens: totalInputTokens,
+        outputTokens: totalOutputTokens,
+        estimatedCostUsd: totalEstimatedCostUsd,
       };
       continue;
     }
@@ -477,16 +571,28 @@ export async function generateWithModelRouter<TOutput = string>(
           raw.inputTokens,
           raw.outputTokens,
         );
+        totalInputTokens = addOptionalTotal(
+          totalInputTokens,
+          raw.inputTokens,
+        );
+        totalOutputTokens = addOptionalTotal(
+          totalOutputTokens,
+          raw.outputTokens,
+        );
+        totalProviderLatencyMs += raw.latencyMs;
+        totalEstimatedCostUsd = roundUsd(
+          (totalEstimatedCostUsd ?? 0) + cost,
+        );
         lastSummary = {
           provider: target.provider,
           providerModelId: deployment.modelId,
           logicalModel: target.model,
           fallbackUsed,
           retryCount,
-          providerLatencyMs: raw.latencyMs,
-          inputTokens: raw.inputTokens,
-          outputTokens: raw.outputTokens,
-          estimatedCostUsd: cost,
+          providerLatencyMs: totalProviderLatencyMs,
+          inputTokens: totalInputTokens,
+          outputTokens: totalOutputTokens,
+          estimatedCostUsd: totalEstimatedCostUsd ?? 0,
         };
         const text = normalizeProviderText(
           raw.text,
@@ -495,7 +601,7 @@ export async function generateWithModelRouter<TOutput = string>(
         assertProviderOutputSafe(text);
         const output = validate(text);
 
-        await recordEvent({
+        await recordProviderEventBestEffort(recordEvent, {
           generationAttemptId: input.generationAttemptId,
           sequenceNumber: seq(),
           routeRole: role,
@@ -516,15 +622,15 @@ export async function generateWithModelRouter<TOutput = string>(
           provider: target.provider,
           logicalModel: target.model,
           model: deployment.modelId,
-          inputTokens: raw.inputTokens,
-          outputTokens: raw.outputTokens,
-          latencyMs: raw.latencyMs,
+          inputTokens: totalInputTokens,
+          outputTokens: totalOutputTokens,
+          latencyMs: totalProviderLatencyMs,
           finishReason: raw.finishReason,
           promptHash: input.promptHash,
           routingPolicyVersion: AI_ROUTING_POLICY_VERSION,
           fallbackUsed,
           retryCount,
-          estimatedCostUsd: cost,
+          estimatedCostUsd: totalEstimatedCostUsd,
         };
       } catch (rawError) {
         // A validator may throw any error (e.g. JSON.parse). Treat non-AppError
@@ -545,7 +651,7 @@ export async function generateWithModelRouter<TOutput = string>(
           message: error instanceof Error ? error.message : "",
           providerHttpStatus: providerHttpStatusOf(error),
         });
-        await recordEvent({
+        await recordProviderEventBestEffort(recordEvent, {
           generationAttemptId: input.generationAttemptId,
           sequenceNumber: seq(),
           routeRole: role,
@@ -560,6 +666,15 @@ export async function generateWithModelRouter<TOutput = string>(
           latencyMs: raw?.latencyMs ?? null,
           inputTokens: raw?.inputTokens ?? null,
           outputTokens: raw?.outputTokens ?? null,
+          estimatedCostUsd:
+            raw === null
+              ? null
+              : estimateLiveProviderCost(
+                  target.model,
+                  target.provider,
+                  raw.inputTokens,
+                  raw.outputTokens,
+                ),
         });
 
         if (!isFallbackEligible(error)) {

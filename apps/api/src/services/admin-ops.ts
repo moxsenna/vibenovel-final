@@ -43,7 +43,7 @@ const PROJECT_SELECT =
 const PROPOSAL_SELECT =
   "id, project_id, proposal_type, status, risk_level, source, title, payload, review_note, reviewed_at, reviewed_by, merged_into_id, result_fact_id, result_character_id, created_at, updated_at";
 const ATTEMPT_SELECT =
-  "id, project_id, user_id, chapter_outline_id, beat_id, writing_session_id, generation_type, status, idempotency_key, provider, model, prompt_hash, context_packet_log_id, input_tokens, output_tokens, estimated_cost_usd, credit_cost, error_code, error_message_safe, output_entity_type, output_entity_id, metadata, created_at, updated_at";
+  "id, project_id, user_id, chapter_outline_id, beat_id, writing_session_id, generation_type, status, idempotency_key, provider, model, logical_model, routing_policy_version, fallback_used, retry_count, provider_latency_ms, prompt_hash, context_packet_log_id, input_tokens, output_tokens, estimated_cost_usd, credit_cost, error_code, error_message_safe, output_entity_type, output_entity_id, metadata, created_at, updated_at";
 const LEDGER_SELECT =
   "id, user_id, project_id, attempt_id, amount, direction, reason, balance_after, metadata, created_at";
 const CREDIT_BALANCE_SELECT =

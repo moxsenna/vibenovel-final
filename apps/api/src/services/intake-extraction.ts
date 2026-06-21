@@ -1,4 +1,5 @@
 import type { DetectedSignalType } from "@vibenovel/shared";
+import { AppError } from "../errors.js";
 
 export const REQUIRED_SIGNAL_TYPES = [
   "genre",
@@ -81,6 +82,27 @@ export function parseIntakeAiEnvelope(text: string): IntakeAiEnvelope | null {
   const match = text.match(/\{[\s\S]*\}/);
   if (match) return tryParse(match[0]);
   return null;
+}
+
+export function validateIntakeRouterOutput(
+  text: string,
+  requireEnvelope: boolean,
+): {
+  rawText: string;
+  envelope: IntakeAiEnvelope | null;
+} {
+  if (!requireEnvelope) {
+    return { rawText: text, envelope: null };
+  }
+  const envelope = parseIntakeAiEnvelope(text);
+  if (!envelope) {
+    throw new AppError(
+      "GENERATION_FAILED",
+      "Narra returned an invalid intake envelope",
+      502,
+    );
+  }
+  return { rawText: text, envelope };
 }
 
 export function buildIntakeExtractionInstructions(

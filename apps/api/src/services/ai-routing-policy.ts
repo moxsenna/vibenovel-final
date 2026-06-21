@@ -328,3 +328,10 @@ export function validateAiRoutingPolicy(): string[] {
   );
   return errors;
 }
+
+export function assertAiRoutingPolicyValid(): void {
+  const errors = validateAiRoutingPolicy();
+  if (errors.length > 0) {
+    throw new Error(`Invalid AI routing policy: ${errors.join("; ")}`);
+  }
+}

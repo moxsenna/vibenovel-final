@@ -1,8 +1,8 @@
 import type { AppBindings } from "../../env.js";
-import { getOpenRouterApiKey, getOpenRouterBaseUrl } from "../../env.js";
 import { AppError } from "../../errors.js";
 import type { DraftImportChunk } from "./chunking.js";
 import { getEmbeddingRoute } from "../ai-routing-policy.js";
+import { getProviderRuntime } from "../ai-provider-adapters.js";
 import {
   getAiModel,
   getAiModelDeployment,
@@ -18,13 +18,13 @@ export interface EmbeddingModelConfig {
   timeoutMs: number;
 }
 
-export interface OpenRouterEmbeddingsRequest {
+export interface OpenAiCompatibleEmbeddingsRequest {
   model: string;
   input: string[];
   encoding_format: "float";
 }
 
-interface OpenRouterEmbeddingsResponse {
+interface OpenAiCompatibleEmbeddingsResponse {
   data?: Array<{
     object?: string;
     index?: number;
@@ -81,10 +81,10 @@ export function resolveEmbeddingModel(): EmbeddingModelConfig {
   };
 }
 
-export function buildOpenRouterEmbeddingsRequest(
+export function buildOpenAiCompatibleEmbeddingsRequest(
   config: EmbeddingModelConfig,
   input: string[],
-): OpenRouterEmbeddingsRequest {
+): OpenAiCompatibleEmbeddingsRequest {
   const normalized = input.map((item) => item.trim()).filter(Boolean);
   if (normalized.length === 0) {
     throw AppError.badRequest("Embedding input must contain at least one text chunk");
@@ -137,7 +137,7 @@ function parseEmbeddingVector(value: unknown, dimensions: number): number[] {
   return vector;
 }
 
-export function parseOpenRouterEmbeddingsResponse(
+export function parseOpenAiCompatibleEmbeddingsResponse(
   raw: unknown,
   config: EmbeddingModelConfig,
   expectedCount: number,
@@ -146,7 +146,7 @@ export function parseOpenRouterEmbeddingsResponse(
     throw new AppError("AI_PROVIDER_ERROR", "Embedding provider returned invalid JSON", 502);
   }
 
-  const parsed = raw as OpenRouterEmbeddingsResponse;
+  const parsed = raw as OpenAiCompatibleEmbeddingsResponse;
   if (parsed.error) {
     throw new AppError("AI_PROVIDER_ERROR", "Embedding provider returned an error", 502);
   }
@@ -170,26 +170,35 @@ export function parseOpenRouterEmbeddingsResponse(
   };
 }
 
-export async function embedTextsWithOpenRouter(
+export interface EmbeddingProviderDependencies {
+  fetcher?: typeof fetch;
+  resolveConfig?: typeof resolveEmbeddingModel;
+}
+
+export async function embedTextsWithProvider(
   bindings: AppBindings,
   input: string[],
-  fetcher: typeof fetch = fetch,
+  dependencies: EmbeddingProviderDependencies = {},
 ): Promise<EmbeddingResult> {
-  const apiKey = getOpenRouterApiKey(bindings);
-  if (!apiKey) {
-    throw new AppError("AI_NOT_CONFIGURED", "OpenRouter API key is not configured", 503);
+  const config = (dependencies.resolveConfig ?? resolveEmbeddingModel)();
+  const runtime = getProviderRuntime(bindings, config.provider);
+  if (!runtime.apiKey) {
+    throw new AppError(
+      "AI_NOT_CONFIGURED",
+      `${config.provider} API key is not configured`,
+      503,
+    );
   }
-
-  const config = resolveEmbeddingModel();
-  const request = buildOpenRouterEmbeddingsRequest(config, input);
+  const fetcher = dependencies.fetcher ?? fetch;
+  const request = buildOpenAiCompatibleEmbeddingsRequest(config, input);
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), config.timeoutMs);
 
   try {
-    const response = await fetcher(`${getOpenRouterBaseUrl(bindings).replace(/\/$/, "")}/embeddings`, {
+    const response = await fetcher(`${runtime.baseUrl.replace(/\/$/, "")}/embeddings`, {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${apiKey}`,
+        Authorization: `Bearer ${runtime.apiKey}`,
         "Content-Type": "application/json",
         "HTTP-Referer": "https://narraza.local",
         "X-Title": "Narraza API",
@@ -202,7 +211,7 @@ export async function embedTextsWithOpenRouter(
       throw mapEmbeddingHttpError(response.status);
     }
 
-    return parseOpenRouterEmbeddingsResponse(
+    return parseOpenAiCompatibleEmbeddingsResponse(
       await response.json(),
       config,
       request.input.length,

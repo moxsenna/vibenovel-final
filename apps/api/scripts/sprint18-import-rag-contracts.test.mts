@@ -21,11 +21,13 @@ import {
   extractAuthorVoiceFromDraft,
 } from "../src/services/import/style-extraction.ts";
 import {
-  buildOpenRouterEmbeddingsRequest,
+  buildOpenAiCompatibleEmbeddingsRequest,
   buildProseEmbeddingInsertRows,
-  parseOpenRouterEmbeddingsResponse,
+  embedTextsWithProvider,
+  parseOpenAiCompatibleEmbeddingsResponse,
   resolveEmbeddingModel,
 } from "../src/services/import/embedding.ts";
+import type { AppBindings } from "../src/env.ts";
 import {
   buildImportJobFailurePatch,
   buildImportJobPhasePatch,
@@ -139,7 +141,7 @@ assert.equal(embeddingConfig.logicalModel, "openai_embedding_small");
 assert.equal(embeddingConfig.model, "openai/text-embedding-3-small");
 assert.equal(embeddingConfig.dimensions, 1536);
 
-const embeddingRequest = buildOpenRouterEmbeddingsRequest(
+const embeddingRequest = buildOpenAiCompatibleEmbeddingsRequest(
   embeddingConfig,
   chunks.map((chunk) => chunk.chunkText),
 );
@@ -148,7 +150,44 @@ assert.equal(Array.isArray(embeddingRequest.input), true);
 assert.equal(embeddingRequest.encoding_format, "float");
 
 const vector1536 = Array.from({ length: 1536 }, (_, index) => index / 1536);
-const parsedEmbeddings = parseOpenRouterEmbeddingsResponse(
+let embeddingRequestUrl = "";
+let embeddingAuthorization = "";
+const tokenRouterEmbedding = await embedTextsWithProvider(
+  {
+    TOKENROUTER_API_KEY: "tokenrouter-secret",
+    TOKENROUTER_BASE_URL: "https://api.tokenrouter.example/v1",
+  } satisfies AppBindings,
+  ["provider-aware embedding"],
+  {
+    resolveConfig: () => ({
+      provider: "tokenrouter",
+      logicalModel: "openai_embedding_small",
+      model: "tokenrouter/test-embedding",
+      dimensions: 1536,
+      timeoutMs: 5000,
+    }),
+    fetcher: async (input, init) => {
+      embeddingRequestUrl = String(input);
+      embeddingAuthorization = new Headers(init?.headers).get("Authorization") ?? "";
+      return new Response(
+        JSON.stringify({
+          data: [{ object: "embedding", index: 0, embedding: vector1536 }],
+          model: "tokenrouter/test-embedding",
+          usage: { prompt_tokens: 3, total_tokens: 3 },
+        }),
+        { status: 200, headers: { "Content-Type": "application/json" } },
+      );
+    },
+  },
+);
+assert.equal(
+  embeddingRequestUrl,
+  "https://api.tokenrouter.example/v1/embeddings",
+);
+assert.equal(embeddingAuthorization, "Bearer tokenrouter-secret");
+assert.equal(tokenRouterEmbedding.provider, "tokenrouter");
+
+const parsedEmbeddings = parseOpenAiCompatibleEmbeddingsResponse(
   {
     data: chunks.map((_, index) => ({
       object: "embedding",
@@ -664,7 +703,7 @@ assert.match(importJobServiceSql, /error_message_safe/);
 
 const pipelineRunnerSql = readFileSync("src/services/import/pipeline-runner.ts", "utf8");
 assert.match(pipelineRunnerSql, /runDraftImportPrepForOwner/);
-assert.match(pipelineRunnerSql, /embedTextsWithOpenRouter/);
+assert.match(pipelineRunnerSql, /embedTextsWithProvider/);
 assert.match(pipelineRunnerSql, /buildProseEmbeddingInsertRows/);
 assert.match(pipelineRunnerSql, /\.from\("prose_embeddings"\)[\s\S]*\.delete/);
 assert.match(pipelineRunnerSql, /\.from\("prose_embeddings"\)[\s\S]*\.insert/);

@@ -56,8 +56,8 @@ import {
   resolveNarraPhase,
 } from "./story-agent-context.js";
 import {
-  parseIntakeAiEnvelope,
   REQUIRED_SIGNAL_TYPES,
+  validateIntakeRouterOutput,
   type ExtractedSignalDraft,
   type IntakeFilledSignalSummary,
 } from "./intake-extraction.js";
@@ -716,13 +716,11 @@ export async function appendUserMessageForOwner(
         qualityMode,
         promptHash,
         promptMessages,
-        validateOutput: (text) => ({
-          rawText: text,
-          envelope:
-            narraPhase === INTAKE_PHASES.foundation_refinement
-              ? null
-              : parseIntakeAiEnvelope(text),
-        }),
+        validateOutput: (text) =>
+          validateIntakeRouterOutput(
+            text,
+            narraPhase !== INTAKE_PHASES.foundation_refinement,
+          ),
       });
       const rawAgentText = routerResult.output.rawText;
       const envelope = routerResult.output.envelope;

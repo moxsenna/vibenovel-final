@@ -4,7 +4,9 @@ import {
   REQUIRED_SIGNAL_TYPES,
   buildIntakeExtractionInstructions,
   parseIntakeAiEnvelope,
+  validateIntakeRouterOutput,
 } from "../src/services/intake-extraction.ts";
+import { AppError } from "../src/errors.ts";
 
 assert.equal(REQUIRED_SIGNAL_TYPES.length, 7);
 assert.ok(REQUIRED_SIGNAL_TYPES.includes("genre"));
@@ -32,6 +34,19 @@ const wrapped = "Some intro\n" + envelopeJson + "\n trailing";
 assert.ok(parseIntakeAiEnvelope(wrapped));
 
 assert.equal(parseIntakeAiEnvelope("not json at all"), null);
+assert.equal(
+  validateIntakeRouterOutput(envelopeJson, true).envelope?.reply,
+  "Halo penulis!",
+);
+assert.throws(
+  () => validateIntakeRouterOutput("not json at all", true),
+  (error: unknown) =>
+    error instanceof AppError && error.code === "GENERATION_FAILED",
+);
+assert.deepEqual(validateIntakeRouterOutput("free-form reply", false), {
+  rawText: "free-form reply",
+  envelope: null,
+});
 
 const instructions = buildIntakeExtractionInstructions(
   ["protagonist"],
@@ -44,7 +59,7 @@ assert.match(instructions, /readyForConcept/);
 
 const intakeTs = readFileSync("src/services/intake.ts", "utf8");
 assert.doesNotMatch(intakeTs, /from "\.\/intake\.js"/);
-assert.match(intakeTs, /parseIntakeAiEnvelope/);
+assert.match(intakeTs, /validateIntakeRouterOutput/);
 assert.match(intakeTs, /row\.type === draft\.type/);
 assert.match(intakeTs, /recomputeIntakeProgressFromExistingSignals/);
 assert.match(intakeTs, /isAiGenerationEnabled\(bindings\)/);

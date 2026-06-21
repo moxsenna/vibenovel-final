@@ -1,8 +1,10 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import { GENERATION_TYPES, WRITER_QUALITY_MODES } from "@vibenovel/shared";
 import {
   AI_GENERATION_ROUTING_POLICY,
   AI_ROUTING_POLICY_VERSION,
+  assertAiRoutingPolicyValid,
   getEmbeddingRoute,
   resolveGenerationRoute,
   validateAiRoutingPolicy,
@@ -10,6 +12,12 @@ import {
 
 assert.equal(AI_ROUTING_POLICY_VERSION, "v3");
 assert.deepEqual(validateAiRoutingPolicy(), []);
+assert.doesNotThrow(() => assertAiRoutingPolicyValid());
+assert.match(
+  readFileSync("src/app.ts", "utf8"),
+  /assertAiRoutingPolicyValid\(\)/,
+  "application startup must fail fast on an invalid routing policy",
+);
 
 assert.deepEqual(
   resolveGenerationRoute(

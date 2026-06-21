@@ -16,7 +16,7 @@ import {
 import { chunkDraftForImport } from "./chunking.js";
 import {
   buildProseEmbeddingInsertRows,
-  embedTextsWithOpenRouter,
+  embedTextsWithProvider,
   type ProseEmbeddingInsertRow,
 } from "./embedding.js";
 import {
@@ -186,10 +186,10 @@ export async function runDraftImportPrepForOwner(
       sourceRefs: chunks.map((chunk) => chunk.sourceRef),
     };
     importJob = await markPhase(bindings, ownerId, projectId, importJob.id, activePhase, activeState);
-    const embeddingResult = await embedTextsWithOpenRouter(
+    const embeddingResult = await embedTextsWithProvider(
       bindings,
       chunks.map((chunk) => chunk.chunkText),
-      options.fetcher,
+      { fetcher: options.fetcher },
     );
     const embeddingRows = buildProseEmbeddingInsertRows({
       ownerId,
