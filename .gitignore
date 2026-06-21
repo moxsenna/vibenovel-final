@@ -49,6 +49,10 @@ npm-debug.log*
 # Local overrides
 *.local
 
+# Graphify (local knowledge graph artifacts)
+graphify-out/
+**/graphify-out/
+
 # Editor (optional — uncomment if team prefers)
 # .vscode/
 # .idea/
