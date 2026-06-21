@@ -12,6 +12,10 @@ import type { BudgetProfile } from "./writer-context-serializer.js";
 export interface ProseBeatPromptResult {
   promptMessages: PromptMessage[];
   promptHash: string;
+  serializedContextChars: number;
+  serializedPromptChars: number;
+  sectionChars: Record<string, number>;
+  truncatedSectionNames: string[];
 }
 
 const SYSTEM_PROMPT =
@@ -103,5 +107,15 @@ export async function buildProseBeatPromptFromPacket(
   ];
 
   const promptHash = await computePromptHashFromMessages(promptMessages);
-  return { promptMessages, promptHash };
+  return {
+    promptMessages,
+    promptHash,
+    serializedContextChars: serialized.text.length,
+    serializedPromptChars: promptMessages.reduce(
+      (sum, message) => sum + message.content.length,
+      0,
+    ),
+    sectionChars: serialized.sectionChars,
+    truncatedSectionNames: serialized.truncatedSections,
+  };
 }

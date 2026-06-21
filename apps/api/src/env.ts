@@ -55,6 +55,8 @@ export interface AppBindings {
   /** Sprint 14+ — writer context budget profile: conservative | full */
   WRITER_CONTEXT_BUDGET_PROFILE?: string;
   SEMANTIC_JUDGE_MODE?: string;
+  /** Explicit runtime marker. Node entrypoint sets this to node; Worker defaults to worker. */
+  RUNTIME_TARGET?: string;
 }
 
 export interface EnvPresenceFlags {

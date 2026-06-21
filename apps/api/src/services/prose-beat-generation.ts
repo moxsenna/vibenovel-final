@@ -36,6 +36,7 @@ import {
   markGenerationAttemptSucceeded,
   toGenerationAttemptSafeSummary,
   writeAiOutputPersistedAudit,
+  buildSafeGenerationObservabilityMetadata,
   type GenerationAttemptCostEstimateMetadata,
   type GenerationAttemptSafeSummary,
 } from "./generation-attempt.js";
@@ -81,6 +82,27 @@ const FORBIDDEN_BODY_KEYS = new Set([
 ]);
 
 const QUALITY_SET = new Set<string>(Object.values(WRITER_QUALITY_MODES));
+
+const OBSERVABILITY_SECTION_NAMES: Record<string, string> = {
+  "CURRENT BEAT CONTRACT": "currentChapterAndBeat",
+  "CANON FACTS": "canonFacts",
+  "RELEVANT CHARACTERS AND CURRENT STATE": "charactersAndState",
+  "CHARACTER KNOWLEDGE": "knowledge",
+  "PRECEDING CURRENT PROSE TAIL": "precedingProseTail",
+  "RETRIEVED DRAFT MEMORY â€” CONTEXT ONLY": "retrievalMemory",
+  "STYLE RULES": "styleRules",
+};
+
+function mapObservableSectionChars(
+  source: Record<string, number>,
+): Record<string, number> {
+  const mapped: Record<string, number> = {};
+  for (const [label, chars] of Object.entries(source)) {
+    const key = OBSERVABILITY_SECTION_NAMES[label];
+    if (key) mapped[key] = chars;
+  }
+  return mapped;
+}
 
 export interface GenerateProseBeatInput {
   chapterOutlineId: string;
@@ -375,6 +397,7 @@ export async function generateProseBeatForOwner(
     body.writingSessionId,
   );
 
+  const contextBuildStartedAt = Date.now();
   const packetResult = await buildContextPacketForOwner(bindings, ownerId, projectId, {
     chapterOutlineId: body.chapterOutlineId,
     beatId: body.beatId,
@@ -387,12 +410,32 @@ export async function generateProseBeatForOwner(
     writerPacket.continuity.povKnowledge,
   );
 
+  const contextBudgetProfile = getWriterContextBudgetProfile(bindings);
   const promptResult = await buildProseBeatPromptFromPacket(
     packetResult.packet,
     beatRow,
     body.instruction,
-    getWriterContextBudgetProfile(bindings),
+    contextBudgetProfile,
   );
+  const contextBuildMs = Date.now() - contextBuildStartedAt;
+  const precedingTail = writerPacket.continuity.precedingProseTail;
+  const contextObservabilityBase = {
+    contextPacketVersion: writerPacket.meta.builderVersion,
+    safetyEnvelopeVersion: packetResult.safetyEnvelope.version,
+    contextBudgetProfile,
+    packetBytes: new TextEncoder().encode(JSON.stringify(writerPacket)).byteLength,
+    serializedContextChars: promptResult.serializedContextChars,
+    serializedPromptChars: promptResult.serializedPromptChars,
+    sectionChars: mapObservableSectionChars(promptResult.sectionChars),
+    truncatedSectionNames: promptResult.truncatedSectionNames,
+    precedingProseTailIncluded: Boolean(precedingTail),
+    precedingProseTailChars: precedingTail?.text.length ?? 0,
+    canonFactCount: writerPacket.canon.facts.length,
+    characterCount: writerPacket.canon.characters.length,
+    timelineCount: writerPacket.continuity.recentTimeline?.length ?? 0,
+    retrievalSnippetCount: writerPacket.continuity.retrievalMemory?.length ?? 0,
+    runtime: bindings.RUNTIME_TARGET === "node" ? "node" : "worker",
+  } as const;
 
   const creditCost = getCreditCostForGeneration({
     generationType: GENERATION_TYPES.prose_beat,
@@ -425,6 +468,11 @@ export async function generateProseBeatForOwner(
     contextPacketLogId: packetResult.packetLogId,
     qualityMode: body.qualityMode,
     correlationId,
+    metadata: buildSafeGenerationObservabilityMetadata({
+      ...contextObservabilityBase,
+      semanticJudgeMode: "off",
+      latencyBreakdownMs: { contextBuild: contextBuildMs },
+    }),
   });
   const providerEventSequence = createProviderEventSequence();
 
@@ -507,6 +555,7 @@ export async function generateProseBeatForOwner(
   const providerResult = validated.providerResult;
 
   let saved;
+  const persistenceStartedAt = Date.now();
   try {
     saved = await saveAiGeneratedProseVersionForOwner(
       bindings,
@@ -534,6 +583,7 @@ export async function generateProseBeatForOwner(
     }
     throw err;
   }
+  const persistenceMs = Date.now() - persistenceStartedAt;
 
   const estimatedCostUsd = validated.totalEstimatedCostUsd;
   const costEstimateMetadata: GenerationAttemptCostEstimateMetadata = {
@@ -559,6 +609,22 @@ export async function generateProseBeatForOwner(
     correlationId,
     estimatedCostUsd,
     costEstimateMetadata,
+    additionalMetadata: buildSafeGenerationObservabilityMetadata({
+      ...contextObservabilityBase,
+      validationCheckCount: validated.validationReport.checks.length,
+      semanticJudgeMode: validated.semanticJudge.mode,
+      semanticJudgeCalled: validated.semanticJudge.called,
+      semanticJudgeInputTokens: validated.semanticJudge.inputTokens,
+      semanticJudgeOutputTokens: validated.semanticJudge.outputTokens,
+      semanticJudgeEstimatedCostUsd: validated.semanticJudge.estimatedCostUsd,
+      repairAttempts: validated.repairAttempts,
+      latencyBreakdownMs: {
+        contextBuild: contextBuildMs,
+        provider: validated.generationProviderLatencyMs,
+        validation: validated.validationLatencyMs,
+        persistence: persistenceMs,
+      },
+    }),
   });
 
   await writeAiOutputPersistedAudit(bindings, {

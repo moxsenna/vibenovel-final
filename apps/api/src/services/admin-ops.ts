@@ -63,6 +63,69 @@ export interface AdminOverviewMetrics {
 
 export interface AdminOverviewResponse {
   metrics: AdminOverviewMetrics;
+  generationObservability: AdminGenerationObservabilityAggregate;
+}
+
+export interface AdminGenerationObservabilityProfileAggregate {
+  count: number;
+  p50SerializedPromptChars: number;
+  p95SerializedPromptChars: number;
+}
+
+export interface AdminGenerationObservabilityAggregate {
+  byProfile: Record<
+    "conservative" | "full",
+    AdminGenerationObservabilityProfileAggregate
+  >;
+  providerContextLengthErrors: number;
+}
+
+export interface GenerationObservabilityAggregateRow {
+  metadata: Record<string, unknown> | null;
+  error_code: string | null;
+}
+
+function percentile(values: number[], p: number): number {
+  if (values.length === 0) return 0;
+  const sorted = [...values].sort((a, b) => a - b);
+  const index = Math.max(0, Math.ceil(p * sorted.length) - 1);
+  return sorted[index] ?? 0;
+}
+
+export function summarizeGenerationObservability(
+  rows: GenerationObservabilityAggregateRow[],
+): AdminGenerationObservabilityAggregate {
+  const values: Record<"conservative" | "full", number[]> = {
+    conservative: [],
+    full: [],
+  };
+  let providerContextLengthErrors = 0;
+  for (const row of rows) {
+    const metadata = row.metadata ?? {};
+    const profile = metadata.contextBudgetProfile === "full" ? "full" : "conservative";
+    const chars = metadata.serializedPromptChars;
+    if (typeof chars === "number" && Number.isFinite(chars) && chars >= 0) {
+      values[profile].push(chars);
+    }
+    if (/context.?length|token.?limit/i.test(row.error_code ?? "")) {
+      providerContextLengthErrors += 1;
+    }
+  }
+  return {
+    byProfile: {
+      conservative: {
+        count: values.conservative.length,
+        p50SerializedPromptChars: percentile(values.conservative, 0.5),
+        p95SerializedPromptChars: percentile(values.conservative, 0.95),
+      },
+      full: {
+        count: values.full.length,
+        p50SerializedPromptChars: percentile(values.full, 0.5),
+        p95SerializedPromptChars: percentile(values.full, 0.95),
+      },
+    },
+    providerContextLengthErrors,
+  };
 }
 
 export interface AdminProjectListItem extends Project {
@@ -195,6 +258,7 @@ export async function getAdminOverview(bindings: AppBindings): Promise<AdminOver
     failedAttemptsRes,
     debitRes,
     refundRes,
+    observabilityRes,
   ] = await Promise.all([
     admin.from("profiles").select("id", { count: "exact", head: true }),
     admin.from("projects").select("id", { count: "exact", head: true }),
@@ -217,9 +281,20 @@ export async function getAdminOverview(bindings: AppBindings): Promise<AdminOver
       .select("amount")
       .eq("direction", "refund")
       .gte("created_at", since24h),
+    admin
+      .from("generation_attempts")
+      .select("metadata, error_code")
+      .gte("created_at", since24h)
+      .limit(2_000),
   ]);
 
-  if (usersRes.error || projectsRes.error || proposalsRes.error || failedAttemptsRes.error) {
+  if (
+    usersRes.error ||
+    projectsRes.error ||
+    proposalsRes.error ||
+    failedAttemptsRes.error ||
+    observabilityRes.error
+  ) {
     console.error("admin overview counts failed");
     throw AppError.internal("Failed to load admin overview");
   }
@@ -242,6 +317,9 @@ export async function getAdminOverview(bindings: AppBindings): Promise<AdminOver
       creditsDebited24h,
       creditsRefunded24h,
     },
+    generationObservability: summarizeGenerationObservability(
+      (observabilityRes.data ?? []) as GenerationObservabilityAggregateRow[],
+    ),
   };
 }
 

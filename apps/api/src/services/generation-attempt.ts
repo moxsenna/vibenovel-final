@@ -478,3 +478,123 @@ export async function writeAiOutputPersistedAudit(
     }),
   });
 }
+
+export type GenerationRuntime = "worker" | "node";
+export type GenerationContextBudgetProfile = "conservative" | "full";
+
+export interface SafeGenerationObservabilityMetadata {
+  [key: string]: unknown;
+  contextPacketVersion: string;
+  safetyEnvelopeVersion: string;
+  contextBudgetProfile: GenerationContextBudgetProfile;
+  packetBytes: number;
+  serializedContextChars: number;
+  serializedPromptChars: number;
+  sectionChars: Record<string, number>;
+  truncatedSectionNames: string[];
+  precedingProseTailIncluded: boolean;
+  precedingProseTailChars: number;
+  canonFactCount: number;
+  characterCount: number;
+  timelineCount: number;
+  retrievalSnippetCount: number;
+  validationCheckCount: number;
+  semanticJudgeMode: "off" | "shadow" | "enforce";
+  semanticJudgeCalled: boolean;
+  semanticJudgeInputTokens: number;
+  semanticJudgeOutputTokens: number;
+  semanticJudgeEstimatedCostUsd: number;
+  repairAttempts: number;
+  runtime: GenerationRuntime;
+  latencyBreakdownMs: {
+    contextBuild: number;
+    provider: number;
+    validation: number;
+    persistence: number;
+  };
+}
+
+const SAFE_SECTION_KEYS = [
+  "currentChapterAndBeat",
+  "canonFacts",
+  "charactersAndState",
+  "knowledge",
+  "precedingProseTail",
+  "retrievalMemory",
+  "styleRules",
+] as const;
+
+function safeNonNegativeNumber(value: unknown): number {
+  return typeof value === "number" && Number.isFinite(value) && value >= 0
+    ? value
+    : 0;
+}
+
+function safeVersion(value: unknown): string {
+  return typeof value === "string" ? value.trim().slice(0, 80) : "";
+}
+
+/**
+ * Strict allowlist compiler for attempt metadata. Raw prompt/prose/secret fields
+ * are ignored even when a caller accidentally includes them.
+ */
+export function buildSafeGenerationObservabilityMetadata(
+  raw: Record<string, unknown>,
+): SafeGenerationObservabilityMetadata {
+  const rawSections =
+    raw.sectionChars && typeof raw.sectionChars === "object" && !Array.isArray(raw.sectionChars)
+      ? raw.sectionChars as Record<string, unknown>
+      : {};
+  const rawLatency =
+    raw.latencyBreakdownMs &&
+    typeof raw.latencyBreakdownMs === "object" &&
+    !Array.isArray(raw.latencyBreakdownMs)
+      ? raw.latencyBreakdownMs as Record<string, unknown>
+      : {};
+  const sectionChars: Record<string, number> = {};
+  for (const key of SAFE_SECTION_KEYS) {
+    sectionChars[key] = safeNonNegativeNumber(rawSections[key]);
+  }
+  const profile = raw.contextBudgetProfile === "full" ? "full" : "conservative";
+  const judgeMode =
+    raw.semanticJudgeMode === "off" || raw.semanticJudgeMode === "enforce"
+      ? raw.semanticJudgeMode
+      : "shadow";
+  return {
+    contextPacketVersion: safeVersion(raw.contextPacketVersion),
+    safetyEnvelopeVersion: safeVersion(raw.safetyEnvelopeVersion),
+    contextBudgetProfile: profile,
+    packetBytes: safeNonNegativeNumber(raw.packetBytes),
+    serializedContextChars: safeNonNegativeNumber(raw.serializedContextChars),
+    serializedPromptChars: safeNonNegativeNumber(raw.serializedPromptChars),
+    sectionChars,
+    truncatedSectionNames: Array.isArray(raw.truncatedSectionNames)
+      ? raw.truncatedSectionNames
+          .filter((value): value is string => typeof value === "string")
+          .map((value) => value.slice(0, 80))
+          .slice(0, 20)
+      : [],
+    precedingProseTailIncluded: raw.precedingProseTailIncluded === true,
+    precedingProseTailChars: safeNonNegativeNumber(raw.precedingProseTailChars),
+    canonFactCount: safeNonNegativeNumber(raw.canonFactCount),
+    characterCount: safeNonNegativeNumber(raw.characterCount),
+    timelineCount: safeNonNegativeNumber(raw.timelineCount),
+    retrievalSnippetCount: safeNonNegativeNumber(raw.retrievalSnippetCount),
+    validationCheckCount: safeNonNegativeNumber(raw.validationCheckCount),
+    semanticJudgeMode: judgeMode,
+    semanticJudgeCalled: raw.semanticJudgeCalled === true,
+    semanticJudgeInputTokens: safeNonNegativeNumber(raw.semanticJudgeInputTokens),
+    semanticJudgeOutputTokens: safeNonNegativeNumber(raw.semanticJudgeOutputTokens),
+    semanticJudgeEstimatedCostUsd: safeNonNegativeNumber(
+      raw.semanticJudgeEstimatedCostUsd,
+    ),
+    repairAttempts: safeNonNegativeNumber(raw.repairAttempts),
+    runtime: raw.runtime === "node" ? "node" : "worker",
+    latencyBreakdownMs: {
+      contextBuild: safeNonNegativeNumber(rawLatency.contextBuild),
+      provider: safeNonNegativeNumber(rawLatency.provider),
+      validation: safeNonNegativeNumber(rawLatency.validation),
+      persistence: safeNonNegativeNumber(rawLatency.persistence),
+    },
+  };
+}

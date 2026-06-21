@@ -9,6 +9,7 @@ if (typeof globalThis.WebSocket === "undefined") {
 }
 
 const bindings = loadBindingsFromProcessEnv();
+bindings.RUNTIME_TARGET = "node";
 const app = createApp();
 const port = getNodePort();
 

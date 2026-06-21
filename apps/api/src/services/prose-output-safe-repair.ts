@@ -60,6 +60,8 @@ export interface ValidatedAiProviderOutput {
   totalProviderLatencyMs: number;
   totalEstimatedCostUsd: number;
   semanticJudge: SemanticJudgeExecution;
+  generationProviderLatencyMs: number;
+  validationLatencyMs: number;
 }
 
 export function isBlockedValidationReport(report: OutputValidationReport): boolean {
@@ -151,6 +153,8 @@ export async function generateValidatedAiOutputWithSafeRepair(
   let totalOutputTokens = 0;
   let totalRetryCount = 0;
   let totalProviderLatencyMs = 0;
+  let generationProviderLatencyMs = 0;
+  let validationLatencyMs = 0;
   let totalEstimatedCostUsd = 0;
   let fallbackUsed = false;
   let logicalModel = "";
@@ -196,11 +200,13 @@ export async function generateValidatedAiOutputWithSafeRepair(
     totalOutputTokens += providerResult.outputTokens ?? 0;
     totalRetryCount += providerResult.retryCount;
     totalProviderLatencyMs += providerResult.latencyMs;
+    generationProviderLatencyMs += providerResult.latencyMs;
     totalEstimatedCostUsd += providerResult.estimatedCostUsd;
     fallbackUsed = fallbackUsed || providerResult.fallbackUsed;
     logicalModel = providerResult.logicalModel;
     routingPolicyVersion = providerResult.routingPolicyVersion;
 
+    const validationStartedAt = Date.now();
     let validationReport = validateAiOutput({
       outputText: resolveValidationText(providerResult.text, input),
       forbiddenConcepts,
@@ -226,6 +232,7 @@ export async function generateValidatedAiOutputWithSafeRepair(
       totalProviderLatencyMs += lastSemanticJudge.latencyMs;
       totalEstimatedCostUsd += lastSemanticJudge.estimatedCostUsd;
     }
+    validationLatencyMs += Date.now() - validationStartedAt;
 
     if (persistContext) {
       await persistValidationReportBestEffort(bindings, {
@@ -263,6 +270,8 @@ export async function generateValidatedAiOutputWithSafeRepair(
         totalProviderLatencyMs,
         totalEstimatedCostUsd,
         semanticJudge: lastSemanticJudge,
+        generationProviderLatencyMs,
+        validationLatencyMs,
       };
     }
 
