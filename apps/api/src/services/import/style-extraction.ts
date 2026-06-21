@@ -1,8 +1,42 @@
 import type { OperationalStyleRules } from "../style-profile.js";
 import { DEFAULT_STYLE_RULES } from "../style-profile.js";
 
-export function extractOperationalRules(): OperationalStyleRules {
-  return { ...DEFAULT_STYLE_RULES };
+export function extractOperationalRules(content = ""): OperationalStyleRules {
+  const paragraphs = content
+    .split(/\n\s*\n/)
+    .map((paragraph) => normalizeText(paragraph))
+    .filter(Boolean);
+  const sentences = normalizeText(content).match(SENTENCE_RE)?.map(normalizeText).filter(Boolean) ?? [];
+  const paragraphWords = paragraphs.map((paragraph) => paragraph.split(/\s+/).length);
+  const sentenceWords = sentences.map((sentence) => sentence.split(/\s+/).length);
+  const averageParagraphWords = average(paragraphWords);
+  const averageSentenceWords = average(sentenceWords);
+  const dialogueMarkers = content.match(DIALOGUE_MARKER_RE)?.length ?? 0;
+  const dialogueRatio = sentences.length > 0 ? dialogueMarkers / sentences.length : 0;
+
+  return {
+    ...DEFAULT_STYLE_RULES,
+    paragraphLength:
+      averageParagraphWords > 0 && averageParagraphWords <= 45
+        ? "short"
+        : averageParagraphWords >= 100
+          ? "long"
+          : "medium",
+    averageSentenceWords:
+      averageSentenceWords > 0 ? round(averageSentenceWords) : null,
+    dialogueDensity:
+      dialogueRatio >= 0.35 ? "high" : dialogueRatio >= 0.15 ? "medium" : "low",
+    narrationStyle: [
+      averageSentenceWords > 0 && averageSentenceWords <= 16
+        ? "fast sentence rhythm"
+        : "descriptive sentence rhythm",
+    ],
+    signatureMoves:
+      paragraphs.length > 1 && paragraphs.at(-1)!.split(/\s+/).length <= 18
+        ? ["compressed closing paragraph"]
+        : [],
+    expositionTolerance: averageParagraphWords <= 60 ? "low" : "medium",
+  };
 }
 import {
   AI_PROPOSAL_RISK_LEVELS,
@@ -24,6 +58,7 @@ export interface AuthorVoiceExtraction {
   styleTags: string[];
   sampleCount: number;
   metrics: JsonObject;
+  operationalRules: OperationalStyleRules;
 }
 
 export interface ExtractAuthorVoiceInput {
@@ -92,6 +127,7 @@ export function extractAuthorVoiceFromDraft(
   const avgSentenceWords = average(sentenceWords);
   const dialogueDensity = sentences.length > 0 ? dialogueMarkerCount / sentences.length : 0;
   const styleTags = collectStyleTags(content, avgParagraphWords);
+  const operationalRules = extractOperationalRules(input.content);
 
   const rhythm =
     avgParagraphWords > 0 && avgParagraphWords <= 45
@@ -121,6 +157,7 @@ export function extractAuthorVoiceFromDraft(
       sentenceCount: sentences.length,
       extractor: "deterministic_author_voice_v1",
     },
+    operationalRules,
   };
 }
 
@@ -143,6 +180,7 @@ export function buildAuthorVoiceProposalDraft(
       styleTags: input.authorVoice.styleTags,
       sampleCount: input.authorVoice.sampleCount,
       metrics: input.authorVoice.metrics,
+      operationalRules: input.authorVoice.operationalRules as unknown as JsonObject,
     },
     reviewNote: "Imported author voice requires human review before style guidance is adopted.",
   };

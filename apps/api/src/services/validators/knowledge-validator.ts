@@ -12,7 +12,10 @@ export function validateKnowledgeConstraint(
 ): ValidationFinding[] {
   const findings: ValidationFinding[] = [];
   for (const c of constraints) {
-    if (c.allowedMode === "forbidden" && prose.includes(c.factText)) {
+    if (
+      c.allowedMode === "forbidden" &&
+      prose.toLowerCase().includes(c.factText.toLowerCase())
+    ) {
       findings.push({
         type: "blocked",
         validator: "knowledge-validator",

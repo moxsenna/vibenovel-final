@@ -16,6 +16,14 @@ import {
 import { generateWithModelRouter } from "./model-router.js";
 import type { ProviderEventSequence } from "./generation-provider-event.js";
 import { buildProseRepairInstruction } from "./safe-repair.js";
+import { buildProseRepairInstructionFromReport } from "./safe-repair.js";
+import {
+  mergeSemanticJudgeIntoValidationReport,
+  runSemanticOutputJudge,
+  type SemanticJudgeExecution,
+} from "./semantic-output-judge.js";
+import type { WriterContextPacket } from "@vibenovel/shared";
+import type { StyleValidationRules } from "./validators/style-validator.js";
 
 /** Max extra provider calls after the initial generation (repair passes). */
 export const PROSE_SAFE_REPAIR_MAX_RETRIES = 2;
@@ -34,6 +42,8 @@ export interface ProseOutputValidationContext {
   povForbiddenFactTexts?: string[];
   retentionHookKeywords?: string[];
   styleToneHint?: string | null;
+  styleRules?: StyleValidationRules;
+  writerPacket?: WriterContextPacket;
 }
 
 export interface ValidatedAiProviderOutput {
@@ -49,6 +59,7 @@ export interface ValidatedAiProviderOutput {
   totalRetryCount: number;
   totalProviderLatencyMs: number;
   totalEstimatedCostUsd: number;
+  semanticJudge: SemanticJudgeExecution;
 }
 
 export function isBlockedValidationReport(report: OutputValidationReport): boolean {
@@ -130,6 +141,7 @@ export async function generateValidatedAiOutputWithSafeRepair(
   const povForbiddenFactTexts = validationContext.povForbiddenFactTexts ?? [];
   const retentionHookKeywords = validationContext.retentionHookKeywords ?? [];
   const styleToneHint = validationContext.styleToneHint ?? null;
+  const styleRules = validationContext.styleRules;
 
   let promptMessages = input.promptMessages;
   let promptHash = input.promptHash;
@@ -145,6 +157,22 @@ export async function generateValidatedAiOutputWithSafeRepair(
   let routingPolicyVersion = "";
   let tokenBudgetBaseline: number | null = null;
   let lastProviderText = "";
+  let lastSemanticJudge: SemanticJudgeExecution = {
+    mode: "off",
+    called: false,
+    result: {
+      instructionCompliance: { score: 1, missingRequirements: [] },
+      sceneBoundary: { passed: true, jumpedAhead: false, reason: "not called" },
+      continuity: { passed: true, contradictions: [] },
+      knowledge: { passed: true, violations: [] },
+      style: { score: 1, driftReasons: [] },
+    },
+    inputTokens: 0,
+    outputTokens: 0,
+    estimatedCostUsd: 0,
+    latencyMs: 0,
+    warning: null,
+  };
 
   for (let pass = 0; pass <= PROSE_SAFE_REPAIR_MAX_RETRIES; pass++) {
     const providerResult = await generateWithModelRouter(bindings, {
@@ -173,14 +201,31 @@ export async function generateValidatedAiOutputWithSafeRepair(
     logicalModel = providerResult.logicalModel;
     routingPolicyVersion = providerResult.routingPolicyVersion;
 
-    const validationReport = validateAiOutput({
+    let validationReport = validateAiOutput({
       outputText: resolveValidationText(providerResult.text, input),
       forbiddenConcepts,
       mustInclude,
       povForbiddenFactTexts,
       retentionHookKeywords,
       styleToneHint,
+      styleRules,
     });
+    if (validationContext.writerPacket) {
+      lastSemanticJudge = await runSemanticOutputJudge({
+        bindings,
+        prose: resolveValidationText(providerResult.text, input),
+        writerPacket: validationContext.writerPacket,
+        deterministicReport: validationReport,
+      });
+      validationReport = mergeSemanticJudgeIntoValidationReport(
+        validationReport,
+        lastSemanticJudge,
+      );
+      totalInputTokens += lastSemanticJudge.inputTokens;
+      totalOutputTokens += lastSemanticJudge.outputTokens;
+      totalProviderLatencyMs += lastSemanticJudge.latencyMs;
+      totalEstimatedCostUsd += lastSemanticJudge.estimatedCostUsd;
+    }
 
     if (persistContext) {
       await persistValidationReportBestEffort(bindings, {
@@ -217,6 +262,7 @@ export async function generateValidatedAiOutputWithSafeRepair(
         totalRetryCount,
         totalProviderLatencyMs,
         totalEstimatedCostUsd,
+        semanticJudge: lastSemanticJudge,
       };
     }
 
@@ -236,7 +282,10 @@ export async function generateValidatedAiOutputWithSafeRepair(
       break;
     }
 
-    const repairInstruction = buildProseRepairInstruction(forbiddenConcepts, mustInclude);
+    const repairInstruction =
+      lastReport
+        ? buildProseRepairInstructionFromReport(lastReport)
+        : buildProseRepairInstruction(forbiddenConcepts, mustInclude);
     promptMessages = appendRepairUserMessage(
       input.promptMessages,
       repairInstruction,

@@ -49,5 +49,19 @@ export function buildProseValidationContextFromPacket(
     povForbiddenFactTexts,
     retentionHookKeywords: hookKeywords,
     styleToneHint: tone && tone.length >= 4 ? tone : null,
+    styleRules: {
+      paragraphLength:
+        writerPacket.continuity.styleRules?.find((line) =>
+          line.startsWith("Paragraph length target:"),
+        )?.split(": ")[1] as "short" | "medium" | "long" | undefined,
+      dialogueDensity:
+        writerPacket.continuity.styleRules?.find((line) =>
+          line.startsWith("Dialogue density target:"),
+        )?.split(": ")[1] as "low" | "medium" | "high" | undefined,
+      forbiddenStyle: (writerPacket.continuity.styleRules ?? [])
+        .filter((line) => line.startsWith("Forbidden style:"))
+        .map((line) => line.replace("Forbidden style:", "").trim()),
+    },
+    writerPacket,
   };
 }

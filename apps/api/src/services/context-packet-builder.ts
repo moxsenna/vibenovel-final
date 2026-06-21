@@ -317,7 +317,7 @@ function buildWriterPacketFromSnapshot(
       povKnowledge: snapshot.povKnowledge,
       knowledgeByCharacter: snapshot.knowledgeByCharacter,
       precedingProseTail: snapshot.precedingProseTail,
-      styleRules: [],
+      styleRules: snapshot.styleRules,
     },
     revealGate: {
       allowedBreadcrumbs: revealGate.allowedBreadcrumbs,

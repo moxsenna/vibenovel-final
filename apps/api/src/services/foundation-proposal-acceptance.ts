@@ -16,6 +16,7 @@ import {
   SPEECH_RULE_STATUSES,
   type Character,
   type Fact,
+  type JsonObject,
   type StoryFoundation,
 } from "@vibenovel/shared";
 import type { AppBindings } from "../env.js";
@@ -45,6 +46,10 @@ import {
   type FoundationReadinessResult,
 } from "./foundation-readiness.js";
 import { getOwnedProjectRow } from "./project.js";
+import {
+  normalizeOperationalStyleRules,
+  upsertStyleProfileForOwner,
+} from "./style-profile.js";
 
 const PROPOSAL_SELECT =
   "id, project_id, proposal_type, status, risk_level, source, title, payload, review_note, reviewed_at, reviewed_by, merged_into_id, result_fact_id, result_character_id, created_at, updated_at";
@@ -827,6 +832,20 @@ export async function acceptFoundationProposalForOwner(
   ) {
     const result = await promoteFoundationFields(bindings, projectId, acceptedRow);
     promoted.foundationUpdated = result.updated;
+    if (acceptedRow.proposal_type === AI_PROPOSAL_TYPES.style) {
+      const payload = parsePayload(acceptedRow.payload);
+      if (payload.operationalRules) {
+        await upsertStyleProfileForOwner(bindings, ownerId, projectId, {
+          operationalRules: normalizeOperationalStyleRules(payload.operationalRules),
+          metrics: parsePayload(payload.metrics) as JsonObject,
+          source:
+            typeof payload.draftImportId === "string"
+              ? `draft_import:${payload.draftImportId}`
+              : "accepted_style_proposal",
+          sourceProseVersionIds: [],
+        });
+      }
+    }
   } else if (acceptedRow.proposal_type === AI_PROPOSAL_TYPES.character) {
     promoted.characters.push(
       await promoteCharacter(bindings, ownerId, projectId, acceptedRow),

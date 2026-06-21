@@ -18,6 +18,8 @@ import { AppError } from "../errors.js";
 import { getOwnedBeatRow } from "./chapter-beat.js";
 import { getOwnedProjectRow } from "./project.js";
 import { assertWriteRoomGates } from "./write-snapshot.js";
+import { assertProseTextSafe as assertSafeProseText } from "./prose-text-safety.js";
+import { recordAcceptedStyleEdit } from "./style-feedback.js";
 
 const PROSE_SELECT =
   "id, project_id, chapter_beat_id, version_number, prose_text, word_count, source, is_current, context_packet_log_id, metadata, created_at";
@@ -46,18 +48,6 @@ const WRITABLE_SESSION_STATUSES = new Set<string>([
   WRITING_SESSION_STATUSES.active,
   WRITING_SESSION_STATUSES.paused,
 ]);
-
-const PROSE_LEAKAGE_MARKERS = [
-  "planningtruth",
-  "planning_truth",
-  "full_prompt",
-  "context_packet",
-  "packet_json",
-  "openrouter",
-  "provider",
-  "model",
-  "token",
-];
 
 const METADATA_FORBIDDEN_KEYS = new Set([
   "full_prompt",
@@ -173,24 +163,6 @@ function countWords(text: string): number {
   return trimmed.split(/\s+/).filter(Boolean).length;
 }
 
-function assertProseTextSafe(proseText: string): void {
-  const lower = proseText.toLowerCase();
-
-  for (const marker of PROSE_LEAKAGE_MARKERS) {
-    if (lower.includes(marker.toLowerCase())) {
-      throw AppError.badRequest("Prose text contains disallowed internal metadata markers");
-    }
-  }
-
-  if (
-    lower.includes('"currentchapter"') &&
-    lower.includes('"revealgate"') &&
-    lower.includes('"forbiddenreveals"')
-  ) {
-    throw AppError.badRequest("Prose text appears to contain a context packet dump");
-  }
-}
-
 function assertNonEmptyProseText(value: unknown): string {
   if (typeof value !== "string") {
     throw AppError.badRequest("proseText must be a string");
@@ -202,7 +174,11 @@ function assertNonEmptyProseText(value: unknown): string {
   if (trimmed.length > PROSE_MAX_CHARS) {
     throw AppError.badRequest(`proseText must be at most ${PROSE_MAX_CHARS} characters`);
   }
-  assertProseTextSafe(trimmed);
+  try {
+    assertSafeProseText(trimmed);
+  } catch {
+    throw AppError.badRequest("Prose text contains disallowed internal metadata markers");
+  }
   return trimmed;
 }
 
@@ -684,6 +660,7 @@ export async function saveAiRewrittenProseVersionForOwner(
       source: CHAPTER_PROSE_SOURCES.ai_generated,
       is_current: true,
       context_packet_log_id: input.contextPacketLogId.trim(),
+      parent_version_id: input.sourceProseVersionId.trim(),
       metadata,
     })
     .select(PROSE_SELECT)
@@ -790,6 +767,14 @@ export async function saveProseDraftForOwner(
   const nextVersion =
     maxRow !== null ? ((maxRow as { version_number: number }).version_number + 1) : 1;
 
+  const { data: parentRow } = await admin
+    .from("chapter_prose_versions")
+    .select("id, prose_text, source")
+    .eq("chapter_beat_id", beatId)
+    .eq("project_id", projectId)
+    .eq("is_current", true)
+    .maybeSingle();
+
   const { error: clearError } = await admin
     .from("chapter_prose_versions")
     .update({ is_current: false })
@@ -813,6 +798,10 @@ export async function saveProseDraftForOwner(
       source,
       is_current: true,
       context_packet_log_id: contextPacketLogId,
+      parent_version_id:
+        source === CHAPTER_PROSE_SOURCES.user_edited
+          ? ((parentRow as { id?: string } | null)?.id ?? null)
+          : null,
       metadata,
     })
     .select(PROSE_SELECT)
@@ -821,6 +810,20 @@ export async function saveProseDraftForOwner(
   if (insertError || !inserted) {
     console.error("chapter_prose_versions insert failed");
     throw AppError.internal("Failed to save prose draft");
+  }
+
+  if (
+    source === CHAPTER_PROSE_SOURCES.user_edited &&
+    parentRow &&
+    (parentRow as { source: string }).source === CHAPTER_PROSE_SOURCES.ai_generated
+  ) {
+    await recordAcceptedStyleEdit(bindings, ownerId, {
+      projectId,
+      sourceVersionId: (parentRow as { id: string }).id,
+      editedVersionId: (inserted as ChapterProseVersionRow).id,
+      sourceText: (parentRow as { prose_text: string }).prose_text,
+      editedText: proseText,
+    });
   }
 
   const newBeatStatus = resolveBeatStatusAfterSave(beatRow.status);

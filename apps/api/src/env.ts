@@ -54,6 +54,7 @@ export interface AppBindings {
   DUITKU_SMOKE_CALLBACK_FIXTURE?: string;
   /** Sprint 14+ — writer context budget profile: conservative | full */
   WRITER_CONTEXT_BUDGET_PROFILE?: string;
+  SEMANTIC_JUDGE_MODE?: string;
 }
 
 export interface EnvPresenceFlags {

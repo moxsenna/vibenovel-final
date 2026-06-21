@@ -105,6 +105,32 @@ export function buildProseRepairInstruction(
   return repairLines.join(" ");
 }
 
+export function buildProseRepairInstructionFromReport(
+  report: OutputValidationReport,
+): string {
+  const failed = report.checks.filter((check) => !check.passed);
+  const lines = [
+    "Tulis ulang output agar lolos pemeriksaan cerita tanpa menambah fakta besar baru.",
+    "Pertahankan bagian yang sudah benar dan keluarkan hanya prosa revisi.",
+  ];
+  for (const check of failed) {
+    if (check.key === "no_future_reveal_leak") {
+      lines.push("- Hapus atau kaburkan span output yang membocorkan rahasia terlalu dini.");
+    } else if (check.key === "pov_character_knowledge" || check.key === "semantic_knowledge") {
+      lines.push("- Ubah pernyataan pengetahuan karakter yang belum sah menjadi ketidaktahuan, dugaan, atau informasi parsial.");
+    } else if (check.key === "beat_requirement_coverage" || check.key === "semantic_instruction_compliance") {
+      lines.push(`- Lengkapi materi beat yang hilang: ${check.message}`);
+    } else if (check.key === "semantic_scene_boundary") {
+      lines.push(`- Kembalikan adegan ke batas beat saat ini: ${check.message}`);
+    } else if (check.key === "semantic_continuity") {
+      lines.push(`- Perbaiki kontradiksi continuity: ${check.message}`);
+    } else if (check.severity === "blocked") {
+      lines.push(`- Perbaiki kegagalan wajib: ${check.message}`);
+    }
+  }
+  return [...new Set(lines)].join("\n");
+}
+
 export function parseSafeRepairRequest(raw: unknown): SafeRepairPlan {
   if (typeof raw !== "object" || raw === null || Array.isArray(raw)) {
     throw AppError.badRequest("Request body must be a JSON object");

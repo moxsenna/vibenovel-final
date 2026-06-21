@@ -45,6 +45,11 @@ import {
 import { loadLatestCharacterStateSnapshotsForOwnedProject } from "./character-state.js";
 import { loadPrecedingCurrentProseTail } from "./preceding-prose-context.js";
 import { selectRelevantCharacters } from "./relevant-character-selector.js";
+import {
+  getStyleProfileForOwner,
+  styleRulesToPromptLines,
+  type OperationalStyleRules,
+} from "./style-profile.js";
 
 const FOUNDATION_SELECT =
   "id, project_id, premise, main_conflict, reader_promise, tone, genre, target_reader, story_secrets_preview, style_tags, readiness_percent, readiness_status, status, is_locked, locked_at, created_at, updated_at";
@@ -107,6 +112,8 @@ export interface WriteContextSnapshot {
   relevantCharacters: WriterCharacterSummaryV3[];
   knowledgeByCharacter: WriterKnowledgeSummary[];
   precedingProseTail: WriterPrecedingProseTail | null;
+  styleRules: string[];
+  operationalStyleRules: OperationalStyleRules | null;
   beat: ChapterBeat | null;
   characters: Character[];
   facts: Fact[];
@@ -347,6 +354,7 @@ export async function loadWriteContextSnapshot(
     allKnowledgeRows,
     stateByCharacter,
     precedingProseTail,
+    styleProfile,
   ] = await Promise.all([
     admin
       .from("open_loops")
@@ -382,6 +390,7 @@ export async function loadWriteContextSnapshot(
       currentBeatNumber: beat?.beatNumber ?? null,
       currentChapterNumber: currentNumber,
     }),
+    getStyleProfileForOwner(bindings, ownerId, projectId),
   ]);
 
   if (loopsRes.error) {
@@ -476,6 +485,10 @@ export async function loadWriteContextSnapshot(
     relevantCharacters,
     knowledgeByCharacter,
     precedingProseTail,
+    styleRules: styleProfile
+      ? styleRulesToPromptLines(styleProfile.operationalRules)
+      : [],
+    operationalStyleRules: styleProfile?.operationalRules ?? null,
     beat,
     characters,
     facts,

@@ -17,6 +17,7 @@ import {
   WORKFLOW_PHASES,
   type Character,
   type Fact,
+  type JsonObject,
   type StoryFoundation,
 } from "@vibenovel/shared";
 import type { AppBindings } from "../env.js";
@@ -44,6 +45,10 @@ import {
 } from "./foundation-readiness.js";
 import { FOUNDATION_FLOW_PROPOSAL_TYPES } from "./foundation-proposal.js";
 import { getOwnedProjectRow } from "./project.js";
+import {
+  normalizeOperationalStyleRules,
+  upsertStyleProfileForOwner,
+} from "./style-profile.js";
 
 const PROPOSAL_SELECT =
   "id, project_id, proposal_type, status, risk_level, source, title, payload, review_note, reviewed_at, reviewed_by, merged_into_id, result_fact_id, result_character_id, created_at, updated_at";
@@ -1028,6 +1033,23 @@ export async function lockFoundationForOwner(
         throw AppError.internal("Failed to lock foundation");
       }
       afterFoundation = data as FoundationRow;
+    }
+
+    const operationalStyleProposal = acceptedProposals.find((proposal) => {
+      if (proposal.proposal_type !== AI_PROPOSAL_TYPES.style) return false;
+      return Boolean(parsePayload(proposal.payload).operationalRules);
+    });
+    if (operationalStyleProposal) {
+      const payload = parsePayload(operationalStyleProposal.payload);
+      await upsertStyleProfileForOwner(bindings, ownerId, projectId, {
+        operationalRules: normalizeOperationalStyleRules(payload.operationalRules),
+        metrics: parsePayload(payload.metrics) as JsonObject,
+        source:
+          typeof payload.draftImportId === "string"
+            ? `draft_import:${payload.draftImportId}`
+            : "foundation_lock_style_proposal",
+        sourceProseVersionIds: [],
+      });
     }
 
     const { error: phaseError } = await admin

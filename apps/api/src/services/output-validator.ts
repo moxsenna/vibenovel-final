@@ -1,7 +1,13 @@
 import type { WriterSafetyEnvelope } from "@vibenovel/shared";
 import { validateRevealLeak } from "./validators/reveal-validator.js";
 import { validateBeatCompliance } from "./validators/beat-compliance-validator.js";
+import { validateKnowledgeConstraint } from "./validators/knowledge-validator.js";
 import { validateMobileReadability } from "./validators/mobile-readability-validator.js";
+import { validateRetentionHook } from "./validators/retention-validator.js";
+import {
+  validateStyle,
+  type StyleValidationRules,
+} from "./validators/style-validator.js";
 
 export interface ValidationReport {
   passed: boolean;
@@ -73,6 +79,7 @@ export interface ValidateAiOutputInput {
   povForbiddenFactTexts?: string[];
   retentionHookKeywords?: string[];
   styleToneHint?: string | null;
+  styleRules?: StyleValidationRules;
   maxChars?: number;
 }
 
@@ -125,18 +132,8 @@ const USER_FACING_LABEL_BY_CHECK_KEY: Record<string, string> = {
   style_voice_consistency: "Suara cerita konsisten",
 };
 
-function normalize(text: string): string {
-  return text.trim().replace(/\s+/g, " ");
-}
-
 function containsAny(text: string, patterns: RegExp[]): boolean {
   return patterns.some((pattern) => pattern.test(text));
-}
-
-function includesConcept(text: string, concept: string): boolean {
-  const normalizedConcept = normalize(concept).toLowerCase();
-  if (!normalizedConcept) return false;
-  return normalize(text).toLowerCase().includes(normalizedConcept);
 }
 
 function addCheck(
@@ -197,13 +194,27 @@ export function validateAiOutput(input: ValidateAiOutputInput): OutputValidation
   const forbiddenConcepts = (input.forbiddenConcepts ?? [])
     .map((concept) => concept.trim())
     .filter(Boolean);
-  const leakedConcept = forbiddenConcepts.find((concept) => includesConcept(trimmed, concept));
+  const revealFinding = validateRevealLeak(trimmed, {
+    version: "writer_safety_v1",
+    projectId: "",
+    chapterOutlineId: "",
+    chapterNumber: 0,
+    beatId: null,
+    futureRevealFactIds: [],
+    forbiddenRevealPhrases: forbiddenConcepts,
+    unknownFactConstraints: [],
+    hardBeatConstraints: {
+      mustInclude: [],
+      mustNotInclude: [],
+      stopCondition: null,
+    },
+  });
   addCheck(
     checks,
     "no_future_reveal_leak",
-    !leakedConcept,
+    !revealFinding,
     "blocked",
-    leakedConcept
+    revealFinding
       ? "Output mentions a future reveal that is forbidden for this chapter."
       : "No future reveal leak detected.",
   );
@@ -211,13 +222,21 @@ export function validateAiOutput(input: ValidateAiOutputInput): OutputValidation
   const povForbidden = (input.povForbiddenFactTexts ?? [])
     .map((phrase) => phrase.trim())
     .filter((phrase) => phrase.length >= MIN_POV_FACT_PHRASE_CHARS);
-  const leakedPovFact = povForbidden.find((phrase) => includesConcept(trimmed, phrase));
+  const knowledgeFindings = validateKnowledgeConstraint(
+    trimmed,
+    povForbidden.map((factText, index) => ({
+      characterId: "pov",
+      factId: `forbidden:${index}`,
+      factText,
+      allowedMode: "forbidden" as const,
+    })),
+  );
   addCheck(
     checks,
     "pov_character_knowledge",
-    !leakedPovFact,
+    knowledgeFindings.length === 0,
     "blocked",
-    leakedPovFact
+    knowledgeFindings.length > 0
       ? "Output states canon the POV character does not know yet."
       : "POV character knowledge respected.",
   );
@@ -241,14 +260,17 @@ export function validateAiOutput(input: ValidateAiOutputInput): OutputValidation
   const mustInclude = (input.mustInclude ?? [])
     .map((item) => item.trim())
     .filter(Boolean);
-  const missing = mustInclude.filter((item) => !includesConcept(trimmed, item));
+  const beatFindings = validateBeatCompliance(trimmed, mustInclude, []);
+  const missing = beatFindings
+    .filter((finding) => finding.type === "warning")
+    .map((finding) => finding.message);
   addCheck(
     checks,
     "beat_requirement_coverage",
     missing.length === 0,
     "warning",
     missing.length > 0
-      ? `Output misses required beat material: ${missing.join(", ")}.`
+      ? missing.join(" ")
       : "Output covers required beat material.",
   );
 
@@ -256,41 +278,40 @@ export function validateAiOutput(input: ValidateAiOutputInput): OutputValidation
   const retentionKeywords = (input.retentionHookKeywords ?? [])
     .map((k) => k.trim())
     .filter((k) => k.length >= 4);
-  const retentionApplies = trimmed.length >= 120 && retentionKeywords.length > 0;
-  const retentionHit =
-    !retentionApplies ||
-    retentionKeywords.some((keyword) => includesConcept(trimmed, keyword));
+  const retentionFindings = validateRetentionHook(trimmed, retentionKeywords);
   addCheck(
     checks,
     "retention_unlock_hook",
-    retentionHit,
+    retentionFindings.length === 0,
     "warning",
-    retentionApplies && !retentionHit
-      ? "Closing prose may be weak vs chapter hook target."
+    retentionFindings.length > 0
+      ? retentionFindings[0].message
       : "Retention hook cues present or not required.",
   );
 
-  const toneHint = input.styleToneHint?.trim() ?? "";
-  const styleApplies = toneHint.length >= 4;
-  const styleHit = !styleApplies || includesConcept(trimmed, toneHint);
+  const styleRules: StyleValidationRules = input.styleRules ?? {};
+  const styleFindings = validateStyle(trimmed, styleRules);
+  const blockedStyle = styleFindings.some((finding) => finding.type === "blocked");
   addCheck(
     checks,
     "style_voice_consistency",
-    styleHit,
-    "warning",
-    styleApplies && !styleHit
-      ? "Prose may drift from foundation tone guidance."
+    styleFindings.length === 0,
+    blockedStyle ? "blocked" : "warning",
+    styleFindings.length > 0
+      ? styleFindings.map((finding) => finding.message).join(" ")
       : "Style/tone guidance respected or not set.",
   );
 
   const maxChars = input.maxChars ?? DEFAULT_MAX_OUTPUT_CHARS;
+  const mobileFindings = validateMobileReadability(trimmed);
   addCheck(
     checks,
     "safe_mobile_prose_length",
     trimmed.length <= maxChars &&
-      trimmed
-        .split(/\n{2,}/)
-        .every((paragraph) => paragraph.trim().length <= MOBILE_PARAGRAPH_MAX_CHARS),
+      mobileFindings.length === 0 &&
+      trimmed.split(/\n{2,}/).every(
+        (paragraph) => paragraph.trim().length <= MOBILE_PARAGRAPH_MAX_CHARS,
+      ),
     "warning",
     "Output should stay within mobile-readable length bounds.",
   );
