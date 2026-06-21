@@ -8,7 +8,6 @@ import {
   WRITER_QUALITY_MODES,
   type DetectedSignal,
   type DetectedSignalStatus,
-  type DetectedSignalType,
   type IntakeMessage,
   type IntakePhase,
   type IntakeSession,
@@ -44,6 +43,12 @@ import {
 } from "./generation-attempt.js";
 import { generateCorrelationId } from "./audit-snapshot.js";
 import { computePromptHashFromMessages } from "./prose-generation-prompt.js";
+import {
+  parseIntakeAiEnvelope,
+  buildIntakeExtractionInstructions,
+  REQUIRED_SIGNAL_TYPES,
+  type ExtractedSignalDraft,
+} from "./intake-extraction.js";
 
 const SESSION_SELECT =
   "id, project_id, status, phase, progress_percent, summary, metadata, created_at, updated_at";
@@ -80,12 +85,6 @@ const FORBIDDEN_BODY_KEYS = new Set([
   "updated_at",
 ]);
 
-interface ExtractedSignalDraft {
-  type: DetectedSignalType;
-  label: string;
-  value: string;
-  confidence: number;
-}
 
 function assertNoForbiddenKeys(body: Record<string, unknown>): void {
   for (const key of Object.keys(body)) {
@@ -464,10 +463,17 @@ export async function appendUserMessageForOwner(
   if (aiEnabled && !useMock) {
     const historyMessages = await listMessagesForSession(bindings, projectId, sessionRow.id, RECENT_MESSAGE_LIMIT);
 
+    const signalRows = await listSignalsForSession(bindings, projectId, sessionRow.id);
+    const missing = REQUIRED_SIGNAL_TYPES.filter(
+      (t) => !signalRows.some((s) => s.type === t && s.status !== DETECTED_SIGNAL_STATUSES.dismissed),
+    );
+    const filled = REQUIRED_SIGNAL_TYPES.flatMap((t) => {
+      const s = signalRows.find((row) => row.type === t && row.status !== DETECTED_SIGNAL_STATUSES.dismissed);
+      return s ? [{ type: t, label: s.label, value: s.value }] : [];
+    });
     const systemPrompt =
       "Kamu adalah asisten intake cerita pintar yang ramah, hangat, membimbing, ringkas, dan tidak robotik. " +
-      "Tugasmu adalah menganalisis ide cerita pengguna, memberikan tanggapan singkat yang mendukung, meringkas arah cerita yang terdeteksi secara alami, dan mengajukan SATU pertanyaan follow-up yang berguna untuk menggali detail cerita lebih lanjut (misalnya tentang tokoh, konflik, rahasia, janji pembaca, target pembaca, genre, atau nada emosional). " +
-      "Jangan membuat fakta cerita yang berlebihan di luar apa yang diceritakan pengguna. Jangan membocorkan plot masa depan. Jawab dalam bahasa Indonesia yang ramah bagi penulis pemula.";
+      buildIntakeExtractionInstructions(missing, filled);
 
     const promptMessages = [
       { role: "system" as const, content: systemPrompt },
@@ -529,8 +535,11 @@ export async function appendUserMessageForOwner(
         qualityMode: WRITER_QUALITY_MODES.hemat,
         promptHash,
         promptMessages,
+        maxOutputTokensOverride: 1500,
       });
-      agentContent = routerResult.text;
+      const rawText = routerResult.text;
+      const envelope = parseIntakeAiEnvelope(rawText);
+      agentContent = envelope?.reply?.trim() || rawText;
 
       const { data: dbAgentRow, error: agentError } = await admin
         .from("intake_messages")
@@ -617,12 +626,39 @@ export async function appendUserMessageForOwner(
     agentRow = dbAgentRow as IntakeMessageRow;
   }
 
-  await extractSignalsAndProgressInternal(
-    bindings,
-    projectId,
-    sessionRow.id,
-    userMsgRow.id,
-  );
+  if (!aiEnabled || useMock) {
+    await extractSignalsAndProgressInternal(bindings, projectId, sessionRow.id, userMsgRow.id);
+  } else {
+    const combinedUser = [
+      ...(await listMessagesForSession(bindings, projectId, sessionRow.id, RECENT_MESSAGE_LIMIT))
+        .filter((m) => m.role === INTAKE_MESSAGE_ROLES.user)
+        .map((m) => m.content),
+      content,
+    ].join("\n");
+    const envelope = parseIntakeAiEnvelope(agentContent);
+    const drafts =
+      envelope && envelope.signals.length > 0
+        ? envelope.signals
+        : extractSignalsFromText(combinedUser);
+    const { data: existingRows } = await admin
+      .from("detected_signals")
+      .select(SIGNAL_SELECT)
+      .eq("project_id", projectId)
+      .eq("session_id", sessionRow.id);
+    const existing = (existingRows ?? []) as DetectedSignalRow[];
+    for (const draft of drafts) {
+      await upsertDetectedSignal(bindings, projectId, sessionRow.id, draft, userMsgRow.id, existing);
+    }
+    const refreshed = await listSignalsForSession(bindings, projectId, sessionRow.id);
+    const progressPercent = computeProgressFromSignals(refreshed);
+    const nextPhase =
+      progressPercent >= 80 ? INTAKE_PHASES.concept_generation : INTAKE_PHASES.signal_detection;
+    await admin
+      .from("intake_sessions")
+      .update({ progress_percent: progressPercent, phase: nextPhase })
+      .eq("id", sessionRow.id)
+      .eq("project_id", projectId);
+  }
 
   const { data: updatedSession, error: sessionError } = await admin
     .from("intake_sessions")
@@ -797,7 +833,7 @@ function extractSignalsFromText(text: string): ExtractedSignalDraft[] {
 
 function computeProgressFromSignals(signals: Array<{ type: string; status?: string }>): number {
   const activeSignals = signals.filter(s => s.status !== "dismissed");
-  const requiredTypes = ["genre", "protagonist", "core_conflict", "reader_promise", "target_reader", "secret_candidate", "tone"];
+  const requiredTypes = REQUIRED_SIGNAL_TYPES;
   let count = 0;
   for (const type of requiredTypes) {
     if (activeSignals.some(s => s.type === type)) {
@@ -816,17 +852,21 @@ async function upsertDetectedSignal(
   existing: DetectedSignalRow[],
 ): Promise<DetectedSignalRow> {
   const admin = createServiceRoleClient(bindings);
-  const normalizedValue = draft.value.trim().toLowerCase();
-
-  const match = existing.find(
-    (row) => row.type === draft.type && row.value.trim().toLowerCase() === normalizedValue,
-  );
+  const match = existing.find((row) => row.type === draft.type);
 
   if (match) {
+    if (
+      match.status === DETECTED_SIGNAL_STATUSES.confirmed ||
+      match.status === DETECTED_SIGNAL_STATUSES.dismissed
+    ) {
+      return match;
+    }
+
     const { data, error } = await admin
       .from("detected_signals")
       .update({
         label: draft.label,
+        value: draft.value,
         confidence: draft.confidence,
         source_message_id: sourceMessageId ?? match.source_message_id,
         metadata: { ...parseJsonObject(match.metadata), extractor: "deterministic_stub" },
@@ -951,7 +991,22 @@ export async function extractDetectedSignalsForOwner(
 ): Promise<{ sessionId: string; signals: DetectedSignal[] }> {
   await getOwnedProjectRow(bindings, ownerId, projectId);
   const sessionRow = await getOrCreateActiveSessionRow(bindings, projectId);
-  await extractSignalsAndProgressInternal(bindings, projectId, sessionRow.id);
+
+  if (isAiGenerationEnabled(bindings)) {
+    const admin = createServiceRoleClient(bindings);
+    const existing = await listSignalsForSession(bindings, projectId, sessionRow.id);
+    const progressPercent = computeProgressFromSignals(existing);
+    const nextPhase =
+      progressPercent >= 80 ? INTAKE_PHASES.concept_generation : INTAKE_PHASES.signal_detection;
+    await admin
+      .from("intake_sessions")
+      .update({ progress_percent: progressPercent, phase: nextPhase })
+      .eq("id", sessionRow.id)
+      .eq("project_id", projectId);
+  } else {
+    await extractSignalsAndProgressInternal(bindings, projectId, sessionRow.id);
+  }
+
   const signals = await listSignalsForSession(bindings, projectId, sessionRow.id);
   return { sessionId: sessionRow.id, signals };
 }
