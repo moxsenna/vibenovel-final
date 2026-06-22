@@ -21,9 +21,11 @@ import {
   debitCreditsForAttempt,
   refundCreditsForAttempt,
 } from "./credit-ledger.js";
-import { getCreditCostForGeneration } from "./ai-credit-policy.js";
-import { calculateEstimatedCostUsd } from "./model-cost-map.js";
-import { generateWithModelRouter } from "./model-router.js";
+import {
+  getCreditCostForGeneration,
+  resolveQualityModeForGeneration,
+} from "./ai-credit-policy.js";
+import { assertAiGenerationAllowedForOwner } from "./ai-rate-limit.js";
 import { getOwnedProjectRow } from "./project.js";
 import {
   assertPublishUserTextSafe,
@@ -46,6 +48,9 @@ import {
   type GenerationAttemptCostEstimateMetadata,
   type GenerationAttemptSafeSummary,
 } from "./generation-attempt.js";
+import { assertGenerationRouteCallable } from "./model-router.js";
+import { createProviderEventSequence } from "./generation-provider-event.js";
+import { generateValidatedAiOutputWithSafeRepair } from "./prose-output-safe-repair.js";
 
 const PACKAGE_SELECT =
   "id, project_id, chapter_outline_id, chapter_summary_id, chapter_number, chapter_title, status, package_version, is_current, display_title, teaser, short_synopsis, caption, reader_question, next_chapter_teaser, tags, genre, mobile_preview_excerpt, checklist_json, safety_flags, generator_version, exported_at, metadata, created_at, updated_at";
@@ -395,6 +400,7 @@ async function handleProviderFailure(
     userId: string;
     projectId: string;
     amount: number;
+    qualityMode: WriterQualityMode;
     idempotencyKey: string;
     correlationId: string;
     err: unknown;
@@ -413,6 +419,7 @@ async function handleProviderFailure(
       amount: input.amount,
       reason: CREDIT_LEDGER_REASONS.generationRefund,
       generationType: GENERATION_TYPES.publish_copy,
+      qualityMode: input.qualityMode,
       idempotencyKey: input.idempotencyKey,
       correlationId: input.correlationId,
     });
@@ -499,9 +506,26 @@ export async function improvePublishCopyForOwner(
     body.instruction,
   );
 
+  const generationType = GENERATION_TYPES.publish_copy;
+  const effectiveQualityMode = resolveQualityModeForGeneration(
+    generationType,
+    body.qualityMode,
+  );
   const creditCost = getCreditCostForGeneration({
-    generationType: GENERATION_TYPES.publish_copy,
-    qualityMode: body.qualityMode,
+    generationType,
+    qualityMode: effectiveQualityMode,
+  });
+
+  await assertAiGenerationAllowedForOwner(bindings, {
+    userId: ownerId,
+    projectId,
+    generationType,
+    requestedCreditCost: creditCost,
+  });
+
+  assertGenerationRouteCallable(bindings, {
+    generationType,
+    qualityMode: effectiveQualityMode,
   });
 
   const correlationId = generateCorrelationId();
@@ -512,17 +536,18 @@ export async function improvePublishCopyForOwner(
     beatId: null,
     writingSessionId: null,
     contextPacketLogId: null,
-    generationType: GENERATION_TYPES.publish_copy,
+    generationType,
     idempotencyKey: body.idempotencyKey,
     creditCost,
     promptHash: promptResult.promptHash,
-    qualityMode: body.qualityMode,
+    qualityMode: effectiveQualityMode,
     correlationId,
     metadata: {
       packageId: body.packageId,
       requestedFields: body.fields,
     },
   });
+  const providerEventSequence = createProviderEventSequence();
 
   let debited = false;
   try {
@@ -532,7 +557,8 @@ export async function improvePublishCopyForOwner(
       attemptId: attempt.id,
       amount: creditCost,
       reason: CREDIT_LEDGER_REASONS.generationDebit,
-      generationType: GENERATION_TYPES.publish_copy,
+      generationType,
+      qualityMode: effectiveQualityMode,
       idempotencyKey: body.idempotencyKey,
       correlationId,
     });
@@ -554,17 +580,33 @@ export async function improvePublishCopyForOwner(
 
   attempt = await markGenerationAttemptRunning(bindings, attempt.id);
 
-  let providerResult;
+  let validated;
   try {
-    providerResult = await generateWithModelRouter(bindings, {
-      generationType: GENERATION_TYPES.publish_copy,
-      qualityMode: body.qualityMode,
+    validated = await generateValidatedAiOutputWithSafeRepair({
+      bindings,
+      generationType,
+      qualityMode: effectiveQualityMode,
       promptHash: promptResult.promptHash,
       promptMessages: promptResult.promptMessages,
-      temperature: 0.6,
+      validationContext: {
+        forbiddenConcepts: [],
+        mustInclude: [],
+      },
       metadata: {
         packageId: body.packageId,
         requestedFields: body.fields,
+      },
+      temperature: 0.6,
+      validationTextFromProvider: (raw) => {
+        const parsed = parsePublishCopyModelOutput(raw, body.fields);
+        return Object.values(parsed).filter(Boolean).join("\n");
+      },
+      repairExcerptFromProvider: (raw) => raw,
+      persistContext: {
+        projectId,
+        userId: ownerId,
+        generationAttemptId: attempt.id,
+        providerEventSequence,
       },
     });
   } catch (err) {
@@ -574,6 +616,7 @@ export async function improvePublishCopyForOwner(
         userId: ownerId,
         projectId,
         amount: creditCost,
+        qualityMode: effectiveQualityMode,
         idempotencyKey: body.idempotencyKey,
         correlationId,
         err,
@@ -582,9 +625,10 @@ export async function improvePublishCopyForOwner(
     throw err;
   }
 
+  const providerResult = validated.providerResult;
   let suggestions: PublishCopySuggestions;
   try {
-    suggestions = parsePublishCopyModelOutput(providerResult.text, body.fields);
+    suggestions = parsePublishCopyModelOutput(validated.text, body.fields);
   } catch (err) {
     if (debited) {
       await handleProviderFailure(bindings, {
@@ -592,6 +636,7 @@ export async function improvePublishCopyForOwner(
         userId: ownerId,
         projectId,
         amount: creditCost,
+        qualityMode: effectiveQualityMode,
         idempotencyKey: body.idempotencyKey,
         correlationId,
         err,
@@ -612,26 +657,12 @@ export async function improvePublishCopyForOwner(
   let estimatedCostUsd: number | null = null;
   let costEstimateMetadata: GenerationAttemptCostEstimateMetadata = {};
 
-  if (providerResult.provider === "mock") {
-    estimatedCostUsd = 0;
-    costEstimateMetadata = {
-      costEstimateApproximate: true,
-      mockProvider: true,
-      costModel: providerResult.model,
-    };
-  } else {
-    const costResult = calculateEstimatedCostUsd({
-      model: providerResult.model,
-      inputTokens: providerResult.inputTokens,
-      outputTokens: providerResult.outputTokens,
-    });
-    estimatedCostUsd = costResult.estimatedCostUsd;
-    costEstimateMetadata = {
-      costEstimateApproximate: costResult.approximate,
-      ...(costResult.reason ? { costEstimateReason: costResult.reason } : {}),
-      ...(costResult.costModel ? { costModel: costResult.costModel } : {}),
-    };
-  }
+  estimatedCostUsd = validated.totalEstimatedCostUsd;
+  costEstimateMetadata = {
+    costEstimateApproximate: true,
+    ...(providerResult.provider === "mock" ? { mockProvider: true } : {}),
+    costModel: providerResult.model,
+  };
 
   const suggestionsMetadata = sanitizeSuggestionsForMetadata(suggestions);
 
@@ -641,6 +672,11 @@ export async function improvePublishCopyForOwner(
     projectId,
     provider: providerResult.provider,
     model: providerResult.model,
+    logicalModel: validated.logicalModel,
+    routingPolicyVersion: validated.routingPolicyVersion,
+    fallbackUsed: validated.fallbackUsed,
+    retryCount: validated.totalRetryCount,
+    providerLatencyMs: validated.totalProviderLatencyMs,
     inputTokens: providerResult.inputTokens,
     outputTokens: providerResult.outputTokens,
     outputEntityId: attempt.id,

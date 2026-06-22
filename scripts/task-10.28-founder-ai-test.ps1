@@ -133,7 +133,7 @@ function Ensure-WriteContext {
     $proposals = Invoke-Api -Method POST -Path "/api/projects/$ProjectIdForBootstrap/foundation/proposals/generate" -Headers $auth -Body "{}"
     foreach ($p in $proposals.data.proposals) {
       if ($p.type -in @("foundation", "character", "fact", "relationship_speech_rule", "style")) {
-        Invoke-Api -Method POST -Path "/api/projects/$ProjectIdForBootstrap/proposals/$($p.id)/accept" -Headers $auth -Body "{}" | Out-Null
+        Invoke-Api -Method POST -Path "/api/projects/$ProjectIdForBootstrap/foundation/proposals/$($p.id)/accept" -Headers $auth -Body "{}" | Out-Null
       }
     }
     Invoke-Api -Method POST -Path "/api/projects/$ProjectIdForBootstrap/foundation/lock" -Headers $auth -Body "{}" | Out-Null

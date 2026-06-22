@@ -7,7 +7,7 @@ Monorepo Narraza: dokumentasi produk + frontend Sprint 1 + backend scaffold Spri
 
 Narraza adalah **AI Serial Fiction Production OS** — bukan chatbot novel biasa. Blueprint MVP dan Full Version disatukan; pemisahan delivery hanya di roadmap/sprint plan.
 
-**Execution status (agents):** Use this README + [`docs/36`](docs/36-non-blocking-technical-debt-and-deferred-items.md) + sprint closure reports. **Do not** use [`docs/26-current-sprint-plan.md`](docs/26-current-sprint-plan.md) as the live task queue — it is a historical product roadmap. Sprint numbering map: [`docs/61`](docs/61-roadmap-and-sprint-number-reconciliation.md). Updated product roadmap: [`docs/63`](docs/63-updated-product-roadmap-after-sprint-11.md).
+**Execution status (agents, Jun 2026):** Sprint **12 closed** ([`docs/96`](docs/96-sprint-12-stabilization-report.md)); real generation **13** ([`docs/97`](docs/97-sprint-13-real-generation-report.md)); safety **14** ([`docs/98`](docs/98-sprint-14-safety-hardening-report.md)); draft import **15** ([`docs/99`](docs/99-sprint-15-draft-import-report.md)); creator mode **16** ([`docs/101-sprint-16-creator-mode-report.md`](docs/101-sprint-16-creator-mode-report.md)). Living gap/backlog: [`docs/100-competitive-manuscript-teardown-and-gap-sprint-plan.md`](docs/100-competitive-manuscript-teardown-and-gap-sprint-plan.md). **Docs↔code truth:** [`docs/audit/12-docs-code-truth-matrix-2026-06-16.md`](docs/audit/12-docs-code-truth-matrix-2026-06-16.md). Also: [`docs/36`](docs/36-non-blocking-technical-debt-and-deferred-items.md), [`docs/61`](docs/61-roadmap-and-sprint-number-reconciliation.md), [`docs/63`](docs/63-updated-product-roadmap-after-sprint-11.md). **Do not** use [`docs/26-current-sprint-plan.md`](docs/26-current-sprint-plan.md) as the live task queue.
 
 ---
 
@@ -30,11 +30,11 @@ vibenovel-unified-blueprint/
 
 | Folder | Status | Keterangan |
 |---|---|---|
-| `apps/web` | **Sprint 7 complete** | UI parity Stitch; foundation + outline + Write Room + Summary + Publish page API integration |
-| `apps/api` | **Sprint 7 complete** | Sprint 2–7 APIs + write room + summary/delta + publish package |
-| `packages/shared` | **Implemented (Task 2.1–7.1, 8.1)** | Domain types, enums, write room + summary/delta + publish + AI generation contracts |
-| `packages/core` | Placeholder | Engine AI/story — nanti |
-| `supabase` | **Migration + seed (Task 8.1)** | 30 tabel (+ generation_attempts, credit_ledger), RLS, demo seed — `supabase db reset` verified |
+| `apps/web` | **Through Sprint 18** | UI parity Stitch; foundation + outline + Write Room + Summary + Publish + Draft Import + version history |
+| `apps/api` | **Through Sprint 18** | Hono/Worker APIs through continuity, safety, import/RAG (Sprints 2–18) |
+| `packages/shared` | **Implemented (Task 2.1–18)** | Domain types, enums, write room + summary/delta + publish + continuity/import contracts |
+| `packages/core` | Placeholder | Engine AI/story — lives in `apps/api/src/services` |
+| `supabase` | **Migrations through `00019`** | Core + continuity + validation + import/RAG; RLS; `supabase db reset` for local verify |
 | `scripts` | **Smoke scripts (through 7.5)** | `smoke:api`, `smoke:api:sprint5/6/7`, `smoke:web:summary`, `smoke:web:publish` — see `scripts/README.md` |
 | `docs` | Dokumentasi | Sumber arsitektur & sprint plan |
 | `stitch-reference` | Referensi desain | HTML + screen.png per halaman |

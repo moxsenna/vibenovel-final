@@ -24,6 +24,13 @@ const PROPOSAL_SELECT =
 const LINK_SELECT =
   "id, project_id, chapter_summary_id, ai_proposal_id, status, metadata, created_at, updated_at";
 
+export interface CreateLinkedProposalsOptions {
+  proposalSource?: string;
+  linkExtractor?: string;
+  auditTask?: string;
+  fromDeltaExtraction?: boolean;
+}
+
 /** Validate all proposal drafts before any DB writes. */
 export function preflightLinkedProposalDrafts(drafts: ProposalDraft[]): void {
   for (const draft of drafts) {
@@ -56,6 +63,7 @@ export async function createLinkedProposals(
   summaryId: string,
   drafts: ProposalDraft[],
   correlationId?: string,
+  options?: CreateLinkedProposalsOptions,
 ): Promise<LinkedProposalSummary[]> {
   if (drafts.length === 0) return [];
 
@@ -65,6 +73,10 @@ export async function createLinkedProposals(
   const batchCorrelationId = correlationId ?? crypto.randomUUID();
   const createdLinkIds: string[] = [];
   const createdProposalIds: string[] = [];
+  const proposalSource = options?.proposalSource ?? DELTA_PROPOSAL_SOURCE;
+  const linkExtractor = options?.linkExtractor ?? "chapter_delta_v1_stub";
+  const auditTask = options?.auditTask ?? "delta_extract";
+  const fromDeltaExtraction = options?.fromDeltaExtraction ?? true;
 
   return runWithCompensation(
     async () => {
@@ -80,7 +92,7 @@ export async function createLinkedProposals(
             proposal_type: draft.proposalType,
             status: AI_PROPOSAL_STATUSES.proposed,
             risk_level: draft.riskLevel,
-            source: DELTA_PROPOSAL_SOURCE,
+            source: proposalSource,
             title: draft.title,
             payload: draft.payload,
           })
@@ -98,7 +110,7 @@ export async function createLinkedProposals(
         const linkMetadata: JsonObject = {
           itemType: draft.sourceItemType,
           sourceItemId: draft.sourceItemId,
-          extractor: "chapter_delta_v1_stub",
+          extractor: linkExtractor,
         };
 
         const { data: linkRow, error: linkError } = await admin
@@ -131,7 +143,7 @@ export async function createLinkedProposals(
             riskLevel: proposal.risk_level,
             source: proposal.source,
             chapterSummaryId: summaryId,
-            fromDeltaExtraction: true,
+            fromDeltaExtraction,
             correlationId: batchCorrelationId,
           },
         });
@@ -153,7 +165,7 @@ export async function createLinkedProposals(
           entityId: summaryId,
           metadata: {
             correlationId: batchCorrelationId,
-            task: "delta_extract",
+            task: auditTask,
             summaryId,
             proposalCount: results.length,
             proposalIds: linkedProposalIds,

@@ -407,3 +407,17 @@ Sprint 5 closed with **zero blockers**. Items below are non-blocking unless mark
 - [`docs/93-remove-initial-mock-hook-states-credit-route-report.md`](93-remove-initial-mock-hook-states-credit-route-report.md) — Task 10.30a Phase 0 audit fix
 - [`docs/94-real-intake-assistant-concept-generator-report.md`](94-real-intake-assistant-concept-generator-report.md) — Task 10.31a real intake & concepts pipeline
 - [`docs/95-hotfix-generation-attempt-intake-assistant.md`](95-hotfix-generation-attempt-intake-assistant.md) — Task 10.31a-hotfix generation attempt fix
+## AI model registry & routing (2026-06-21)
+
+Durable OpenRouter-parity refactor shipped (see
+[`docs/audit/24`](audit/24-ai-model-registry-routing-verification-2026-06-21.md)).
+Deferred / non-blocking:
+
+- **TokenRouter activation (Optional Gate A)** — promotion ends 22 June 2026;
+  reverify pricing + run the live probe before activating any engine in a
+  separate routing-policy commit.
+- **Migration `00022`** — apply and run `supabase db reset` + sprint8/9 smoke on
+  a live local database before production deploy.
+- **Shared embeddings transport** — `callOpenAiCompatibleEmbeddings` not
+  extracted; existing OpenRouter embeddings transport retained (model
+  resolution already centralized through the registry).

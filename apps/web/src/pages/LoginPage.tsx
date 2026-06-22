@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { Button, Card } from "@/components/ui";
 import { useAuth } from "@/context/AuthContext";
+import { shouldUseMocks } from "@/lib/env";
 import { isSupabaseConfigured } from "@/lib/supabase";
 import { ROUTES } from "@/routes/paths";
 
@@ -10,11 +11,22 @@ type AuthMode = "signin" | "signup";
 export function LoginPage() {
   const { session, loading, signIn, signUp, isConfigured } = useAuth();
   const navigate = useNavigate();
-  const [mode, setMode] = useState<AuthMode>("signin");
+  const [searchParams] = useSearchParams();
+  const paramMode = searchParams.get("mode");
+  const [mode, setMode] = useState<AuthMode>(
+    paramMode === "signup" ? "signup" : "signin"
+  );
+
+  useEffect(() => {
+    if (paramMode === "signup" || paramMode === "signin") {
+      setMode(paramMode);
+    }
+  }, [paramMode]);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const showDashboardShortcut = shouldUseMocks() || Boolean(session);
 
   useEffect(() => {
     if (!loading && session) {
@@ -140,10 +152,17 @@ export function LoginPage() {
       </Card>
 
       <p className="text-center font-body-sm text-body-sm text-muted-text">
-        <Link to={ROUTES.dashboard} className="text-primary underline-offset-2 hover:underline">
-          Lanjut ke dashboard
-        </Link>
-        {" · "}
+        {showDashboardShortcut ? (
+          <>
+            <Link
+              to={ROUTES.dashboard}
+              className="text-primary underline-offset-2 hover:underline"
+            >
+              Lanjut ke dashboard
+            </Link>
+            {" · "}
+          </>
+        ) : null}
         <a
           href="https://narraza.web.id"
           className="text-primary underline-offset-2 hover:underline"

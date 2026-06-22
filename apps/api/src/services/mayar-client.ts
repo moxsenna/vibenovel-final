@@ -150,7 +150,7 @@ export async function createMayarInvoice(
     email: input.customerEmail,
     mobile: input.customerMobile.trim(),
     redirectUrl: input.redirectUrl,
-    description: `VibeNovel Credit Pack - ${input.productName}`,
+    description: `Narraza Credit Pack - ${input.productName}`,
     expiredAt: input.expiresAt,
     items: [
       {

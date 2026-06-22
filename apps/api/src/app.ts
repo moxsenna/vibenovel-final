@@ -3,9 +3,11 @@ import { corsMiddleware } from "./middleware/cors.js";
 import { errorHandler, notFoundHandler } from "./errors.js";
 import { registerRoutes } from "./routes/index.js";
 import type { AppEnv } from "./types.js";
+import { assertAiRoutingPolicyValid } from "./services/ai-routing-policy.js";
 
 /** Shared Hono app factory — used by Cloudflare Worker and Node runtimes. */
 export function createApp(): Hono<AppEnv> {
+  assertAiRoutingPolicyValid();
   const app = new Hono<AppEnv>();
 
   app.use("*", corsMiddleware);

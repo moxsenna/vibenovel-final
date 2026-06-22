@@ -10,6 +10,7 @@ import {
 import type { SummaryGenerationSnapshot } from "./summary-snapshot.js";
 import { assertProseTextsSafeForSummary, assertSummaryTextSafe } from "./summary-safety.js";
 
+export const SUMMARY_AI_GENERATOR_VERSION = "summary_ai_generator";
 export const SUMMARY_GENERATOR_VERSION = "summary_stub_v1";
 
 const SYNOPSIS_MAX = 800;

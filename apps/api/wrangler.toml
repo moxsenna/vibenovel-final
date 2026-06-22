@@ -28,3 +28,30 @@ PAYMENT_PROVIDER_MOCK = "true"
 PAYMENT_PROVIDER_MOCK_MODE = "success"
 AI_GENERATION_ENABLED = "false"
 AI_PROVIDER_MOCK = "true"
+
+# Production API on Cloudflare Workers. Secrets are uploaded with:
+#   npm run operator:production:worker-secrets -- -RequireLiveDuitku
+[env.production]
+name = "vibenovel-api"
+
+[[env.production.routes]]
+pattern = "api.narraza.web.id"
+custom_domain = true
+
+[env.production.vars]
+APP_ENV = "production"
+ALLOWED_ORIGINS = "https://narraza.web.id,https://www.narraza.web.id,https://app.narraza.web.id"
+
+# Live AI provider.
+AI_GENERATION_ENABLED = "true"
+AI_PROVIDER_MOCK = "false"
+OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
+TOKENROUTER_BASE_URL = "https://api.tokenrouter.com/v1"
+
+# Duitku configuration is ready, but checkout stays off until the v2 launch gate.
+CREDIT_TOPUP_ENABLED = "false"
+PAYMENT_PROVIDER = "duitku"
+PAYMENT_PROVIDER_MOCK = "false"
+DUITKU_ENV = "production"
+DUITKU_CALLBACK_URL = "https://api.narraza.web.id/api/payments/duitku/callback"
+DUITKU_RETURN_URL = "https://app.narraza.web.id/credits/topup/return"

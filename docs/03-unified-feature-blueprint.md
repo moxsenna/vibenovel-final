@@ -37,6 +37,14 @@ Dokumen ini menyatukan fitur MVP dan Full. Jangan membuat dokumen terpisah `MVP.
 16. Publish Package Generator
 17. Cost-Aware Model Router
 
+Status per **2026-06-16** (truth matrix: [`docs/audit/12-docs-code-truth-matrix-2026-06-16.md`](audit/12-docs-code-truth-matrix-2026-06-16.md)):
+
+- **Shipped/real:** Story Intake, Story Foundation (AI path + stub fallback), Canon Facts + AI Proposals, Outline/Chapter/Beat planning (AI + stub fallback), Reveal Gate, Context Packet Builder + `povKnowledge`, Character State/Knowledge tables + POV packet (Sprint 16), Timeline + Mini Arc (Sprint 17), Prose Writer via OpenRouter, managed credit router, Chapter Summary/Delta, proposal-to-canon promotion, Publish Package, Draft Import + prep/RAG partial (Sprint 15/18), Creator Mode settings + advanced outline controls partial (Sprint 16), `validation_reports` + output validator partial (Sprint 14), Duitku topup, Cloudflare Worker production API.
+- **Partial:** Full writer version diff UX (storage/API shipped; mobile sheet backlog); eight named validators in `docs/09` (subset in `output-validator.ts`); beat/chapter-summary AI (stubs remain on some paths); full Story Bible / reveal editors; writer retention analytics (`writing_activity` not shipped).
+- **Planned/backlog:** Full voice/style learning, Sprint 19 retention dashboard, complete validator suite per `docs/09`, production stub policy (`docs/112`).
+
+For code-verified backlog: [`docs/100-competitive-manuscript-teardown-and-gap-sprint-plan.md`](100-competitive-manuscript-teardown-and-gap-sprint-plan.md). Sprint numbering map: [`docs/61-roadmap-and-sprint-number-reconciliation.md`](61-roadmap-and-sprint-number-reconciliation.md).
+
 ## Non-negotiable architecture rules
 
 ```txt

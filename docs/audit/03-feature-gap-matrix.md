@@ -12,30 +12,32 @@ Status: Implemented, Partial, Planned-only, Missing, Implemented but unsafe.
 | Facts | Critical | Implemented | None obvious | Low | Done | Important facts stored as canon only after approval. |
 | Relationship Speech Rules | Medium | Implemented | Advanced editing UX | Low | Later | Speech rules are stored and included safely in context packet. |
 | Target Length | Medium | Partial | Full planner enforcement | Medium | Later | User choice affects outline/write output length. |
-| Outline 10 Bab | High | Partial/Implemented | Real generator from locked foundation; current `outline_stub_deterministic` | High | 10.31b | Generate 10 user-specific chapters, not Nadira/Arman/Siska template. |
+| Outline 10 Bab | High | Partial/Implemented | AI path + `outline_stub_deterministic` fallback when AI off | Medium | 13 | Generate 10 user-specific chapters from locked foundation; verify `docs/97`. |
 | Reveal Schedule | Critical | Partial/Implemented | Stronger tests for forbidden-before rules and per-POV knowledge | High | Hardening | Future truth never enters writer prompt before allowed chapter. |
 | Context Packet Builder | Critical | Implemented | Unit tests and output validation integration | High | Hardening | Packet is safe present only, auditable, no raw future outline. |
 | Reveal Gate | Critical | Partial/Implemented | Output prose validation and repair loop | High | Hardening | Unsafe reveal detected before accepted prose is used. |
-| Character Knowledge | Critical | Partial | Per-character "who knows what when" model | High | Hardening/Creator Mode | POV character cannot know facts not yet learned. |
-| Beat Writer | High | Implemented | E2E blocked by auth and outline preconditions | High | Stabilization | Write room opens for locked outline and AI prose can be accepted. |
+| Character Knowledge | Critical | Partial/Implemented | `character_knowledge` + `povKnowledge` in packet (Sprint 16); not full `docs/09` validator | High | Hardening | POV character cannot know facts not yet learned. |
+| Beat Writer | High | Partial/Implemented | Beat generation may use `beat_stub_deterministic` when AI path absent; prose AI shipped | High | 112 / P1 | Write room opens; prefer real beat AI when AI on. |
 | Prose Versioning | High | Implemented | No delete endpoint; acceptable MVP | Low | Done/Later | Generated/user prose versions saved, current version tracked. |
-| Validators | Critical | Partial | `validation_reports` table/pipeline, explicit validate step | High | Hardening | Each AI output has validation result before marked usable. |
-| Safe Repair | High | Partial/Missing | Validator-triggered repair; current rewrite is user tool, not repair pipeline | High | Hardening | Failed validation triggers safe repair or regenerate. |
+| Validators | Critical | Partial/Implemented | `output-validator.ts` + `validation_reports` (`00012`); not full 8-validator suite | High | Hardening | Each AI output has validation result before marked usable. |
+| Safe Repair | High | Partial/Implemented | Safe-repair endpoint + validator loop (Sprint 14); not all `docs/09` triggers | High | Hardening | Failed validation triggers safe repair or regenerate. |
 | Chapter Delta | Critical | Implemented | AI extraction quality eval | Medium | Done/Hardening | Accepted chapter produces reviewable delta/proposals. |
 | Publish Package | High | Implemented | Chapter picker/regenerate UI polish | Low | Done/Later | Publish package generated from accepted chapter; user copies manually. |
 | Credit Estimate | Medium | Implemented | Pre-action estimate on all relevant screens; runtime cost cap | Medium | Stabilization | Settings/write/publish show numeric credit cost. |
 | Credit Ledger | High | Implemented | Production payment atomic grant gated by `00010` | Medium | Payment readiness | Debit/refund/topup idempotent and auditable. |
 | Model Router | High | Implemented | Runtime health/cost observability | Medium | Hardening | Client sends tier only; server chooses allowlisted model. |
-| Draft Import | High for existing-draft persona | Missing | Route, API, extraction, conflict detection, continuation plan | High | Future product sprint | Paste/import draft produces signals, facts proposals, continuation plan. |
-| Creator Mode | Medium/High | Partial/Missing | Story Bible, reveal schedule, open loop editors | Medium | Future product sprint | Advanced controls are opt-in, not default beginner UI. |
+| Draft Import | High for existing-draft persona | Partial/Implemented | Route `/projects/:id/import-draft`, API, signals, RAG prep partial (`00013`–`00018`); not full Persona C polish | Medium | 15/18 | Paste/import draft produces signals, proposals, continuation path. |
+| Creator Mode | Medium/High | Partial/Implemented | `creator_mode` setting + advanced outline UI (`00014`); not full Story Bible editors | Medium | 16 | Advanced controls opt-in; see `docs/101-sprint-16-creator-mode-report.md`. |
 
-## Gap paling penting
+## Gap paling penting (updated 2026-06-16)
 
-1. Auth/session reliability is a blocker for all API/AI user flows.
-2. Real foundation and outline generation are the next product gap after concept generation.
-3. Draft Import is not implemented and should not be represented as available.
-4. Validator/Safe Repair must become explicit before public AI usage.
-5. Character Knowledge Gate needs deeper modeling than current reveal-level filtering.
+1. Beat/chapter-summary generation stubs on default paths when AI on — see `docs/112` / `docs/100-competitive`.
+2. Full validator suite per `docs/09` — subset shipped in Sprint 14.
+3. Production payment still gated on migration `00010` approval.
+4. Character Knowledge **packet** shipped; deepen automated prose validators.
+5. Prod migration lag possible for `00014`–`00019` — see `docs/audit/12`.
+
+Drift SSOT: [`12-docs-code-truth-matrix-2026-06-16.md`](12-docs-code-truth-matrix-2026-06-16.md).
 
 ## Acceptance baseline for next E2E rerun
 

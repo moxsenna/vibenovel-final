@@ -1,4 +1,10 @@
-import type { ChapterOutline, OpenLoop, OutlinePlan } from "@vibenovel/shared";
+import type {
+  ChapterOutline,
+  MiniArc,
+  OpenLoop,
+  OutlinePlan,
+  TimelineEvent,
+} from "@vibenovel/shared";
 import { apiRequest } from "@/lib/api";
 
 /** API redacted reveal — never includes planningTruth. */
@@ -22,10 +28,24 @@ export interface PlannedRevealPublic {
 
 export interface OutlineBundleResponse {
   outlinePlan: OutlinePlan | null;
+  /** Sprint 17 — present from API; optional so legacy/empty bundle literals stay valid. */
+  miniArcs?: MiniArc[];
   chapterOutlines: ChapterOutline[];
   openLoops: OpenLoop[];
   plannedReveals: PlannedRevealPublic[];
   planningTruthRedacted: true;
+}
+
+export interface TimelineResponse {
+  events: TimelineEvent[];
+}
+
+/** Sprint 17 — Advanced Mode continuity timeline (read-only; past/current events). */
+export async function fetchTimeline(
+  projectId: string,
+  token?: string | null,
+): Promise<TimelineResponse> {
+  return apiRequest<TimelineResponse>(`/api/projects/${projectId}/timeline`, { token });
 }
 
 export interface GenerateOutlineResponse extends OutlineBundleResponse {

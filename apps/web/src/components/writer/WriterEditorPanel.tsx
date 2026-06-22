@@ -1,5 +1,8 @@
+import { useState } from "react";
+import type { ChapterProseVersion } from "@vibenovel/shared";
 import type { Beat, ChapterDraft } from "@/types";
 import { Button, Card, Icon } from "@/components/ui";
+import { WriterVersionHistoryPanel } from "./WriterVersionHistoryPanel";
 
 export interface WriterEditorPanelProps {
   draft: ChapterDraft;
@@ -14,6 +17,19 @@ export interface WriterEditorPanelProps {
   rewriteGenerating?: boolean;
   rewriteNotice?: string | null;
   rewriteError?: string | null;
+  proseVersions?: ChapterProseVersion[];
+  currentProseVersionId?: string | null;
+  selectedProseVersionId?: string | null;
+  onSelectProseVersion?: (versionId: string) => void;
+  onUseSelectedProseVersion?: () => void;
+  versionApplying?: boolean;
+  pendingAiVersionId?: string | null;
+  onAcceptPendingAiVersion?: () => void;
+  onRejectPendingAiVersion?: () => void;
+  canUndo?: boolean;
+  canRedo?: boolean;
+  onUndoProse?: () => void;
+  onRedoProse?: () => void;
 }
 
 export function WriterEditorPanel({
@@ -29,8 +45,22 @@ export function WriterEditorPanel({
   rewriteGenerating = false,
   rewriteNotice = null,
   rewriteError = null,
+  proseVersions = [],
+  currentProseVersionId = null,
+  selectedProseVersionId = null,
+  onSelectProseVersion,
+  onUseSelectedProseVersion,
+  versionApplying = false,
+  pendingAiVersionId = null,
+  onAcceptPendingAiVersion,
+  onRejectPendingAiVersion,
+  canUndo = false,
+  canRedo = false,
+  onUndoProse,
+  onRedoProse,
 }: WriterEditorPanelProps) {
   const { pageCopy } = draft;
+  const [previewOpen, setPreviewOpen] = useState(false);
   const displayProse = proseText ?? activeBeat.prose;
   const paragraphs = displayProse.split("\n\n").filter(Boolean);
 
@@ -76,10 +106,24 @@ export function WriterEditorPanel({
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <Button variant="ghost" size="sm" className="min-h-[36px] px-3" disabled>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="min-h-[36px] px-3"
+                disabled={!canUndo || !onUndoProse}
+                onClick={onUndoProse}
+                aria-label="Undo"
+              >
                 <Icon name="undo" size={20} />
               </Button>
-              <Button variant="ghost" size="sm" className="min-h-[36px] px-3" disabled>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="min-h-[36px] px-3"
+                disabled={!canRedo || !onRedoProse}
+                onClick={onRedoProse}
+                aria-label="Redo"
+              >
                 <Icon name="redo" size={20} />
               </Button>
               <Button
@@ -96,8 +140,9 @@ export function WriterEditorPanel({
                 variant="ghost"
                 size="sm"
                 className="border border-primary-soft bg-surface text-primary shadow-sm"
-                disabled
+                onClick={() => setPreviewOpen((open) => !open)}
                 leftIcon={<Icon name="visibility" size={18} />}
+                aria-pressed={previewOpen}
               >
                 {pageCopy.previewLabel}
               </Button>
@@ -121,6 +166,48 @@ export function WriterEditorPanel({
             </div>
           </Card>
         </div>
+
+        <WriterVersionHistoryPanel
+          versions={proseVersions}
+          currentVersionId={currentProseVersionId}
+          selectedVersionId={selectedProseVersionId}
+          onSelectVersion={onSelectProseVersion}
+          onUseSelectedVersion={onUseSelectedProseVersion}
+          applying={versionApplying}
+          pendingAiVersionId={pendingAiVersionId}
+          onAcceptPendingAiVersion={onAcceptPendingAiVersion}
+          onRejectPendingAiVersion={onRejectPendingAiVersion}
+        />
+
+        {previewOpen ? (
+          <section
+            role="region"
+            aria-label="Pratinjau pembaca"
+            className="rounded-xl border border-border bg-surface-soft p-4 md:p-6"
+          >
+            <div className="mx-auto w-full max-w-[360px] rounded-[28px] border border-border bg-surface px-5 py-6 shadow-sm">
+              <div className="mb-5 border-b border-border pb-3">
+                <p className="font-label-md text-label-md text-primary">
+                  Pratinjau pembaca
+                </p>
+                <p className="mt-1 font-body-sm text-body-sm text-muted-text">
+                  Bab {draft.chapterNumber} · Adegan {activeBeat.number}
+                </p>
+              </div>
+              <div className="font-body-editor text-[16px] leading-[1.85] text-on-surface">
+                {paragraphs.length > 0 ? (
+                  paragraphs.map((paragraph, index) => (
+                    <p key={index} className="mb-4 whitespace-pre-wrap last:mb-0">
+                      {paragraph}
+                    </p>
+                  ))
+                ) : (
+                  <p className="italic text-muted-text">Belum ada narasi.</p>
+                )}
+              </div>
+            </div>
+          </section>
+        ) : null}
 
         <Card
           padding="lg"

@@ -2,7 +2,7 @@
   "name": "vibenovel",
   "private": true,
   "version": "0.1.0",
-  "description": "VibeNovel — AI Serial Fiction Production OS (monorepo)",
+  "description": "VibeNovel \u00e2\u20ac\u201d AI Serial Fiction Production OS (monorepo)",
   "workspaces": [
     "apps/*",
     "packages/*"
@@ -16,11 +16,15 @@
     "build:web": "npm run build -w @vibenovel/web",
     "build:api": "npm run build:shared && npm run build -w @vibenovel/api",
     "deploy:api:staging": "npm run build:shared && npm run deploy:staging -w @vibenovel/api",
+    "deploy:api:production": "npm run operator:production:worker-secrets -- -RequireLiveDuitku",
+    "deploy:api:production:dry-run": "npm run build:shared && cd apps/api && wrangler deploy --env production --dry-run --outdir=dist-production",
+    "deploy:api:production:raw": "npm run build:shared && npm run deploy:production -w @vibenovel/api",
     "deploy:web:staging": "npm run build:web && npx wrangler pages deploy apps/web/dist --project-name vibenovel-web-staging --branch main --commit-dirty=true",
     "smoke:staging:health": "powershell -ExecutionPolicy Bypass -File scripts/staging-health-smoke.ps1",
     "smoke:staging": "powershell -ExecutionPolicy Bypass -File scripts/smoke-staging.ps1",
     "operator:staging:supabase-gate": "powershell -ExecutionPolicy Bypass -File scripts/operator-staging-supabase-gate.ps1",
     "operator:staging:worker-secrets": "powershell -ExecutionPolicy Bypass -File scripts/operator-staging-worker-secrets.ps1",
+    "operator:production:worker-secrets": "powershell -ExecutionPolicy Bypass -File scripts/operator-production-worker-secrets.ps1",
     "operator:aws:staging:smoke": "powershell -ExecutionPolicy Bypass -File scripts/operator-aws-ec2-staging-smoke.ps1",
     "operator:aws:https:gate": "powershell -ExecutionPolicy Bypass -File scripts/operator-aws-https-web-gate.ps1",
     "operator:aws:duitku:gate": "powershell -ExecutionPolicy Bypass -File scripts/operator-aws-duitku-mode-b.ps1",
@@ -46,6 +50,7 @@
     "operator:production:homepage:deploy": "powershell -ExecutionPolicy Bypass -File scripts/operator-production-homepage-deploy.ps1",
     "preview:web": "npm run preview -w @vibenovel/web",
     "smoke:api": "powershell -ExecutionPolicy Bypass -File scripts/sprint2-smoke-api.ps1",
+    "smoke:api:admin": "powershell -ExecutionPolicy Bypass -File scripts/admin-smoke-api.ps1",
     "smoke:api:base": "powershell -ExecutionPolicy Bypass -File scripts/sprint2-smoke-api.ps1",
     "smoke:api:sprint5": "powershell -ExecutionPolicy Bypass -File scripts/sprint5-smoke-api.ps1",
     "smoke:api:sprint6": "powershell -ExecutionPolicy Bypass -File scripts/sprint6-smoke-api.ps1",
@@ -56,6 +61,9 @@
     "smoke:api:sprint10:dual-app": "powershell -ExecutionPolicy Bypass -File scripts/sprint10-dual-app-smoke.ps1",
     "smoke:api:sprint10:mayar-live": "powershell -ExecutionPolicy Bypass -File scripts/sprint10-mayar-live-smoke.ps1",
     "smoke:api:sprint10:duitku": "powershell -ExecutionPolicy Bypass -File scripts/sprint10-duitku-smoke-api.ps1",
+    "smoke:api:sprint14": "powershell -ExecutionPolicy Bypass -File scripts/sprint14-safety-smoke-api.ps1",
+    "smoke:api:sprint14:e2e-node": "powershell -ExecutionPolicy Bypass -File scripts/sprint14-e2e-prose-publish-node.ps1",
+    "smoke:api:sprint12": "powershell -ExecutionPolicy Bypass -File scripts/sprint12-story-generation-smoke-api.ps1",
     "smoke:web:topup": "powershell -ExecutionPolicy Bypass -File scripts/sprint10-smoke-web.ps1",
     "smoke:web:sprint10": "powershell -ExecutionPolicy Bypass -File scripts/sprint10-smoke-web.ps1",
     "smoke:web": "powershell -ExecutionPolicy Bypass -File scripts/sprint3-smoke-web.ps1",
@@ -70,8 +78,13 @@
     "smoke:web:publish": "powershell -ExecutionPolicy Bypass -File scripts/sprint7-smoke-web.ps1",
     "smoke:all:local": "powershell -ExecutionPolicy Bypass -File scripts/smoke-all-local.ps1",
     "smoke:all:local:full": "powershell -ExecutionPolicy Bypass -File scripts/smoke-all-local.ps1 -IncludeApiMode",
+    "smoke:no-prod-stubs": "node scripts/smoke-no-production-stubs.mjs",
+    "check:docs-drift": "node scripts/docs-code-drift-check.mjs",
     "lint": "eslint .",
-    "lint:fix": "eslint . --fix"
+    "lint:fix": "eslint . --fix",
+    "test:credit-v2": "npm run build:shared && npm run test:credit-v2 -w @vibenovel/api && npm run test:credit-v2-ui -w @vibenovel/web",
+    "test:ai-routing": "npm run build:shared && npm run test:ai-model-registry -w @vibenovel/api && npm run test:ai-routing-policy -w @vibenovel/api && npm run test:ai-provider-transport -w @vibenovel/api && npm run test:model-router-v3 -w @vibenovel/api && npm run test:generation-provider-events -w @vibenovel/api && npm run test:ai-model-id-boundary -w @vibenovel/api && npm run test:ai-routing-v3-credit-invariance -w @vibenovel/api",
+    "test:api:contracts": "npm run build -w @vibenovel/shared && npm run test:sprint14-safety -w @vibenovel/api && npm run test:prose-safe-repair-loop -w @vibenovel/api && npm run test:character-knowledge-validator -w @vibenovel/api && npm run test:sprint19-asisten-narra -w @vibenovel/api"
   },
   "engines": {
     "node": ">=18"

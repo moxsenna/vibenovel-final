@@ -4,6 +4,9 @@
 
 AI output tidak boleh langsung final. Validator menjaga output agar sesuai beat, tidak bocor rahasia, tidak merusak canon, dan enak dibaca di HP.
 
+> **Implementation status 2026-06-16:** **Shipped:** `apps/api/src/services/output-validator.ts` (`validateAiOutput`), persistence to `validation_reports` (migration `00012`), safe-repair endpoint / repair loop integration per Sprint 14 ([`docs/98-sprint-14-safety-hardening-report.md`](98-sprint-14-safety-hardening-report.md)). **Remaining backlog:** the eight named validators below as separate pipelines (instruction compliance, mobile readability, retention/unlockability, style/voice, etc.) — track in [`docs/100-competitive-manuscript-teardown-and-gap-sprint-plan.md`](100-competitive-manuscript-teardown-and-gap-sprint-plan.md) and [`docs/audit/12-docs-code-truth-matrix-2026-06-16.md`](audit/12-docs-code-truth-matrix-2026-06-16.md).
+
+
 ## Validators
 
 1. Instruction Compliance Validator

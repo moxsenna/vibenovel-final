@@ -14,6 +14,7 @@ export interface ChatPanelProps {
   inputTip: string;
   apiMode?: boolean;
   sending?: boolean;
+  creditEstimateLabel?: string | null;
   onSendMessage?: (text: string) => Promise<void>;
 }
 
@@ -36,6 +37,7 @@ export function ChatPanel({
   inputTip,
   apiMode = false,
   sending = false,
+  creditEstimateLabel = null,
   onSendMessage,
 }: ChatPanelProps) {
   const [messages, setMessages] = useState(initialMessages);
@@ -87,6 +89,12 @@ export function ChatPanel({
       </div>
 
       <SuggestedActionChips actions={suggestedActions} onSelect={handleChipSelect} />
+
+      {creditEstimateLabel ? (
+        <p className="border-t border-border bg-surface-soft px-6 pt-3 font-body-sm text-body-sm text-muted-text">
+          {creditEstimateLabel}
+        </p>
+      ) : null}
 
       <ChatInput
         placeholder={inputPlaceholder}

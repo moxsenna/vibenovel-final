@@ -16,6 +16,7 @@ export interface FoundationReadinessResponse {
   readinessScore: number;
   readinessLevel: string;
   canLock: boolean;
+  canRefine: boolean;
   checks: Array<{
     key: string;
     label: string;
@@ -37,6 +38,23 @@ export interface LockFoundationResponse {
       ruleText: string;
       status: string;
     }>;
+  };
+}
+
+export interface AcceptFoundationProposalResponse {
+  proposal: AiProposal;
+  foundation: StoryFoundation;
+  readiness: FoundationReadinessResponse;
+  promoted: {
+    characters: Character[];
+    facts: Fact[];
+    speechRules: Array<{
+      id: string;
+      relationshipLabel: string;
+      ruleText: string;
+      status: string;
+    }>;
+    foundationUpdated: boolean;
   };
 }
 
@@ -64,6 +82,16 @@ export async function generateFoundationProposals(
   );
 }
 
+export async function generateFoundationProposalsFromNarra(
+  projectId: string,
+  token?: string | null,
+): Promise<GenerateFoundationProposalsResponse> {
+  return apiRequest<GenerateFoundationProposalsResponse>(
+    `/api/projects/${projectId}/foundation/proposals/generate-from-narra`,
+    { method: "POST", token },
+  );
+}
+
 export async function fetchFoundationReadiness(
   projectId: string,
   token?: string | null,
@@ -88,9 +116,9 @@ export async function acceptProposal(
   projectId: string,
   proposalId: string,
   token?: string | null,
-): Promise<AiProposal> {
-  return apiRequest<AiProposal>(
-    `/api/projects/${projectId}/proposals/${proposalId}/accept`,
+): Promise<AcceptFoundationProposalResponse> {
+  return apiRequest<AcceptFoundationProposalResponse>(
+    `/api/projects/${projectId}/foundation/proposals/${proposalId}/accept`,
     { method: "POST", token },
   );
 }

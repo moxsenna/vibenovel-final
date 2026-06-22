@@ -87,7 +87,7 @@ export function buildHonestProgressSteps(project: Project): DashboardProgressSte
 export function buildHonestRecentStatusLabel(project: Project): string {
   const phase = project.workflowPhase ?? WORKFLOW_PHASES.intake;
 
-  if (phase === WORKFLOW_PHASES.intake) return "Intake berjalan";
+  if (phase === WORKFLOW_PHASES.intake) return "Asisten Narra berjalan";
   if (phase === WORKFLOW_PHASES.concepts) return "Pilih konsep";
   if (phase === WORKFLOW_PHASES.foundation) return "Fondasi belum dikunci";
   if (phase === WORKFLOW_PHASES.foundation_locked) return "Outline belum dibuat";
@@ -102,7 +102,7 @@ export function buildHonestRecentStatusLabel(project: Project): string {
 export function buildHonestRecentExcerpt(project: Project): string {
   const phase = project.workflowPhase ?? WORKFLOW_PHASES.intake;
   if (phase === WORKFLOW_PHASES.intake) {
-    return "Lanjutkan obrolan intake untuk mengumpulkan ide cerita.";
+    return "Lanjutkan obrolan dengan Asisten Narra untuk mengumpulkan arah cerita.";
   }
   if (phase === WORKFLOW_PHASES.concepts) {
     return "Pilih arah cerita sebelum membangun fondasi.";
@@ -120,7 +120,7 @@ export function buildHonestRecentExcerpt(project: Project): string {
 
 export function resolveHonestProjectRoute(project: Project): string {
   const phase = project.workflowPhase ?? WORKFLOW_PHASES.intake;
-  if (phase === WORKFLOW_PHASES.intake) return ROUTES.project.intake(project.id);
+  if (phase === WORKFLOW_PHASES.intake) return ROUTES.project.narra(project.id);
   if (phase === WORKFLOW_PHASES.concepts) return ROUTES.project.concepts(project.id);
   if (!hasReached(phase, WORKFLOW_PHASES.foundation_locked)) {
     return ROUTES.project.foundation(project.id);

@@ -71,7 +71,7 @@ function resolveCustomerName(user: User): string {
     (typeof meta.name === "string" && meta.name.trim()) ||
     (typeof meta.full_name === "string" && meta.full_name.trim());
   if (fromMeta) return fromMeta;
-  return "VibeNovel User";
+  return "Narraza User";
 }
 
 function resolveCustomerEmail(user: User): string {

@@ -4,6 +4,8 @@ export { Button } from "./Button";
 export type { ButtonProps, ButtonSize, ButtonVariant } from "./Button";
 export { Card } from "./Card";
 export type { CardProps } from "./Card";
+export { Input } from "./Input";
+export type { InputProps } from "./Input";
 export { CopyButton } from "./CopyButton";
 export type { CopyButtonProps } from "./CopyButton";
 export { Icon } from "./Icon";

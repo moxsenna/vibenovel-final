@@ -28,6 +28,14 @@ export class AppError extends Error {
   static notFound(message = "Resource not found"): AppError {
     return new AppError("NOT_FOUND", message, 404);
   }
+  static forbidden(message = "Forbidden"): AppError {
+    return new AppError("FORBIDDEN", message, 403);
+  }
+
+  static notImplemented(message = "Not implemented"): AppError {
+    return new AppError("NOT_IMPLEMENTED", message, 501);
+  }
+
 
   static badRequest(message: string, details?: unknown): AppError {
     return new AppError("BAD_REQUEST", message, 400, details);

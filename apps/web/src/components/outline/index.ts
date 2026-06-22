@@ -1,8 +1,11 @@
 export { OutlineRetentionHint } from "./OutlineRetentionHint";
+export { OutlineTimelineInspector } from "./OutlineTimelineInspector";
 export { OutlineChapterBadge } from "./OutlineChapterBadge";
 export { OutlineChapterCard } from "./OutlineChapterCard";
 export { OutlineChapterEditor } from "./OutlineChapterEditor";
 export type { OutlineChapterDraft } from "./OutlineChapterEditor";
+export { OutlineAdvancedControls } from "./OutlineAdvancedControls";
+export type { OutlineAdvancedControlValues } from "./OutlineAdvancedControls";
 export { OutlineLoadMoreButton } from "./OutlineLoadMoreButton";
 export { OutlinePageHeader } from "./OutlinePageHeader";
 export { OutlineProgressCard } from "./OutlineProgressCard";

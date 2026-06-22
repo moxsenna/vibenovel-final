@@ -4,9 +4,7 @@ import type {
   ChapterOutline,
   CreditBalance,
   PublishPackage as ApiPublishPackage,
-  WriterQualityMode,
 } from "@vibenovel/shared";
-import { WRITER_QUALITY_MODES } from "@vibenovel/shared";
 import { useAuth } from "@/context/AuthContext";
 import { ApiClientError } from "@/lib/api";
 import { allowMockFallback, shouldUseMocks } from "@/lib/env";
@@ -20,17 +18,16 @@ import { resolveProjectIdForRoute } from "@/lib/project-context";
 import { mockPublishPackage } from "@/mocks/publishPackage";
 import {
   buildPublishCopyIdempotencyKey,
+  formatCreditSuccessNotice,
   formatPublishCopyCreditCostLabel,
-  formatQualityModeLabel,
   getPublishCopyCreditCost,
   improvePublishCopy,
   mapAiPublishCopyErrorCode,
-  normalizeQualityMode,
   PUBLISH_COPY_AI_FIELDS,
   type PublishCopyAiField,
   type PublishCopySuggestions,
 } from "@/services/ai";
-import { fetchCreditBalance } from "@/services/credits";
+import { fetchCreditBalance, fetchCreditEstimate } from "@/services/credits";
 import { fetchOutlineBundle } from "@/services/outline";
 import {
   generatePublishPackage,
@@ -40,7 +37,6 @@ import {
   updatePublishPackageFields,
   type PublishFieldPatch,
 } from "@/services/publish";
-import { fetchProjectSettings } from "@/services/settings";
 import { getSummaryByChapter } from "@/services/summary";
 import type { PublishPackage } from "@/types";
 
@@ -133,7 +129,7 @@ function mapPublishCopyAiError(error: unknown): string {
         return "Paket sudah ditandai exported dan tidak bisa diperbaiki.";
       }
     }
-    return mapAiPublishCopyErrorCode(error.code, error.message);
+    return mapAiPublishCopyErrorCode(error.code, error.message, error.details);
   }
   return "Gagal membuat saran copy AI.";
 }
@@ -164,7 +160,6 @@ export interface UsePublishDataResult {
   applyingSuggestionField: PublishCopyAiField | null;
   applyingAllSuggestions: boolean;
   publishCopyCreditCostLabel: string | null;
-  publishCopyQualityModeLabel: string | null;
   publishCopyCreditBalance: number | null;
   publishCopyCreditLoading: boolean;
   publishCopyCreditError: string | null;
@@ -237,7 +232,7 @@ export function usePublishData(): UsePublishDataResult {
   const [apiPkg, setApiPkg] = useState<ApiPublishPackage | null>(null);
   const [summaryApproved, setSummaryApproved] = useState(false);
   const [summaryId, setSummaryId] = useState<string | null>(null);
-  const [qualityMode, setQualityMode] = useState<WriterQualityMode>(WRITER_QUALITY_MODES.seimbang);
+  const [serverPublishCopyCost, setServerPublishCopyCost] = useState<number | null>(null);
   const [creditBalance, setCreditBalance] = useState<CreditBalance | null>(null);
   const [creditLoading, setCreditLoading] = useState(false);
   const [creditError, setCreditError] = useState<string | null>(null);
@@ -351,15 +346,25 @@ export function usePublishData(): UsePublishDataResult {
     }
   }, [apiMode, token]);
 
-  const loadQualityMode = useCallback(async () => {
-    if (!apiMode || !token || !projectId) return;
-    try {
-      const settings = await fetchProjectSettings(projectId, token);
-      setQualityMode(normalizeQualityMode(settings.qualityMode));
-    } catch {
-      setQualityMode(WRITER_QUALITY_MODES.seimbang);
+  useEffect(() => {
+    if (!apiMode || !token) {
+      setServerPublishCopyCost(null);
+      return;
     }
-  }, [apiMode, projectId, token]);
+
+    let cancelled = false;
+    void fetchCreditEstimate("publish_package", undefined, token)
+      .then((estimate) => {
+        if (!cancelled) setServerPublishCopyCost(estimate.creditCost);
+      })
+      .catch(() => {
+        if (!cancelled) setServerPublishCopyCost(null);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [apiMode, token]);
 
   const loadPublishRoom = useCallback(async () => {
     if (!apiMode || !token) return;
@@ -445,8 +450,7 @@ export function usePublishData(): UsePublishDataResult {
   useEffect(() => {
     if (!apiMode || !token || !projectId) return;
     void refreshCreditBalance();
-    void loadQualityMode();
-  }, [apiMode, loadQualityMode, projectId, refreshCreditBalance, token]);
+  }, [apiMode, projectId, refreshCreditBalance, token]);
 
   const generatePackageAction = useCallback(async () => {
     if (!apiMode || !token || !projectId || !chapterOutlineId) return;
@@ -546,7 +550,7 @@ export function usePublishData(): UsePublishDataResult {
       return;
     }
 
-    const copyCost = getPublishCopyCreditCost(qualityMode);
+    const copyCost = getPublishCopyCreditCost(serverPublishCopyCost);
     if (creditBalance != null && creditBalance.balance < copyCost) {
       setPublishCopyAiError("Kredit tidak cukup.");
       return;
@@ -563,7 +567,6 @@ export function usePublishData(): UsePublishDataResult {
       const result = await improvePublishCopy(projectId, token, {
         packageId,
         fields: selectedAiFields,
-        qualityMode,
         idempotencyKey,
         ...(instruction ? { instruction } : {}),
       });
@@ -580,10 +583,13 @@ export function usePublishData(): UsePublishDataResult {
       const remaining =
         result.creditBalance?.balance ??
         (creditBalance != null ? Math.max(0, creditBalance.balance - cost) : null);
-      const balanceNote = remaining != null ? ` Sisa: ${remaining}.` : "";
-      const replayNote = result.idempotentReplay ? " (hasil permintaan sebelumnya)" : "";
       setPublishCopyAiNotice(
-        `Saran copy siap ditinjau. Terpotong ${cost} kredit.${balanceNote}${replayNote}`,
+        formatCreditSuccessNotice(
+          "Saran copy siap ditinjau",
+          cost,
+          remaining,
+          result.idempotentReplay,
+        ),
       );
     } catch (error) {
       setPublishCopyAiError(mapPublishCopyAiError(error));
@@ -598,9 +604,9 @@ export function usePublishData(): UsePublishDataResult {
     projectId,
     publishCopyAiLoading,
     publishCopyInstruction,
-    qualityMode,
     refreshCreditBalance,
     selectedAiFields,
+    serverPublishCopyCost,
     source,
     token,
   ]);
@@ -715,7 +721,7 @@ export function usePublishData(): UsePublishDataResult {
     }
   }, [apiMode, applyApiPackage, packageId, projectId, token]);
 
-  const publishCopyCost = getPublishCopyCreditCost(qualityMode);
+  const publishCopyCost = getPublishCopyCreditCost(serverPublishCopyCost);
   const knownBalance = creditBalance?.balance ?? null;
   const publishCopyInsufficientCredit =
     knownBalance != null && knownBalance < publishCopyCost;
@@ -782,8 +788,8 @@ export function usePublishData(): UsePublishDataResult {
     publishCopyInstruction,
     applyingSuggestionField,
     applyingAllSuggestions,
-    publishCopyCreditCostLabel: formatPublishCopyCreditCostLabel(qualityMode),
-    publishCopyQualityModeLabel: formatQualityModeLabel(qualityMode),
+    publishCopyCreditCostLabel:
+      formatPublishCopyCreditCostLabel(serverPublishCopyCost),
     publishCopyCreditBalance: knownBalance,
     publishCopyCreditLoading: creditLoading,
     publishCopyCreditError: creditError,

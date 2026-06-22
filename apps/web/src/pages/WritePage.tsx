@@ -36,6 +36,7 @@ export function WritePage() {
     saveProse,
     buildSafeContext,
     contextPreview,
+    showPovKnowledgeSummary,
     finishChapter,
     aiGenerating,
     aiError,
@@ -44,6 +45,7 @@ export function WritePage() {
     creditActionCostLabel,
     creditRewriteCostLabel,
     qualityModeLabel,
+    premiumCreditWarning,
     creditBalance,
     creditLoading,
     creditError,
@@ -68,6 +70,19 @@ export function WritePage() {
     hasProseForRewrite,
     lockedTitle,
     lockedDescription,
+    proseVersions,
+    currentProseVersionId,
+    selectedProseVersionId,
+    onSelectProseVersion,
+    onUseSelectedProseVersion,
+    versionApplying,
+    pendingAiVersionId,
+    onAcceptPendingAiVersion,
+    onRejectPendingAiVersion,
+    canUndoProse,
+    canRedoProse,
+    undoProse,
+    redoProse,
     source,
   } = useWriteRoomData();
 
@@ -128,6 +143,19 @@ export function WritePage() {
     rewriteGenerating,
     rewriteNotice,
     rewriteError,
+    proseVersions,
+    currentProseVersionId,
+    selectedProseVersionId,
+    onSelectProseVersion,
+    onUseSelectedProseVersion: () => void onUseSelectedProseVersion(),
+    versionApplying,
+    pendingAiVersionId,
+    onAcceptPendingAiVersion,
+    onRejectPendingAiVersion: () => void onRejectPendingAiVersion(),
+    canUndo: canUndoProse,
+    canRedo: canRedoProse,
+    onUndoProse: undoProse,
+    onRedoProse: redoProse,
   };
 
   const assistantProps = {
@@ -139,6 +167,7 @@ export function WritePage() {
     creditActionCostLabel,
     creditRewriteCostLabel,
     qualityModeLabel,
+    premiumCreditWarning,
     creditBalance,
     creditLoading,
     creditError,
@@ -194,9 +223,23 @@ export function WritePage() {
         activeBeatId={activeBeatId}
         onSelectBeat={(id) => void onSelectBeat(id)}
         {...editorProps}
+        aiError={aiError}
+        aiNotice={aiNotice}
+        aiUnavailableReason={aiUnavailableReason}
+        creditActionCostLabel={creditActionCostLabel}
+        creditRewriteCostLabel={creditRewriteCostLabel}
+        qualityModeLabel={qualityModeLabel}
+        premiumCreditWarning={premiumCreditWarning}
+        creditLoading={creditLoading}
+        creditError={creditError}
+        remainingAfterGenerate={remainingAfterGenerate}
+        remainingAfterRewrite={remainingAfterRewrite}
         insufficientCreditRewrite={insufficientCreditRewrite}
         onRewriteProse={onRewriteProse ? () => void onRewriteProse() : undefined}
         rewriteGenerating={rewriteGenerating}
+        rewriteNotice={rewriteNotice}
+        rewriteError={rewriteError}
+        rewriteUnavailableReason={rewriteUnavailableReason}
         rewriteModeLabel={formatProseRewriteModeLabel(rewriteMode)}
         hasProseForRewrite={hasProseForRewrite}
       />
@@ -213,6 +256,7 @@ export function WritePage() {
         <WriterAssistantPanel
           draft={draft}
           contextPreview={contextPreview}
+          showPovKnowledgeSummary={showPovKnowledgeSummary}
           onBuildContext={editable ? () => void buildSafeContext() : undefined}
           buildingContext={buildingContext}
           {...assistantProps}

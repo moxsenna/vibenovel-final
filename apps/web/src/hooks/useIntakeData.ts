@@ -1,19 +1,22 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { ApiClientError } from "@/lib/api";
 import { mapApiMessageToUi, mapApiSignalToUi, mapIntakeBundleToUi } from "@/lib/api-mappers";
 import { allowMockFallback, shouldUseMocks } from "@/lib/env";
-import { apiErrorMessage } from "@/lib/hook-fallback";
+import { aiGenerationFailureNotice, apiErrorMessage } from "@/lib/hook-fallback";
 import { DEMO_MODE_LABEL } from "@/lib/workflow-truth";
 import { resolveProjectIdForRoute } from "@/lib/project-context";
 import { createEmptyApiIntakeSession } from "@/lib/empty-states";
 import { mockIntakeSession } from "@/mocks/intake";
 import {
+  buildIntakeReplyIdempotencyKey,
   extractIntakeSignals,
   fetchIntakeBundle,
   sendIntakeMessage,
 } from "@/services/intake";
+import { fetchCreditEstimate } from "@/services/credits";
+import { formatCreditSuccessNotice } from "@/services/ai-credit-display";
 import type { IntakeSession } from "@/types";
 
 export type IntakeDataSource = "mock" | "api" | "error";
@@ -25,12 +28,14 @@ export interface IntakeData {
   sending: boolean;
   notice: string | null;
   apiMode: boolean;
+  creditEstimateLabel: string | null;
   sendMessage: (text: string) => Promise<void>;
   extractSignals: () => Promise<void>;
 }
 
 export function useIntakeData(): IntakeData {
   const { id: routeProjectId } = useParams();
+  const [searchParams] = useSearchParams();
   const { session: authSession, loading: authLoading } = useAuth();
   const useMocks = shouldUseMocks();
   const token = authSession?.access_token ?? null;
@@ -50,6 +55,30 @@ export function useIntakeData(): IntakeData {
   const [sending, setSending] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [projectId, setProjectId] = useState<string | null>(null);
+  const [serverReplyCreditCost, setServerReplyCreditCost] = useState<number | null>(
+    null,
+  );
+  const foundationMode = searchParams.get("mode") === "foundation";
+
+  useEffect(() => {
+    if (!apiMode || !token) {
+      setServerReplyCreditCost(null);
+      return;
+    }
+
+    let cancelled = false;
+    void fetchCreditEstimate("intake_chat_reply", undefined, token)
+      .then((estimate) => {
+        if (!cancelled) setServerReplyCreditCost(estimate.creditCost);
+      })
+      .catch(() => {
+        if (!cancelled) setServerReplyCreditCost(null);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [apiMode, token]);
 
   const loadBundle = useCallback(async () => {
     if (!apiMode || !token) return;
@@ -140,7 +169,17 @@ export function useIntakeData(): IntakeData {
 
       setSending(true);
       try {
-        const result = await sendIntakeMessage(projectId, text, token);
+        const result = await sendIntakeMessage(
+          projectId,
+          text,
+          token,
+          {
+            idempotencyKey: buildIntakeReplyIdempotencyKey(projectId),
+            ...(foundationMode
+              ? { phase: "foundation_refinement", entrypoint: "foundation" }
+              : {}),
+          },
+        );
         const userMsg = mapApiMessageToUi(result.userMessage);
         const agentMsg = mapApiMessageToUi(result.agentMessage);
 
@@ -149,6 +188,14 @@ export function useIntakeData(): IntakeData {
           messages: [...prev.messages, userMsg, agentMsg],
           progressPercent: result.session.progressPercent ?? prev.progressPercent,
         }));
+        setNotice(
+          formatCreditSuccessNotice(
+            "Asisten Narra berhasil membalas",
+            result.creditCost,
+            result.creditBalance?.balance ?? null,
+            result.idempotentReplay,
+          ),
+        );
 
         await extractIntakeSignals(projectId, token).then((extracted) => {
           if (extracted.signals.length > 0) {
@@ -159,17 +206,13 @@ export function useIntakeData(): IntakeData {
           }
         });
       } catch (error) {
-        setNotice(
-          error instanceof ApiClientError
-            ? `Gagal mengirim pesan (${error.message}).`
-            : "Gagal mengirim pesan ke API.",
-        );
+        setNotice(aiGenerationFailureNotice(error, "Asisten Narra gagal membalas"));
         throw error;
       } finally {
         setSending(false);
       }
     },
-    [apiMode, projectId, token],
+    [apiMode, foundationMode, projectId, token],
   );
 
   const extractSignals = useCallback(async () => {
@@ -200,9 +243,23 @@ export function useIntakeData(): IntakeData {
       sending,
       notice,
       apiMode,
+      creditEstimateLabel:
+        serverReplyCreditCost != null
+          ? `AI reply ini memakai ${serverReplyCreditCost.toLocaleString("id-ID")} kredit.`
+          : null,
       sendMessage,
       extractSignals,
     }),
-    [session, source, loading, sending, notice, apiMode, sendMessage, extractSignals],
+    [
+      session,
+      source,
+      loading,
+      sending,
+      notice,
+      apiMode,
+      serverReplyCreditCost,
+      sendMessage,
+      extractSignals,
+    ],
   );
 }

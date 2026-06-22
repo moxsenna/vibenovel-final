@@ -4,6 +4,14 @@
 
 Reveal Gate mencegah AI writer membocorkan twist atau fakta masa depan sebelum waktunya.
 
+## Implementation status
+
+Status per 2026-06-15:
+
+- Sudah ada `planned_reveals`, `open_loops`, `buildRevealGate()`, dan `assertWriterPacketSafe()`.
+- Runtime menyimpan `planning_truth` sebagai planner-only dan tidak memasukkannya mentah ke Context Packet.
+- `charactersWhoKnowBeforeReveal` dan POV knowledge masih planned; implementasinya bergantung pada tabel `character_knowledge`.
+
 ## Core rule
 
 ```txt
@@ -51,7 +59,7 @@ Forbidden before reveal: darah, anak hilang, warisan, pulang, keluarga kandung.
 
 - current beat,
 - known facts,
-- POV knowledge,
+- POV knowledge (planned; belum ada di packet runtime saat ini),
 - safe breadcrumb,
 - forbidden reveal list,
 - style rules,

@@ -3,6 +3,40 @@ import { AppError } from "../errors.js";
 
 export const PACKET_MAX_BYTES = 64 * 1024;
 
+const FORBIDDEN_CONCEPT_STOPWORDS = new Set([
+  "ada",
+  "agar",
+  "akan",
+  "atau",
+  "awal",
+  "bab",
+  "baru",
+  "belum",
+  "bukan",
+  "dan",
+  "dari",
+  "dengan",
+  "dia",
+  "ini",
+  "itu",
+  "jadi",
+  "karena",
+  "lagi",
+  "lebih",
+  "melihat",
+  "nama",
+  "pada",
+  "penuh",
+  "saja",
+  "sebagai",
+  "sebelum",
+  "sedang",
+  "setelah",
+  "tidak",
+  "untuk",
+  "yang",
+]);
+
 const FORBIDDEN_KEY_PATTERNS = [
   /planningTruth/i,
   /planning_truth/i,
@@ -26,6 +60,7 @@ export interface AssertWriterPacketSafeOptions {
   currentChapterNumber: number;
   futureChapterSummaries: string[];
   futureChapterTitles: string[];
+  futureRevealFactIds?: string[];
 }
 
 function canonicalize(value: unknown): unknown {
@@ -54,13 +89,33 @@ export async function computePacketHash(packet: WriterContextPacket): Promise<st
   return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, "0")).join("");
 }
 
-export function extractForbiddenConcepts(title: string, hint: string | null): string[] {
-  const raw = `${title} ${hint ?? ""}`.toLowerCase();
-  const tokens = raw
+/**
+ * Build distinctive forbidden-concept phrases from a reveal TITLE.
+ *
+ * Only the title is used — the reader-facing hint is intentionally safe, so its
+ * words must never become forbidden. We emit multi-word phrases (bigrams of
+ * adjacent content words) instead of bare single words, so ordinary prose does
+ * not false-positive on common words like "hubungan" or "identitas" while a
+ * verbatim spoiler phrase is still caught. A lone content word is kept only when
+ * it is long enough (>= 6 chars) to be distinctive on its own.
+ *
+ * The second parameter is retained for call-site compatibility but ignored.
+ */
+export function extractForbiddenConcepts(title: string, _hint?: string | null): string[] {
+  const words = title
+    .toLowerCase()
     .split(/[\s,;:.!?()[\]{}'"–—-]+/)
     .map((t) => t.trim())
-    .filter((t) => t.length >= 3);
-  return [...new Set(tokens)].slice(0, 12);
+    .filter((t) => t.length >= 3 && !FORBIDDEN_CONCEPT_STOPWORDS.has(t));
+
+  const concepts: string[] = [];
+  for (let i = 0; i < words.length - 1; i += 1) {
+    concepts.push(`${words[i]} ${words[i + 1]}`);
+  }
+  if (concepts.length === 0 && words.length === 1 && words[0].length >= 6) {
+    concepts.push(words[0]);
+  }
+  return [...new Set(concepts)].slice(0, 12);
 }
 
 function containsForbiddenKey(json: string): boolean {
@@ -88,6 +143,21 @@ function containsFutureContent(
   return false;
 }
 
+function containsFutureRevealFactId(packet: WriterContextPacket, factIds: string[]): boolean {
+  if (factIds.length === 0) return false;
+  const forbidden = new Set(factIds);
+  const povKnowledge = packet.continuity?.povKnowledge;
+  if (!povKnowledge) return false;
+
+  const entries = [
+    ...povKnowledge.knownFacts,
+    ...povKnowledge.suspectedFacts,
+    ...povKnowledge.partialFacts,
+    ...povKnowledge.falseBeliefs,
+  ];
+  return entries.some((entry) => forbidden.has(entry.factId));
+}
+
 export function assertWriterPacketSafe(
   packet: WriterContextPacket,
   options: AssertWriterPacketSafeOptions,
@@ -102,6 +172,11 @@ export function assertWriterPacketSafe(
 
   if (containsFutureContent(json, options.futureChapterSummaries, options.futureChapterTitles)) {
     console.error("context packet safety: future chapter content detected");
+    throw AppError.internal("Context packet failed safety checks");
+  }
+
+  if (containsFutureRevealFactId(packet, options.futureRevealFactIds ?? [])) {
+    console.error("context packet safety: future reveal fact id detected in povKnowledge");
     throw AppError.internal("Context packet failed safety checks");
   }
 

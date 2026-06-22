@@ -4,11 +4,21 @@ import { useAuth } from "@/context/AuthContext";
 import { ApiClientError } from "@/lib/api";
 import { mapApiConceptToUi } from "@/lib/api-mappers";
 import { allowMockFallback, shouldUseMocks } from "@/lib/env";
-import { apiErrorMessage } from "@/lib/hook-fallback";
+import { aiGenerationFailureNotice, apiErrorMessage } from "@/lib/hook-fallback";
 import { DEMO_MODE_LABEL } from "@/lib/workflow-truth";
 import { resolveProjectIdForRoute } from "@/lib/project-context";
 import { CONCEPTS_PAGE_COPY, mockConcepts } from "@/mocks/concepts";
-import { fetchConcepts, generateConcepts, selectConcept } from "@/services/concepts";
+import {
+  formatCreditSuccessNotice,
+  resolveDisplayedCreditCost,
+} from "@/services/ai-credit-display";
+import {
+  buildConceptGenerationIdempotencyKey,
+  fetchConcepts,
+  generateConcepts,
+  selectConcept,
+} from "@/services/concepts";
+import { fetchCreditEstimate } from "@/services/credits";
 import { ROUTES } from "@/routes/paths";
 import type { StoryConcept } from "@/types";
 
@@ -23,6 +33,7 @@ export interface ConceptsData {
   selectingId: string | null;
   notice: string | null;
   apiMode: boolean;
+  generateCreditCost: number;
   generate: () => Promise<void>;
   selectConceptById: (conceptId: string) => Promise<void>;
 }
@@ -42,6 +53,29 @@ export function useConceptsData(): ConceptsData {
   const [selectingId, setSelectingId] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [projectId, setProjectId] = useState<string | null>(null);
+  const [serverGenerateCreditCost, setServerGenerateCreditCost] = useState<
+    number | null
+  >(null);
+
+  useEffect(() => {
+    if (!apiMode || !token) {
+      setServerGenerateCreditCost(null);
+      return;
+    }
+
+    let cancelled = false;
+    void fetchCreditEstimate("concept_generate_3", undefined, token)
+      .then((estimate) => {
+        if (!cancelled) setServerGenerateCreditCost(estimate.creditCost);
+      })
+      .catch(() => {
+        if (!cancelled) setServerGenerateCreditCost(null);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [apiMode, token]);
 
   const loadConcepts = useCallback(async () => {
     if (!apiMode || !token) return;
@@ -100,15 +134,21 @@ export function useConceptsData(): ConceptsData {
     setGenerating(true);
     setNotice(null);
     try {
-      const result = await generateConcepts(projectId, token, {});
+      const result = await generateConcepts(projectId, token, {
+        idempotencyKey: buildConceptGenerationIdempotencyKey(projectId),
+      });
       setConcepts(result.concepts.map((c, i) => mapApiConceptToUi(c, projectId, i)));
       setSource("api");
-    } catch (error) {
       setNotice(
-        error instanceof ApiClientError
-          ? `Gagal membuat konsep (${error.message}).`
-          : "Gagal membuat konsep.",
+        formatCreditSuccessNotice(
+          "Tiga konsep cerita berhasil dibuat",
+          result.creditCost,
+          result.creditBalance?.balance ?? null,
+          result.idempotentReplay,
+        ),
       );
+    } catch (error) {
+      setNotice(aiGenerationFailureNotice(error, "Gagal membuat konsep"));
     } finally {
       setGenerating(false);
     }
@@ -152,6 +192,10 @@ export function useConceptsData(): ConceptsData {
       selectingId,
       notice,
       apiMode,
+      generateCreditCost: resolveDisplayedCreditCost(
+        serverGenerateCreditCost,
+        1000,
+      ),
       generate,
       selectConceptById,
     }),
@@ -163,6 +207,7 @@ export function useConceptsData(): ConceptsData {
       selectingId,
       notice,
       apiMode,
+      serverGenerateCreditCost,
       generate,
       selectConceptById,
     ],

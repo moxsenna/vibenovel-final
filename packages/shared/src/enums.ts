@@ -8,6 +8,7 @@
 export const USER_ROLES = {
   writer: "writer",
   admin: "admin",
+  super_admin: "super_admin",
 } as const;
 export type UserRole = (typeof USER_ROLES)[keyof typeof USER_ROLES];
 
@@ -43,6 +44,12 @@ export const WRITER_QUALITY_MODES = {
   terbaik: "terbaik",
 } as const;
 export type WriterQualityMode = (typeof WRITER_QUALITY_MODES)[keyof typeof WRITER_QUALITY_MODES];
+
+export const CREATOR_MODES = {
+  simple: "simple",
+  advanced: "advanced",
+} as const;
+export type CreatorMode = (typeof CREATOR_MODES)[keyof typeof CREATOR_MODES];
 
 export const DEFAULT_LANGUAGES = {
   id: "id",
@@ -90,10 +97,15 @@ export type FoundationStatus = (typeof FOUNDATION_STATUSES)[keyof typeof FOUNDAT
 export const FOUNDATION_READINESS_LEVELS = {
   belum_siap: "belum_siap",
   bisa_lanjut: "bisa_lanjut",
+  siap_dimatangkan: "siap_dimatangkan",
   siap_dikunci: "siap_dikunci",
+  sangat_siap: "sangat_siap",
 } as const;
 export type FoundationReadinessLevel =
   (typeof FOUNDATION_READINESS_LEVELS)[keyof typeof FOUNDATION_READINESS_LEVELS];
+
+export const REFINE_READINESS_MIN_SCORE = 75;
+export const LOCK_READINESS_MIN_SCORE = 85;
 
 export const STORY_GENRES = {
   drama_domestic: "drama_domestic",
@@ -137,6 +149,16 @@ export const CHARACTER_SOURCES = {
   accepted_proposal: "accepted_proposal",
 } as const;
 export type CharacterSource = (typeof CHARACTER_SOURCES)[keyof typeof CHARACTER_SOURCES];
+
+export const CHARACTER_KNOWLEDGE_STATUSES = {
+  unknown: "unknown",
+  suspects: "suspects",
+  partially_knows: "partially_knows",
+  knows: "knows",
+  misbelieves: "misbelieves",
+} as const;
+export type CharacterKnowledgeStatus =
+  (typeof CHARACTER_KNOWLEDGE_STATUSES)[keyof typeof CHARACTER_KNOWLEDGE_STATUSES];
 
 // --- Facts (confirmed canon only in `facts` table) ---
 
@@ -225,6 +247,8 @@ export const AI_PROPOSAL_TYPES = {
   character_update: "character_update",
   /** Sprint 6 — relationship dynamic change candidate */
   relationship_update: "relationship_update",
+  character_state_update: "character_state_update",
+  character_knowledge_update: "character_knowledge_update",
 } as const;
 export type AiProposalType = (typeof AI_PROPOSAL_TYPES)[keyof typeof AI_PROPOSAL_TYPES];
 
@@ -295,6 +319,7 @@ export const INTAKE_PHASES = {
   signal_detection: "signal_detection",
   concept_generation: "concept_generation",
   foundation_preparation: "foundation_preparation",
+  foundation_refinement: "foundation_refinement",
 } as const;
 export type IntakePhase = (typeof INTAKE_PHASES)[keyof typeof INTAKE_PHASES];
 
@@ -430,6 +455,47 @@ export const RETENTION_MARKER_TYPES = {
 } as const;
 export type RetentionMarkerType =
   (typeof RETENTION_MARKER_TYPES)[keyof typeof RETENTION_MARKER_TYPES];
+
+// --- Sprint 17: continuity engine II (mini-arc + timeline — planner/continuity, not canon) ---
+
+/** Origin of a timeline event row. `chapter_close` is materialized at summary approval. */
+export const TIMELINE_EVENT_SOURCES = {
+  chapter_close: "chapter_close",
+  user: "user",
+} as const;
+export type TimelineEventSource =
+  (typeof TIMELINE_EVENT_SOURCES)[keyof typeof TIMELINE_EVENT_SOURCES];
+
+/** Deterministic mini-arc grouping size (chapters per arc) when planner gives none. */
+export const DEFAULT_MINI_ARC_SIZE = 5;
+
+// --- Sprint 18: import/RAG preparation (read-only memory, proposal-first extraction) ---
+
+export const IMPORT_JOB_STATUSES = {
+  pending: "pending",
+  running: "running",
+  succeeded: "succeeded",
+  failed: "failed",
+  cancelled: "cancelled",
+} as const;
+export type ImportJobStatus = (typeof IMPORT_JOB_STATUSES)[keyof typeof IMPORT_JOB_STATUSES];
+
+export const IMPORT_JOB_PHASES = {
+  uploaded: "uploaded",
+  chunking: "chunking",
+  embedding: "embedding",
+  analysis: "analysis",
+  entity_extraction: "entity_extraction",
+  style_extraction: "style_extraction",
+  ready_for_review: "ready_for_review",
+} as const;
+export type ImportJobPhase = (typeof IMPORT_JOB_PHASES)[keyof typeof IMPORT_JOB_PHASES];
+
+export const PROSE_EMBEDDING_SOURCES = {
+  imported_draft: "imported_draft",
+} as const;
+export type ProseEmbeddingSource =
+  (typeof PROSE_EMBEDDING_SOURCES)[keyof typeof PROSE_EMBEDDING_SOURCES];
 
 // --- Sprint 5: write room (draft prose — NOT canon until Sprint 6 summary) ---
 
@@ -599,6 +665,8 @@ export const AUDIT_ACTIONS = {
   detected_signal_updated: "detected_signal_updated",
   story_concepts_generated: "story_concepts_generated",
   story_concept_selected: "story_concept_selected",
+  draft_import_created: "draft_import_created",
+  draft_import_signals_extracted: "draft_import_signals_extracted",
   foundation_proposals_generated: "foundation_proposals_generated",
   foundation_proposal_accepted: "foundation_proposal_accepted",
   foundation_lock_started: "foundation_lock_started",
@@ -660,6 +728,7 @@ export const AUDIT_ENTITY_TYPES = {
   intake_message: "intake_message",
   detected_signal: "detected_signal",
   story_concept: "story_concept",
+  draft_import: "draft_import",
   outline_plan: "outline_plan",
   chapter_outline: "chapter_outline",
   open_loop: "open_loop",
@@ -683,10 +752,18 @@ export type AuditEntityType = (typeof AUDIT_ENTITY_TYPES)[keyof typeof AUDIT_ENT
 // --- Sprint 8: AI generation attempts + credit ledger (schema only in 8.1) ---
 
 export const GENERATION_TYPES = {
+  intake_assistant: "intake_assistant",
+  concept_generation: "concept_generation",
+  foundation_proposal: "foundation_proposal",
+  draft_import_signal_extraction: "draft_import_signal_extraction",
+  outline_generation: "outline_generation",
+  beat_generation: "beat_generation",
+  chapter_summary_generation: "chapter_summary_generation",
+  continuity_delta: "continuity_delta",
   prose_beat: "prose_beat",
   prose_rewrite: "prose_rewrite",
   publish_copy: "publish_copy",
-  /** Reserved — summary/delta AI deferred beyond Sprint 8 MVP */
+  /** Legacy alias — prefer continuity_delta */
   summary_delta: "summary_delta",
 } as const;
 export type GenerationType = (typeof GENERATION_TYPES)[keyof typeof GENERATION_TYPES];

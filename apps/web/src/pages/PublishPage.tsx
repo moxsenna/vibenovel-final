@@ -44,7 +44,6 @@ export function PublishPage() {
     applyingSuggestionField,
     applyingAllSuggestions,
     publishCopyCreditCostLabel,
-    publishCopyQualityModeLabel,
     publishCopyCreditBalance,
     publishCopyCreditLoading,
     publishCopyCreditError,
@@ -148,7 +147,6 @@ export function PublishPage() {
               applyingSuggestionField={applyingSuggestionField}
               applyingAllSuggestions={applyingAllSuggestions}
               creditCostLabel={publishCopyCreditCostLabel}
-              qualityModeLabel={publishCopyQualityModeLabel}
               creditBalance={publishCopyCreditBalance}
               creditLoading={publishCopyCreditLoading}
               creditError={publishCopyCreditError}
@@ -286,7 +284,7 @@ export function PublishPage() {
 
       {isReadonly && isExported ? (
         <p className="font-body-sm text-body-sm text-muted-text">
-          Paket publish siap disalin. Status diekspor hanya penanda manual di VibeNovel.
+          Paket publish siap disalin. Status diekspor hanya penanda manual di Narraza.
         </p>
       ) : null}
     </div>

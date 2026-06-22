@@ -8,6 +8,7 @@ import {
   selectConceptForOwner,
   updateConceptForOwner,
 } from "../services/concept.js";
+import { getCreditBalanceForUser } from "../services/credit.js";
 import type { AppEnv } from "../types.js";
 
 export function registerConceptRoutes(app: Hono<AppEnv>): void {
@@ -31,7 +32,12 @@ export function registerConceptRoutes(app: Hono<AppEnv>): void {
       projectId,
       body as Record<string, unknown>,
     );
-    return jsonSuccess(c, result, result.created ? 201 : 200);
+    const creditBalance = await getCreditBalanceForUser(c.env, ownerId);
+    return jsonSuccess(
+      c,
+      { ...result, creditBalance },
+      result.created ? 201 : 200,
+    );
   });
 
   app.get("/api/projects/:id/concepts/:conceptId", authMiddleware, async (c) => {

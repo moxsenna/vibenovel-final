@@ -1,23 +1,28 @@
 <!doctype html>
-<html lang="en">
+<html lang="id">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script>
+      /* Progressive enhancement: only hide reveal elements when JS is available. */
+      document.documentElement.classList.add("js");
+    </script>
     <meta
       name="description"
-      content="Narraza helps writers plan, write, and maintain long-running stories without losing character consistency, reveals, or chapter momentum."
+      content="Narraza adalah ruang kerja fiksi bersambung bertenaga AI untuk menulis novel & cerita serial panjang. Jaga kontinuitas karakter, kunci pengungkapan rahasia, dan pertahankan momentum di setiap bab dengan memori kanon yang terstruktur."
     />
+    <meta name="theme-color" content="#fbf8f6" />
     <link rel="canonical" href="https://narraza.web.id/" />
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://narraza.web.id/" />
-    <meta property="og:title" content="Narraza — Build long fiction without losing the plot." />
+    <meta property="og:title" content="Narraza — Tulis Novel & Cerita Serial Panjang Tanpa Kehilangan Alur." />
     <meta
       property="og:description"
-      content="AI-powered serial fiction workspace for long-form storytelling with canon memory, reveal gates, and chapter momentum."
+      content="Ruang kerja fiksi bersambung bertenaga AI untuk cerita panjang dengan memori kanon, gerbang pengungkapan misteri, dan momentum bab."
     />
     <meta name="twitter:card" content="summary" />
-    <meta name="twitter:title" content="Narraza — Build long fiction without losing the plot." />
-    <title>Narraza — Build long fiction without losing the plot.</title>
+    <meta name="twitter:title" content="Narraza — Tulis Novel & Cerita Serial Panjang Tanpa Kehilangan Alur." />
+    <title>Narraza — Tulis Novel & Cerita Serial Panjang Tanpa Kehilangan Alur.</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -25,308 +30,595 @@
       rel="stylesheet"
     />
     <link rel="stylesheet" href="/styles.css" />
-    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%239F4F68'/%3E%3Cpath d='M9 22V10h3.2l4.1 7.2L20.4 10H23v12h-2.6v-7.1l-3.8 6.6h-1.8l-3.8-6.6V22H9z' fill='white'/%3E%3C/svg%3E" />
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%239F4F68'/%3E%3Cpath d='M9 23V9h2.7l8.6 9.4V9H23v14h-2.7L11.7 13.6V23H9z' fill='white'/%3E%3C/svg%3E" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "SoftwareApplication",
+        "name": "Narraza",
+        "applicationCategory": "Penulisan Kreatif / Writing Workspace",
+        "operatingSystem": "Web",
+        "description": "Ruang kerja fiksi bersambung bertenaga AI untuk menulis novel dan cerita serial panjang dengan memori kanon, gerbang pengungkapan misteri, dan momentum bab.",
+        "offers": { "@type": "Offer", "price": "0", "priceCurrency": "IDR" }
+      }
+    </script>
   </head>
   <body>
-    <a class="skip-link" href="#main">Skip to main content</a>
+    <a class="skip-link" href="#main">Lompat ke konten utama</a>
 
     <header class="site-nav" id="nav">
       <div class="nav-inner">
-        <a class="brand" href="/" aria-label="Narraza home">
-          <span class="brand-mark" aria-hidden="true"></span>
+        <a class="brand" href="/" aria-label="Narraza beranda">
+          <span class="brand-mark" aria-hidden="true">N</span>
           Narraza
         </a>
-        <nav class="nav-actions" aria-label="Primary">
-          <a class="btn btn-ghost" href="https://app.narraza.web.id/login">Sign In</a>
-          <a class="btn btn-primary" href="https://app.narraza.web.id">Start Writing</a>
+        <nav class="nav-links" aria-label="Navigasi bagian">
+          <a href="#fitur">Fitur</a>
+          <a href="#cara-kerja">Cara Kerja</a>
+          <a href="#harga">Harga</a>
+          <a href="#faq">FAQ</a>
+        </nav>
+        <nav class="nav-actions" aria-label="Aksi utama">
+          <a class="btn btn-ghost" href="https://app.narraza.web.id/login">Masuk</a>
+          <a class="btn btn-primary" href="https://app.narraza.web.id/login?mode=signup">Mulai Gratis</a>
         </nav>
       </div>
     </header>
 
     <main id="main">
+      <!-- ===================== HERO ===================== -->
       <section class="hero" aria-labelledby="hero-heading">
         <div class="hero-bg" aria-hidden="true"></div>
         <div class="container hero-grid">
-          <div>
-            <p class="eyebrow">AI-Powered Serial Fiction Workspace</p>
-            <h1 id="hero-heading">Build long fiction without losing the plot.</h1>
-            <p class="hero-lead">
-              Narraza helps writers plan, write, and maintain long-running stories without losing
-              character consistency, hidden reveals, worldbuilding logic, or chapter momentum.
+          <div class="hero-copy">
+            <p class="eyebrow" data-reveal>
+              <span class="eyebrow-dot" aria-hidden="true"></span>
+              Ruang Kerja Fiksi Bersambung Bertenaga AI
             </p>
-            <div class="hero-cta">
-              <a class="btn btn-primary" href="https://app.narraza.web.id">Start Writing</a>
-              <a class="btn btn-secondary" href="https://app.narraza.web.id/login">Sign In</a>
+            <h1 id="hero-heading" data-reveal>
+              Tulis cerita serial ratusan bab <span class="hl">tanpa kehilangan alur.</span>
+            </h1>
+            <p class="hero-lead" data-reveal data-delay="1">
+              Narraza menjaga karakter tetap konsisten, rahasia tetap terkunci sampai waktunya,
+              dan momentum tiap bab tetap terjaga — lewat memori kanon AI yang terstruktur.
+              Rencanakan, tulis, dan rilis cerita panjangmu dengan percaya diri.
+            </p>
+            <div class="hero-cta" data-reveal data-delay="2">
+              <a class="btn btn-primary btn-lg" href="https://app.narraza.web.id/login?mode=signup">
+                Mulai Menulis Gratis
+                <svg class="btn-arrow" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </a>
+              <a class="btn btn-secondary btn-lg" href="#fitur">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M10 9l5 3-5 3V9z" fill="currentColor" stroke="none"/></svg>
+                Lihat Cara Kerja
+              </a>
             </div>
-            <p class="trust-line">
+            <p class="trust-line" data-reveal data-delay="3">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
                 <path d="M9 12l2 2 4-4" stroke-linecap="round" stroke-linejoin="round" />
                 <circle cx="12" cy="12" r="9" />
               </svg>
-              Designed for writers building novels, web novels, serial fiction, and long-form story
-              universes.
+              Untuk penulis novel, web novel (KBM App, Wattpad, Joylada, GoodNovel), fiksi bersambung, dan pembangun semesta cerita.
             </p>
           </div>
-          <div class="hero-visual" aria-hidden="true">
-            <div class="mock-panel">
+
+          <div class="hero-visual" data-reveal data-delay="2">
+            <div class="hero-visual-glow" aria-hidden="true"></div>
+            <div class="mock-panel" aria-hidden="true">
               <div class="mock-bar">
                 <span class="mock-dot"></span>
                 <span class="mock-dot"></span>
                 <span class="mock-dot"></span>
+                <span class="mock-bar-title">Narraza · Bab 24</span>
+                <span class="mock-live"><span class="mock-live-dot"></span>Live</span>
+              </div>
+              <div class="mock-card mock-card-accent">
+                <div class="mock-card-head">
+                  <span class="mock-ic">✦</span>
+                  <strong>Snapshot Kanon</strong>
+                  <span class="mock-chip mock-chip-ok">Selaras</span>
+                </div>
+                <span>Pengetahuan 12 karakter sinkron · Gerbang misteri aktif</span>
               </div>
               <div class="mock-card">
-                <strong>Canon Snapshot</strong>
-                <span>Character knowledge aligned · Reveal gates active</span>
-              </div>
-              <div class="mock-card">
-                <strong>Chapter 24 — Context Packet</strong>
-                <span>Only scene-relevant facts included for safe generation</span>
+                <div class="mock-card-head">
+                  <strong>Paket Konteks Bab 24</strong>
+                  <span class="mock-chip">−87% token</span>
+                </div>
+                <span>Hanya fakta relevan dengan adegan yang dikirim ke AI</span>
+                <div class="mock-meter"><span class="mock-meter-fill" style="--w:87%"></span></div>
               </div>
               <div class="mock-tags">
-                <span class="mock-tag">Reveal Gates</span>
-                <span class="mock-tag">Canon Memory</span>
+                <span class="mock-tag">Gerbang Misteri</span>
+                <span class="mock-tag">Memori Kanon</span>
                 <span class="mock-tag">Momentum</span>
               </div>
             </div>
+            <div class="hero-float hero-float-a" aria-hidden="true">
+              <span class="hf-ic hf-ic-ok">✓</span> Cerita tetap nyambung
+            </div>
+            <div class="hero-float hero-float-b" aria-hidden="true">
+              <span class="hf-ic hf-ic-key">⚿</span> Rahasia terkunci
+            </div>
           </div>
         </div>
       </section>
 
-      <section class="section section-alt" id="problem" aria-labelledby="problem-heading">
+      <!-- ===================== TRUST BAR ===================== -->
+      <section class="trustbar" aria-label="Kepercayaan dan kompatibilitas platform">
+        <div class="container trustbar-inner" data-reveal>
+          <span class="trustbar-label">Siap dipublikasikan ke platform favoritmu</span>
+          <ul class="trustbar-logos">
+            <li>KBM App</li>
+            <li>Wattpad</li>
+            <li>Joylada</li>
+            <li>GoodNovel</li>
+            <li>Dreame</li>
+            <li>Fizzo</li>
+          </ul>
+        </div>
+      </section>
+
+      <!-- ===================== MASALAH ===================== -->
+      <section class="section section-alt" id="masalah" aria-labelledby="problem-heading">
         <div class="container">
-          <header class="section-header centered">
-            <span class="section-eyebrow">The challenge</span>
-            <h2 id="problem-heading">Writing long fiction is harder than writing the first chapter.</h2>
+          <header class="section-header centered" data-reveal>
+            <span class="section-eyebrow">Tantangan</span>
+            <h2 id="problem-heading">Menulis bab pertama itu mudah. Menjaga 200 bab tetap konsisten — itu cerita lain.</h2>
             <p>
-              Most AI writing tools are optimized for short outputs. Long-running stories introduce a
-              different challenge: maintaining continuity across dozens or hundreds of chapters.
+              Asisten AI biasa dioptimalkan untuk tulisan pendek sekali jadi. Cerita panjang menuntut hal yang
+              berbeda: kontinuitas yang terjaga dari bab ke bab, sepanjang puluhan bahkan ratusan bab.
             </p>
           </header>
           <div class="card-grid problem cols-2">
-            <article class="card">
+            <article class="card" data-reveal>
               <div class="card-icon" aria-hidden="true">
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" stroke-linecap="round" />
-                </svg>
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" stroke-linecap="round" /></svg>
               </div>
-              <h3>Lost Context</h3>
-              <p>AI gradually forgets important story details as the project grows.</p>
+              <h3>AI lupa konteks cerita</h3>
+              <p>Detail penting perlahan menguap seiring proyek membesar — dan AI mulai menebak-nebak.</p>
             </article>
-            <article class="card">
+            <article class="card" data-reveal data-delay="1">
               <div class="card-icon" aria-hidden="true">
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" stroke-linecap="round" />
-                  <circle cx="9" cy="7" r="4" />
-                  <path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75" stroke-linecap="round" />
-                </svg>
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" stroke-linecap="round" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75" stroke-linecap="round" /></svg>
               </div>
-              <h3>Inconsistent Characters</h3>
-              <p>Characters suddenly behave differently from their established personalities.</p>
+              <h3>Karakter jadi tidak konsisten</h3>
+              <p>Tokoh tiba-tiba bertindak di luar watak atau perkembangan yang sudah kamu bangun.</p>
             </article>
-            <article class="card">
+            <article class="card" data-reveal data-delay="2">
               <div class="card-icon" aria-hidden="true">
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" stroke-linecap="round" />
-                  <circle cx="12" cy="12" r="3" />
-                </svg>
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" stroke-linecap="round" /><circle cx="12" cy="12" r="3" /></svg>
               </div>
-              <h3>Premature Reveals</h3>
-              <p>Future twists and secrets leak before the story is ready.</p>
+              <h3>Rahasia & plot twist bocor</h3>
+              <p>Kejutan masa depan terungkap terlalu cepat — momen besarmu kehilangan dampak.</p>
             </article>
-            <article class="card">
+            <article class="card" data-reveal data-delay="1">
               <div class="card-icon" aria-hidden="true">
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" stroke-linecap="round" stroke-linejoin="round" />
-                </svg>
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" stroke-linecap="round" stroke-linejoin="round" /></svg>
               </div>
-              <h3>Filler Chapters</h3>
-              <p>Chapter progression slows down and momentum disappears.</p>
+              <h3>Bab kehilangan momentum</h3>
+              <p>Tensi mengendur, hook melemah, dan pembaca berhenti menanti bab berikutnya.</p>
             </article>
-            <article class="card">
+            <article class="card" data-reveal data-delay="2">
               <div class="card-icon" aria-hidden="true">
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M4 19.5A2.5 2.5 0 016.5 17H20" stroke-linecap="round" />
-                  <path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z" stroke-linecap="round" />
-                </svg>
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 016.5 17H20" stroke-linecap="round" /><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z" stroke-linecap="round" /></svg>
               </div>
-              <h3>Canon Drift</h3>
-              <p>The story slowly diverges from its own established rules and history.</p>
+              <h3>Logika dunia menyimpang</h3>
+              <p>Aturan worldbuilding yang kamu tetapkan perlahan saling bertentangan tanpa disadari.</p>
             </article>
           </div>
         </div>
       </section>
 
-      <section class="section" id="solution" aria-labelledby="solution-heading">
+      <!-- ===================== FITUR — INTERACTIVE PREVIEW ===================== -->
+      <section class="section" id="fitur" aria-labelledby="feature-heading">
         <div class="container">
-          <header class="section-header centered">
-            <span class="section-eyebrow">The solution</span>
-            <h2 id="solution-heading">Built specifically for serial storytelling.</h2>
-            <p>
-              Narraza is designed around story continuity, controlled information flow, and long-form
-              narrative management.
-            </p>
+          <header class="section-header centered" data-reveal>
+            <span class="section-eyebrow">Cara Kerja Inti</span>
+            <h2 id="feature-heading">Empat lapis penjaga yang membuat cerita panjangmu tetap utuh.</h2>
+            <p>Klik tiap pilar untuk melihat bagaimana Narraza bekerja di balik layar.</p>
+          </header>
+
+          <div class="feature-demo" data-reveal>
+            <div class="feature-tabs" role="tablist" aria-label="Pilar fitur Narraza">
+              <button class="feature-tab is-active" role="tab" aria-selected="true" aria-controls="panel-kanon" id="tab-kanon" data-tab="kanon">
+                <span class="ft-ic" aria-hidden="true">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke-linecap="round" stroke-linejoin="round" /></svg>
+                </span>
+                <span class="ft-text"><strong>Memori Kanon</strong><small>Fakta cerita yang tak pernah dilupakan AI</small></span>
+              </button>
+              <button class="feature-tab" role="tab" aria-selected="false" aria-controls="panel-gate" id="tab-gate" data-tab="gate" tabindex="-1">
+                <span class="ft-ic" aria-hidden="true">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" /><path d="M7 11V7a5 5 0 0110 0v4" stroke-linecap="round" /></svg>
+                </span>
+                <span class="ft-text"><strong>Gerbang Misteri</strong><small>Rahasia terkunci sampai momen yang tepat</small></span>
+              </button>
+              <button class="feature-tab" role="tab" aria-selected="false" aria-controls="panel-context" id="tab-context" data-tab="context" tabindex="-1">
+                <span class="ft-ic" aria-hidden="true">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" /><path d="M3 9h18M9 21V9" stroke-linecap="round" /></svg>
+                </span>
+                <span class="ft-text"><strong>Paket Konteks</strong><small>Hanya fakta relevan yang dikirim ke AI</small></span>
+              </button>
+              <button class="feature-tab" role="tab" aria-selected="false" aria-controls="panel-momentum" id="tab-momentum" data-tab="momentum" tabindex="-1">
+                <span class="ft-ic" aria-hidden="true">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2" stroke-linecap="round" stroke-linejoin="round" /></svg>
+                </span>
+                <span class="ft-text"><strong>Momentum Bab</strong><small>Tensi & hook terjaga di tiap akhir bab</small></span>
+              </button>
+            </div>
+
+            <div class="feature-stage">
+              <span class="feature-progress" aria-hidden="true"><span class="feature-progress-fill"></span></span>
+
+              <!-- Panel: Memori Kanon -->
+              <div class="feature-panel is-active" role="tabpanel" id="panel-kanon" aria-labelledby="tab-kanon" tabindex="0">
+                <div class="fp-grid">
+                  <div class="fp-info">
+                    <h3>AI yang ingat seluruh cerita, bukan cuma bab terakhir.</h3>
+                    <p>Setiap fakta penting — watak, hubungan, luka batin, aturan dunia — tersimpan sebagai kanon. Narraza menjadikannya sumber kebenaran tunggal yang selalu dirujuk saat menulis.</p>
+                    <ul class="fp-list">
+                      <li>Profil karakter, faksi, dan linimasa yang hidup</li>
+                      <li>Deteksi otomatis saat tulisan bertentangan dengan kanon</li>
+                      <li>Kanon berlaku konsisten hingga ratusan bab</li>
+                    </ul>
+                  </div>
+                  <div class="fp-mock" aria-hidden="true">
+                    <div class="mk-row mk-head"><span class="mk-ic">✦</span> Kanon — Arya Wijaya</div>
+                    <div class="mk-fact"><span>Tahu jati diri ayahnya?</span><b class="mk-no">Belum — sampai Bab 30</b></div>
+                    <div class="mk-fact"><span>Sifat dominan</span><b>Tenang, penuh perhitungan</b></div>
+                    <div class="mk-fact"><span>Hubungan dengan Mira</span><b>Saling curiga</b></div>
+                    <div class="mk-alert">
+                      <span class="mk-alert-ic">!</span>
+                      <span>Draf Bab 24 membuat Arya tampak impulsif — bertentangan dengan kanon. <b>Tinjau ulang?</b></span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Panel: Gerbang Misteri -->
+              <div class="feature-panel" role="tabpanel" id="panel-gate" aria-labelledby="tab-gate" tabindex="0" hidden>
+                <div class="fp-grid">
+                  <div class="fp-info">
+                    <h3>Plot twist terungkap saat kamu yang menentukan — bukan AI.</h3>
+                    <p>Kunci rahasia, petunjuk, dan kejutan di balik "gerbang". AI tahu rahasianya, tapi tidak akan membocorkannya sampai gerbang kamu buka di bab yang tepat.</p>
+                    <ul class="fp-list">
+                      <li>Setiap rahasia punya jadwal pengungkapan sendiri</li>
+                      <li>Karakter hanya tahu yang seharusnya mereka tahu</li>
+                      <li>Peringatan jika twist nyaris bocor lebih awal</li>
+                    </ul>
+                  </div>
+                  <div class="fp-mock" aria-hidden="true">
+                    <div class="gate-item gate-locked">
+                      <span class="gate-ic">⚿</span>
+                      <div><b>Ayah Arya adalah sang antagonis</b><small>Terkunci · terbuka di Bab 30</small></div>
+                      <span class="gate-pill gate-pill-lock">Terkunci</span>
+                    </div>
+                    <div class="gate-item gate-locked">
+                      <span class="gate-ic">⚿</span>
+                      <div><b>Mira menyimpan surat warisan</b><small>Terkunci · terbuka di Bab 18</small></div>
+                      <span class="gate-pill gate-pill-lock">Terkunci</span>
+                    </div>
+                    <div class="gate-item gate-open">
+                      <span class="gate-ic">⚯</span>
+                      <div><b>Desa lama menyembunyikan portal</b><small>Terbuka sejak Bab 12</small></div>
+                      <span class="gate-pill gate-pill-open">Aktif</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Panel: Paket Konteks -->
+              <div class="feature-panel" role="tabpanel" id="panel-context" aria-labelledby="tab-context" tabindex="0" hidden>
+                <div class="fp-grid">
+                  <div class="fp-info">
+                    <h3>AI hanya menerima fakta yang relevan dengan adegan ini.</h3>
+                    <p>Alih-alih menjejalkan seluruh cerita, Narraza meramu "paket konteks" ringkas untuk tiap adegan. Hasilnya lebih presisi, lebih hemat, dan jauh lebih kecil risiko melenceng.</p>
+                    <ul class="fp-list">
+                      <li>Seleksi cerdas: hanya karakter & lore yang hadir di adegan</li>
+                      <li>Token jauh lebih hemat — biaya generasi turun</li>
+                      <li>Hasil lebih fokus, minim halusinasi</li>
+                    </ul>
+                  </div>
+                  <div class="fp-mock" aria-hidden="true">
+                    <div class="ctx-row ctx-head">Adegan: Konfrontasi di gudang · Bab 24</div>
+                    <div class="ctx-chip ctx-in">Arya <span>✓ disertakan</span></div>
+                    <div class="ctx-chip ctx-in">Mira <span>✓ disertakan</span></div>
+                    <div class="ctx-chip ctx-in">Gudang pelabuhan <span>✓ disertakan</span></div>
+                    <div class="ctx-chip ctx-out">42 fakta tak relevan <span>dilewati</span></div>
+                    <div class="ctx-meter">
+                      <span>Ukuran konteks</span>
+                      <div class="ctx-bar"><span class="ctx-bar-fill" style="--w:13%"></span></div>
+                      <b>−87%</b>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Panel: Momentum Bab -->
+              <div class="feature-panel" role="tabpanel" id="panel-momentum" aria-labelledby="tab-momentum" tabindex="0" hidden>
+                <div class="fp-grid">
+                  <div class="fp-info">
+                    <h3>Setiap bab ditutup dengan alasan untuk lanjut membaca.</h3>
+                    <p>Narraza membantu merancang ritme: hook pembuka, kemenangan kecil, dan open loop penutup. Pembaca selalu punya alasan menanti bab berikutnya.</p>
+                    <ul class="fp-list">
+                      <li>Pengukur tensi & hook tiap bab</li>
+                      <li>Saran open loop agar pembaca penasaran</li>
+                      <li>Format ringkas, enak dibaca di layar HP</li>
+                    </ul>
+                  </div>
+                  <div class="fp-mock" aria-hidden="true">
+                    <div class="mo-head">Momentum — Bab 24</div>
+                    <div class="mo-metric"><span>Hook pembuka</span><div class="mo-bar"><span class="mo-bar-fill" style="--w:92%"></span></div></div>
+                    <div class="mo-metric"><span>Tensi konflik</span><div class="mo-bar"><span class="mo-bar-fill" style="--w:78%"></span></div></div>
+                    <div class="mo-metric"><span>Open loop penutup</span><div class="mo-bar"><span class="mo-bar-fill" style="--w:88%"></span></div></div>
+                    <div class="mo-note"><span class="mo-note-ic">✦</span> Cliffhanger bagus — pembaca akan menanti Bab 25.</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===================== KEMAMPUAN — BENTO ===================== -->
+      <section class="section section-alt" id="kemampuan" aria-labelledby="cap-heading">
+        <div class="container">
+          <header class="section-header centered" data-reveal>
+            <span class="section-eyebrow">Kemampuan</span>
+            <h2 id="cap-heading">Semua yang dibutuhkan penulis serial — dalam satu ruang kerja.</h2>
           </header>
           <div class="card-grid feature-grid">
-            <article class="card">
-              <div class="card-icon" aria-hidden="true">
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke-linecap="round" stroke-linejoin="round" />
-                </svg>
-              </div>
-              <h3>Canon-First Memory</h3>
-              <p>Keep important story facts anchored so the narrative remains consistent over time.</p>
+            <article class="card" data-reveal>
+              <div class="card-icon" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+              <h3>Memori utamakan kanon</h3>
+              <p>Fakta inti cerita tetap kokoh dan selalu diingat oleh asisten AI.</p>
             </article>
-            <article class="card">
-              <div class="card-icon" aria-hidden="true">
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <rect x="3" y="3" width="18" height="18" rx="2" />
-                  <path d="M3 9h18M9 21V9" stroke-linecap="round" />
-                </svg>
-              </div>
-              <h3>Safe Context Packets</h3>
-              <p>Provide AI with only the information needed for the current chapter.</p>
+            <article class="card" data-reveal data-delay="1">
+              <div class="card-icon" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9" stroke-linecap="round"/></svg></div>
+              <h3>Paket konteks terarah</h3>
+              <p>Hanya informasi relevan dengan adegan aktif demi hasil yang presisi.</p>
             </article>
-            <article class="card">
-              <div class="card-icon" aria-hidden="true">
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <rect x="3" y="11" width="18" height="11" rx="2" />
-                  <path d="M7 11V7a5 5 0 0110 0v4" stroke-linecap="round" />
-                </svg>
-              </div>
-              <h3>Reveal Gates</h3>
-              <p>Protect future twists, secrets, and hidden information until the correct moment.</p>
+            <article class="card" data-reveal data-delay="2">
+              <div class="card-icon" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4" stroke-linecap="round"/></svg></div>
+              <h3>Gerbang pengungkapan misteri</h3>
+              <p>Kunci rahasia, petunjuk, dan plot twist hingga momen yang tepat tiba.</p>
             </article>
-            <article class="card">
-              <div class="card-icon" aria-hidden="true">
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" stroke-linecap="round" stroke-linejoin="round" />
-                </svg>
-              </div>
-              <h3>Character Knowledge Guard</h3>
-              <p>Ensure characters only know what they should know inside the story.</p>
+            <article class="card" data-reveal>
+              <div class="card-icon" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+              <h3>Batasan pengetahuan karakter</h3>
+              <p>Tiap tokoh hanya tahu yang seharusnya mereka ketahui di titik cerita itu.</p>
             </article>
-            <article class="card">
-              <div class="card-icon" aria-hidden="true">
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M22 12h-4l-3 9L9 3l-3 9H2" stroke-linecap="round" stroke-linejoin="round" />
-                </svg>
-              </div>
-              <h3>Chapter Momentum Framework</h3>
-              <p>Maintain progression, tension, and narrative movement chapter after chapter.</p>
-            </article>
-            <article class="card">
-              <div class="card-icon" aria-hidden="true">
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" stroke-linecap="round" />
-                  <path d="M14 2v6h6M16 13H8M16 17H8M10 9H8" stroke-linecap="round" />
-                </svg>
-              </div>
-              <h3>Publishing Workflow Support</h3>
-              <p>Prepare stories for serialization and publication with structured outputs.</p>
+            <article class="card" data-reveal data-delay="1">
+              <div class="card-icon" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" stroke-linecap="round"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8" stroke-linecap="round"/></svg></div>
+              <h3>Siap publikasi multi-platform</h3>
+              <p>Format rapi, enak dibaca di HP, dan siap rilis ke platform pilihanmu.</p>
             </article>
           </div>
         </div>
       </section>
 
-      <section class="section section-alt" id="how-it-works" aria-labelledby="workflow-heading">
+      <!-- ===================== CARA KERJA ===================== -->
+      <section class="section" id="cara-kerja" aria-labelledby="workflow-heading">
         <div class="container">
-          <header class="section-header centered">
-            <span class="section-eyebrow">Workflow</span>
-            <h2 id="workflow-heading">A better workflow for long-form fiction.</h2>
+          <header class="section-header centered" data-reveal>
+            <span class="section-eyebrow">Alur Kerja</span>
+            <h2 id="workflow-heading">Lima langkah dari ide menjadi bab siap rilis.</h2>
           </header>
           <div class="steps">
-            <article class="step">
+            <article class="step" data-reveal>
               <span class="step-num" aria-hidden="true">1</span>
-              <h3>Build Your Story Canon</h3>
-              <p>Define characters, worldbuilding, factions, timelines, and story rules.</p>
+              <h3>Bangun kanon cerita</h3>
+              <p>Tentukan karakter, aturan dunia, faksi, linimasa, dan hubungan antar tokoh.</p>
             </article>
-            <article class="step">
+            <article class="step" data-reveal data-delay="1">
               <span class="step-num" aria-hidden="true">2</span>
-              <h3>Plan Story Progression</h3>
-              <p>Organize arcs, reveals, milestones, and chapter objectives.</p>
+              <h3>Rancang struktur</h3>
+              <p>Atur arc cerita, penempatan petunjuk misteri, dan target tiap bab.</p>
             </article>
-            <article class="step">
+            <article class="step" data-reveal data-delay="2">
               <span class="step-num" aria-hidden="true">3</span>
-              <h3>Generate Safely</h3>
-              <p>Use controlled context instead of dumping the entire story into every prompt.</p>
+              <h3>Tulis dengan presisi</h3>
+              <p>Asisten AI bekerja dengan konteks ketat agar tak ada detail yang melenceng.</p>
             </article>
-            <article class="step">
+            <article class="step" data-reveal data-delay="3">
               <span class="step-num" aria-hidden="true">4</span>
-              <h3>Maintain Consistency</h3>
-              <p>Keep continuity intact as your story grows.</p>
+              <h3>Jaga kontinuitas</h3>
+              <p>Sistem mendeteksi penyimpangan logika seiring novelmu makin panjang.</p>
             </article>
-            <article class="step">
+            <article class="step" data-reveal data-delay="4">
               <span class="step-num" aria-hidden="true">5</span>
-              <h3>Publish With Confidence</h3>
-              <p>Move from planning to production-ready serial fiction.</p>
+              <h3>Publikasikan</h3>
+              <p>Ekspor bab yang rapi dan siap saji untuk platform serialisasi pilihanmu.</p>
             </article>
           </div>
         </div>
       </section>
 
-      <section class="section" id="audience" aria-labelledby="audience-heading">
+      <!-- ===================== STATS BAND ===================== -->
+      <section class="statband section-alt" aria-label="Ringkasan keunggulan">
+        <div class="container stat-grid" data-reveal>
+          <div class="stat">
+            <span class="stat-num" data-count="4">0</span>
+            <span class="stat-label">Lapis penjaga konsistensi</span>
+          </div>
+          <div class="stat">
+            <span class="stat-num" data-count="500" data-suffix="+">0</span>
+            <span class="stat-label">Bab terjaga dalam satu kanon</span>
+          </div>
+          <div class="stat">
+            <span class="stat-num" data-count="100" data-suffix="%">0</span>
+            <span class="stat-label">Kontrol kanon di tanganmu</span>
+          </div>
+          <div class="stat">
+            <span class="stat-num" data-prefix="Rp" data-count="0">Rp0</span>
+            <span class="stat-label">Selama masa beta</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===================== UNTUK SIAPA ===================== -->
+      <section class="section" id="untuk-siapa" aria-labelledby="audience-heading">
         <div class="container">
-          <header class="section-header centered">
-            <span class="section-eyebrow">Audience</span>
-            <h2 id="audience-heading">Built for writers who think long-term.</h2>
+          <header class="section-header centered" data-reveal>
+            <span class="section-eyebrow">Untuk Siapa</span>
+            <h2 id="audience-heading">Dibuat untuk penulis yang berpikir jangka panjang.</h2>
           </header>
           <div class="card-grid cols-2">
-            <article class="card">
-              <h3>Novel Writers</h3>
-              <p>Create large-scale stories without losing continuity.</p>
+            <article class="card card-plain" data-reveal>
+              <h3>Penulis novel</h3>
+              <p>Ciptakan karya epik berskala besar tanpa takut kehilangan arah alur.</p>
             </article>
-            <article class="card">
-              <h3>Web Novel Authors</h3>
-              <p>Maintain consistency across hundreds of chapters.</p>
+            <article class="card card-plain" data-reveal data-delay="1">
+              <h3>Penulis web novel & serial</h3>
+              <p>Pertahankan rasa penasaran pembaca dan konsistensi di ratusan bab.</p>
             </article>
-            <article class="card">
-              <h3>Serial Fiction Creators</h3>
-              <p>Control pacing, reveals, and character development.</p>
+            <article class="card card-plain" data-reveal data-delay="2">
+              <h3>Kreator fiksi bersambung</h3>
+              <p>Kelola ritme rilis bab, tensi drama, dan kejutan plot dengan rapi.</p>
             </article>
-            <article class="card">
-              <h3>Story Universe Builders</h3>
-              <p>Manage complex worlds, timelines, and interconnected narratives.</p>
+            <article class="card card-plain" data-reveal data-delay="1">
+              <h3>Pembangun semesta cerita</h3>
+              <p>Kelola lore rumit, linimasa bercabang, dan karakter lintas seri.</p>
             </article>
           </div>
         </div>
       </section>
 
-      <section class="section section-alt" id="status" aria-labelledby="status-heading">
+      <!-- ===================== SUARA PENULIS (TESTIMONI) ===================== -->
+      <!--
+        CATATAN: Produk masih private beta. Kutipan di bawah adalah ILUSTRASI arah masalah-solusi.
+        Ganti dengan testimoni penulis beta yang sebenarnya (dengan izin) sebelum kampanye publik.
+      -->
+      <section class="section section-alt" id="suara" aria-labelledby="testi-heading">
         <div class="container">
-          <div class="status-block">
-            <div>
-              <header class="section-header" style="margin-bottom: 0">
-                <span class="section-eyebrow">Product</span>
-                <h2 id="status-heading">Current Product Status</h2>
-                <p>
-                  Narraza is currently in early production and private-beta stage. The application is
-                  available at
-                  <a href="https://app.narraza.web.id">https://app.narraza.web.id</a>.
-                </p>
-              </header>
-              <ul>
-                <li>Payment is not active yet.</li>
-                <li>Some features may remain gated.</li>
-                <li>Product capabilities may evolve during beta.</li>
-                <li>Core infrastructure is already running in production.</li>
+          <header class="section-header centered" data-reveal>
+            <span class="section-eyebrow">Suara Penulis</span>
+            <h2 id="testi-heading">Dibangun dari masalah nyata penulis serial.</h2>
+            <p>Narraza lahir dari obrolan dengan penulis web novel yang berjuang menjaga cerita panjang tetap konsisten.</p>
+          </header>
+          <div class="card-grid cols-3 testi-grid">
+            <figure class="testi" data-reveal>
+              <div class="testi-stars" aria-hidden="true">★★★★★</div>
+              <blockquote>"Yang paling melelahkan dari menulis 100+ bab itu mengingat siapa tahu apa. Konsep memori kanon persis menjawab itu."</blockquote>
+              <figcaption><span class="testi-ava" aria-hidden="true">R</span><span><b>Rani</b><small>Penulis web novel romansa</small></span></figcaption>
+            </figure>
+            <figure class="testi" data-reveal data-delay="1">
+              <div class="testi-stars" aria-hidden="true">★★★★★</div>
+              <blockquote>"Aku sering takut twist-ku bocor duluan gara-gara AI kelepasan. Ide gerbang pengungkapan ini bikin tenang."</blockquote>
+              <figcaption><span class="testi-ava" aria-hidden="true">B</span><span><b>Bagas</b><small>Kreator serial fantasi</small></span></figcaption>
+            </figure>
+            <figure class="testi" data-reveal data-delay="2">
+              <div class="testi-stars" aria-hidden="true">★★★★★</div>
+              <blockquote>"Paket konteks per adegan itu cerdas — hasilnya lebih fokus dan nggak boros. Ini yang hilang dari tool lain."</blockquote>
+              <figcaption><span class="testi-ava" aria-hidden="true">S</span><span><b>Sinta</b><small>Penulis fiksi bersambung</small></span></figcaption>
+            </figure>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===================== HARGA / BETA ===================== -->
+      <section class="section" id="harga" aria-labelledby="pricing-heading">
+        <div class="container">
+          <header class="section-header centered" data-reveal>
+            <span class="section-eyebrow">Harga</span>
+            <h2 id="pricing-heading">Gratis selama masa beta.</h2>
+            <p>Narraza berada dalam tahap produksi awal & beta tertutup. Mulai sekarang tanpa biaya — pembayaran belum diaktifkan.</p>
+          </header>
+          <div class="pricing-wrap" data-reveal>
+            <div class="pricing-card">
+              <div class="pricing-glow" aria-hidden="true"></div>
+              <span class="pricing-badge">Private Beta</span>
+              <div class="pricing-price"><span class="pricing-cur">Rp</span>0<span class="pricing-per">/ selama beta</span></div>
+              <p class="pricing-sub">Akses penuh ke ruang kerja untuk membangun dan menulis cerita panjangmu.</p>
+              <ul class="pricing-list">
+                <li>Memori kanon & deteksi konsistensi</li>
+                <li>Gerbang pengungkapan misteri</li>
+                <li>Paket konteks per adegan</li>
+                <li>Kerangka momentum bab</li>
+                <li>Ekspor siap multi-platform</li>
               </ul>
+              <a class="btn btn-primary btn-lg btn-block" href="https://app.narraza.web.id/login?mode=signup">Mulai Menulis Gratis</a>
+              <p class="pricing-foot">Tanpa kartu kredit · Beberapa fitur premium dibuka bertahap.</p>
             </div>
-            <span class="badge" role="status">Early Production / Private Beta</span>
+            <aside class="pricing-note">
+              <h3>Status pengembangan</h3>
+              <ul>
+                <li><span class="dot dot-ok"></span>Infrastruktur produksi berjalan stabil.</li>
+                <li><span class="dot dot-ok"></span>Aplikasi resmi aktif di <a href="https://app.narraza.web.id">app.narraza.web.id</a>.</li>
+                <li><span class="dot dot-wait"></span>Sistem pembayaran belum diaktifkan (gratis).</li>
+                <li><span class="dot dot-wait"></span>Fitur terus disempurnakan dari masukan penulis.</li>
+              </ul>
+            </aside>
           </div>
         </div>
       </section>
 
-      <section class="cta-band" aria-labelledby="cta-heading">
-        <div class="container">
-          <h2 id="cta-heading">Ready to build stories that stay consistent?</h2>
-          <p>
-            Start organizing your canon, planning your chapters, and writing long fiction with
-            confidence.
-          </p>
-          <div class="cta-actions">
-            <a class="btn btn-primary" href="https://app.narraza.web.id">Open Narraza App</a>
-            <a class="btn btn-secondary" href="https://app.narraza.web.id/login">Sign In</a>
+      <!-- ===================== FAQ ===================== -->
+      <section class="section section-alt" id="faq" aria-labelledby="faq-heading">
+        <div class="container faq-wrap">
+          <header class="section-header centered" data-reveal>
+            <span class="section-eyebrow">FAQ</span>
+            <h2 id="faq-heading">Pertanyaan yang sering diajukan.</h2>
+          </header>
+          <div class="faq-list" data-reveal>
+            <div class="faq-item">
+              <button class="faq-q" aria-expanded="false">
+                Apakah AI akan menggantikan suara penulisan saya?
+                <span class="faq-toggle" aria-hidden="true"></span>
+              </button>
+              <div class="faq-a"><div class="faq-a-inner"><p>Tidak. Narraza dirancang sebagai asisten, bukan pengganti. Kamu memegang kendali penuh atas kanon, arah cerita, dan setiap keputusan kreatif. AI bekerja dalam batasan yang kamu tetapkan agar gayamu tetap terjaga.</p></div></div>
+            </div>
+            <div class="faq-item">
+              <button class="faq-q" aria-expanded="false">
+                Apakah data dan cerita saya aman?
+                <span class="faq-toggle" aria-hidden="true"></span>
+              </button>
+              <div class="faq-a"><div class="faq-a-inner"><p>Cerita kamu adalah milik kamu. Narraza menyimpannya untuk menjaga kontinuitas dan tidak menjadikannya milik publik. Selama beta kami terus memperkuat infrastruktur keamanan dan privasi.</p></div></div>
+            </div>
+            <div class="faq-item">
+              <button class="faq-q" aria-expanded="false">
+                Platform apa saja yang didukung untuk publikasi?
+                <span class="faq-toggle" aria-hidden="true"></span>
+              </button>
+              <div class="faq-a"><div class="faq-a-inner"><p>Narraza memformat bab agar rapi dan nyaman dibaca di layar HP, siap kamu salin atau ekspor ke platform fiksi bersambung seperti KBM App, Wattpad, Joylada, GoodNovel, dan lainnya.</p></div></div>
+            </div>
+            <div class="faq-item">
+              <button class="faq-q" aria-expanded="false">
+                Berapa harganya setelah masa beta berakhir?
+                <span class="faq-toggle" aria-hidden="true"></span>
+              </button>
+              <div class="faq-a"><div class="faq-a-inner"><p>Selama beta, Narraza gratis dan pembayaran belum diaktifkan. Saat skema harga final diumumkan, kamu akan diberi tahu lebih dulu. Beberapa fitur premium mungkin dibuka secara bertahap.</p></div></div>
+            </div>
+            <div class="faq-item">
+              <button class="faq-q" aria-expanded="false">
+                Apakah cocok untuk semua genre cerita?
+                <span class="faq-toggle" aria-hidden="true"></span>
+              </button>
+              <div class="faq-a"><div class="faq-a-inner"><p>Ya. Dari romansa, fantasi, misteri, hingga sistem/cultivation — selama ceritamu panjang dan butuh kontinuitas, memori kanon dan gerbang misteri Narraza bekerja untuk semua genre.</p></div></div>
+            </div>
+            <div class="faq-item">
+              <button class="faq-q" aria-expanded="false">
+                Apakah Narraza mendukung Bahasa Indonesia?
+                <span class="faq-toggle" aria-hidden="true"></span>
+              </button>
+              <div class="faq-a"><div class="faq-a-inner"><p>Tentu. Narraza dibangun dengan penulis Indonesia sebagai fokus utama — antarmuka dan asisten menulis sepenuhnya berbahasa Indonesia.</p></div></div>
+            </div>
           </div>
+        </div>
+      </section>
+
+      <!-- ===================== CTA BAND ===================== -->
+      <section class="cta-band" aria-labelledby="cta-heading">
+        <div class="container cta-inner" data-reveal>
+          <div class="cta-glow" aria-hidden="true"></div>
+          <span class="section-eyebrow cta-eyebrow">Mulai Hari Ini</span>
+          <h2 id="cta-heading">Cerita panjangmu layak tetap konsisten sampai bab terakhir.</h2>
+          <p>Bangun kanonmu, rancang tiap bab dengan matang, dan tulis fiksi panjang dengan percaya diri.</p>
+          <div class="cta-actions">
+            <a class="btn btn-primary btn-lg" href="https://app.narraza.web.id/login?mode=signup">Mulai Menulis Gratis</a>
+            <a class="btn btn-secondary btn-lg" href="https://app.narraza.web.id/login">Masuk ke Akun</a>
+          </div>
+          <p class="cta-foot">Gratis selama beta · Tanpa kartu kredit</p>
         </div>
       </section>
     </main>
@@ -335,28 +627,186 @@
       <div class="container footer-grid">
         <div class="footer-brand">
           <a class="brand" href="/">
-            <span class="brand-mark" aria-hidden="true"></span>
+            <span class="brand-mark" aria-hidden="true">N</span>
             Narraza
           </a>
-          <p>Build long fiction without losing the plot.</p>
+          <p>Tulis cerita panjang tanpa kehilangan alur.</p>
         </div>
-        <nav class="footer-links" aria-label="Footer">
-          <a href="https://app.narraza.web.id">App</a>
-          <a href="https://app.narraza.web.id/login">Login</a>
+        <nav class="footer-col" aria-label="Produk">
+          <span class="footer-h">Produk</span>
+          <a href="#fitur">Fitur</a>
+          <a href="#cara-kerja">Cara Kerja</a>
+          <a href="#harga">Harga</a>
+          <a href="#faq">FAQ</a>
+        </nav>
+        <nav class="footer-col" aria-label="Akun">
+          <span class="footer-h">Akun</span>
+          <a href="https://app.narraza.web.id/login?mode=signup">Daftar</a>
+          <a href="https://app.narraza.web.id/login">Masuk</a>
+          <a href="https://app.narraza.web.id">Buka Aplikasi</a>
         </nav>
       </div>
-      <p class="footer-note container">Narraza. All rights reserved.</p>
+      <p class="footer-note container">© Narraza. Hak Cipta Dilindungi Undang-Undang.</p>
     </footer>
 
     <script>
       (function () {
+        "use strict";
+        var reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+        /* ---- Nav scroll state ---- */
         var nav = document.getElementById("nav");
-        if (!nav) return;
-        var onScroll = function () {
-          nav.classList.toggle("is-scrolled", window.scrollY > 8);
+        if (nav) {
+          var onScroll = function () {
+            nav.classList.toggle("is-scrolled", window.scrollY > 8);
+          };
+          onScroll();
+          window.addEventListener("scroll", onScroll, { passive: true });
+        }
+
+        /* ---- Scroll reveal (with hard failsafe so content is NEVER stuck hidden) ---- */
+        var revealEls = Array.prototype.slice.call(document.querySelectorAll("[data-reveal]"));
+        var revealAll = function () {
+          revealEls.forEach(function (el) { el.classList.add("is-visible"); });
         };
-        onScroll();
-        window.addEventListener("scroll", onScroll, { passive: true });
+        if (reduceMotion || !("IntersectionObserver" in window)) {
+          revealAll();
+        } else {
+          var revealObs = new IntersectionObserver(function (entries) {
+            entries.forEach(function (e) {
+              if (e.isIntersecting) {
+                e.target.classList.add("is-visible");
+                revealObs.unobserve(e.target);
+              }
+            });
+          }, { threshold: 0.08, rootMargin: "0px 0px 5% 0px" });
+          revealEls.forEach(function (el) { revealObs.observe(el); });
+          /* Reveal whatever is already in view right now (no scroll needed). */
+          requestAnimationFrame(function () {
+            var vh = window.innerHeight || 800;
+            revealEls.forEach(function (el) {
+              if (el.getBoundingClientRect().top < vh * 0.95) el.classList.add("is-visible");
+            });
+          });
+          /* Failsafe: if anything is still hidden shortly after load, show it. */
+          window.setTimeout(revealAll, 1200);
+          window.addEventListener("load", function () { window.setTimeout(revealAll, 400); });
+        }
+
+        /* ---- Animated counters ---- */
+        var counters = Array.prototype.slice.call(document.querySelectorAll(".stat-num[data-count]"));
+        var fmtCount = function (el, val) {
+          return (el.getAttribute("data-prefix") || "") + val + (el.getAttribute("data-suffix") || "");
+        };
+        /* Resting state shows the FINAL value so it can never get stuck at 0. */
+        counters.forEach(function (el) {
+          el.textContent = fmtCount(el, parseInt(el.getAttribute("data-count"), 10) || 0);
+        });
+        var runCount = function (el) {
+          var target = parseInt(el.getAttribute("data-count"), 10) || 0;
+          var prefix = el.getAttribute("data-prefix") || "";
+          var suffix = el.getAttribute("data-suffix") || "";
+          if (reduceMotion || target === 0) { el.textContent = prefix + target + suffix; return; }
+          var dur = 1400, start = null;
+          var tick = function (ts) {
+            if (!start) start = ts;
+            var p = Math.min((ts - start) / dur, 1);
+            var eased = 1 - Math.pow(1 - p, 3);
+            el.textContent = prefix + Math.round(target * eased) + suffix;
+            if (p < 1) requestAnimationFrame(tick);
+          };
+          requestAnimationFrame(tick);
+        };
+        if (counters.length) {
+          if (reduceMotion || !("IntersectionObserver" in window)) {
+            counters.forEach(runCount);
+          } else {
+            var countObs = new IntersectionObserver(function (entries) {
+              entries.forEach(function (e) {
+                if (e.isIntersecting) { runCount(e.target); countObs.unobserve(e.target); }
+              });
+            }, { threshold: 0.5 });
+            counters.forEach(function (el) { countObs.observe(el); });
+          }
+        }
+
+        /* ---- Interactive feature tabs ---- */
+        var tabs = Array.prototype.slice.call(document.querySelectorAll(".feature-tab"));
+        var panels = Array.prototype.slice.call(document.querySelectorAll(".feature-panel"));
+        var stage = document.querySelector(".feature-stage");
+        var progress = document.querySelector(".feature-progress");
+        if (tabs.length && panels.length) {
+          var current = 0, autoTimer = null, ROTATE = 6000;
+          var setActive = function (idx, focusTab) {
+            current = (idx + tabs.length) % tabs.length;
+            tabs.forEach(function (t, i) {
+              var on = i === current;
+              t.classList.toggle("is-active", on);
+              t.setAttribute("aria-selected", on ? "true" : "false");
+              t.tabIndex = on ? 0 : -1;
+            });
+            panels.forEach(function (p, i) {
+              var on = i === current;
+              p.classList.toggle("is-active", on);
+              if (on) { p.removeAttribute("hidden"); } else { p.setAttribute("hidden", ""); }
+            });
+            if (focusTab) tabs[current].focus();
+            restartProgress();
+          };
+          var restartProgress = function () {
+            if (!progress || reduceMotion) return;
+            progress.classList.remove("run");
+            void progress.offsetWidth; /* reflow to restart animation */
+            progress.classList.add("run");
+          };
+          var stopAuto = function () {
+            if (autoTimer) { clearInterval(autoTimer); autoTimer = null; }
+            if (progress) progress.classList.remove("run");
+          };
+          var startAuto = function () {
+            if (reduceMotion) return;
+            stopAuto();
+            restartProgress();
+            autoTimer = setInterval(function () { setActive(current + 1); }, ROTATE);
+          };
+          tabs.forEach(function (tab, i) {
+            tab.addEventListener("click", function () { setActive(i); startAuto(); });
+            tab.addEventListener("keydown", function (ev) {
+              if (ev.key === "ArrowRight" || ev.key === "ArrowDown") { ev.preventDefault(); setActive(current + 1, true); startAuto(); }
+              else if (ev.key === "ArrowLeft" || ev.key === "ArrowUp") { ev.preventDefault(); setActive(current - 1, true); startAuto(); }
+            });
+          });
+          if (stage) {
+            stage.addEventListener("mouseenter", stopAuto);
+            stage.addEventListener("mouseleave", startAuto);
+            stage.addEventListener("focusin", stopAuto);
+            stage.addEventListener("focusout", startAuto);
+          }
+          /* Start auto-rotate only when the demo is on screen */
+          if (!reduceMotion && "IntersectionObserver" in window) {
+            var demoObs = new IntersectionObserver(function (entries) {
+              entries.forEach(function (e) { if (e.isIntersecting) startAuto(); else stopAuto(); });
+            }, { threshold: 0.35 });
+            var demo = document.querySelector(".feature-demo");
+            if (demo) demoObs.observe(demo);
+          }
+        }
+
+        /* ---- FAQ accordion ---- */
+        var faqBtns = Array.prototype.slice.call(document.querySelectorAll(".faq-q"));
+        faqBtns.forEach(function (btn) {
+          btn.addEventListener("click", function () {
+            var expanded = btn.getAttribute("aria-expanded") === "true";
+            faqBtns.forEach(function (b) {
+              b.setAttribute("aria-expanded", "false");
+              b.parentElement.classList.remove("is-open");
+            });
+            if (!expanded) {
+              btn.setAttribute("aria-expanded", "true");
+              btn.parentElement.classList.add("is-open");
+            }
+          });
+        });
       })();
     </script>
   </body>

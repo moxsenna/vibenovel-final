@@ -19,7 +19,7 @@ serve(
   },
   (info) => {
     console.log(
-      `VibeNovel API (Node) listening on http://localhost:${info.port} appEnv=${bindings.APP_ENV ?? "development"}`,
+      `Narraza API (Node) listening on http://localhost:${info.port} appEnv=${bindings.APP_ENV ?? "development"}`,
     );
   },
 );

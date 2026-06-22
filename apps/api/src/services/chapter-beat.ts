@@ -4,11 +4,17 @@ import {
   type ChapterBeat,
   type ChapterBeatStatus,
 } from "@vibenovel/shared";
-import type { AppBindings } from "../env.js";
+import {
+  allowDeterministicStoryStubs,
+  isAiGenerationEnabled,
+  isAiProviderMock,
+  type AppBindings,
+} from "../env.js";
 import { mapChapterBeatRow, type ChapterBeatRow } from "../lib/mappers.js";
 import { createServiceRoleClient } from "../lib/supabase.js";
 import { AppError } from "../errors.js";
 import { getOwnedProjectRow } from "./project.js";
+import { generateBeatsWithAiForSession } from "./beat-generation-ai.js";
 import { getOwnedWritingSessionRow } from "./write-session.js";
 
 const BEAT_SELECT =
@@ -147,6 +153,49 @@ export const STUB_BEAT_TEMPLATES: ReadonlyArray<{
     sortOrder: 5,
   },
 ];
+
+export function shouldUseAiBeatGeneration(bindings: AppBindings): boolean {
+  return isAiGenerationEnabled(bindings) && !isAiProviderMock(bindings);
+}
+
+async function generateBeatsWithDeterministicStub(
+  bindings: AppBindings,
+  projectId: string,
+  sessionRow: Awaited<ReturnType<typeof getOwnedWritingSessionRow>>,
+): Promise<{ beats: ChapterBeat[]; created: boolean }> {
+  const admin = createServiceRoleClient(bindings);
+  const inserts = STUB_BEAT_TEMPLATES.map((template) => ({
+    project_id: projectId,
+    chapter_outline_id: sessionRow.chapter_outline_id,
+    writing_session_id: sessionRow.id,
+    beat_number: template.beatNumber,
+    title: template.title,
+    summary: template.summary,
+    direction: template.direction,
+    status: CHAPTER_BEAT_STATUSES.empty,
+    emotional_shift: template.emotionalShift,
+    must_include: template.mustInclude,
+    must_not_include: template.mustNotInclude,
+    word_target: template.wordTarget,
+    stop_condition: template.stopCondition,
+    sort_order: template.sortOrder,
+    metadata: { generator: "beat_stub_deterministic" },
+  }));
+
+  const { data, error } = await admin.from("chapter_beats").insert(inserts).select(BEAT_SELECT);
+
+  if (error || !data) {
+    console.error("chapter_beats insert stub failed");
+    throw AppError.internal("Failed to generate chapter beats");
+  }
+
+  await touchSessionActivity(bindings, projectId, sessionRow.id);
+
+  const rows = (data as ChapterBeatRow[]).sort(
+    (a, b) => a.sort_order - b.sort_order || a.beat_number - b.beat_number,
+  );
+  return { beats: rows.map(mapChapterBeatRow), created: true };
+}
 
 export interface GenerateBeatsInput {
   regenerate?: boolean;
@@ -432,37 +481,25 @@ export async function generateBeatsForSessionForOwner(
     }
   }
 
-  const inserts = STUB_BEAT_TEMPLATES.map((template) => ({
-    project_id: projectId,
-    chapter_outline_id: sessionRow.chapter_outline_id,
-    writing_session_id: sessionRow.id,
-    beat_number: template.beatNumber,
-    title: template.title,
-    summary: template.summary,
-    direction: template.direction,
-    status: CHAPTER_BEAT_STATUSES.empty,
-    emotional_shift: template.emotionalShift,
-    must_include: template.mustInclude,
-    must_not_include: template.mustNotInclude,
-    word_target: template.wordTarget,
-    stop_condition: template.stopCondition,
-    sort_order: template.sortOrder,
-    metadata: { generator: "beat_stub_deterministic" },
-  }));
-
-  const { data, error } = await admin.from("chapter_beats").insert(inserts).select(BEAT_SELECT);
-
-  if (error || !data) {
-    console.error("chapter_beats insert stub failed");
-    throw AppError.internal("Failed to generate chapter beats");
+  if (shouldUseAiBeatGeneration(bindings)) {
+    const result = await generateBeatsWithAiForSession(
+      bindings,
+      ownerId,
+      projectId,
+      sessionRow,
+      regenerate,
+    );
+    await touchSessionActivity(bindings, projectId, sessionRow.id);
+    return result;
   }
 
-  await touchSessionActivity(bindings, projectId, sessionRow.id);
+  if (allowDeterministicStoryStubs(bindings)) {
+    return generateBeatsWithDeterministicStub(bindings, projectId, sessionRow);
+  }
 
-  const rows = (data as ChapterBeatRow[]).sort(
-    (a, b) => a.sort_order - b.sort_order || a.beat_number - b.beat_number,
+  throw AppError.serviceUnavailable(
+    "AI beat generation is unavailable. Enable AI generation or allow deterministic story stubs in this environment.",
   );
-  return { beats: rows.map(mapChapterBeatRow), created: true };
 }
 
 export async function patchChapterBeatForOwner(

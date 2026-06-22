@@ -2,6 +2,13 @@
 
 ## Progressive planning
 
+Implementation status per 2026-06-15:
+
+- Sudah ada `outline_plans`, `chapter_outlines`, dan `chapter_beats`.
+- `outline_plans.season_label` masih field teks.
+- Belum ada tabel `mini_arcs`.
+- Mini Arc tetap target produk, tapi harus punya migration/service sendiri sebelum dianggap shipped.
+
 Jangan generate 100–300 bab detail sekaligus.
 
 Gunakan struktur:
@@ -38,6 +45,8 @@ MVP cukup:
 - ending hook.
 
 ## Beat/Adegan Contract
+
+Status implementasi saat ini memakai `chapter_beats`: `beat_number`, `title`, `summary`, `direction`, `status`, `emotional_shift`, `must_include`, `must_not_include`, `word_target`, `stop_condition`, dan `sort_order`. Struktur di bawah adalah target richer contract, bukan schema lengkap yang sudah ada.
 
 ```ts
 BeatContract {

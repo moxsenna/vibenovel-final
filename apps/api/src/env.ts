@@ -9,15 +9,16 @@ export interface AppBindings {
   AI_GENERATION_ENABLED?: string;
   /** Sprint 8 — local smoke without OpenRouter network. */
   AI_PROVIDER_MOCK?: string;
+  /** Sprint 12.0 — explicit opt-in for deterministic story stubs (dev/test). */
+  ALLOW_DETERMINISTIC_STORY_STUBS?: string;
   /** Sprint 8 — mock behavior: success | fail_provider | unsafe_output */
   AI_PROVIDER_MOCK_MODE?: string;
   /** Sprint 8 — Worker-only; never log or expose to client. */
   OPENROUTER_API_KEY?: string;
   OPENROUTER_BASE_URL?: string;
-  DEFAULT_AI_MODEL?: string;
-  AI_MODEL_HEMAT?: string;
-  AI_MODEL_SEIMBANG?: string;
-  AI_MODEL_TERBAIK?: string;
+  /** AI registry routing — second OpenAI-compatible provider (Worker-only). */
+  TOKENROUTER_API_KEY?: string;
+  TOKENROUTER_BASE_URL?: string;
   AI_TIMEOUT_MS?: string;
   AI_MAX_RETRIES?: string;
   AI_CREDIT_COST_PROSE_BEAT?: string;
@@ -57,19 +58,19 @@ export interface EnvPresenceFlags {
   hasSupabaseUrl: boolean;
   hasSupabaseAnonKey: boolean;
   hasSupabaseServiceRoleKey: boolean;
-  appEnv: string;
-  allowedOriginsCount: number;
   aiGenerationEnabled: boolean;
   aiProviderMock: boolean;
   hasOpenRouterApiKey: boolean;
+  hasTokenRouterApiKey: boolean;
   creditTopupEnabled: boolean;
   paymentProviderMock: boolean;
+  appEnv: string;
+  paymentProvider: string;
   hasMayarApiKey: boolean;
   mayarEnv: string;
-  paymentProvider: string;
-  duitkuEnv: string;
   hasDuitkuMerchantCode: boolean;
   hasDuitkuMerchantKey: boolean;
+  duitkuEnv: string;
   hasDuitkuCallbackUrl: boolean;
   duitkuCallbackUrlIsPublic: boolean;
   duitkuSmokeCallbackFixture: boolean;
@@ -80,6 +81,7 @@ const DEFAULT_ALLOWED_ORIGINS =
   "http://localhost:5173,http://localhost:5174,http://localhost:5175";
 
 const DEFAULT_OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1";
+const DEFAULT_TOKENROUTER_BASE_URL = "https://api.tokenrouter.com/v1";
 const DEFAULT_AI_TIMEOUT_MS = 45_000;
 const DEFAULT_AI_MAX_RETRIES = 1;
 
@@ -111,6 +113,17 @@ export function isAiProviderMock(bindings: AppBindings): boolean {
   return parseTruthy(bindings.AI_PROVIDER_MOCK);
 }
 
+/** Dev/test fallback for beat/summary stubs; production live AI must not silent-stub. */
+export function allowDeterministicStoryStubs(bindings: AppBindings): boolean {
+  return parseTruthy(bindings.ALLOW_DETERMINISTIC_STORY_STUBS) || isAiProviderMock(bindings);
+}
+
+export function mayUseDeterministicStoryStub(bindings: AppBindings): boolean {
+  if (!isAiGenerationEnabled(bindings)) return true;
+  return allowDeterministicStoryStubs(bindings);
+}
+
+
 export function getAiProviderMockMode(
   bindings: AppBindings,
 ): "success" | "fail_provider" | "unsafe_output" {
@@ -130,6 +143,22 @@ export function getOpenRouterApiKey(bindings: AppBindings): string | undefined {
 
 export function hasOpenRouterApiKey(bindings: AppBindings): boolean {
   return Boolean(getOpenRouterApiKey(bindings));
+}
+
+export function getTokenRouterApiKey(
+  bindings: AppBindings,
+): string | undefined {
+  return bindings.TOKENROUTER_API_KEY?.trim() || undefined;
+}
+
+export function getTokenRouterBaseUrl(bindings: AppBindings): string {
+  return (
+    bindings.TOKENROUTER_BASE_URL?.trim() || DEFAULT_TOKENROUTER_BASE_URL
+  ).replace(/\/$/, "");
+}
+
+export function hasTokenRouterApiKey(bindings: AppBindings): boolean {
+  return Boolean(getTokenRouterApiKey(bindings));
 }
 
 export function isCreditTopupEnabled(bindings: AppBindings): boolean {
@@ -296,9 +325,26 @@ export function getPaymentTimeoutMs(bindings: AppBindings): number {
   return DEFAULT_PAYMENT_TIMEOUT_MS;
 }
 
-export function getDefaultAiModel(bindings: AppBindings): string | undefined {
-  const model = bindings.DEFAULT_AI_MODEL?.trim();
-  return model || undefined;
+const LEGACY_AI_MODEL_ENV_KEYS = [
+  "DEFAULT_AI_MODEL",
+  "AI_MODEL_HEMAT",
+  "AI_MODEL_SEIMBANG",
+  "AI_MODEL_TERBAIK",
+  "AI_EMBEDDING_MODEL",
+] as const;
+
+/**
+ * Model/route overrides are forbidden: production routing must match the
+ * committed policy. Fail fast (rather than silently ignore) if a legacy
+ * override env is still set.
+ */
+export function assertNoLegacyAiModelEnv(
+  source: Record<string, string | undefined>,
+): void {
+  const active = LEGACY_AI_MODEL_ENV_KEYS.filter((key) => source[key]?.trim());
+  if (active.length > 0) {
+    throw new Error(`Legacy AI model env is forbidden: ${active.join(", ")}`);
+  }
 }
 
 export function getAiTimeoutMs(bindings: AppBindings): number {
@@ -331,21 +377,19 @@ export function getEnvPresenceFlags(bindings: AppBindings): EnvPresenceFlags {
     hasSupabaseUrl: Boolean(bindings.SUPABASE_URL?.trim()),
     hasSupabaseAnonKey: Boolean(bindings.SUPABASE_ANON_KEY?.trim()),
     hasSupabaseServiceRoleKey: Boolean(bindings.SUPABASE_SERVICE_ROLE_KEY?.trim()),
-    appEnv: getAppEnv(bindings),
-    allowedOriginsCount: getAllowedOrigins(bindings).length,
     aiGenerationEnabled: isAiGenerationEnabled(bindings),
     aiProviderMock: isAiProviderMock(bindings),
     hasOpenRouterApiKey: hasOpenRouterApiKey(bindings),
+    hasTokenRouterApiKey: hasTokenRouterApiKey(bindings),
     creditTopupEnabled: isCreditTopupEnabled(bindings),
     paymentProviderMock: isPaymentProviderMock(bindings),
+    appEnv: getAppEnv(bindings),
+    paymentProvider: getPaymentProvider(bindings),
     hasMayarApiKey: hasMayarApiKey(bindings),
     mayarEnv: getMayarEnv(bindings),
-    paymentProvider: isPaymentProviderMock(bindings)
-      ? "mock"
-      : getPaymentProvider(bindings),
-    duitkuEnv: getDuitkuEnv(bindings),
     hasDuitkuMerchantCode: hasDuitkuMerchantCode(bindings),
     hasDuitkuMerchantKey: hasDuitkuMerchantKey(bindings),
+    duitkuEnv: getDuitkuEnv(bindings),
     hasDuitkuCallbackUrl: hasDuitkuCallbackUrl(bindings),
     duitkuCallbackUrlIsPublic: isDuitkuCallbackUrlPublic(bindings),
     duitkuSmokeCallbackFixture: isDuitkuSmokeCallbackFixtureEnabled(bindings),

@@ -1,5 +1,5 @@
 import { getApiBaseUrl } from "@/lib/env";
-import { supabase } from "@/lib/supabase";
+import { clearSupabaseAuthStorage, supabase } from "@/lib/supabase";
 
 export class ApiClientError extends Error {
   readonly code: string;
@@ -52,8 +52,13 @@ async function refreshAccessToken(): Promise<string | null> {
 }
 
 async function clearLocalSession(): Promise<void> {
+  clearSupabaseAuthStorage();
   if (!supabase) return;
-  await supabase.auth.signOut({ scope: "local" });
+  try {
+    await supabase.auth.signOut({ scope: "local" });
+  } finally {
+    clearSupabaseAuthStorage();
+  }
 }
 
 async function sendRequest<T>(

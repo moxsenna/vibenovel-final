@@ -9,6 +9,8 @@ import {
   generateFoundationProposalsForOwner,
   listFoundationProposalsForOwner,
 } from "../services/foundation-proposal.js";
+import { generateFoundationProposalsFromNarraForOwner } from "../services/asisten-narra-foundation-patch.js";
+import { acceptFoundationProposalForOwner } from "../services/foundation-proposal-acceptance.js";
 import { lockFoundationForOwner } from "../services/foundation-lock.js";
 import { getFoundationReadinessForOwner } from "../services/foundation-readiness.js";
 import type { AppEnv } from "../types.js";
@@ -42,6 +44,13 @@ export function registerFoundationRoutes(app: Hono<AppEnv>): void {
     return jsonSuccess(c, result, result.created ? 201 : 200);
   });
 
+  app.post("/api/projects/:id/foundation/proposals/generate-from-narra", authMiddleware, async (c) => {
+    const ownerId = c.get("userId");
+    const projectId = c.req.param("id");
+    const result = await generateFoundationProposalsFromNarraForOwner(c.env, ownerId, projectId);
+    return jsonSuccess(c, result, 201);
+  });
+
   app.get("/api/projects/:id/foundation/proposals", authMiddleware, async (c) => {
     const ownerId = c.get("userId");
     const projectId = c.req.param("id");
@@ -50,6 +59,14 @@ export function registerFoundationRoutes(app: Hono<AppEnv>): void {
       includeResolved: c.req.query("includeResolved"),
     });
     return jsonSuccess(c, { proposals });
+  });
+
+  app.post("/api/projects/:id/foundation/proposals/:proposalId/accept", authMiddleware, async (c) => {
+    const ownerId = c.get("userId");
+    const projectId = c.req.param("id");
+    const proposalId = c.req.param("proposalId");
+    const result = await acceptFoundationProposalForOwner(c.env, ownerId, projectId, proposalId);
+    return jsonSuccess(c, result);
   });
 
   app.get("/api/projects/:id/foundation/readiness", authMiddleware, async (c) => {
