@@ -94,11 +94,9 @@ const baseLimit: AiRateLimitSnapshot = {
   cooldownFailureThreshold: 3,
 };
 
-assert.doesNotThrow(() =>
-  assertAiGenerationAllowed({ ...baseLimit, requestedCreditCost: 5 }),
-);
+assert.doesNotThrow(() => assertAiGenerationAllowed(baseLimit, 5));
 assert.throws(
-  () => assertAiGenerationAllowed({ ...baseLimit, requestedCreditCost: 6 }),
+  () => assertAiGenerationAllowed(baseLimit, 6),
   (err: unknown) =>
     err instanceof AppError &&
     err.code === "AI_DAILY_CAP_EXCEEDED" &&
@@ -106,11 +104,7 @@ assert.throws(
 );
 assert.throws(
   () =>
-    assertAiGenerationAllowed({
-      ...baseLimit,
-      requestedCreditCost: 1,
-      recentFailureCount: 3,
-    }),
+    assertAiGenerationAllowed({ ...baseLimit, recentFailureCount: 3 }, 1),
   (err: unknown) =>
     err instanceof AppError &&
     err.code === "AI_FAILURE_COOLDOWN" &&

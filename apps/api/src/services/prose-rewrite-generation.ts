@@ -30,7 +30,7 @@ import {
   saveAiRewrittenProseVersionForOwner,
 } from "./prose-draft.js";
 import {
-  buildProseRewritePrompt,
+  buildProseRewritePromptFromPacket,
   parseProseRewriteMode,
   PROSE_REWRITE_MODES,
   type ProseRewriteMode,
@@ -51,7 +51,6 @@ import {
 import { generateCorrelationId } from "./audit-snapshot.js";
 import { createServiceRoleClient } from "../lib/supabase.js";
 import { collectPovForbiddenFactTexts } from "./character-knowledge-validator.js";
-import { loadWriterPacketForLogForOwner } from "./context-packet-builder.js";
 import { listFactsForOwner } from "./fact.js";
 import { buildProseValidationContextFromPacket } from "./prose-validation-context.js";
 import { generateValidatedAiOutputWithSafeRepair } from "./prose-output-safe-repair.js";
@@ -452,19 +451,15 @@ export async function rewriteProseForOwner(
     beatId: beatRow.id,
   });
 
-  const [writerPacket, canonFacts] = await Promise.all([
-    loadWriterPacketForLogForOwner(bindings, ownerId, projectId, packetResult.packetLogId),
-    listFactsForOwner(bindings, ownerId, projectId, false),
-  ]);
+  const writerPacket = packetResult.packet;
+  const canonFacts = await listFactsForOwner(bindings, ownerId, projectId, false);
   const povForbiddenFactTexts = collectPovForbiddenFactTexts(
     canonFacts,
     writerPacket.continuity.povKnowledge,
   );
 
-  const promptResult = await buildProseRewritePrompt(
-    bindings,
-    projectId,
-    packetResult.packetLogId,
+  const promptResult = await buildProseRewritePromptFromPacket(
+    writerPacket,
     beatRow,
     sourceRow.prose_text,
     body.rewriteMode,
@@ -511,6 +506,12 @@ export async function rewriteProseForOwner(
 
   let debited = false;
   try {
+    await assertAiGenerationAllowedForOwner(bindings, {
+      userId: ownerId,
+      projectId,
+      generationType: GENERATION_TYPES.prose_rewrite,
+      requestedCreditCost: creditCost,
+    });
     await debitCreditsForAttempt(bindings, {
       userId: ownerId,
       projectId,
@@ -524,17 +525,18 @@ export async function rewriteProseForOwner(
     });
     debited = true;
   } catch (err) {
-    if (err instanceof AppError && err.code === "INSUFFICIENT_CREDIT") {
-      attempt = await markGenerationAttemptFailed(bindings, {
-        attemptId: attempt.id,
-        userId: ownerId,
-        projectId,
-        errorCode: "INSUFFICIENT_CREDIT",
-        errorMessage: err.message,
-        correlationId,
-      });
-      throw err;
-    }
+    // Any pre-debit failure (insufficient credit, daily-cap / failure-cooldown
+    // rate limits from the re-check, or an unexpected error) must mark the
+    // freshly inserted pending attempt as failed; otherwise retrying the same
+    // idempotency key returns GENERATION_IN_PROGRESS indefinitely.
+    attempt = await markGenerationAttemptFailed(bindings, {
+      attemptId: attempt.id,
+      userId: ownerId,
+      projectId,
+      errorCode: err instanceof AppError ? err.code : "GENERATION_FAILED",
+      errorMessage: err instanceof Error ? err.message : "Generation precondition failed",
+      correlationId,
+    });
     throw err;
   }
 

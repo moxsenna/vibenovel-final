@@ -161,6 +161,18 @@ export function assertGenerationTypeCreditEnabled(
   }
 }
 
+/** Default daily credit cap v2 — harus >= max action cost. */
+export const DEFAULT_DAILY_DEBIT_CAP_V2 = 100_000;
+
+/** Maximum configured credit cost across all generation types and quality modes. */
+export function getMaximumConfiguredCreditCost(): number {
+  return Math.max(
+    ...Object.values(CREDIT_COST_TABLE).flatMap((byMode) =>
+      Object.values(byMode).filter((value): value is number => typeof value === "number"),
+    ),
+  );
+}
+
 export function getFeatureKeyForGenerationType(
   generationType: GenerationType,
 ): NarrazaAiFeature {

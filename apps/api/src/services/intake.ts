@@ -17,6 +17,7 @@ import {
 import type { AppBindings } from "../env.js";
 import {
   isAiGenerationEnabled,
+  isAiProviderMock,
 } from "../env.js";
 import {
   mapDetectedSignalRow,
@@ -62,6 +63,7 @@ import {
   type IntakeFilledSignalSummary,
 } from "./intake-extraction.js";
 import { parsePaidActionIdempotencyKey } from "./paid-action-idempotency.js";
+import { assertAiGenerationAllowedForOwner } from "./ai-rate-limit.js";
 
 const SESSION_SELECT =
   "id, project_id, status, phase, progress_percent, summary, metadata, created_at, updated_at";
@@ -327,6 +329,11 @@ export interface IntakeBundle {
   session: IntakeSession;
   messages: IntakeMessage[];
   signals: DetectedSignal[];
+  readiness: {
+    progressPercent: number;
+    canAdvance: boolean;
+    missingSignals: string[];
+  };
 }
 
 export async function getIntakeBundleForOwner(
@@ -341,10 +348,15 @@ export async function getIntakeBundleForOwner(
     listSignalsForSession(bindings, projectId, sessionRow.id),
   ]);
 
+  const progressPercent = computeProgressFromSignals(signals);
+  const missingSignals = listMissingRequiredSignalTypes(signals);
+  const canAdvance = missingSignals.length === 0;
+
   return {
     session: mapIntakeSessionRow(sessionRow),
     messages,
     signals,
+    readiness: { progressPercent, canAdvance, missingSignals },
   };
 }
 
@@ -658,6 +670,13 @@ export async function appendUserMessageForOwner(
     const creditCost = getCreditCostForGeneration({
       generationType,
       qualityMode,
+    });
+
+    await assertAiGenerationAllowedForOwner(bindings, {
+      userId: ownerId,
+      projectId,
+      generationType,
+      requestedCreditCost: creditCost,
     });
 
     assertGenerationRouteCallable(bindings, { generationType, qualityMode });
@@ -1304,7 +1323,11 @@ export async function extractDetectedSignalsForOwner(
   await getOwnedProjectRow(bindings, ownerId, projectId);
   const sessionRow = await getOrCreateActiveSessionRow(bindings, projectId);
 
-  if (isAiGenerationEnabled(bindings)) {
+  // Mock mode produces stubbed agent replies that never persist AI-envelope
+  // signals, so a mock smoke session can have user messages but no saved
+  // signals. Treat mock like the deterministic path and extract here; only
+  // real-AI mode (which already saved ai_envelope signals) just recomputes.
+  if (isAiGenerationEnabled(bindings) && !isAiProviderMock(bindings)) {
     await recomputeIntakeProgressFromExistingSignals(bindings, projectId, sessionRow.id);
   } else {
     await extractSignalsAndProgressInternal(bindings, projectId, sessionRow.id);

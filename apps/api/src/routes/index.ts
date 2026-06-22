@@ -19,6 +19,7 @@ import { registerSummaryRoutes } from "./summary.js";
 import { registerPublishRoutes } from "./publish.js";
 import { registerAiRoutes } from "./ai.js";
 import { registerDraftImportRoutes } from "./draft-import.js";
+import { registerContinuityRoutes } from "./continuity.js";
 import { registerAdminRoutes } from "./admin.js";
 
 
@@ -42,5 +43,6 @@ export function registerRoutes(app: Hono<AppEnv>): void {
   registerPublishRoutes(app);
   registerAiRoutes(app);
   registerDraftImportRoutes(app);
+  registerContinuityRoutes(app);
   registerAdminRoutes(app);
 }

@@ -760,6 +760,88 @@ export interface PovKnowledgeSnapshot {
  * Full writer Context Packet — slice-only, backend-built.
  * Must NOT include full outline dump, future chapters, or planningTruth raw.
  */
+
+// --- Packet v3 structured types ---
+
+export interface WriterPovKnowledgeFactSummary {
+  factId: string;
+  factText: string;
+  category: string;
+  certainty: string;
+}
+
+export interface WriterCanonFactSummary {
+  id: string;
+  text: string;
+  category: string;
+  importance: string;
+}
+
+export interface WriterCharacterStateSummary {
+  chapterNumber: number;
+  emotionalState: string | null;
+  physicalState: string | null;
+  currentGoal: string | null;
+  locationLabel: string | null;
+}
+
+export interface WriterCharacterSummaryV3 {
+  id: string;
+  name: string;
+  roleLabel: string;
+  descriptionSummary: string;
+  state: WriterCharacterStateSummary | null;
+}
+
+export interface WriterKnowledgeSummary {
+  characterId: string;
+  characterName: string;
+  knownFacts: WriterPovKnowledgeFactSummary[];
+  suspectedFacts: WriterPovKnowledgeFactSummary[];
+  partialFacts: WriterPovKnowledgeFactSummary[];
+  falseBeliefs: WriterPovKnowledgeFactSummary[];
+}
+
+export interface WriterPrecedingProseTail {
+  text: string;
+  sourceChapterNumber: number;
+  sourceBeatId: string;
+  sourceVersionId: string;
+  sourceType: "same_chapter_previous_beat" | "previous_chapter_last_beat";
+}
+
+/**
+ * Server-only safety envelope — MUST NOT be sent to Writer model,
+ * returned to browser, included in public preview, or logged to raw audit metadata.
+ */
+export interface WriterSafetyEnvelope {
+  version: "writer_safety_v1";
+  projectId: string;
+  chapterOutlineId: string;
+  chapterNumber: number;
+  beatId: string | null;
+  futureRevealFactIds: string[];
+  forbiddenRevealPhrases: string[];
+  unknownFactConstraints: Array<{
+    characterId: string;
+    factId: string;
+    factText: string;
+  }>;
+  hardBeatConstraints: {
+    mustInclude: string[];
+    mustNotInclude: string[];
+    stopCondition: string | null;
+  };
+}
+
+/** Knowledge constraint for character — server-only validator data. */
+export interface CharacterKnowledgeConstraint {
+  characterId: string;
+  factId: string;
+  factText: string;
+  allowedMode: "certain" | "partial" | "suspicion" | "false_belief" | "forbidden";
+}
+
 export interface WriterContextPacket {
   meta: {
     projectId: ID;

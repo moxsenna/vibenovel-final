@@ -52,6 +52,8 @@ export interface AppBindings {
   DUITKU_TIMEOUT_MS?: string;
   /** Sprint 10.12 — force local smoke callback fixture credentials. */
   DUITKU_SMOKE_CALLBACK_FIXTURE?: string;
+  /** Sprint 14+ — writer context budget profile: conservative | full */
+  WRITER_CONTEXT_BUDGET_PROFILE?: string;
 }
 
 export interface EnvPresenceFlags {
@@ -134,6 +136,14 @@ export function getAiProviderMockMode(
 
 export function getOpenRouterBaseUrl(bindings: AppBindings): string {
   return bindings.OPENROUTER_BASE_URL?.trim() || DEFAULT_OPENROUTER_BASE_URL;
+}
+
+export function getWriterContextBudgetProfile(
+  bindings: AppBindings,
+): "conservative" | "full" {
+  const raw = bindings.WRITER_CONTEXT_BUDGET_PROFILE?.trim().toLowerCase();
+  if (raw === "full") return "full";
+  return "conservative";
 }
 
 export function getOpenRouterApiKey(bindings: AppBindings): string | undefined {

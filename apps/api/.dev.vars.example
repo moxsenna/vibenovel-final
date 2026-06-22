@@ -51,3 +51,8 @@ ALLOWED_ORIGINS=http://localhost:5173,http://localhost:5174,http://localhost:517
 # When real Duitku keys are unset, development auto-enables fixture credentials for callback smoke.
 # Optional explicit override:
 # DUITKU_SMOKE_CALLBACK_FIXTURE=true
+
+# Sprint 14+ Long-Fiction Hardening: Writer Context Budget Profile
+# Options: conservative (default, 17,800 chars) | full (35,100 chars)
+# Profile 'full' requires Node runtime, telemetry, and activation evidence.
+# WRITER_CONTEXT_BUDGET_PROFILE=conservative

@@ -137,6 +137,23 @@ export async function buildProseRewritePrompt(
   instruction?: string,
 ): Promise<ProseRewritePromptResult> {
   const packet = await loadSafePacketFromLog(bindings, projectId, packetLogId);
+  return buildProseRewritePromptFromPacket(
+    packet,
+    beat,
+    sourceProseText,
+    rewriteMode,
+    instruction,
+  );
+}
+
+/** Build rewrite prompt directly from in-memory packet — no DB re-read. */
+export async function buildProseRewritePromptFromPacket(
+  packet: WriterContextPacket,
+  beat: ChapterBeatRow,
+  sourceProseText: string,
+  rewriteMode: ProseRewriteMode,
+  instruction?: string,
+): Promise<ProseRewritePromptResult> {
   const userContent = buildRewriteUserSections(
     packet,
     beat,

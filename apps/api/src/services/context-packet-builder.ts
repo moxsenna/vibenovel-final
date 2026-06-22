@@ -63,6 +63,25 @@ export interface BuildContextPacketResult {
   safety: ContextPacketSafetyMeta;
 }
 
+/** Internal artifact with full packet — not for public API responses. */
+export interface BuiltWriterContextArtifact {
+  packetLogId: string;
+  packet: WriterContextPacket;
+  preview: WriterContextPacketPreview;
+  safety: ContextPacketSafetyMeta;
+}
+
+/** Strip packet from artifact for public API responses. */
+export function toPublicContextPacketResult(
+  artifact: BuiltWriterContextArtifact,
+): BuildContextPacketResult {
+  return {
+    packetLogId: artifact.packetLogId,
+    preview: artifact.preview,
+    safety: artifact.safety,
+  };
+}
+
 function truncateText(text: string, maxLen: number): string {
   if (text.length <= maxLen) return text;
   return `${text.slice(0, maxLen - 1)}…`;
@@ -387,7 +406,7 @@ export async function buildContextPacketForOwner(
   ownerId: string,
   projectId: string,
   raw: unknown,
-): Promise<BuildContextPacketResult> {
+): Promise<BuiltWriterContextArtifact> {
   if (typeof raw !== "object" || raw === null || Array.isArray(raw)) {
     throw AppError.badRequest("Request body must be a JSON object");
   }
@@ -464,6 +483,7 @@ export async function buildContextPacketForOwner(
 
   return {
     packetLogId,
+    packet,
     preview,
     safety: {
       planningTruthPresent: false,
@@ -527,7 +547,6 @@ export async function getContextPacketPreviewForOwner(
     beatDirection,
   });
 }
-
 export async function loadWriterPacketForLogForOwner(
   bindings: AppBindings,
   ownerId: string,

@@ -9,6 +9,7 @@ import {
 import {
   buildContextPacketForOwner,
   getContextPacketPreviewForOwner,
+  toPublicContextPacketResult,
 } from "../services/context-packet-builder.js";
 import {
   getProseVersionForOwner,
@@ -30,7 +31,7 @@ export function registerWriteRoutes(app: Hono<AppEnv>): void {
     const projectId = c.req.param("id");
     const body = await c.req.json().catch(() => ({}));
     const result = await buildContextPacketForOwner(c.env, ownerId, projectId, body);
-    return jsonSuccess(c, result, 200);
+    return jsonSuccess(c, toPublicContextPacketResult(result), 200);
   });
 
   app.get("/api/projects/:id/write/context-packet/:logId/preview", authMiddleware, async (c) => {

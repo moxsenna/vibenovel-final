@@ -35,6 +35,7 @@
     "typecheck:api": "npm run typecheck -w @vibenovel/api",
     "test:duitku-signature": "npm run test:duitku-signature -w @vibenovel/api",
     "test:atomic-grant": "npm run test:atomic-grant -w @vibenovel/api",
+    "test:long-fiction-baseline": "npm run test:long-fiction-baseline -w @vibenovel/api",
     "test:atomic-grant-hosted": "npm run test:atomic-grant-hosted -w @vibenovel/api",
     "operator:staging:atomic-grant": "powershell -ExecutionPolicy Bypass -File scripts/operator-verify-hosted-atomic-grant.ps1",
     "operator:production:supabase:baseline": "powershell -ExecutionPolicy Bypass -File scripts/operator-production-supabase-baseline.ps1",

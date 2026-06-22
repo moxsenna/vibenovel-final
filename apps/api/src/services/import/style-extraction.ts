@@ -7,6 +7,8 @@ import {
 } from "@vibenovel/shared";
 import type { DraftImportChunk } from "./chunking.js";
 import type { DraftImportProposalDraft } from "./entity-extraction.js";
+import type { OperationalStyleRules } from "../style-profile.js";
+import { DEFAULT_STYLE_RULES } from "../style-profile.js";
 
 const SENTENCE_RE = /[^.!?\n]+[.!?]?/g;
 const DIALOGUE_MARKER_RE = /["']|^\s*-\s+/gm;
@@ -140,4 +142,8 @@ export function buildAuthorVoiceProposalDraft(
     },
     reviewNote: "Imported author voice requires human review before style guidance is adopted.",
   };
+}
+
+export function extractOperationalRules(): OperationalStyleRules {
+  return { ...DEFAULT_STYLE_RULES };
 }
