@@ -1,4 +1,5 @@
 import type { AppBindings } from "../../env.js";
+import { embedTextsWithProvider } from "./embedding.js";
 import { matchProseEmbeddings } from "./semantic-retrieval.js";
 import type { SemanticRetrievalSnippet } from "./semantic-retrieval.js";
 
@@ -30,36 +31,18 @@ export function buildRetrievalQueryText(input: RetrievalQueryInput): string {
   return parts.filter((s) => s.trim()).join(". ");
 }
 
-const RETRIEVAL_PROVIDER_EMBEDDING_MODEL = "openai/text-embedding-3-small";
-
-async function embedTextViaOpenRouter(
+/**
+ * Embed query text via the centralized embedding route (registry + policy
+ * provider credential/endpoint). Best-effort: retrieval is non-critical, so a
+ * provider/config failure returns null rather than failing the write flow.
+ */
+async function embedQueryText(
   bindings: AppBindings,
   text: string,
 ): Promise<number[] | null> {
   try {
-    const apiKey = bindings.OPENROUTER_API_KEY?.trim();
-    if (!apiKey) return null;
-
-    const baseUrl = bindings.OPENROUTER_BASE_URL?.trim() || "https://openrouter.ai/api/v1";
-    const response = await fetch(`${baseUrl}/embeddings`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        model: RETRIEVAL_PROVIDER_EMBEDDING_MODEL,
-        input: text,
-      }),
-    });
-
-    if (!response.ok) {
-      console.error("embedding provider returned", response.status);
-      return null;
-    }
-
-    const json = await response.json() as { data?: Array<{ embedding: number[] }> };
-    return json.data?.[0]?.embedding ?? null;
+    const result = await embedTextsWithProvider(bindings, [text]);
+    return result.embeddings[0] ?? null;
   } catch (err) {
     console.error("embedding request failed:", err);
     return null;
@@ -79,7 +62,7 @@ export async function retrieveRelevantDraftMemory(
   const queryText = buildRetrievalQueryText(input);
   if (!queryText.trim()) return [];
 
-  const embedding = await embedTextViaOpenRouter(bindings, queryText);
+  const embedding = await embedQueryText(bindings, queryText);
   if (!embedding) return [];
 
   const snippets = await matchProseEmbeddings(bindings, ownerId, projectId, embedding);
