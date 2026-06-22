@@ -41,43 +41,25 @@ if ($dup -and @($dup).Count -gt 0) {
   exit 0
 }
 
-$balRows = @(Invoke-RestMethod -Uri "$sbUrl/rest/v1/credit_balances?user_id=eq.$userId&select=balance,user_id" -Headers $adminH)
-$before = 0
-if ($balRows.Count -gt 0) { $before = [int]$balRows[0].balance }
-$after = $before + $Amount
+# Atomic grant: the balance upsert and ledger insert happen in one transaction
+# inside grant_operator_credit_atomic (migration 00026). Doing them as two
+# separate PostgREST writes risked bumping the balance and then failing the
+# ledger write, which left no idempotency row and double-granted on rerun.
+$rpcH = $adminH.Clone()
+$rpcBody = @{
+  p_user_id         = $userId
+  p_amount          = $Amount
+  p_idempotency_key = $IdempotencyKey
+  p_reason          = "welcome_bonus"
+  p_note            = "Manual operator grant +$Amount"
+} | ConvertTo-Json
 
-if ($balRows.Count -gt 0) {
-  $patchH = $adminH.Clone()
-  $patchH.Prefer = "return=minimal"
-  $patch = @{ balance = $after; source = "admin_grant" } | ConvertTo-Json
-  Invoke-RestMethod -Uri "$sbUrl/rest/v1/credit_balances?user_id=eq.$userId" -Method PATCH -Headers $patchH -Body $patch | Out-Null
+$result = Invoke-RestMethod -Uri "$sbUrl/rest/v1/rpc/grant_operator_credit_atomic" -Method POST -Headers $rpcH -Body $rpcBody
+
+if ($result.already_granted) {
+  Write-Host "Already granted (idempotencyKey=$IdempotencyKey). balance=$($result.new_balance)"
+} elseif ($result.granted) {
+  Write-Host "OK: $($result.previous_balance) -> $($result.new_balance) (+$Amount credits)"
 } else {
-  $postH = $adminH.Clone()
-  $postH.Prefer = "return=minimal"
-  $body = @{
-    user_id       = $userId
-    balance       = $after
-    monthly_quota = 0
-    monthly_used  = 0
-    source        = "admin_grant"
-  } | ConvertTo-Json
-  Invoke-RestMethod -Uri "$sbUrl/rest/v1/credit_balances" -Method POST -Headers $postH -Body $body | Out-Null
+  throw "Grant did not complete: $($result | ConvertTo-Json -Compress)"
 }
-
-$ledgerH = $adminH.Clone()
-$ledgerH.Prefer = "return=minimal"
-$ledgerBody = @{
-  user_id       = $userId
-  amount        = $Amount
-  direction     = "credit"
-  reason        = "welcome_bonus"
-  balance_after = $after
-  metadata      = @{
-    idempotencyKey = $IdempotencyKey
-    note           = "Manual operator grant +$Amount"
-    grantedBy      = "grant-credits-operator.ps1"
-  }
-} | ConvertTo-Json -Depth 5
-
-Invoke-RestMethod -Uri "$sbUrl/rest/v1/credit_ledger" -Method POST -Headers $ledgerH -Body $ledgerBody | Out-Null
-Write-Host "OK: $before -> $after (+$Amount credits)"

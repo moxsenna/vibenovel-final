@@ -91,6 +91,9 @@ export function serializeContext(
       packet.emotionalTarget.beatEmotionalShift
         ? `Emotional shift: ${packet.emotionalTarget.beatEmotionalShift}`
         : null,
+      packet.constraints.wordTarget && packet.constraints.wordTarget > 0
+        ? `Target length: ~${packet.constraints.wordTarget} words`
+        : null,
       packet.constraints.mustInclude.length > 0
         ? `Must include: ${packet.constraints.mustInclude.join("; ")}`
         : null,

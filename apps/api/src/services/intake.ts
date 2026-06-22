@@ -17,6 +17,7 @@ import {
 import type { AppBindings } from "../env.js";
 import {
   isAiGenerationEnabled,
+  isAiProviderMock,
 } from "../env.js";
 import {
   mapDetectedSignalRow,
@@ -328,6 +329,11 @@ export interface IntakeBundle {
   session: IntakeSession;
   messages: IntakeMessage[];
   signals: DetectedSignal[];
+  readiness: {
+    progressPercent: number;
+    canAdvance: boolean;
+    missingSignals: string[];
+  };
 }
 
 export async function getIntakeBundleForOwner(
@@ -342,10 +348,15 @@ export async function getIntakeBundleForOwner(
     listSignalsForSession(bindings, projectId, sessionRow.id),
   ]);
 
+  const progressPercent = computeProgressFromSignals(signals);
+  const missingSignals = listMissingRequiredSignalTypes(signals);
+  const canAdvance = missingSignals.length === 0;
+
   return {
     session: mapIntakeSessionRow(sessionRow),
     messages,
     signals,
+    readiness: { progressPercent, canAdvance, missingSignals },
   };
 }
 
@@ -1312,7 +1323,11 @@ export async function extractDetectedSignalsForOwner(
   await getOwnedProjectRow(bindings, ownerId, projectId);
   const sessionRow = await getOrCreateActiveSessionRow(bindings, projectId);
 
-  if (isAiGenerationEnabled(bindings)) {
+  // Mock mode produces stubbed agent replies that never persist AI-envelope
+  // signals, so a mock smoke session can have user messages but no saved
+  // signals. Treat mock like the deterministic path and extract here; only
+  // real-AI mode (which already saved ai_envelope signals) just recomputes.
+  if (isAiGenerationEnabled(bindings) && !isAiProviderMock(bindings)) {
     await recomputeIntakeProgressFromExistingSignals(bindings, projectId, sessionRow.id);
   } else {
     await extractSignalsAndProgressInternal(bindings, projectId, sessionRow.id);

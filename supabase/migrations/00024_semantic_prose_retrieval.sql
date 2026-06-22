@@ -32,3 +32,16 @@ AS $$
   ORDER BY pe.embedding <=> p_query_embedding
   LIMIT LEAST(GREATEST(p_match_count, 1), 8);
 $$;
+
+-- This RPC is SECURITY DEFINER and trusts the caller-supplied p_owner_id, so it
+-- must never be reachable by anon/authenticated PostgREST callers (they could
+-- pass another user's id and bypass RLS). Only the server-side service role —
+-- which derives p_owner_id from a verified session — may execute it. Mirrors the
+-- lockdown pattern in 00010_atomic_grant_credit_topup_rpc.sql.
+REVOKE ALL ON FUNCTION public.match_prose_embeddings(
+  uuid, uuid, vector(1536), integer, double precision
+) FROM PUBLIC;
+
+GRANT EXECUTE ON FUNCTION public.match_prose_embeddings(
+  uuid, uuid, vector(1536), integer, double precision
+) TO service_role;
