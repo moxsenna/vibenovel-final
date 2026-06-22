@@ -200,7 +200,6 @@ export type {
   SpeechRuleSummary,
   WriterContextPacket,
   WriterContextPacketPreview,
-  PovKnowledgeFactSummary,
   WriterCanonFactSummary,
   WriterCharacterStateSummary,
   WriterCharacterSummaryV3,

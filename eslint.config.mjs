@@ -16,6 +16,10 @@ export default tseslint.config(
       "**/dist-production/**",
       "**/build/**",
       "**/node_modules/**",
+      // Local agent worktrees carry their own tsconfig roots; never lint them.
+      "**/.claude/**",
+      "**/.codex-worktrees/**",
+      "**/.commandcode/**",
       "**/.wrangler/**",
       "**/coverage/**",
       "agent-tools/**",

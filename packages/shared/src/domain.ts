@@ -763,7 +763,7 @@ export interface PovKnowledgeSnapshot {
 
 // --- Packet v3 structured types ---
 
-export interface PovKnowledgeFactSummary {
+export interface WriterPovKnowledgeFactSummary {
   factId: string;
   factText: string;
   category: string;
@@ -796,10 +796,10 @@ export interface WriterCharacterSummaryV3 {
 export interface WriterKnowledgeSummary {
   characterId: string;
   characterName: string;
-  knownFacts: PovKnowledgeFactSummary[];
-  suspectedFacts: PovKnowledgeFactSummary[];
-  partialFacts: PovKnowledgeFactSummary[];
-  falseBeliefs: PovKnowledgeFactSummary[];
+  knownFacts: WriterPovKnowledgeFactSummary[];
+  suspectedFacts: WriterPovKnowledgeFactSummary[];
+  partialFacts: WriterPovKnowledgeFactSummary[];
+  falseBeliefs: WriterPovKnowledgeFactSummary[];
 }
 
 export interface WriterPrecedingProseTail {

@@ -43,7 +43,6 @@ import { generateCorrelationId } from "./audit-snapshot.js";
 import { createServiceRoleClient } from "../lib/supabase.js";
 import { getProseVersionForOwner } from "./prose-draft.js";
 import { collectPovForbiddenFactTexts } from "./character-knowledge-validator.js";
-import { loadWriterPacketForLogForOwner } from "./context-packet-builder.js";
 import { listFactsForOwner } from "./fact.js";
 import { buildProseValidationContextFromPacket } from "./prose-validation-context.js";
 import { generateValidatedAiOutputWithSafeRepair } from "./prose-output-safe-repair.js";
