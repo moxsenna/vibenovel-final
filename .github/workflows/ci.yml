@@ -41,6 +41,16 @@ jobs:
       - name: Lint
         run: npm run lint
 
+      - name: API safety and Narra contracts
+        run: npm run test:api:contracts
+      - name: Credit System v2 contracts
+        run: npm run test:credit-v2
+      - name: AI model registry and routing contracts
+        run: npm run test:ai-routing
+      - name: Admin generation attempt diagnostics (API)
+        run: npm run test:admin-generation-attempts -w @vibenovel/api
+      - name: Admin generation attempt diagnostics (web)
+        run: npm run test:admin-generation-attempts-ui -w @vibenovel/web
       - name: Build shared
         run: npm run build:shared
 

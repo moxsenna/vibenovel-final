@@ -1,4 +1,5 @@
 import { DEMO_PROJECT_ID } from "./projects";
+import type { BadgeVariant } from "@/components/ui/Badge";
 import { ROUTES } from "@/routes/paths";
 
 export type ProgressStepStatus = "done" | "current" | "pending";
@@ -15,12 +16,16 @@ export interface DashboardActiveProject {
   subtitle: string;
   genre: string;
   lastEditedLabel: string;
+  /** ISO timestamp for native tooltip */
+  lastEditedAbsolute?: string;
   statusBadge: string;
   currentChapter: number;
   writeRoute: string;
   progressSteps: DashboardProgressStep[];
   ctaLabel?: string;
   ctaDisabled?: boolean;
+  /** e.g. "Lanjutkan" / "Terakhir dikerjakan" (doc 113 B3) */
+  heroKicker?: string;
 }
 
 export interface DashboardRecentProject {
@@ -30,7 +35,12 @@ export interface DashboardRecentProject {
   genreBadgeClass: string;
   excerpt: string;
   lastEditedLabel: string;
+  lastEditedAbsolute?: string;
   statusLabel: string;
+  statusBadgeVariant?: BadgeVariant;
+  progressLabel?: string;
+  secondaryLine?: string | null;
+  titleAbsolute?: string;
   bookmarked?: boolean;
   route: string;
 }
@@ -105,5 +115,10 @@ export const mockDashboardRecentProjects: DashboardRecentProject[] = [
 
 export const DASHBOARD_GREETING = {
   title: "Halo, Penulis!",
-  subtitle: "Siap lanjut menulis hari ini? Inspirasi sedang menunggumu.",
+  subtitle: "Mulai proyek pertama Anda — pilih cara yang paling nyaman di bawah.",
+} as const;
+
+export const DASHBOARD_GREETING_RETURNING = {
+  title: "Halo, Penulis!",
+  subtitle: "Lanjutkan dari terakhir kali Anda menulis.",
 } as const;

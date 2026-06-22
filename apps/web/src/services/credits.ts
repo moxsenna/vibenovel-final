@@ -1,6 +1,16 @@
-import type { CreditBalance, CreditTopupOrderStatus, CreditTopupProduct } from "@vibenovel/shared";
+import type {
+  CreditBalance,
+  CreditTopupOrderStatus,
+  CreditTopupProduct,
+  WriterQualityMode,
+} from "@vibenovel/shared";
 import { apiRequest, ApiClientError } from "@/lib/api";
 import { getApiBaseUrl } from "@/lib/env";
+import {
+  buildCreditEstimatePath,
+  type CreditEstimate,
+  type CreditEstimateFeature,
+} from "./credit-estimate";
 
 export type CreditTopupProductSlug = "starter" | "creator" | "pro" | "studio";
 
@@ -122,6 +132,17 @@ export async function fetchCreditBalance(
 ): Promise<CreditBalance | null> {
   const data = await apiRequest<CreditBalanceResponse>("/api/credits/balance", { token });
   return data.creditBalance;
+}
+
+export async function fetchCreditEstimate(
+  feature: CreditEstimateFeature,
+  qualityMode?: WriterQualityMode,
+  token?: string | null,
+): Promise<CreditEstimate> {
+  return apiRequest<CreditEstimate>(
+    buildCreditEstimatePath(feature, qualityMode),
+    { token },
+  );
 }
 
 export async function fetchCreditTopupProducts(

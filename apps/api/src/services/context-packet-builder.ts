@@ -24,11 +24,19 @@ import {
   loadWriteContextSnapshot,
   type WriteSnapshotInput,
 } from "./write-snapshot.js";
+import { buildPastTimelineSummaries } from "./timeline.js";
+import { collectFutureRevealFactIds } from "./character-knowledge.js";
+import {
+  attachReadOnlyRetrievalMemoryToPacket,
+  buildReadOnlyRetrievalSnippets,
+} from "./import/retrieval-memory.js";
 
 const PREVIOUS_SUMMARY_MAX = 500;
 const MAX_PREVIOUS_SUMMARIES = 20;
 const MAX_FACTS = 50;
 const MAX_CHARACTERS = 20;
+const MAX_RETRIEVAL_MEMORY_SNIPPETS = 5;
+const RETRIEVAL_MEMORY_SNIPPET_MAX_CHARS = 500;
 
 const ACTIVE_REVEAL_STATUSES = new Set<string>([
   PLANNED_REVEAL_STATUSES.planned,
@@ -183,6 +191,60 @@ function buildOpenLoopSummaries(
   });
 }
 
+function buildPovKnowledgeSummary(
+  povKnowledge: WriterContextPacket["continuity"]["povKnowledge"] | null | undefined,
+): string | null {
+  if (!povKnowledge?.characterId) return null;
+  return [
+    `POV: ${povKnowledge.knownFacts.length} known`,
+    `${povKnowledge.suspectedFacts.length} suspect`,
+    `${povKnowledge.partialFacts.length} partial`,
+    `${povKnowledge.falseBeliefs.length} false`,
+    `${povKnowledge.unknownFactCount} unknown`,
+  ].join(", ");
+}
+
+async function loadRetrievalMemorySnippetsForPacket(
+  bindings: AppBindings,
+  ownerId: string,
+  projectId: string,
+): Promise<WriterContextPacket["continuity"]["retrievalMemory"]> {
+  const admin = createServiceRoleClient(bindings);
+  const { data, error } = await admin
+    .from("prose_embeddings")
+    .select("source_ref, chunk_text, draft_import_id, metadata, created_at")
+    .eq("project_id", projectId)
+    .eq("owner_id", ownerId)
+    .order("created_at", { ascending: false })
+    .limit(MAX_RETRIEVAL_MEMORY_SNIPPETS);
+
+  if (error) {
+    console.error("prose_embeddings select for context packet failed");
+    throw AppError.internal("Failed to load retrieval memory");
+  }
+
+  const rows = ((data ?? []) as Array<{
+    source_ref: string;
+    chunk_text: string;
+    draft_import_id: string | null;
+    metadata: Record<string, unknown> | null;
+  }>).map((row) => ({
+    sourceRef: row.source_ref,
+    chunkText: row.chunk_text,
+    similarity: null,
+    metadata: {
+      source: "imported_draft",
+      draftImportId: row.draft_import_id,
+      scope: "read_only_memory",
+    },
+  }));
+
+  return buildReadOnlyRetrievalSnippets(rows, {
+    topK: MAX_RETRIEVAL_MEMORY_SNIPPETS,
+    maxSnippetChars: RETRIEVAL_MEMORY_SNIPPET_MAX_CHARS,
+  });
+}
+
 function buildWriterPacketFromSnapshot(
   snapshot: Awaited<ReturnType<typeof loadWriteContextSnapshot>>,
   generatedAt: string,
@@ -264,6 +326,9 @@ function buildWriterPacketFromSnapshot(
       previousChapterSummaries: previousSummaries,
       openLoopsActive,
       unresolvedThreadLabels: activeLoops.map((loop) => loop.question),
+      recentTimeline: buildPastTimelineSummaries(snapshot.pastTimelineEvents, currentNumber),
+      retrievalMemory: [],
+      povKnowledge: snapshot.povKnowledge,
     },
     revealGate,
     emotionalTarget: {
@@ -304,6 +369,10 @@ export function buildPreviewFromPacket(
   if (packet.revealGate.forbiddenReveals.length > 0) {
     storyCheckLabels.push("Rahasia masa depan ditahan");
   }
+  const povKnowledgeSummary = buildPovKnowledgeSummary(packet.continuity.povKnowledge);
+  if (povKnowledgeSummary) {
+    storyCheckLabels.push("POV knowledge scoped");
+  }
 
   const hasBeat = packet.meta.beatNumber !== undefined;
 
@@ -320,6 +389,7 @@ export function buildPreviewFromPacket(
     mustInclude: packet.constraints.mustInclude,
     mustNotInclude: packet.constraints.mustNotInclude,
     storyCheckLabels,
+    povKnowledgeSummary,
     packetLogId,
   };
 }
@@ -364,6 +434,8 @@ export async function buildContextPacketForOwner(
   const generatedAt = new Date().toISOString();
 
   let packet = buildWriterPacketFromSnapshot(snapshot, generatedAt, "pending");
+  const retrievalMemory = await loadRetrievalMemorySnippetsForPacket(bindings, ownerId, projectId);
+  packet = attachReadOnlyRetrievalMemoryToPacket(packet, retrievalMemory);
   const packetHash = await computePacketHash(packet);
   packet = {
     ...packet,
@@ -374,6 +446,12 @@ export async function buildContextPacketForOwner(
     currentChapterNumber: snapshot.currentChapter.chapterNumber,
     futureChapterSummaries: snapshot.futureChapterSummaries,
     futureChapterTitles: snapshot.futureChapterTitles,
+    futureRevealFactIds: [
+      ...collectFutureRevealFactIds(
+        snapshot.plannedReveals,
+        snapshot.currentChapter.chapterNumber,
+      ),
+    ],
   });
 
   const admin = createServiceRoleClient(bindings);
@@ -468,4 +546,33 @@ export async function getContextPacketPreviewForOwner(
     beatTitle,
     beatDirection,
   });
+}
+export async function loadWriterPacketForLogForOwner(
+  bindings: AppBindings,
+  ownerId: string,
+  projectId: string,
+  logId: string,
+): Promise<WriterContextPacket> {
+  await getOwnedProjectRow(bindings, ownerId, projectId);
+  const admin = createServiceRoleClient(bindings);
+  const { data, error } = await admin
+    .from("context_packet_logs")
+    .select("packet_json")
+    .eq("id", logId)
+    .eq("project_id", projectId)
+    .maybeSingle();
+  if (error) {
+    console.error("context_packet_logs select for packet load failed");
+    throw AppError.internal("Failed to load context packet log");
+  }
+  if (!data) {
+    throw AppError.notFound("Context packet log not found");
+  }
+  const packet = parsePacketJson((data as { packet_json: unknown }).packet_json);
+  assertWriterPacketSafe(packet, {
+    currentChapterNumber: packet.meta.chapterNumber,
+    futureChapterSummaries: [],
+    futureChapterTitles: [],
+  });
+  return packet;
 }

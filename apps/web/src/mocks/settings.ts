@@ -2,7 +2,7 @@ import type { UserSettings } from "@/types";
 
 /** Sprint 1 dummy settings — replace with API in Sprint 2+ */
 export const mockSettings: UserSettings = {
-  displayName: "Penulis VibeNovel",
+  displayName: "Penulis Narraza",
   email: "penulis@contoh.id",
   planLabel: "Free Plan",
   creditsRemaining: 1250,
@@ -39,6 +39,7 @@ export const mockSettings: UserSettings = {
       isSelected: false,
     },
   ],
+  creatorMode: "simple",
   writerPreferences: {
     defaultLanguage: "Indonesia",
     defaultOutputStyle: "Narasi hangat & emosional",

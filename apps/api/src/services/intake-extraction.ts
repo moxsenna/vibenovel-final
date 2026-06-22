@@ -1,4 +1,5 @@
 import type { DetectedSignalType } from "@vibenovel/shared";
+import { AppError } from "../errors.js";
 
 export const REQUIRED_SIGNAL_TYPES = [
   "genre",
@@ -42,7 +43,12 @@ export function normalizeExtractedSignalDraft(
     typeof raw.confidence === "number" && Number.isFinite(raw.confidence)
       ? Math.min(1, Math.max(0, raw.confidence))
       : 0.75;
-  return { type: raw.type, label, value, confidence };
+  return {
+    type: raw.type,
+    label,
+    value,
+    confidence,
+  };
 }
 
 export function parseIntakeAiEnvelope(text: string): IntakeAiEnvelope | null {
@@ -72,9 +78,31 @@ export function parseIntakeAiEnvelope(text: string): IntakeAiEnvelope | null {
 
   const direct = tryParse(cleanText);
   if (direct) return direct;
+
   const match = text.match(/\{[\s\S]*\}/);
   if (match) return tryParse(match[0]);
   return null;
+}
+
+export function validateIntakeRouterOutput(
+  text: string,
+  requireEnvelope: boolean,
+): {
+  rawText: string;
+  envelope: IntakeAiEnvelope | null;
+} {
+  if (!requireEnvelope) {
+    return { rawText: text, envelope: null };
+  }
+  const envelope = parseIntakeAiEnvelope(text);
+  if (!envelope) {
+    throw new AppError(
+      "GENERATION_FAILED",
+      "Narra returned an invalid intake envelope",
+      502,
+    );
+  }
+  return { rawText: text, envelope };
 }
 
 export function buildIntakeExtractionInstructions(
@@ -83,16 +111,33 @@ export function buildIntakeExtractionInstructions(
 ): string {
   const filledLine =
     filledSignals.length > 0
-      ? `Sinyal terkumpul (jangan tanya ulang):\n${filledSignals.map((s) => `- ${s.type}: ${s.value}`).join("\n")}`
-      : "Belum ada sinyal inti.";
+      ? `Sinyal yang sudah terkumpul (jangan tanya ulang kecuali penulis mengoreksi):\n${filledSignals
+          .map((s) => `- ${s.type}: ${s.label} — ${s.value}`)
+          .join("\n")}`
+      : "Belum ada sinyal inti yang terkumpul.";
+
   const missingLine =
     missingTypes.length > 0
-      ? `Prioritaskan slot kosong: ${missingTypes.join(", ")}.`
-      : "Slot inti lengkap; rangkum singkat dan tawarkan Lanjut ke Konsep.";
+      ? `Prioritaskan mengisi slot yang masih kosong: ${missingTypes.join(", ")}.`
+      : "Semua slot inti sudah terisi. Rangkum singkat lalu tawarkan penulis untuk Lanjut ke Konsep jika ide sudah cukup jelas.";
 
-  return `\n\nBalasan WAJIB JSON:
-{"reply":"maks ~4 kalimat, satu pertanyaan","signals":[{"type":"genre","label":"...","value":"...","confidence":0.9}],"readyForConcept":false}
-Type valid: ${REQUIRED_SIGNAL_TYPES.join(", ")}.
+  return `\n\nPerilaku balasan (WAJIB):
+- Maksimal ~4 kalimat di field "reply". Satu pertanyaan fokus saja.
+- Jangan menulis paragraf plot, worldbuilding, atau daftar panjang.
+- Jangan mengulang detail yang sudah ada di daftar sinyal terkumpul.
+- Jika slot masih kosong, tanyakan yang paling penting berikutnya — bukan semuanya sekaligus.
+
 ${filledLine}
-${missingLine}`;
+${missingLine}
+
+Kamu WAJIB membalas dengan format JSON yang valid dengan skema berikut:
+{
+  "reply": "Respons chat ke penulis (ramah, singkat, maks ~4 kalimat)",
+  "signals": [
+    { "type": "salah satu dari REQUIRED_SIGNAL_TYPES", "label": "Label Singkat", "value": "Isi spesifik", "confidence": 0.9 }
+  ],
+  "readyForConcept": false
+}
+Hanya ekstrak sinyal berdasarkan fakta dari obrolan penulis. Jangan mengarang jika belum disebutkan.
+Type sinyal yang valid (hanya ini): ${REQUIRED_SIGNAL_TYPES.join(", ")}.`;
 }

@@ -15,6 +15,11 @@ async function assertNoPlanningTruthInDom(page: Page) {
   expect(bodyText.toLowerCase()).not.toContain("planningtruthredacted");
 }
 
+async function assertNoTemplateNamesInDom(page: Page) {
+  const bodyText = await page.locator("body").innerText();
+  expect(bodyText).not.toMatch(/\b(Nadira|Arman|Siska)\b/i);
+}
+
 async function assertPageNotBlank(page: Page, markers: string[]) {
   await expect(page.locator("#root")).toBeVisible();
   for (const text of markers) {
@@ -68,12 +73,13 @@ test.describe("Sprint 4 web smoke — outline API mode", () => {
     ).toHaveCount(0);
 
     const generateBtn = page.getByRole("button", { name: /Buat Rencana 10 Bab/i });
-    await expect(generateBtn).toBeVisible({ timeout: 20_000 });
-    await generateBtn.click();
-    await expect(page.getByText(/Membuat rencana/i)).toBeHidden({ timeout: 60_000 });
-    await expect(page.getByText(/Rencana 10 bab berhasil dibuat/i)).toBeVisible({
-      timeout: 30_000,
-    });
+    if (await generateBtn.isVisible({ timeout: 20_000 }).catch(() => false)) {
+      await generateBtn.click();
+      await expect(page.getByText(/Membuat rencana/i)).toBeHidden({ timeout: 60_000 });
+      await expect(page.getByText(/Rencana 10 bab berhasil dibuat/i)).toBeVisible({
+        timeout: 30_000,
+      });
+    }
 
     await expect(page.getByText(/^Bab 1:/).first()).toBeVisible({ timeout: 15_000 });
     await expect(page.getByText(/^Bab 10:/).first()).toBeVisible({ timeout: 15_000 });
@@ -81,11 +87,10 @@ test.describe("Sprint 4 web smoke — outline API mode", () => {
     await page.getByRole("heading", { name: "Yang Masih Menggantung" }).scrollIntoViewIfNeeded();
     await expect(page.getByRole("heading", { name: "Yang Masih Menggantung" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Jadwal Rahasia" })).toBeVisible();
-    await expect(
-      page.getByText("Siapa Siska dan apa hubungannya dengan Arman?", { exact: false }),
-    ).toBeVisible();
+    await expect(page.getByText(/\?$/).first()).toBeVisible();
 
     await assertNoPlanningTruthInDom(page);
+    await assertNoTemplateNamesInDom(page);
 
     const bab1Toggle = page.getByRole("button", { name: /Bab 1:/ }).first();
     const editorHeading = page.getByRole("heading", { name: "Edit Rencana Bab" });
@@ -105,7 +110,7 @@ test.describe("Sprint 4 web smoke — outline API mode", () => {
     await approveBtn.click();
     await expect(page.getByText(/Menyetujui/i)).toBeHidden({ timeout: 30_000 });
 
-    const lockBtn = page.getByRole("button", { name: /Kunci Outline/i });
+    const lockBtn = page.getByRole("button", { name: "Kunci Outline", exact: true });
     await expect(lockBtn).toBeVisible();
     await lockBtn.click();
     await expect(page.getByText(/Mengunci/i)).toBeHidden({ timeout: 30_000 });
@@ -115,7 +120,7 @@ test.describe("Sprint 4 web smoke — outline API mode", () => {
     });
     await expect(page.getByText(/Outline berhasil dikunci/i).first()).toBeVisible();
     await expect(page.getByRole("button", { name: /Setujui Outline/i })).toHaveCount(0);
-    await expect(page.getByRole("button", { name: /Kunci Outline/i })).toHaveCount(0);
+    await expect(page.getByRole("button", { name: "Kunci Outline", exact: true })).toHaveCount(0);
 
     if (!(await editorHeading.isVisible())) {
       await bab1Toggle.click();

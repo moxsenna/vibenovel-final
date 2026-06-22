@@ -2,16 +2,19 @@ import {
   OUTLINE_PLAN_STATUSES,
   WORKFLOW_PHASES,
   type ChapterOutline,
+  type MiniArc,
   type OpenLoop,
   type OutlinePlan,
 } from "@vibenovel/shared";
 import { isAiGenerationEnabled, isAiProviderMock, type AppBindings } from "../env.js";
 import {
   mapChapterOutlineRow,
+  mapMiniArcRow,
   mapOpenLoopRow,
   mapOutlinePlanRow,
   mapPlannedRevealPublic,
   type ChapterOutlineRow,
+  type MiniArcRow,
   type OpenLoopRow,
   type OutlinePlanRow,
   type PlannedRevealPublic,
@@ -34,7 +37,10 @@ const PLAN_SELECT =
   "id, project_id, status, season_label, arc_summary, retention_summary, target_chapter_count, planning_notes, metadata, locked_at, created_at, updated_at";
 
 const CHAPTER_SELECT =
-  "id, project_id, outline_plan_id, chapter_number, title, summary, purpose, chapter_function, emotional_direction, hook, ending_hook, mini_victory, pov_character_id, status, markers, metadata, created_at, updated_at";
+  "id, project_id, outline_plan_id, chapter_number, title, summary, purpose, chapter_function, emotional_direction, hook, ending_hook, mini_victory, pov_character_id, mini_arc_id, status, markers, metadata, created_at, updated_at";
+
+const MINI_ARC_SELECT =
+  "id, project_id, outline_plan_id, arc_number, title, premise, start_chapter, end_chapter, payoff, metadata, created_at, updated_at";
 
 const LOOP_SELECT =
   "id, project_id, outline_plan_id, opened_in_chapter_outline_id, payoff_chapter_outline_id, question, reader_facing_hint, status, importance, metadata, created_at, updated_at";
@@ -63,6 +69,7 @@ const TARGET_CHAPTER_MAX = 50;
 
 export interface OutlineBundle {
   outlinePlan: OutlinePlan | null;
+  miniArcs: MiniArc[];
   chapterOutlines: ChapterOutline[];
   openLoops: OpenLoop[];
   plannedReveals: PlannedRevealPublic[];
@@ -116,6 +123,7 @@ async function loadOutlineBundleRows(
   if (!planRow) {
     return {
       outlinePlan: null,
+      miniArcs: [],
       chapterOutlines: [],
       openLoops: [],
       plannedReveals: [],
@@ -126,7 +134,12 @@ async function loadOutlineBundleRows(
   const admin = createServiceRoleClient(bindings);
   const planId = planRow.id;
 
-  const [chaptersRes, loopsRes, revealsRes] = await Promise.all([
+  const [arcsRes, chaptersRes, loopsRes, revealsRes] = await Promise.all([
+    admin
+      .from("mini_arcs")
+      .select(MINI_ARC_SELECT)
+      .eq("outline_plan_id", planId)
+      .order("arc_number", { ascending: true }),
     admin
       .from("chapter_outlines")
       .select(CHAPTER_SELECT)
@@ -140,13 +153,14 @@ async function loadOutlineBundleRows(
       .order("created_at"),
   ]);
 
-  if (chaptersRes.error || loopsRes.error || revealsRes.error) {
+  if (arcsRes.error || chaptersRes.error || loopsRes.error || revealsRes.error) {
     console.error("outline bundle load failed");
     throw AppError.internal("Failed to load outline bundle");
   }
 
   return {
     outlinePlan: mapOutlinePlanRow(planRow),
+    miniArcs: ((arcsRes.data ?? []) as MiniArcRow[]).map(mapMiniArcRow),
     chapterOutlines: ((chaptersRes.data ?? []) as ChapterOutlineRow[]).map(mapChapterOutlineRow),
     openLoops: ((loopsRes.data ?? []) as OpenLoopRow[]).map(mapOpenLoopRow),
     plannedReveals: ((revealsRes.data ?? []) as PlannedRevealRow[]).map(mapPlannedRevealPublic),
@@ -261,6 +275,12 @@ async function deleteOutlineChildren(
     console.error("chapter_outlines delete failed");
     throw AppError.internal("Failed to clear chapter outlines");
   }
+
+  const { error: arcsError } = await admin.from("mini_arcs").delete().eq("outline_plan_id", planId);
+  if (arcsError) {
+    console.error("mini_arcs delete failed");
+    throw AppError.internal("Failed to clear mini arcs");
+  }
 }
 
 function findProtagonistId(snapshot: Awaited<ReturnType<typeof loadOutlineCanonSnapshot>>): string | null {
@@ -322,6 +342,42 @@ async function persistOutlineDraft(
     planRow = data as OutlinePlanRow;
   }
 
+  // Mini-arcs first so chapters can reference their arc (Season → MiniArc → Chapter).
+  const arcIdByChapterNumber = new Map<number, string>();
+  if (draft.miniArcs.length > 0) {
+    const arcRows = draft.miniArcs.map((arc) => ({
+      project_id: projectId,
+      outline_plan_id: planRow.id,
+      arc_number: arc.arcNumber,
+      title: arc.title,
+      premise: arc.premise,
+      start_chapter: arc.startChapter,
+      end_chapter: arc.endChapter,
+      payoff: arc.payoff,
+      metadata: { generator: GENERATOR_MARKER },
+    }));
+
+    const { data: insertedArcs, error: arcError } = await admin
+      .from("mini_arcs")
+      .insert(arcRows)
+      .select("id, start_chapter, end_chapter");
+
+    if (arcError || !insertedArcs) {
+      console.error("mini_arcs insert failed");
+      throw AppError.internal("Failed to create mini arcs");
+    }
+
+    for (const arc of insertedArcs as Array<{
+      id: string;
+      start_chapter: number;
+      end_chapter: number;
+    }>) {
+      for (let n = arc.start_chapter; n <= arc.end_chapter; n += 1) {
+        arcIdByChapterNumber.set(n, arc.id);
+      }
+    }
+  }
+
   const chapterRows = draft.chapters.map((ch) => ({
     project_id: projectId,
     outline_plan_id: planRow.id,
@@ -335,6 +391,7 @@ async function persistOutlineDraft(
     ending_hook: ch.endingHook,
     mini_victory: ch.miniVictory,
     pov_character_id: povCharacterId,
+    mini_arc_id: arcIdByChapterNumber.get(ch.chapterNumber) ?? null,
     status: CHAPTER_STATUS_PLANNED,
     markers: ch.markers,
     metadata: { generator: GENERATOR_MARKER },

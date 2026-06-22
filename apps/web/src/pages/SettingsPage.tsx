@@ -1,4 +1,5 @@
 import {
+  CreatorModeSection,
   SettingsAccountSection,
   SettingsActionSection,
   SettingsCreditCard,
@@ -26,6 +27,8 @@ export function SettingsPage() {
     settings,
     selectedTier,
     setSelectedTier,
+    selectedCreatorMode,
+    setSelectedCreatorMode,
     notice,
     saveMessage,
     loading,
@@ -38,7 +41,7 @@ export function SettingsPage() {
   const costEstimates = [
     { label: "Tulis Beat dengan AI", cost: getProseBeatCreditCost(selectedTier) },
     { label: "Rewrite teks", cost: getProseRewriteCreditCost(selectedTier) },
-    { label: "Publish copy", cost: getPublishCopyCreditCost(selectedTier) },
+    { label: "Publish copy", cost: getPublishCopyCreditCost() },
   ];
 
   return (
@@ -82,6 +85,11 @@ export function SettingsPage() {
         />
 
         <div className="flex flex-col gap-6">
+          <CreatorModeSection
+            selectedMode={selectedCreatorMode}
+            onSelectMode={setSelectedCreatorMode}
+          />
+
           <SettingsAccountSection
             title={pageCopy.accountSectionTitle}
             displayNameLabel={pageCopy.displayNameLabel}

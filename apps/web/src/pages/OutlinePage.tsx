@@ -1,12 +1,14 @@
-import { useState } from "react";
+import { Fragment, useState } from "react";
 import { IntegrationNotice } from "@/components/common/IntegrationNotice";
 import {
+  OutlineAdvancedControls,
   OutlineChapterCard,
   OutlineChapterEditor,
   OutlineLoadMoreButton,
   OutlinePageHeader,
   OutlineProgressCard,
   OutlineRetentionHint,
+  OutlineTimelineInspector,
   OutlineTrackingPanels,
   OutlineWorkflowActions,
 } from "@/components/outline";
@@ -34,6 +36,11 @@ export function OutlinePage() {
     hasApiOutline,
     needsGenerate,
     isLocked,
+    creatorMode,
+    advancedControls,
+    miniArcs,
+    timelineEvents,
+    updateAdvancedControl,
     getChapterDraft,
     updateChapterDraft,
     generateOutlinePlan,
@@ -44,6 +51,12 @@ export function OutlinePage() {
 
   const { pageCopy } = outline;
   const [expandedId, setExpandedId] = useState(outline.chapters[0]?.id ?? "");
+
+  /** Sprint 17 — find the mini-arc a chapter number belongs to (range lookup). */
+  const arcForChapter = (chapterNumber: number) =>
+    miniArcs.find(
+      (arc) => chapterNumber >= arc.startChapter && chapterNumber <= arc.endChapter,
+    ) ?? null;
 
   return (
     <div className="mx-auto flex w-full max-w-detail flex-col gap-lg">
@@ -88,6 +101,14 @@ export function OutlinePage() {
         onLock={lockOutlinePlan}
       />
 
+      {creatorMode === "advanced" ? (
+        <OutlineAdvancedControls
+          values={advancedControls}
+          disabled={generating || isLocked}
+          onChange={updateAdvancedControl}
+        />
+      ) : null}
+
       <OutlineProgressCard
         progress={outline.progress}
         arcSummary={outline.arcSummary}
@@ -98,6 +119,10 @@ export function OutlinePage() {
         <OutlineTrackingPanels openLoops={openLoops} reveals={reveals} />
       )}
 
+      {creatorMode === "advanced" && timelineEvents.length > 0 ? (
+        <OutlineTimelineInspector events={timelineEvents} />
+      ) : null}
+
       <OutlineRetentionHint
         title={pageCopy.retentionTitle}
         subtitle={pageCopy.retentionSubtitle}
@@ -105,31 +130,53 @@ export function OutlinePage() {
       />
 
       <div className="flex flex-col gap-4">
-        {outline.chapters.map((chapter) => {
+        {outline.chapters.map((chapter, index) => {
           const isExpanded = expandedId === chapter.id;
           const draft = apiMode && hasApiOutline ? getChapterDraft(chapter.id) : null;
 
+          const arc = arcForChapter(chapter.number);
+          const prevArc =
+            index > 0 ? arcForChapter(outline.chapters[index - 1].number) : null;
+          const showArcHeader = arc !== null && arc.id !== prevArc?.id;
+
           return (
-            <OutlineChapterCard
-              key={chapter.id}
-              chapter={chapter}
-              isExpanded={isExpanded}
-              isFirst={chapter.number === 1}
-              onToggle={() =>
-                setExpandedId((current) => (current === chapter.id ? "" : chapter.id))
-              }
-              expandedFooter={
-                draft && isExpanded ? (
-                  <OutlineChapterEditor
-                    draft={draft}
-                    disabled={isLocked}
-                    saving={savingChapterId === chapter.id}
-                    onChange={(field, value) => updateChapterDraft(chapter.id, field, value)}
-                    onSave={() => saveChapterEdits(chapter.id)}
-                  />
-                ) : undefined
-              }
-            />
+            <Fragment key={chapter.id}>
+              {showArcHeader && arc ? (
+                <div className="mt-2 flex flex-wrap items-center gap-2 border-l-2 border-primary-fixed-dim/40 pl-3">
+                  <span className="font-label-md text-label-md text-primary-container">
+                    {arc.title}
+                  </span>
+                  <span className="font-body-sm text-body-sm text-muted-text">
+                    Bab {arc.startChapter}–{arc.endChapter}
+                  </span>
+                  {arc.payoff ? (
+                    <Badge variant="primary" className="rounded-full px-2.5 py-0.5">
+                      Payoff: {arc.payoff}
+                    </Badge>
+                  ) : null}
+                </div>
+              ) : null}
+
+              <OutlineChapterCard
+                chapter={chapter}
+                isExpanded={isExpanded}
+                isFirst={chapter.number === 1}
+                onToggle={() =>
+                  setExpandedId((current) => (current === chapter.id ? "" : chapter.id))
+                }
+                expandedFooter={
+                  draft && isExpanded ? (
+                    <OutlineChapterEditor
+                      draft={draft}
+                      disabled={isLocked}
+                      saving={savingChapterId === chapter.id}
+                      onChange={(field, value) => updateChapterDraft(chapter.id, field, value)}
+                      onSave={() => saveChapterEdits(chapter.id)}
+                    />
+                  ) : undefined
+                }
+              />
+            </Fragment>
           );
         })}
 

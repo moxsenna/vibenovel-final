@@ -39,7 +39,10 @@ export async function writeAuditLog(
   });
 
   if (error) {
-    console.error("audit_logs insert failed");
+    console.error("audit_logs insert failed", {
+      code: error.code,
+      message: error.message,
+    });
     throw AppError.internal("Failed to write audit log");
   }
 }

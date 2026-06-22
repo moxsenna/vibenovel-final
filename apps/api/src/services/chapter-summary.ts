@@ -3,7 +3,12 @@ import {
   type ChapterSummary,
   type ChapterSummaryItem,
 } from "@vibenovel/shared";
-import type { AppBindings } from "../env.js";
+import {
+  allowDeterministicStoryStubs,
+  isAiGenerationEnabled,
+  isAiProviderMock,
+  type AppBindings,
+} from "../env.js";
 import {
   mapChapterSummaryItemRow,
   mapChapterSummaryRow,
@@ -15,8 +20,18 @@ import { AppError } from "../errors.js";
 import { getOwnedProjectRow } from "./project.js";
 import {
   generateChapterSummaryStub,
-  SUMMARY_GENERATOR_VERSION,
+  SUMMARY_AI_GENERATOR_VERSION,
+  type GeneratedChapterSummaryDraft,
 } from "./chapter-summary-generator.js";
+import type { ProposalDraft } from "./chapter-delta-extractor.js";
+import {
+  generateChapterSummaryWithAi,
+  SUMMARY_AI_PROPOSAL_SOURCE,
+} from "./chapter-summary-ai.js";
+import {
+  createLinkedProposals,
+  preflightLinkedProposalDrafts,
+} from "./summary-proposal-linker.js";
 import { loadSummaryGenerationSnapshot } from "./summary-snapshot.js";
 
 const SUMMARY_SELECT =
@@ -268,7 +283,27 @@ export async function generateChapterSummaryForOwner(
     writingSessionId,
   );
 
-  const draft = generateChapterSummaryStub(snapshot);
+  let draft: GeneratedChapterSummaryDraft;
+  let factProposalDrafts: ProposalDraft[] = [];
+
+  if (isAiGenerationEnabled(bindings) && !isAiProviderMock(bindings)) {
+    const aiResult = await generateChapterSummaryWithAi(
+      bindings,
+      ownerId,
+      projectId,
+      snapshot,
+      snapshot.writingSession.id,
+    );
+    draft = aiResult.draft;
+    factProposalDrafts = aiResult.factProposalDrafts;
+  } else if (allowDeterministicStoryStubs(bindings)) {
+    draft = generateChapterSummaryStub(snapshot);
+  } else {
+    throw AppError.serviceUnavailable(
+      "AI chapter summary is unavailable. Enable AI generation or allow deterministic story stubs in this environment.",
+    );
+  }
+
   const admin = createServiceRoleClient(bindings);
 
   let nextVersion = 1;
@@ -322,10 +357,7 @@ export async function generateChapterSummaryForOwner(
       summary_version: nextVersion,
       is_current: true,
       safety_flags: draft.safetyFlags,
-      metadata: {
-        ...draft.metadata,
-        generatorVersion: SUMMARY_GENERATOR_VERSION,
-      },
+      metadata: draft.metadata,
     })
     .select(SUMMARY_SELECT)
     .single();
@@ -353,6 +385,24 @@ export async function generateChapterSummaryForOwner(
   if (itemsError) {
     console.error("chapter_summary_items insert failed");
     throw AppError.internal("Failed to generate chapter summary");
+  }
+
+  if (factProposalDrafts.length > 0) {
+    preflightLinkedProposalDrafts(factProposalDrafts);
+    await createLinkedProposals(
+      bindings,
+      ownerId,
+      projectId,
+      summaryRow.id,
+      factProposalDrafts,
+      undefined,
+      {
+        proposalSource: SUMMARY_AI_PROPOSAL_SOURCE,
+        linkExtractor: SUMMARY_AI_GENERATOR_VERSION,
+        auditTask: "chapter_summary_ai",
+        fromDeltaExtraction: false,
+      },
+    );
   }
 
   const items = await fetchItemsForSummary(bindings, projectId, summaryRow.id);

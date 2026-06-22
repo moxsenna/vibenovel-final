@@ -1,4 +1,5 @@
 import {
+  CREATOR_MODES,
   DEFAULT_LANGUAGES,
   MOBILE_FORMAT_PREFERENCES,
   OUTPUT_STYLE_PREFERENCES,
@@ -18,13 +19,14 @@ import { writeAuditLog } from "./audit.js";
 import { getOwnedProjectRow } from "./project.js";
 
 const SETTINGS_SELECT =
-  "id, project_id, quality_tier, output_style_preference, default_format, target_length_band, created_at, updated_at";
+  "id, project_id, quality_tier, output_style_preference, default_format, target_length_band, creator_mode, created_at, updated_at";
 
 const QUALITY_MODE_SET = new Set<string>(Object.values(WRITER_QUALITY_MODES));
 const LANGUAGE_SET = new Set<string>(Object.values(DEFAULT_LANGUAGES));
 const FORMAT_SET = new Set<string>(Object.values(MOBILE_FORMAT_PREFERENCES));
 const OUTPUT_STYLE_SET = new Set<string>(Object.values(OUTPUT_STYLE_PREFERENCES));
 const TARGET_LENGTH_SET = new Set<string>(Object.values(TARGET_LENGTH_PLANS));
+const CREATOR_MODE_SET = new Set<string>(Object.values(CREATOR_MODES));
 
 const FORBIDDEN_PUT_KEYS = new Set([
   "id",
@@ -56,6 +58,7 @@ const DEFAULT_SETTINGS_ROW = {
   output_style_preference: OUTPUT_STYLE_PREFERENCES.warm_emotional,
   default_format: MOBILE_FORMAT_PREFERENCES.hp_kbm,
   target_length_band: null,
+  creator_mode: CREATOR_MODES.simple,
 } as const;
 
 function assertNoRawModelStrings(value: string, fieldName: string): void {
@@ -80,6 +83,7 @@ function settingsSnapshot(row: ProjectSettingsRow): Record<string, unknown> {
     outputStylePreference: row.output_style_preference,
     defaultFormat: row.default_format,
     targetLengthBand: row.target_length_band,
+    creatorMode: row.creator_mode,
   };
 }
 
@@ -263,6 +267,15 @@ export async function upsertProjectSettingsForOwner(
       updates.target_length_band = lengthRaw;
     }
     changedFields.push("targetLengthPlan");
+  }
+
+  const creatorModeRaw = body.creatorMode ?? body.creator_mode;
+  if (creatorModeRaw !== undefined) {
+    if (typeof creatorModeRaw !== "string" || !CREATOR_MODE_SET.has(creatorModeRaw)) {
+      throw AppError.badRequest("creatorMode must be simple or advanced");
+    }
+    updates.creator_mode = creatorModeRaw;
+    changedFields.push("creatorMode");
   }
 
   const admin = createServiceRoleClient(bindings);

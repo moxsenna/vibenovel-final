@@ -33,6 +33,7 @@ supabase/
 | **7.1** ✅ | Publish package migration | `migrations/00006_sprint7_publish_package.sql` — 1 tabel + enum |
 | **8.1** ✅ | AI generation + credit ledger | `migrations/00008_sprint8_ai_generation_credit.sql` — 2 tabel + 3 enums + audit extend |
 | **10.1** ✅ | Payment topup schema (Mayar) | `migrations/00009_sprint10_payment_topup.sql` — 3 tabel + 2 enums + audit extend + seed packages |
+| **13.1** ✅ | Planning generation contracts | `migrations/00011_sprint13_generation_type_contracts.sql` — enum `generation_type` untuk concept/foundation/outline |
 | **Apply local** | Setelah Supabase CLI + Docker | `supabase start` lalu `supabase db reset` |
 | **Apply remote** | Manual / CI terpisah | **Tidak** tanpa approval eksplisit user |
 

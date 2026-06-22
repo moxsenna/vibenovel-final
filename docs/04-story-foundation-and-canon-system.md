@@ -4,6 +4,14 @@
 
 Fondasi Cerita adalah sumber kebenaran awal sebelum AI menulis bab. Tanpa fondasi ini, AI akan mengarang bebas dan cerita panjang akan cepat rusak.
 
+## Implementation status
+
+Status per 2026-06-15: tabel `facts` hanya menyimpan canon yang sudah sah. Lifecycle calon perubahan AI ada di `ai_proposals`, bukan di `facts.canonStatus`.
+
+- `facts.canon_status`: `confirmed` atau `deprecated`.
+- `ai_proposals.status`: `proposed`, `accepted`, `rejected`, atau `merged`.
+- Saat proposal diterima, service promotion dapat membuat/memperbarui entity canon dengan `source = accepted_proposal`.
+
 ## User-facing sections
 
 - Tentang cerita
@@ -18,7 +26,7 @@ Fondasi Cerita adalah sumber kebenaran awal sebelum AI menulis bab. Tanpa fondas
 
 ## Canonical Story State
 
-Sistem harus menyimpan:
+Sistem yang sudah tersedia menyimpan:
 
 - premise,
 - genre,
@@ -28,11 +36,16 @@ Sistem harus menyimpan:
 - characters,
 - locked facts,
 - relationships,
-- world rules,
-- reveals,
-- open loops,
+- world rules sebagai `facts`,
+- reveals dan open loops lewat `planned_reveals` / `open_loops`,
+- prose draft/current lewat `chapter_prose_versions` (bukan `facts`),
+- AI proposal queue lewat `ai_proposals`.
+
+Sistem final masih menargetkan:
+
 - timeline,
-- accepted prose.
+- accepted prose sebagai chapter-level state yang jelas,
+- character knowledge/state untuk continuity yang lebih halus.
 
 ## Fact policy
 
@@ -57,9 +70,20 @@ Fact {
   projectId: string
   text: string
   category: 'identity' | 'relationship' | 'family' | 'event' | 'secret' | 'motive' | 'location' | 'item' | 'world_rule' | 'timeline' | 'status' | 'promise'
-  canonStatus: 'confirmed' | 'proposed' | 'rejected' | 'deprecated' | 'contradicted'
-  source: 'user' | 'story_bible' | 'outline' | 'chapter_delta' | 'ai_proposal' | 'imported_draft'
+  canonStatus: 'confirmed' | 'deprecated'
+  source: 'user' | 'system' | 'accepted_proposal' | 'imported_draft'
   importance: 'minor' | 'major' | 'core'
+  isLocked: boolean
+  acceptedFromProposalId: string | null
+}
+
+AiProposal {
+  id: string
+  projectId: string
+  proposalType: 'character' | 'fact' | 'relationship_speech_rule' | 'open_loop_update' | 'reveal_status_update' | 'character_update' | 'relationship_update'
+  status: 'proposed' | 'accepted' | 'rejected' | 'merged'
+  riskLevel: 'low' | 'medium' | 'high'
+  payload: Record<string, unknown>
 }
 ```
 

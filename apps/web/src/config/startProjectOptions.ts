@@ -2,7 +2,7 @@ import { PROJECT_ENTRY_PATHS, type ProjectEntryPath } from "@vibenovel/shared";
 import { DEMO_PROJECT_ID } from "@/mocks/projects";
 import { ROUTES } from "@/routes/paths";
 
-export type StartProjectTarget = "intake" | "outline" | "summary";
+export type StartProjectTarget = "intake" | "draft_import" | "outline" | "summary";
 
 export interface StartProjectOptionDef {
   id: string;
@@ -63,8 +63,8 @@ export const START_PROJECT_OPTIONS: StartProjectOptionDef[] = [
     ctaLabel: "Lanjutkan draft",
     entryPath: PROJECT_ENTRY_PATHS.has_draft,
     defaultTitle: "Draft Saya",
-    target: "intake",
-    badge: "Upload nyata — nanti",
+    target: "draft_import",
+    badge: "Import draft",
   },
   {
     id: "has-outline",
@@ -99,6 +99,8 @@ export function resolveStartProjectRoute(
   target: StartProjectTarget,
 ): string {
   switch (target) {
+    case "draft_import":
+      return ROUTES.project.importDraft(projectId);
     case "outline":
       return ROUTES.project.outline(projectId);
     case "summary":

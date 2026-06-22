@@ -10,6 +10,7 @@ export type AuthVariables = {
   userId: string;
   email: string;
   authUser: User;
+  adminRole?: string;
 };
 
 export const authMiddleware = createMiddleware<AppEnv>(async (c, next) => {

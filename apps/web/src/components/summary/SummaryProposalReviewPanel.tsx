@@ -7,6 +7,8 @@ const TYPE_LABELS: Record<string, string> = {
   relationship_update: "Perubahan Relasi",
   open_loop_update: "Open Loop",
   reveal_status_update: "Reveal",
+  character_state_update: "State Tokoh",
+  character_knowledge_update: "Knowledge POV",
 };
 
 function proposalExcerpt(proposal: LinkedProposalSummary): string {
@@ -14,6 +16,8 @@ function proposalExcerpt(proposal: LinkedProposalSummary): string {
   const candidates = [
     proposal.summary,
     typeof excerpt.proposedFactText === "string" ? excerpt.proposedFactText : null,
+    typeof excerpt.stateSummary === "string" ? excerpt.stateSummary : null,
+    typeof excerpt.knowledgeSummary === "string" ? excerpt.knowledgeSummary : null,
     typeof excerpt.changeSummary === "string" ? excerpt.changeSummary : null,
     proposal.title,
   ];

@@ -29,7 +29,8 @@ param(
   [string]$StagingEc2Ip = "13.212.245.32",
   [string]$ProductionApiHost = "api.narraza.web.id",
   [string]$ProductionAppHost = "app.narraza.web.id",
-  [string]$ProductionHomepageHost = "narraza.web.id"
+  [string]$ProductionHomepageHost = "narraza.web.id",
+  [string]$SmokeProjectId = ""
 )
 
 Set-StrictMode -Version Latest
@@ -70,6 +71,46 @@ function Test-ModeAEnvFile {
   return $true, "ok ref=$ref"
 }
 
+function Invoke-FounderApiSmoke {
+  param(
+    [string]$ApiBaseUrl,
+    [string]$ProjectId = ""
+  )
+
+  $AccessToken = [Environment]::GetEnvironmentVariable("FOUNDER_ACCESS_TOKEN")
+  if ([string]::IsNullOrWhiteSpace($AccessToken)) {
+    Write-Host "WARN founder API smoke skipped: set FOUNDER_ACCESS_TOKEN in the process environment" -ForegroundColor Yellow
+    return
+  }
+
+  $headers = @{ Authorization = "Bearer $AccessToken" }
+
+  function Invoke-SmokeGet {
+    param([string]$Path)
+    $uri = "$($ApiBaseUrl.TrimEnd('/'))$Path"
+    $response = Invoke-RestMethod -Uri $uri -Headers $headers -Method GET -TimeoutSec 30
+    if (-not $response.ok) { throw "$Path returned ok=false" }
+    Write-Host "PASS founder smoke GET $Path" -ForegroundColor Green
+    return $response
+  }
+
+  Invoke-SmokeGet -Path "/api/me" | Out-Null
+  Invoke-SmokeGet -Path "/api/credits/balance" | Out-Null
+  $projectsResponse = Invoke-SmokeGet -Path "/api/projects"
+
+  if ([string]::IsNullOrWhiteSpace($ProjectId)) {
+    $firstProject = @($projectsResponse.data | Select-Object -First 1)
+    if ($firstProject.Count -eq 0 -or [string]::IsNullOrWhiteSpace($firstProject[0].id)) {
+      throw "founder smoke needs at least one project or -SmokeProjectId"
+    }
+    $ProjectId = $firstProject[0].id
+  }
+
+  Invoke-SmokeGet -Path "/api/projects/$ProjectId/concepts" | Out-Null
+  Invoke-SmokeGet -Path "/api/projects/$ProjectId/foundation" | Out-Null
+  Invoke-SmokeGet -Path "/api/projects/$ProjectId/outline" | Out-Null
+}
+
 Write-Host "Task 10.23/10.23a - Production API/app Mode A" -ForegroundColor Cyan
 Write-Host "Homepage: https://$ProductionHomepageHost (landing - not dashboard)"
 Write-Host "App:      https://$ProductionAppHost"
@@ -85,6 +126,13 @@ if (-not $envOk) {
   exit 2
 }
 Write-Host "PASS .env.production Mode A ($envMsg)" -ForegroundColor Green
+
+$supabaseAudit = Test-ProductionSupabaseProjectRefAudit -StagingProjectRef $StagingProjectRef
+if (-not $supabaseAudit.Ok) {
+  Write-Host "BLOCKED: Supabase project ref audit - $($supabaseAudit.Message)" -ForegroundColor Red
+  exit 2
+}
+Write-Host "PASS Supabase project ref audit (api=$($supabaseAudit.ApiRef), web=$($supabaseAudit.WebRef), match=yes)" -ForegroundColor Green
 
 Write-Host "`nStaging regression (read-only)..." -ForegroundColor Cyan
 try {
@@ -124,6 +172,14 @@ try {
   Write-Host "PASS production API health Mode A" -ForegroundColor Green
 } catch {
   Write-Host "PARTIAL: production API not healthy yet - $($_.Exception.Message)" -ForegroundColor Yellow
+}
+
+Write-Host "`nFounder authenticated API smoke..." -ForegroundColor Cyan
+try {
+  Invoke-FounderApiSmoke -ApiBaseUrl "https://$ProductionApiHost" -ProjectId $SmokeProjectId
+} catch {
+  Write-Host "FAIL founder API smoke: $($_.Exception.Message)" -ForegroundColor Red
+  exit 2
 }
 
 if ($Mode -eq "preflight") {

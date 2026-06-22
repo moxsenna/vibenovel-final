@@ -13,6 +13,7 @@ import type {
   Project,
   StoryConcept as ApiStoryConcept,
   StoryFoundation,
+  CreatorMode,
   WriterQualityMode,
 } from "@vibenovel/shared";
 import type { PlannedRevealPublic } from "@/services/outline";
@@ -25,11 +26,12 @@ import { DEMO_PROJECT_ID } from "@/mocks/projects";
 import { mockStoryFoundation } from "@/mocks/storyFoundation";
 import { ROUTES } from "@/routes/paths";
 import { shouldUseMocks } from "@/lib/env";
+import { formatProjectCardSecondaryLine } from "@/lib/project-title-helpers";
+import type { BadgeVariant } from "@/components/ui/Badge";
 import {
   buildHonestProgressSteps,
   buildHonestRecentExcerpt,
   buildHonestRecentStatusLabel,
-  INTAKE_STUB_ASSISTANT_LABEL,
   resolveActiveProjectCta,
   resolveHonestProjectRoute,
 } from "@/lib/workflow-truth";
@@ -55,6 +57,7 @@ interface FoundationReadinessApi {
   readinessScore: number;
   readinessLevel: string;
   canLock: boolean;
+  canRefine: boolean;
   missing: string[];
 }
 
@@ -66,8 +69,10 @@ const GENRE_BADGE_CLASSES = [
 
 const READINESS_LABELS: Record<string, string> = {
   belum_siap: "Belum siap",
-  bisa_lanjut: "Bisa lanjut",
-  siap_dikunci: "Hampir siap dikunci",
+  bisa_lanjut: "Perlu dilengkapi",
+  siap_dimatangkan: "Siap dimatangkan",
+  siap_dikunci: "Siap dikunci",
+  sangat_siap: "Sangat siap",
 };
 
 const STATUS_BADGES: Record<string, string> = {
@@ -86,6 +91,15 @@ const FORMAT_LABELS: Record<string, string> = {
   desktop: "Format Desktop",
 };
 
+
+function recentStatusBadgeVariant(project: Project): BadgeVariant {
+  const phase = project.workflowPhase ?? "intake";
+  if (phase === "writing" || phase === "outline_locked") return "success";
+  if (phase === "foundation" || phase === "outline") return "warning";
+  if (project.status === "published") return "accent";
+  return "primary";
+}
+
 function formatRelativeTime(iso: string): string {
   const date = new Date(iso);
   if (Number.isNaN(date.getTime())) return "Baru saja";
@@ -103,18 +117,21 @@ function formatRelativeTime(iso: string): string {
 
 export function mapProjectToActiveCard(project: Project): DashboardActiveProject {
   const cta = resolveActiveProjectCta(project);
+  const lastEditedAbsolute = project.lastEditedAt;
   return {
     id: project.id,
     title: project.title,
     subtitle: project.genre ? `Kisah ${project.genre}` : "Proyek cerita Anda",
     genre: project.genre ?? "Cerita",
-    lastEditedLabel: formatRelativeTime(project.lastEditedAt),
+    lastEditedLabel: `Terakhir dikerjakan ${formatRelativeTime(project.lastEditedAt)}`,
+    lastEditedAbsolute,
     statusBadge: STATUS_BADGES[project.status] ?? "Aktif",
     currentChapter: project.currentChapter,
     writeRoute: cta.route,
     progressSteps: buildHonestProgressSteps(project),
     ctaLabel: cta.label,
     ctaDisabled: cta.disabled,
+    heroKicker: project.isActive ? "Lanjutkan" : "Terakhir dikerjakan",
   };
 }
 
@@ -122,14 +139,22 @@ export function mapProjectToRecentCard(
   project: Project,
   index: number,
 ): DashboardRecentProject {
+  const statusLabel = buildHonestRecentStatusLabel(project);
+  const progressLabel =
+    project.currentChapter > 0 ? `Bab ${project.currentChapter}` : undefined;
   return {
     id: project.id,
     title: project.title,
+    titleAbsolute: project.title,
     genre: project.genre ?? "Cerita",
     genreBadgeClass: GENRE_BADGE_CLASSES[index % GENRE_BADGE_CLASSES.length],
     excerpt: buildHonestRecentExcerpt(project),
     lastEditedLabel: formatRelativeTime(project.lastEditedAt),
-    statusLabel: buildHonestRecentStatusLabel(project),
+    lastEditedAbsolute: project.lastEditedAt,
+    statusLabel,
+    statusBadgeVariant: recentStatusBadgeVariant(project),
+    progressLabel,
+    secondaryLine: formatProjectCardSecondaryLine(project),
     bookmarked: project.isActive,
     route: resolveHonestProjectRoute(project),
   };
@@ -206,6 +231,7 @@ export interface ApiSettingsInput {
   qualityMode: WriterQualityMode;
   defaultOutputStyle: string;
   defaultFormat: string;
+  creatorMode?: CreatorMode;
   defaultLanguage?: string | null;
 }
 
@@ -223,6 +249,7 @@ export function mergeSettingsWithApi(
     creditsRemaining: creditBalance?.balance ?? base.creditsRemaining,
     monthlyUsage: mapCreditToMonthlyUsage(creditBalance),
     modelTiers: buildModelTiers(apiSettings.qualityMode),
+    creatorMode: apiSettings.creatorMode ?? "simple",
     writerPreferences: {
       defaultLanguage:
         apiSettings.defaultLanguage != null
@@ -450,6 +477,8 @@ export function mapIntakeBundleToUi(
 ): IntakeSession {
   const useDemoCopy = !isApiModeEnabled();
   const fallback = mockIntakeSession;
+  const phase = (session.phase ?? "idea_collection") as IntakeSession["phase"];
+  const foundationMode = phase === "foundation_refinement";
   const uiMessages =
     messages.length > 0 ? messages.map(mapApiMessageToUi) : useDemoCopy ? fallback.messages : [];
   const uiSignals =
@@ -457,19 +486,40 @@ export function mapIntakeBundleToUi(
 
   return {
     projectId,
-    pageTitle: useDemoCopy ? fallback.pageTitle : "Ceritakan Ide Anda",
-    introTitle: useDemoCopy ? fallback.introTitle : "Mulai dari ide mentah",
+    phase,
+    modeLabel: foundationMode ? "Matangkan Fondasi" : "Ide dan Konsep",
+    pageTitle: useDemoCopy ? fallback.pageTitle : "Asisten Narra",
+    introTitle: useDemoCopy
+      ? fallback.introTitle
+      : foundationMode
+        ? "Matangkan fondasi"
+        : "Ceritakan arah ceritamu",
     introSubtitle: useDemoCopy
       ? fallback.introSubtitle
-      : "Ceritakan ide, konflik, atau suasana yang ingin Anda tulis.",
+      : foundationMode
+        ? "Narra memakai fondasi yang sudah ada untuk menajamkan motivasi, konflik, stakes, dan janji pembaca."
+        : "Tulis ide, konflik, draft, atau suasana yang ingin kamu bangun.",
     messages: uiMessages,
     progress: useDemoCopy ? fallback.progress : buildHonestProgress(signals),
-    progressPercent: session.progressPercent ?? (useDemoCopy ? fallback.progressPercent : 0),
+    progressPercent: (() => {
+      if (useDemoCopy) return fallback.progressPercent;
+      const items = buildHonestProgress(signals);
+      const total = items.length;
+      if (total === 0) return 0;
+      const done = items.filter((item) => item.status === "done").length;
+      return Math.round((done / total) * 100);
+    })(),
     detectedSignals: uiSignals,
     suggestedActions: useDemoCopy ? fallback.suggestedActions : [],
     conceptsRoute: ROUTES.project.concepts(projectId),
-    inputPlaceholder: useDemoCopy ? fallback.inputPlaceholder : "Tulis ide cerita Anda di sini…",
-    inputTip: isApiModeEnabled() ? INTAKE_STUB_ASSISTANT_LABEL : fallback.inputTip,
+    inputPlaceholder: useDemoCopy
+      ? fallback.inputPlaceholder
+      : foundationMode
+        ? "Jawab pertanyaan Narra atau tulis bagian fondasi yang ingin dipertajam..."
+        : "Tulis ide cerita kamu di sini...",
+    inputTip: isApiModeEnabled()
+      ? "Asisten Narra memakai AI dan menyimpan obrolan ke proyek ini."
+      : fallback.inputTip,
     ctaLabel: useDemoCopy ? fallback.ctaLabel : "Lanjut ke Konsep",
     ctaHint: useDemoCopy
       ? fallback.ctaHint
@@ -523,9 +573,11 @@ export function mapReadinessApiToUi(
     statusLabel: READINESS_LABELS[readiness.readinessLevel] ?? readiness.readinessLevel,
     hint: readiness.canLock
       ? "Fondasi siap dikunci. Tinjau usulan yang tersisa sebelum mengunci."
+      : readiness.canRefine
+        ? "Fondasi cukup lengkap. Matangkan dengan Narra sebelum dikunci."
       : percent >= 45
         ? "Lengkapi bagian yang masih kurang dan terima usulan yang diperlukan."
-        : "Lengkapi intake dan konsep terlebih dahulu.",
+        : "Lengkapi obrolan Asisten Narra dan konsep terlebih dahulu.",
     missingItems: readiness.missing,
   };
 }

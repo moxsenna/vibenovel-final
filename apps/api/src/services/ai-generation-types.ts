@@ -1,7 +1,17 @@
-import type { GenerationType, JsonObject, WriterQualityMode } from "@vibenovel/shared";
+import type {
+  GenerationProviderEventOutcome,
+  GenerationType,
+  JsonObject,
+  WriterQualityMode,
+} from "@vibenovel/shared";
+import type {
+  AiLiveProviderId,
+  AiLogicalModelKey,
+} from "./ai-model-registry.js";
+import type { ProviderEventSequence } from "./generation-provider-event.js";
 
 /** Provider boundary — never expose raw provider HTTP body to callers. */
-export type AiProviderId = "openrouter" | "mock";
+export type AiProviderId = AiLiveProviderId | "mock";
 
 export type AiProviderErrorCode =
   | "AI_DISABLED"
@@ -9,6 +19,7 @@ export type AiProviderErrorCode =
   | "AI_PROVIDER_ERROR"
   | "AI_PROVIDER_TIMEOUT"
   | "AI_PROVIDER_RATE_LIMITED"
+  | "AI_PROVIDER_QUOTA_EXHAUSTED"
   | "AI_OUTPUT_EMPTY"
   | "AI_OUTPUT_UNSAFE";
 
@@ -21,10 +32,13 @@ export interface PromptMessage {
 
 export interface ResolvedModelConfig {
   provider: AiProviderId;
-  model: string;
+  logicalModel: AiLogicalModelKey;
+  providerModelId: string;
+  routeRole: "primary" | "fallback";
   maxOutputTokens: number;
   timeoutMs: number;
   temperature: number;
+  primaryMaxRetries: number;
 }
 
 export interface ModelRouterResolveInput {
@@ -32,7 +46,10 @@ export interface ModelRouterResolveInput {
   qualityMode: WriterQualityMode;
 }
 
-export interface ModelRouterGenerateInput {
+export interface ModelRouterGenerateInput<TOutput = string> {
+  generationAttemptId: string;
+  /** Attempt-owned counter shared across retries, fallback, and repair loops. */
+  providerEventSequence: ProviderEventSequence;
   generationType: GenerationType;
   qualityMode: WriterQualityMode;
   /** SHA-256 of canonical prompt — safe to log; never log raw prompt. */
@@ -43,23 +60,52 @@ export interface ModelRouterGenerateInput {
   maxOutputTokens?: number;
   /**
    * Server-only: replaces the resolved cap (may raise it, clamped to a hard
-   * ceiling). For trusted internal callers whose payload needs more headroom
-   * than the generation-type alias allows (e.g. multi-object JSON concept gen).
-   * Never plumb from client request bodies.
+   * ceiling). Never plumb from client request bodies.
    */
   maxOutputTokensOverride?: number;
   temperature?: number;
   /** Redacted metadata only — no packet_json, planningTruth, or prose. */
   metadata?: JsonObject;
+  /**
+   * Engine-specific validator. Runs after safety normalization and is part of
+   * the success boundary: a thrown AppError("GENERATION_FAILED") is retryable
+   * and fallback-eligible. Defaults to returning the raw text.
+   */
+  validateOutput?: (text: string) => TOutput;
 }
 
-export interface ModelRouterGenerateResult {
+export interface ModelRouterGenerateResult<TOutput = string> {
   text: string;
+  output: TOutput;
   provider: AiProviderId;
+  logicalModel: AiLogicalModelKey;
+  /** Raw provider model ID resolved from the registry. */
   model: string;
   inputTokens?: number;
   outputTokens?: number;
   latencyMs: number;
   finishReason?: string;
   promptHash: string;
+  routingPolicyVersion: string;
+  fallbackUsed: boolean;
+  retryCount: number;
+  estimatedCostUsd: number;
+}
+
+export interface ProviderEventRecorderInput {
+  generationAttemptId: string;
+  sequenceNumber: number;
+  routeRole: "primary" | "fallback";
+  provider: string;
+  logicalModel: string;
+  providerModelId: string;
+  retryNumber: number;
+  outcome: GenerationProviderEventOutcome;
+  errorCategory?: string | null;
+  errorCodeSafe?: string | null;
+  providerHttpStatus?: number | null;
+  latencyMs?: number | null;
+  inputTokens?: number | null;
+  outputTokens?: number | null;
+  estimatedCostUsd?: number | null;
 }

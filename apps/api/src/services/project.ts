@@ -13,10 +13,11 @@ import {
   type TargetLengthPlan,
   type WriterQualityMode,
 } from "@vibenovel/shared";
-import type { AppBindings } from "../env.js";
+import { getAppEnv, type AppBindings } from "../env.js";
 import { mapProjectRow, type ProjectRow } from "../lib/mappers.js";
 import { createServiceRoleClient } from "../lib/supabase.js";
 import { AppError } from "../errors.js";
+import { suggestedProjectTitleFromEntryPath } from "../lib/suggested-project-title.js";
 import { writeAuditLog } from "./audit.js";
 
 const PROJECT_SELECT =
@@ -31,6 +32,86 @@ const QUALITY_TIER_SET = new Set<string>(Object.values(WRITER_QUALITY_MODES));
 const FORMAT_SET = new Set<string>(Object.values(MOBILE_FORMAT_PREFERENCES));
 const OUTPUT_STYLE_SET = new Set<string>(Object.values(OUTPUT_STYLE_PREFERENCES));
 const TARGET_LENGTH_SET = new Set<string>(Object.values(TARGET_LENGTH_PLANS));
+
+/** Titles from QA/readiness fixtures — hidden on production dashboards (doc 113 A1). */
+export function isProductionTestFixtureTitle(title: string): boolean {
+  const t = title.trim();
+  if (/^ZZ-TEST/i.test(t)) return true;
+  if (/\(hapus\)/i.test(t)) return true;
+  if (/\(boleh dihapus\)/i.test(t)) return true;
+  return false;
+}
+
+export function filterTestFixtureProjectsForProduction(
+  projects: Project[],
+  bindings: AppBindings,
+): Project[] {
+  if (getAppEnv(bindings) !== "production") return projects;
+  return projects.filter((p) => !isProductionTestFixtureTitle(p.title));
+}
+
+export type ProjectListSortField = "lastEditedAt" | "createdAt" | "title";
+export type ProjectListOrder = "asc" | "desc";
+
+export interface ListProjectsQueryOptions {
+  includeArchived?: boolean;
+  q?: string;
+  status?: ProjectStatus[];
+  sort?: ProjectListSortField;
+  order?: ProjectListOrder;
+  limit: number;
+  offset: number;
+}
+
+export interface ProjectsPageResult {
+  items: Project[];
+  total: number;
+  nextCursor: string | null;
+}
+
+const PROJECT_SORT_COLUMN: Record<ProjectListSortField, string> = {
+  lastEditedAt: "last_edited_at",
+  createdAt: "created_at",
+  title: "title",
+};
+
+const DEFAULT_PAGE_LIMIT = 12;
+const MAX_PAGE_LIMIT = 100;
+
+export function parseListProjectsQueryOptions(
+  query: Record<string, string | undefined>,
+): ListProjectsQueryOptions | null {
+  const limitRaw = query.limit?.trim();
+  if (!limitRaw) return null;
+  const parsedLimit = Number.parseInt(limitRaw, 10);
+  const limit = Math.min(
+    MAX_PAGE_LIMIT,
+    Math.max(1, Number.isFinite(parsedLimit) ? parsedLimit : DEFAULT_PAGE_LIMIT),
+  );
+  const parsedOffset = Number.parseInt(query.offset?.trim() ?? "0", 10);
+  const offset = Math.max(0, Number.isFinite(parsedOffset) ? parsedOffset : 0);
+  const sortRaw = query.sort?.trim();
+  const sort: ProjectListSortField =
+    sortRaw === "createdAt" || sortRaw === "title" || sortRaw === "lastEditedAt"
+      ? sortRaw
+      : "lastEditedAt";
+  const order: ProjectListOrder = query.order?.trim() === "asc" ? "asc" : "desc";
+  const statusParts =
+    query.status
+      ?.split(",")
+      .map((s) => s.trim())
+      .filter((s) => STATUS_SET.has(s)) ?? [];
+  const q = query.q?.trim() || undefined;
+  return {
+    includeArchived: query.includeArchived === "true",
+    q,
+    status: statusParts.length > 0 ? (statusParts as ProjectStatus[]) : undefined,
+    sort,
+    order,
+    limit,
+    offset,
+  };
+}
 
 export interface CreateProjectSettingsInput {
   qualityTier?: WriterQualityMode;
@@ -225,7 +306,56 @@ export async function listProjectsForOwner(
     throw AppError.internal("Failed to list projects");
   }
 
-  return ((data ?? []) as ProjectRow[]).map(mapProjectRow);
+  const mapped = ((data ?? []) as ProjectRow[]).map(mapProjectRow);
+  return filterTestFixtureProjectsForProduction(mapped, bindings);
+}
+
+export async function listProjectsPageForOwner(
+  bindings: AppBindings,
+  ownerId: string,
+  opts: ListProjectsQueryOptions,
+): Promise<ProjectsPageResult> {
+  const admin = createServiceRoleClient(bindings);
+  const sortField = opts.sort ?? "lastEditedAt";
+  const order = opts.order ?? "desc";
+  const col = PROJECT_SORT_COLUMN[sortField];
+
+  let query = admin
+    .from("projects")
+    .select(PROJECT_SELECT, { count: "exact" })
+    .eq("owner_id", ownerId);
+
+  if (!opts.includeArchived) {
+    query = query.eq("is_active", true);
+  }
+  if (opts.q) {
+    const escaped = opts.q.replace(/%/g, "\\%").replace(/_/g, "\\_");
+    query = query.ilike("title", `%${escaped}%`);
+  }
+  if (opts.status?.length) {
+    query = query.in("status", opts.status);
+  }
+
+  query = query
+    .order(col, { ascending: order === "asc" })
+    .range(opts.offset, opts.offset + opts.limit - 1);
+
+  const { data, error, count } = await query;
+
+  if (error) {
+    console.error("projects list page failed");
+    throw AppError.internal("Failed to list projects");
+  }
+
+  const mapped = filterTestFixtureProjectsForProduction(
+    ((data ?? []) as ProjectRow[]).map(mapProjectRow),
+    bindings,
+  );
+  const total = count ?? mapped.length;
+  const nextOffset = opts.offset + opts.limit;
+  const nextCursor = nextOffset < total ? String(nextOffset) : null;
+
+  return { items: mapped, total, nextCursor };
 }
 
 export async function getProjectForOwner(
@@ -247,12 +377,30 @@ export async function createProjectForOwner(
   }
 
   const body = raw as Record<string, unknown>;
-  const title = assertNonEmptyTitle(body.title);
   const entryPath = assertOptionalEntryPath(body.entryPath);
   const targetLengthPlan = assertOptionalTargetLength(body.targetLengthPlan, "targetLengthPlan");
   const defaultSettings = parseDefaultSettings(body.defaultSettings);
 
   const admin = createServiceRoleClient(bindings);
+
+  let title: string;
+  if (body.title === undefined || body.title === null || String(body.title).trim() === "") {
+    const { data: titleRows, error: titleListError } = await admin
+      .from("projects")
+      .select("title")
+      .eq("owner_id", ownerId);
+    if (titleListError) {
+      console.error("projects title list failed");
+      throw AppError.internal("Failed to create project");
+    }
+    const existingTitles = ((titleRows ?? []) as { title: string }[]).map((r) => r.title);
+    title = assertNonEmptyTitle(
+      suggestedProjectTitleFromEntryPath(entryPath, existingTitles),
+    );
+  } else {
+    title = assertNonEmptyTitle(body.title);
+  }
+
   const hasActive = await userHasActiveProject(admin, ownerId);
   const isActive = !hasActive;
 

@@ -182,7 +182,7 @@ export async function createDuitkuPopInvoice(
     merchantKey,
   );
 
-  const productDetails = `Top Up Kredit VibeNovel - ${input.productName}`;
+  const productDetails = `Top Up Kredit Narraza - ${input.productName}`;
   const body: DuitkuPopCreateInvoiceRequest = {
     paymentAmount: input.amountIdr,
     merchantOrderId: input.orderId,

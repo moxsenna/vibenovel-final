@@ -3,7 +3,6 @@ import { useParams } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { ApiClientError } from "@/lib/api";
 import {
-  formatOutlineWorkflowError,
   mapApiChapterToUi,
   mapOpenLoopsToUi,
   mapOutlineBundleToUi,
@@ -12,22 +11,31 @@ import {
   type UiPlannedReveal,
 } from "@/lib/api-mappers";
 import { allowMockFallback, shouldUseMocks } from "@/lib/env";
-import { apiErrorMessage } from "@/lib/hook-fallback";
+import { aiGenerationFailureNotice, apiErrorMessage } from "@/lib/hook-fallback";
 import { DEMO_MODE_LABEL } from "@/lib/workflow-truth";
 import { resolveProjectIdForRoute } from "@/lib/project-context";
-import type { OutlineChapterDraft } from "@/components/outline";
+import type { OutlineAdvancedControlValues, OutlineChapterDraft } from "@/components/outline";
 import { mockOutline } from "@/mocks/outline";
-import type { ChapterOutline } from "@vibenovel/shared";
+import type { ChapterOutline, CreatorMode, MiniArc, TimelineEvent } from "@vibenovel/shared";
 import {
   approveOutline,
   fetchOutlineBundle,
+  fetchTimeline,
   generateOutline,
   lockOutline,
   patchChapterOutline,
 } from "@/services/outline";
+import { fetchProjectSettings } from "@/services/settings";
 import type { StoryOutline } from "@/types";
 
 export type OutlineDataSource = "mock" | "api" | "error";
+
+const DEFAULT_ADVANCED_CONTROLS: OutlineAdvancedControlValues = {
+  chapterCount: 10,
+  revealDensity: "sedang",
+  retentionIntensity: "seimbang",
+  proseStyleTarget: "hangat emosional",
+};
 
 function chapterNumberMap(chapters: ChapterOutline[]): Map<string, number> {
   return new Map(chapters.map((ch) => [ch.id, ch.chapterNumber]));
@@ -60,6 +68,14 @@ export interface OutlineData {
   isLocked: boolean;
   projectId: string | null;
   apiChapters: ChapterOutline[];
+  miniArcs: MiniArc[];
+  timelineEvents: TimelineEvent[];
+  creatorMode: CreatorMode;
+  advancedControls: OutlineAdvancedControlValues;
+  updateAdvancedControl: <K extends keyof OutlineAdvancedControlValues>(
+    key: K,
+    value: OutlineAdvancedControlValues[K],
+  ) => void;
   getChapterDraft: (chapterId: string) => OutlineChapterDraft | null;
   updateChapterDraft: (chapterId: string, field: keyof OutlineChapterDraft, value: string) => void;
   generateOutlinePlan: () => Promise<void>;
@@ -86,6 +102,8 @@ export function useOutlineData(): OutlineData {
     });
   });
   const [apiChapters, setApiChapters] = useState<ChapterOutline[]>([]);
+  const [miniArcs, setMiniArcs] = useState<MiniArc[]>([]);
+  const [timelineEvents, setTimelineEvents] = useState<TimelineEvent[]>([]);
   const [openLoops, setOpenLoops] = useState<UiOpenLoop[]>([]);
   const [reveals, setReveals] = useState<UiPlannedReveal[]>([]);
   const [source, setSource] = useState<OutlineDataSource>(useMocks ? "mock" : "api");
@@ -98,10 +116,14 @@ export function useOutlineData(): OutlineData {
   const [workflowNotice, setWorkflowNotice] = useState<string | null>(null);
   const [projectId, setProjectId] = useState<string | null>(null);
   const [drafts, setDrafts] = useState<Record<string, OutlineChapterDraft>>({});
+  const [creatorMode, setCreatorMode] = useState<CreatorMode>("simple");
+  const [advancedControls, setAdvancedControls] =
+    useState<OutlineAdvancedControlValues>(DEFAULT_ADVANCED_CONTROLS);
 
   const applyBundle = useCallback(
     (resolvedId: string, bundle: Awaited<ReturnType<typeof fetchOutlineBundle>>) => {
       setApiChapters(bundle.chapterOutlines);
+      setMiniArcs(bundle.miniArcs ?? []);
       setOutline(mapOutlineBundleToUi(resolvedId, bundle));
       const chMap = chapterNumberMap(bundle.chapterOutlines);
       setOpenLoops(mapOpenLoopsToUi(bundle.openLoops, chMap));
@@ -135,15 +157,28 @@ export function useOutlineData(): OutlineData {
           setNotice("Proyek tidak ditemukan.");
         }
         setApiChapters([]);
+        setMiniArcs([]);
+        setTimelineEvents([]);
         setOpenLoops([]);
         setReveals([]);
         return;
       }
 
       setProjectId(resolvedId);
-      const bundle = await fetchOutlineBundle(resolvedId, token);
+      const [bundle, settings] = await Promise.all([
+        fetchOutlineBundle(resolvedId, token),
+        fetchProjectSettings(resolvedId, token),
+      ]);
       applyBundle(resolvedId, bundle);
+      setCreatorMode(settings.creatorMode ?? "simple");
       setSource("api");
+      // Continuity timeline is best-effort — never fail outline load over it.
+      try {
+        const timeline = await fetchTimeline(resolvedId, token);
+        setTimelineEvents(timeline.events ?? []);
+      } catch {
+        setTimelineEvents([]);
+      }
     } catch (error) {
       if (allowMockFallback()) {
         setOutline(mockOutline);
@@ -162,6 +197,7 @@ export function useOutlineData(): OutlineData {
       setApiChapters([]);
       setOpenLoops([]);
       setReveals([]);
+      setCreatorMode("simple");
     } finally {
       setLoading(false);
     }
@@ -173,9 +209,12 @@ export function useOutlineData(): OutlineData {
     if (!apiMode) {
       setOutline(mockOutline);
       setApiChapters([]);
+      setMiniArcs([]);
+      setTimelineEvents([]);
       setOpenLoops([]);
       setReveals([]);
       setSource("mock");
+      setCreatorMode("simple");
       setNotice(useMocks ? DEMO_MODE_LABEL : "Masuk ke akun untuk membaca outline dari API.");
       return;
     }
@@ -189,21 +228,31 @@ export function useOutlineData(): OutlineData {
     setGenerating(true);
     setWorkflowNotice(null);
     try {
-      const result = await generateOutline(projectId, token, {});
+      const body =
+        creatorMode === "advanced"
+          ? { targetChapterCount: advancedControls.chapterCount }
+          : {};
+      const result = await generateOutline(projectId, token, body);
       applyBundle(projectId, result);
       setSource("api");
       setNotice(null);
       setWorkflowNotice("Rencana 10 bab berhasil dibuat.");
     } catch (error) {
-      setWorkflowNotice(
-        error instanceof ApiClientError
-          ? formatOutlineWorkflowError(error.message, error.details)
-          : "Gagal membuat rencana outline.",
-      );
+      setWorkflowNotice(aiGenerationFailureNotice(error, "Gagal membuat rencana outline."));
     } finally {
       setGenerating(false);
     }
-  }, [apiMode, applyBundle, projectId, token]);
+  }, [advancedControls.chapterCount, apiMode, applyBundle, creatorMode, projectId, token]);
+
+  const updateAdvancedControl = useCallback(
+    <K extends keyof OutlineAdvancedControlValues>(
+      key: K,
+      value: OutlineAdvancedControlValues[K],
+    ) => {
+      setAdvancedControls((prev) => ({ ...prev, [key]: value }));
+    },
+    [],
+  );
 
   const approveOutlinePlan = useCallback(async () => {
     if (!apiMode || !token || !projectId) return;
@@ -229,11 +278,7 @@ export function useOutlineData(): OutlineData {
           : "Outline disetujui. Masih ada syarat kunci yang belum terpenuhi.",
       );
     } catch (error) {
-      setWorkflowNotice(
-        error instanceof ApiClientError
-          ? formatOutlineWorkflowError(error.message, error.details)
-          : "Gagal menyetujui outline.",
-      );
+      setWorkflowNotice(aiGenerationFailureNotice(error, "Gagal menyetujui outline."));
     } finally {
       setApproving(false);
     }
@@ -263,11 +308,7 @@ export function useOutlineData(): OutlineData {
       }));
       setWorkflowNotice("Outline berhasil dikunci.");
     } catch (error) {
-      setWorkflowNotice(
-        error instanceof ApiClientError
-          ? formatOutlineWorkflowError(error.message, error.details)
-          : "Gagal mengunci outline.",
-      );
+      setWorkflowNotice(aiGenerationFailureNotice(error, "Gagal mengunci outline."));
     } finally {
       setLocking(false);
     }
@@ -365,6 +406,11 @@ export function useOutlineData(): OutlineData {
       isLocked,
       projectId,
       apiChapters,
+      miniArcs,
+      timelineEvents,
+      creatorMode,
+      advancedControls,
+      updateAdvancedControl,
       getChapterDraft,
       updateChapterDraft,
       generateOutlinePlan,
@@ -391,6 +437,11 @@ export function useOutlineData(): OutlineData {
       isLocked,
       projectId,
       apiChapters,
+      miniArcs,
+      timelineEvents,
+      creatorMode,
+      advancedControls,
+      updateAdvancedControl,
       getChapterDraft,
       updateChapterDraft,
       generateOutlinePlan,

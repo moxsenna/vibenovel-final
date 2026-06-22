@@ -2,6 +2,7 @@ import {
   STORY_CONCEPT_SOURCES,
   STORY_CONCEPT_STATUSES,
   WORKFLOW_PHASES,
+  GENERATION_STATUSES,
   GENERATION_TYPES,
   WRITER_QUALITY_MODES,
   type JsonObject,
@@ -12,7 +13,6 @@ import {
 import type { AppBindings } from "../env.js";
 import {
   isAiGenerationEnabled,
-  isAiProviderMock,
 } from "../env.js";
 import {
   mapProjectRow,
@@ -24,7 +24,12 @@ import {
 import { createServiceRoleClient } from "../lib/supabase.js";
 import { AppError } from "../errors.js";
 import { getOwnedProjectRow } from "./project.js";
-import { generateWithModelRouter } from "./model-router.js";
+import {
+  assertGenerationRouteCallable,
+  generateWithModelRouter,
+} from "./model-router.js";
+import { createProviderEventSequence } from "./generation-provider-event.js";
+import { getCreditCostForGeneration } from "./ai-credit-policy.js";
 import {
   debitCreditsForAttempt,
   refundCreditsForAttempt,
@@ -32,6 +37,7 @@ import {
 } from "./credit-ledger.js";
 import {
   createGenerationAttempt,
+  getGenerationAttemptByIdempotencyKey,
   markGenerationAttemptRunning,
   markGenerationAttemptSucceeded,
   markGenerationAttemptFailed,
@@ -39,6 +45,8 @@ import {
 import { generateCorrelationId } from "./audit-snapshot.js";
 import { computePromptHashFromMessages } from "./prose-generation-prompt.js";
 import { listIntakeMessagesForOwner } from "./intake.js";
+import { assertPlanningOutputSpecificToProject } from "./planning-output-specificity.js";
+import { parsePaidActionIdempotencyKey } from "./paid-action-idempotency.js";
 
 const CONCEPT_SELECT =
   "id, project_id, title, short_pitch, reader_promise, core_conflict, genre, tone, target_reader, status, source, score, payload, created_at, updated_at";
@@ -205,6 +213,26 @@ async function listConceptRowsForProject(
   if (error) {
     console.error("story_concepts list failed");
     throw AppError.internal("Failed to list concepts");
+  }
+
+  return sortConceptRows((data ?? []) as StoryConceptRow[]);
+}
+
+async function listConceptRowsForBatch(
+  bindings: AppBindings,
+  projectId: string,
+  batchId: string,
+): Promise<StoryConceptRow[]> {
+  const admin = createServiceRoleClient(bindings);
+  const { data, error } = await admin
+    .from("story_concepts")
+    .select(CONCEPT_SELECT)
+    .eq("project_id", projectId)
+    .contains("payload", { batchId });
+
+  if (error) {
+    console.error("story_concepts replay lookup failed");
+    throw AppError.internal("Failed to load generated concepts");
   }
 
   return sortConceptRows((data ?? []) as StoryConceptRow[]);
@@ -406,12 +434,63 @@ export async function generateConceptsForOwner(
   ownerId: string,
   projectId: string,
   body: Record<string, unknown>,
-): Promise<{ concepts: StoryConcept[]; created: boolean }> {
+): Promise<{
+  concepts: StoryConcept[];
+  created: boolean;
+  creditCost: number;
+  idempotentReplay: boolean;
+}> {
   assertNoForbiddenKeys(body);
   const projectRow = await getOwnedProjectRow(bindings, ownerId, projectId);
 
+  const idempotencyKey = parsePaidActionIdempotencyKey(body.idempotencyKey);
   const regenerate = assertOptionalBoolean(body.regenerate, "regenerate") ?? false;
   const basedOnSignals = assertOptionalBoolean(body.basedOnSignals, "basedOnSignals") ?? true;
+  const aiEnabled = isAiGenerationEnabled(bindings);
+
+  if (aiEnabled) {
+    const existing = await getGenerationAttemptByIdempotencyKey(
+      bindings,
+      ownerId,
+      idempotencyKey,
+    );
+    if (existing?.status === GENERATION_STATUSES.succeeded) {
+      const batchId =
+        typeof existing.metadata.batchId === "string"
+          ? existing.metadata.batchId
+          : null;
+      if (!batchId) {
+        throw AppError.internal("Generated concept replay metadata is incomplete");
+      }
+      const replayRows = await listConceptRowsForBatch(bindings, projectId, batchId);
+      if (replayRows.length === 0) {
+        throw AppError.internal("Generated concepts for replay were not found");
+      }
+      return {
+        concepts: replayRows.map(mapStoryConceptRow),
+        created: false,
+        creditCost: existing.creditCost,
+        idempotentReplay: true,
+      };
+    }
+    if (
+      existing?.status === GENERATION_STATUSES.pending ||
+      existing?.status === GENERATION_STATUSES.running
+    ) {
+      throw new AppError(
+        "GENERATION_IN_PROGRESS",
+        "Concept generation is already in progress for this idempotency key",
+        409,
+      );
+    }
+    if (existing?.status === GENERATION_STATUSES.failed) {
+      throw new AppError(
+        "GENERATION_FAILED",
+        "Previous concept generation failed for this idempotency key",
+        422,
+      );
+    }
+  }
 
   const activeRows = await listConceptRowsForProject(bindings, projectId, {
     includeRejected: false,
@@ -421,6 +500,8 @@ export async function generateConceptsForOwner(
     return {
       concepts: activeRows.map(mapStoryConceptRow),
       created: false,
+      creditCost: 0,
+      idempotentReplay: false,
     };
   }
 
@@ -441,12 +522,10 @@ export async function generateConceptsForOwner(
 
   const batchId = crypto.randomUUID();
   const ctx = await loadGenerationContext(bindings, projectRow, basedOnSignals);
-  let concepts: StoryConcept[] = [];
+  let concepts: StoryConcept[];
+  let chargedCreditCost = 0;
 
-  const useMock = isAiProviderMock(bindings);
-  const aiEnabled = isAiGenerationEnabled(bindings);
-
-  if (aiEnabled && !useMock) {
+  if (aiEnabled) {
     const { messages } = await listIntakeMessagesForOwner(bindings, ownerId, projectId);
     const userMessages = messages.filter((m) => m.role === "user");
     if (userMessages.length === 0) {
@@ -490,38 +569,41 @@ export async function generateConceptsForOwner(
     ];
 
     const promptHash = await computePromptHashFromMessages(promptMessages);
-    const idempotencyKey = `concept-generation-${projectId}-${crypto.randomUUID()}`;
     const correlationId = generateCorrelationId();
+    const generationType = GENERATION_TYPES.concept_generation;
+    const qualityMode = WRITER_QUALITY_MODES.hemat;
+    const creditCost = getCreditCostForGeneration({ generationType, qualityMode });
+
+    assertGenerationRouteCallable(bindings, { generationType, qualityMode });
 
     let attempt = await createGenerationAttempt(bindings, {
       projectId,
       userId: ownerId,
-      generationType: GENERATION_TYPES.publish_copy,
+      generationType,
       idempotencyKey,
-      creditCost: 3,
+      creditCost,
       promptHash,
       correlationId,
-      qualityMode: WRITER_QUALITY_MODES.hemat,
+      qualityMode,
       metadata: {
-        actualGenerationType: "concept_generation",
-        billingAlias: "publish_copy",
         task: "10.31a",
+        batchId,
       },
     });
+    const providerEventSequence = createProviderEventSequence();
 
-    let debited = false;
     try {
       await debitCreditsForAttempt(bindings, {
         userId: ownerId,
         projectId,
         attemptId: attempt.id,
-        amount: 3,
+        amount: creditCost,
         reason: CREDIT_LEDGER_REASONS.generationDebit,
-        generationType: GENERATION_TYPES.publish_copy,
+        generationType,
+        qualityMode,
         idempotencyKey,
         correlationId,
       });
-      debited = true;
     } catch (err) {
       await markGenerationAttemptFailed(bindings, {
         attemptId: attempt.id,
@@ -538,45 +620,48 @@ export async function generateConceptsForOwner(
 
     try {
       const routerResult = await generateWithModelRouter(bindings, {
-        generationType: GENERATION_TYPES.publish_copy,
-        qualityMode: WRITER_QUALITY_MODES.hemat,
+        generationAttemptId: attempt.id,
+        providerEventSequence,
+        generationType,
+        qualityMode,
         promptHash,
         promptMessages,
-        // Concept gen returns a 3-object JSON array (with nested payload) that
-        // overflows the publish_copy alias cap (800) and gets truncated → invalid
-        // JSON. Give it real headroom + lower temperature for reliable structure.
-        maxOutputTokensOverride: 3000,
         temperature: 0.4,
+        validateOutput: (text) => {
+          let cleanText = text.trim();
+          if (cleanText.startsWith("```json")) {
+            cleanText = cleanText.substring(7);
+          } else if (cleanText.startsWith("```")) {
+            cleanText = cleanText.substring(3);
+          }
+          if (cleanText.endsWith("```")) {
+            cleanText = cleanText.substring(0, cleanText.length - 3);
+          }
+          cleanText = cleanText.trim();
+
+          let parsedOutput: unknown;
+          try {
+            parsedOutput = JSON.parse(cleanText);
+          } catch {
+            throw new AppError(
+              "GENERATION_FAILED",
+              "AI mengembalikan format konsep yang tidak valid. Coba lagi.",
+              502,
+            );
+          }
+          if (!Array.isArray(parsedOutput) || parsedOutput.length !== 3) {
+            throw new AppError(
+              "GENERATION_FAILED",
+              "AI tidak mengembalikan tepat 3 konsep. Coba lagi.",
+              502,
+            );
+          }
+          assertPlanningOutputSpecificToProject(parsedOutput, "konsep");
+          return parsedOutput as Record<string, unknown>[];
+        },
       });
 
-      let cleanText = routerResult.text.trim();
-      if (cleanText.startsWith("```json")) {
-        cleanText = cleanText.substring(7);
-      } else if (cleanText.startsWith("```")) {
-        cleanText = cleanText.substring(3);
-      }
-      if (cleanText.endsWith("```")) {
-        cleanText = cleanText.substring(0, cleanText.length - 3);
-      }
-      cleanText = cleanText.trim();
-
-      let parsed: unknown;
-      try {
-        parsed = JSON.parse(cleanText);
-      } catch {
-        throw new AppError(
-          "GENERATION_FAILED",
-          "AI mengembalikan format konsep yang tidak valid. Coba lagi.",
-          502,
-        );
-      }
-      if (!Array.isArray(parsed) || parsed.length !== 3) {
-        throw new AppError(
-          "GENERATION_FAILED",
-          "AI tidak mengembalikan tepat 3 konsep. Coba lagi.",
-          502,
-        );
-      }
+      const parsed = routerResult.output;
 
       const drafts: ConceptDraft[] = parsed.map((item) => ({
         title: String(item.title || "Untitled Concept").trim(),
@@ -602,28 +687,34 @@ export async function generateConceptsForOwner(
         projectId,
         provider: routerResult.provider,
         model: routerResult.model,
+        logicalModel: routerResult.logicalModel,
+        routingPolicyVersion: routerResult.routingPolicyVersion,
+        fallbackUsed: routerResult.fallbackUsed,
+        retryCount: routerResult.retryCount,
+        providerLatencyMs: routerResult.latencyMs,
+        estimatedCostUsd: routerResult.estimatedCostUsd,
         inputTokens: routerResult.inputTokens,
         outputTokens: routerResult.outputTokens,
         outputEntityId: concepts[0]?.id || "00000000-0000-0000-0000-000000000000",
         outputEntityType: "story_concept",
         correlationId,
       });
-    } catch (err) {
-      if (debited) {
-        try {
-          await refundCreditsForAttempt(bindings, {
-            userId: ownerId,
-            projectId,
-            attemptId: attempt.id,
-            amount: 3,
-            reason: CREDIT_LEDGER_REASONS.generationRefund,
-            generationType: GENERATION_TYPES.publish_copy,
-            idempotencyKey,
-            correlationId,
-          });
-        } catch (refundErr) {
-          console.error("credit refund failed:", refundErr);
-        }
+      chargedCreditCost = creditCost;
+  } catch (err) {
+      try {
+        await refundCreditsForAttempt(bindings, {
+          userId: ownerId,
+          projectId,
+          attemptId: attempt.id,
+          amount: creditCost,
+          reason: CREDIT_LEDGER_REASONS.generationRefund,
+          generationType,
+          qualityMode,
+          idempotencyKey,
+          correlationId,
+        });
+      } catch (refundErr) {
+        console.error("credit refund failed:", refundErr);
       }
 
       await markGenerationAttemptFailed(bindings, {
@@ -647,7 +738,12 @@ export async function generateConceptsForOwner(
     .eq("id", projectId)
     .neq("workflow_phase", WORKFLOW_PHASES.foundation_locked);
 
-  return { concepts, created: true };
+  return {
+    concepts,
+    created: true,
+    creditCost: chargedCreditCost,
+    idempotentReplay: false,
+  };
 }
 
 export async function getConceptForOwner(

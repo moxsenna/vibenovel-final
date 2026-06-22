@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import { Card, Icon } from "@/components/ui";
 
 export interface FoundationReadiness {
@@ -10,9 +11,20 @@ export interface FoundationReadiness {
 
 export interface FoundationReadinessCardProps {
   readiness: FoundationReadiness;
+  matangkanRoute?: string | null;
+  onGenerateNarra?: () => Promise<void>;
+  generatingNarra?: boolean;
 }
 
-export function FoundationReadinessCard({ readiness }: FoundationReadinessCardProps) {
+export function FoundationReadinessCard({
+  readiness,
+  matangkanRoute,
+  onGenerateNarra,
+  generatingNarra = false,
+}: FoundationReadinessCardProps) {
+  const showNarraActions =
+    readiness.percent >= 75 && readiness.percent < 85 && Boolean(matangkanRoute);
+
   return (
     <Card
       padding="lg"
@@ -62,6 +74,29 @@ export function FoundationReadinessCard({ readiness }: FoundationReadinessCardPr
           ))}
         </ul>
       )}
+
+      {showNarraActions ? (
+        <div className="mt-5 flex flex-wrap gap-3">
+          <Link
+            to={matangkanRoute!}
+            className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full bg-primary px-5 font-label-md text-label-md text-on-primary"
+          >
+            <Icon name="auto_awesome" size={18} />
+            Matangkan dengan Narra
+          </Link>
+          {onGenerateNarra ? (
+            <button
+              type="button"
+              onClick={() => void onGenerateNarra()}
+              disabled={generatingNarra}
+              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full bg-primary-soft px-5 font-label-md text-label-md text-primary disabled:opacity-60"
+            >
+              <Icon name="tips_and_updates" size={18} />
+              {generatingNarra ? "Membuat Usulan Narra..." : "Buat Usulan Narra"}
+            </button>
+          ) : null}
+        </div>
+      ) : null}
     </Card>
   );
 }

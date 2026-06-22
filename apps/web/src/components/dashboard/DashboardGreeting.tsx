@@ -1,23 +1,26 @@
 import { Icon } from "@/components/ui";
-import { DASHBOARD_GREETING, type DashboardUsageSummary } from "@/mocks/dashboard";
+import {
+  DASHBOARD_GREETING,
+  DASHBOARD_GREETING_RETURNING,
+  type DashboardUsageSummary,
+} from "@/mocks/dashboard";
 
 export interface DashboardGreetingProps {
   usage: DashboardUsageSummary;
+  /** When true, hide empty-state inspirational copy (doc 113 C1). */
+  hasProjects?: boolean;
 }
 
-export function DashboardGreeting({ usage }: DashboardGreetingProps) {
+export function DashboardGreeting({ usage, hasProjects = true }: DashboardGreetingProps) {
   const usagePercent =
     usage.total > 0 ? Math.round((usage.used / usage.total) * 100) : 0;
+  const copy = hasProjects ? DASHBOARD_GREETING_RETURNING : DASHBOARD_GREETING;
 
   return (
     <div className="flex flex-col items-start justify-between gap-md md:flex-row md:items-center">
       <div>
-        <h2 className="mb-unit font-display text-display text-on-surface">
-          {DASHBOARD_GREETING.title}
-        </h2>
-        <p className="font-body-md text-body-md text-muted-text">
-          {DASHBOARD_GREETING.subtitle}
-        </p>
+        <h2 className="mb-unit font-display text-display text-on-surface">{copy.title}</h2>
+        <p className="font-body-md text-body-md text-muted-text">{copy.subtitle}</p>
       </div>
 
       <div className="flex w-full shrink-0 items-center gap-md rounded-xl border border-border bg-surface p-md shadow-sm md:max-w-sm">

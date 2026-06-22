@@ -23,7 +23,12 @@ import {
 import { createServiceRoleClient } from "../lib/supabase.js";
 import { AppError } from "../errors.js";
 import { getOwnedProjectRow } from "./project.js";
-import { generateWithModelRouter } from "./model-router.js";
+import {
+  assertGenerationRouteCallable,
+  generateWithModelRouter,
+} from "./model-router.js";
+import { createProviderEventSequence } from "./generation-provider-event.js";
+import { getCreditCostForGeneration } from "./ai-credit-policy.js";
 import {
   CREDIT_LEDGER_REASONS,
   debitCreditsForAttempt,
@@ -38,6 +43,7 @@ import {
 import { generateCorrelationId } from "./audit-snapshot.js";
 import { computePromptHashFromMessages } from "./prose-generation-prompt.js";
 import { listIntakeMessagesForOwner } from "./intake.js";
+import { assertPlanningOutputSpecificToProject } from "./planning-output-specificity.js";
 
 const PROPOSAL_SELECT =
   "id, project_id, proposal_type, status, risk_level, source, title, payload, review_note, reviewed_at, reviewed_by, merged_into_id, result_fact_id, result_character_id, created_at, updated_at";
@@ -62,9 +68,13 @@ export const FOUNDATION_FLOW_PROPOSAL_TYPES: readonly AiProposalType[] = [
 
 const GENERATOR_MARKER = "foundation_stub_batch";
 const GENERATOR_MARKER_AI = "foundation_ai_batch";
+const GENERATOR_MARKER_NARRA = "asisten_narra_foundation_patch";
 /** Both stub and AI batches belong to the foundation flow (dedup/list/regenerate). */
-const FOUNDATION_GENERATOR_MARKERS = new Set<string>([GENERATOR_MARKER, GENERATOR_MARKER_AI]);
-const FOUNDATION_AI_CREDIT_COST = 3;
+const FOUNDATION_GENERATOR_MARKERS = new Set<string>([
+  GENERATOR_MARKER,
+  GENERATOR_MARKER_AI,
+  GENERATOR_MARKER_NARRA,
+]);
 
 interface ProposalDraft {
   proposalType: AiProposalType;
@@ -89,9 +99,16 @@ function parsePayload(value: unknown): JsonObject {
   return {};
 }
 
-function isFoundationStubBatch(row: AiProposalRow): boolean {
+function isFoundationStubBatch(row: Pick<AiProposalRow, "payload">): boolean {
   const payload = parsePayload(row.payload);
   return FOUNDATION_GENERATOR_MARKERS.has(payload.generator as string);
+}
+
+export function isFoundationReviewProposal(
+  row: Pick<AiProposalRow, "source" | "payload">,
+): boolean {
+  if (row.source === AI_PROPOSAL_SOURCES.ai_import) return true;
+  return isFoundationStubBatch(row);
 }
 
 async function loadSelectedConcept(
@@ -354,7 +371,7 @@ function buildProposalDrafts(ctx: GenerationContext): ProposalDraft[] {
   return drafts;
 }
 
-async function listExistingStubBatch(
+async function listFoundationFlowRows(
   bindings: AppBindings,
   projectId: string,
   statusFilter?: string,
@@ -377,7 +394,25 @@ async function listExistingStubBatch(
     throw AppError.internal("Failed to list foundation proposals");
   }
 
-  return ((data ?? []) as AiProposalRow[]).filter(isFoundationStubBatch);
+  return (data ?? []) as AiProposalRow[];
+}
+
+async function listExistingStubBatch(
+  bindings: AppBindings,
+  projectId: string,
+  statusFilter?: string,
+): Promise<AiProposalRow[]> {
+  const rows = await listFoundationFlowRows(bindings, projectId, statusFilter);
+  return rows.filter(isFoundationStubBatch);
+}
+
+async function listFoundationReviewRows(
+  bindings: AppBindings,
+  projectId: string,
+  statusFilter?: string,
+): Promise<AiProposalRow[]> {
+  const rows = await listFoundationFlowRows(bindings, projectId, statusFilter);
+  return rows.filter(isFoundationReviewProposal);
 }
 
 async function insertProposalDrafts(
@@ -631,36 +666,39 @@ async function generateFoundationDraftsWithAi(
   const promptHash = await computePromptHashFromMessages(promptMessages);
   const idempotencyKey = `foundation-generation-${projectId}-${crypto.randomUUID()}`;
   const correlationId = generateCorrelationId();
+  const generationType = GENERATION_TYPES.foundation_proposal;
+  const qualityMode = WRITER_QUALITY_MODES.hemat;
+  const creditCost = getCreditCostForGeneration({ generationType, qualityMode });
+
+  assertGenerationRouteCallable(bindings, { generationType, qualityMode });
 
   let attempt = await createGenerationAttempt(bindings, {
     projectId,
     userId: ownerId,
-    generationType: GENERATION_TYPES.publish_copy,
+    generationType,
     idempotencyKey,
-    creditCost: FOUNDATION_AI_CREDIT_COST,
+    creditCost,
     promptHash,
     correlationId,
-    qualityMode: WRITER_QUALITY_MODES.hemat,
+    qualityMode,
     metadata: {
-      actualGenerationType: "foundation_proposal",
-      billingAlias: "publish_copy",
       task: "13.1",
     },
   });
+  const providerEventSequence = createProviderEventSequence();
 
-  let debited = false;
   try {
     await debitCreditsForAttempt(bindings, {
       userId: ownerId,
       projectId,
       attemptId: attempt.id,
-      amount: FOUNDATION_AI_CREDIT_COST,
+      amount: creditCost,
       reason: CREDIT_LEDGER_REASONS.generationDebit,
-      generationType: GENERATION_TYPES.publish_copy,
+      generationType,
+      qualityMode,
       idempotencyKey,
       correlationId,
     });
-    debited = true;
   } catch (err) {
     await markGenerationAttemptFailed(bindings, {
       attemptId: attempt.id,
@@ -677,27 +715,41 @@ async function generateFoundationDraftsWithAi(
 
   try {
     const routerResult = await generateWithModelRouter(bindings, {
-      generationType: GENERATION_TYPES.publish_copy,
-      qualityMode: WRITER_QUALITY_MODES.hemat,
+      generationAttemptId: attempt.id,
+      providerEventSequence,
+      generationType,
+      qualityMode,
       promptHash,
       promptMessages,
-      maxOutputTokensOverride: 3000,
       temperature: 0.4,
+      validateOutput: (text) => {
+        let parsedOutput: unknown;
+        try {
+          parsedOutput = JSON.parse(stripJsonFences(text));
+        } catch {
+          throw new AppError(
+            "GENERATION_FAILED",
+            "AI mengembalikan format fondasi yang tidak valid. Coba lagi.",
+            502,
+          );
+        }
+        if (
+          !parsedOutput ||
+          typeof parsedOutput !== "object" ||
+          Array.isArray(parsedOutput)
+        ) {
+          throw new AppError(
+            "GENERATION_FAILED",
+            "AI tidak mengembalikan fondasi yang valid. Coba lagi.",
+            502,
+          );
+        }
+        assertPlanningOutputSpecificToProject(parsedOutput, "fondasi");
+        return parsedOutput as Record<string, unknown>;
+      },
     });
 
-    let parsed: unknown;
-    try {
-      parsed = JSON.parse(stripJsonFences(routerResult.text));
-    } catch {
-      throw new AppError(
-        "GENERATION_FAILED",
-        "AI mengembalikan format fondasi yang tidak valid. Coba lagi.",
-        502,
-      );
-    }
-    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
-      throw new AppError("GENERATION_FAILED", "AI tidak mengembalikan fondasi yang valid. Coba lagi.", 502);
-    }
+    const parsed = routerResult.output;
 
     const drafts = buildProposalDraftsFromAi(
       parsed as Record<string, unknown>,
@@ -711,6 +763,12 @@ async function generateFoundationDraftsWithAi(
       projectId,
       provider: routerResult.provider,
       model: routerResult.model,
+      logicalModel: routerResult.logicalModel,
+      routingPolicyVersion: routerResult.routingPolicyVersion,
+      fallbackUsed: routerResult.fallbackUsed,
+      retryCount: routerResult.retryCount,
+      providerLatencyMs: routerResult.latencyMs,
+      estimatedCostUsd: routerResult.estimatedCostUsd,
       inputTokens: routerResult.inputTokens,
       outputTokens: routerResult.outputTokens,
       outputEntityId: "00000000-0000-0000-0000-000000000000",
@@ -720,21 +778,20 @@ async function generateFoundationDraftsWithAi(
 
     return drafts;
   } catch (err) {
-    if (debited) {
-      try {
-        await refundCreditsForAttempt(bindings, {
-          userId: ownerId,
-          projectId,
-          attemptId: attempt.id,
-          amount: FOUNDATION_AI_CREDIT_COST,
-          reason: CREDIT_LEDGER_REASONS.generationRefund,
-          generationType: GENERATION_TYPES.publish_copy,
-          idempotencyKey,
-          correlationId,
-        });
-      } catch (refundErr) {
-        console.error("credit refund failed:", refundErr);
-      }
+    try {
+      await refundCreditsForAttempt(bindings, {
+        userId: ownerId,
+        projectId,
+        attemptId: attempt.id,
+        amount: creditCost,
+        reason: CREDIT_LEDGER_REASONS.generationRefund,
+        generationType,
+        qualityMode,
+        idempotencyKey,
+        correlationId,
+      });
+    } catch (refundErr) {
+      console.error("credit refund failed:", refundErr);
     }
     await markGenerationAttemptFailed(bindings, {
       attemptId: attempt.id,
@@ -844,6 +901,6 @@ export async function listFoundationProposalsForOwner(
       ? undefined
       : AI_PROPOSAL_STATUSES.proposed;
 
-  const rows = await listExistingStubBatch(bindings, projectId, statusFilter);
+  const rows = await listFoundationReviewRows(bindings, projectId, statusFilter);
   return rows.map(mapAiProposalResponse);
 }

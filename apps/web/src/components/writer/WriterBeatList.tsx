@@ -1,5 +1,4 @@
 import type { Beat } from "@/types";
-import { Icon } from "@/components/ui";
 
 const STATUS_CONFIG = {
   done: { label: "Selesai", className: "bg-success-soft text-tertiary-container" },
@@ -25,17 +24,7 @@ export function WriterBeatList({
   return (
     <aside className="hidden h-full w-[300px] shrink-0 flex-col overflow-y-auto border-r border-border bg-surface-soft lg:flex">
       <div className="sticky top-0 z-10 border-b border-border bg-surface-soft/90 p-lg backdrop-blur-md">
-        <h2 className="flex items-center justify-between font-headline-md text-headline-md text-on-surface">
-          {title}
-          <button
-            type="button"
-            aria-label="Tambah adegan"
-            className="rounded-full p-1 text-primary transition-colors hover:bg-primary-soft"
-            disabled
-          >
-            <Icon name="add" size={20} />
-          </button>
-        </h2>
+        <h2 className="font-headline-md text-headline-md text-on-surface">{title}</h2>
         <p className="mt-1 font-body-sm text-body-sm text-muted-text">{chapterLabel}</p>
       </div>
 

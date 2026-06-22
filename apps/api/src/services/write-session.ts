@@ -465,7 +465,7 @@ export async function startOrResumeWritingSessionForOwner(
 
   const project = await getOwnedProjectRow(bindings, ownerId, projectId);
   if (project.workflow_phase === WORKFLOW_PHASES.outline_locked) {
-    await admin
+    const { error: phaseError } = await admin
       .from("projects")
       .update({
         workflow_phase: WORKFLOW_PHASES.writing,
@@ -473,6 +473,11 @@ export async function startOrResumeWritingSessionForOwner(
       })
       .eq("id", projectId)
       .eq("owner_id", ownerId);
+
+    if (phaseError) {
+      console.error("projects workflow_phase update for writing session failed");
+      throw AppError.internal("Failed to update project workflow phase");
+    }
   }
 
   return {

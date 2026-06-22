@@ -68,6 +68,10 @@ function Resolve-SupabaseAnonKey {
 
 function Resolve-ServiceRoleKey {
   if ($script:ServiceRoleKey) { return $script:ServiceRoleKey }
+  if (-not [string]::IsNullOrWhiteSpace($env:SUPABASE_SERVICE_ROLE_KEY)) {
+    $script:ServiceRoleKey = $env:SUPABASE_SERVICE_ROLE_KEY.Trim()
+    return $script:ServiceRoleKey
+  }
   Push-Location $RepoRoot
   try {
     foreach ($line in (& supabase status -o env 2>$null)) {
@@ -306,7 +310,7 @@ function Bootstrap-FoundationLocked {
   $proposals = Invoke-Api -Method POST -Path "/api/projects/$ProjectId/foundation/proposals/generate" -Headers $auth -Body '{}'
   foreach ($p in $proposals.data.proposals) {
     if ($p.type -in @('foundation', 'character', 'fact', 'relationship_speech_rule', 'style')) {
-      Invoke-Api -Method POST -Path "/api/projects/$ProjectId/proposals/$($p.id)/accept" -Headers $auth -Body '{}' | Out-Null
+      Invoke-Api -Method POST -Path "/api/projects/$ProjectId/foundation/proposals/$($p.id)/accept" -Headers $auth -Body '{}' | Out-Null
     }
   }
   Invoke-Api -Method POST -Path "/api/projects/$ProjectId/foundation/lock" -Headers $auth -Body '{}' | Out-Null
@@ -404,8 +408,29 @@ try {
   $token = $signup.access_token
   Add-StepResult "signup/login" $(if ($token) { "PASS" } else { "FAIL" }) "email=$TestEmail"
 } catch {
-  Add-StepResult "signup/login" "FAIL" $_.Exception.Message
-  exit 1
+  $signupError = $_.Exception.Message
+  try {
+    $signin = Invoke-RestMethod -Uri "$SupabaseUrl/auth/v1/token?grant_type=password" -Method POST `
+      -Headers @{ apikey = $anonKey; Authorization = "Bearer $anonKey" } -ContentType "application/json" `
+      -Body (@{ email = $TestEmail; password = $TestPassword } | ConvertTo-Json)
+    $token = $signin.access_token
+    Add-StepResult "signup/login" $(if ($token) { "PASS" } else { "FAIL" }) "email=$TestEmail mode=login"
+  } catch {
+    try {
+      $srk = Resolve-ServiceRoleKey
+      Invoke-RestMethod -Uri "$SupabaseUrl/auth/v1/admin/users" -Method POST `
+        -Headers @{ apikey = $srk; Authorization = "Bearer $srk" } -ContentType "application/json" `
+        -Body (@{ email = $TestEmail; password = $TestPassword; email_confirm = $true } | ConvertTo-Json) | Out-Null
+      $signin = Invoke-RestMethod -Uri "$SupabaseUrl/auth/v1/token?grant_type=password" -Method POST `
+        -Headers @{ apikey = $anonKey; Authorization = "Bearer $anonKey" } -ContentType "application/json" `
+        -Body (@{ email = $TestEmail; password = $TestPassword } | ConvertTo-Json)
+      $token = $signin.access_token
+      Add-StepResult "signup/login" $(if ($token) { "PASS" } else { "FAIL" }) "email=$TestEmail mode=admin-create"
+    } catch {
+      Add-StepResult "signup/login" "FAIL" (Get-SafeDetail "$signupError | fallback: $($_.Exception.Message)")
+      exit 1
+    }
+  }
 }
 
 $auth = @{ Authorization = "Bearer $token" }
@@ -531,8 +556,9 @@ if ($resolvedMockMode -eq "skip_mock" -or -not $aiEnabled -or -not $aiMock) {
             $mockCostOk = ($null -ne $estCost) -and ([decimal]$estCost -eq 0)
             $approxOk = ($attemptRow.metadata.costEstimateApproximate -eq $true)
             Add-StepResult "estimated_cost_usd mock" $(if ($mockCostOk -and $approxOk) { "PASS" } else { "FAIL" }) "cost=$estCost approximate=$($attemptRow.metadata.costEstimateApproximate)"
-          } elseif ($provider -eq "openrouter" -and $attemptRow.model -eq "google/gemini-2.5-flash" -and $attemptRow.input_tokens -and $attemptRow.output_tokens) {
-            $liveCostOk = ($null -ne $estCost) -and ([decimal]$estCost -gt 0)
+          } elseif ($provider -eq "openrouter" -and $attemptRow.model -like "google/gemini-2.5-flash*" -and $attemptRow.input_tokens -and $attemptRow.output_tokens) {
+            $expectedCostZero = $attemptRow.model -like "*:free"
+            $liveCostOk = if ($expectedCostZero) { ($null -ne $estCost) -and ([decimal]$estCost -eq 0) } else { ($null -ne $estCost) -and ([decimal]$estCost -gt 0) }
             Add-StepResult "estimated_cost_usd live" $(if ($liveCostOk) { "PASS" } else { "FAIL" }) "cost=$estCost model=$($attemptRow.model)"
           } else {
             Add-StepResult "estimated_cost_usd mock" "SKIP" "provider=$provider (not mock success path)"

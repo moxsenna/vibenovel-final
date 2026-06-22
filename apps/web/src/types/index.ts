@@ -46,6 +46,8 @@ export type {
 export type {
   ModelTier,
   ModelTierOption,
+  CreatorMode,
+  CreatorModeOption,
   MonthlyUsage,
   SettingsPageCopy,
   UserSettings,

@@ -4,6 +4,11 @@ Tanggal audit: 2026-06-11
 
 Scope audit ini read-only. Tidak ada perubahan kode aplikasi, schema, auth, Supabase, AI, credit, payment, atau refactor. Perubahan yang dibuat hanya file markdown di `docs/audit/`.
 
+## Superseded by delta (2026-06-16)
+
+Temuan di bawah ini adalah **snapshot 2026-06-11**. Untuk status hidup docs↔kode dan delta pasca Sprint 12–18, gunakan **[`12-docs-code-truth-matrix-2026-06-16.md`](12-docs-code-truth-matrix-2026-06-16.md)**. Ringkas: auth/session prod fixed (Sprint 12); foundation/outline AI paths shipped (`docs/97`); Draft Import **implemented partial**; `character_states`/`character_knowledge`/timeline shipped (`00015`–`00017`); validators **partial** (`00012`); beat/summary stubs masih open; verdict produk hari ini = partial public-beta, bukan `NOT_READY` karena repo kosong.
+
+
 ## Status repo dalam 1 halaman
 
 | Area | Status audit |

@@ -1,10 +1,15 @@
 # Dependencies
 node_modules/
 
+# Local tooling / nested worktrees
+.codex-worktrees/
+.commandcode/
+
 # Build output
 dist/
 dist-node/
 **/dist-node/
+apps/api/dist-production/
 build/
 .wrangler/
 **/.wrangler/

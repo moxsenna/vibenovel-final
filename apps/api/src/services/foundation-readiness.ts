@@ -1,5 +1,7 @@
 import {
   FOUNDATION_READINESS_LEVELS,
+  LOCK_READINESS_MIN_SCORE,
+  REFINE_READINESS_MIN_SCORE,
   STORY_CONCEPT_STATUSES,
   type FoundationReadinessLevel,
 } from "@vibenovel/shared";
@@ -38,6 +40,7 @@ export interface FoundationReadinessResult {
   readinessScore: number;
   readinessLevel: FoundationReadinessLevel;
   canLock: boolean;
+  canRefine: boolean;
   checks: ReadinessCheckItem[];
   missing: string[];
 }
@@ -71,7 +74,9 @@ function countProposalsByType(proposals: AiProposalRow[], type: string): number 
 }
 
 function levelFromScore(score: number): FoundationReadinessLevel {
-  if (score >= 75) return FOUNDATION_READINESS_LEVELS.siap_dikunci;
+  if (score >= 95) return FOUNDATION_READINESS_LEVELS.sangat_siap;
+  if (score >= LOCK_READINESS_MIN_SCORE) return FOUNDATION_READINESS_LEVELS.siap_dikunci;
+  if (score >= REFINE_READINESS_MIN_SCORE) return FOUNDATION_READINESS_LEVELS.siap_dimatangkan;
   if (score >= 45) return FOUNDATION_READINESS_LEVELS.bisa_lanjut;
   return FOUNDATION_READINESS_LEVELS.belum_siap;
 }
@@ -185,7 +190,7 @@ async function persistReadinessToFoundation(
 }
 
 interface ReadinessComputeOptions {
-  /** Proposal statuses counted toward readiness (display: proposed only; lock: proposed + accepted). */
+  /** Proposal statuses counted toward readiness. Lock readiness uses accepted proposals only. */
   activeStatuses: Set<string>;
   /** When true, accepted-but-not-yet-canon items count as pass (lock gate). */
   acceptedCountsAsReady: boolean;
@@ -198,7 +203,7 @@ function isPromotableFactProposal(row: AiProposalRow): boolean {
   return payload.category !== "secret" && typeof payload.highRiskCategory !== "string";
 }
 
-function computeFoundationReadiness(
+export function computeFoundationReadiness(
   foundation: FoundationRow | null,
   concept: StoryConceptRow | null,
   proposals: AiProposalRow[],
@@ -384,25 +389,128 @@ function computeFoundationReadiness(
   });
   if (secretGuardOk) score += SUPPORT_WEIGHT;
 
+  const maturityChecks: ReadinessCheckItem[] = [];
+  const joinedFoundationText = [
+    foundation?.premise,
+    foundation?.main_conflict,
+    foundation?.reader_promise,
+    foundation?.tone,
+    foundation?.genre,
+    concept?.short_pitch,
+    concept?.core_conflict,
+    concept?.reader_promise,
+    ...activeProposals.map((proposal) => {
+      const payload = parsePayload(proposal.payload);
+      return [
+        payload.premise,
+        payload.mainConflict,
+        payload.readerPromise,
+        payload.description,
+        payload.motivation,
+        payload.content,
+        payload.reason,
+      ]
+        .filter((value): value is string => typeof value === "string")
+        .join(" ");
+    }),
+  ]
+    .filter((value): value is string => typeof value === "string")
+    .join(" ")
+    .toLowerCase();
+
+  function maturityCheck(
+    key: string,
+    label: string,
+    pattern: RegExp,
+    reasonPass: string,
+    reasonMissing: string,
+  ): void {
+    const pass = pattern.test(joinedFoundationText);
+    maturityChecks.push({
+      key,
+      label,
+      status: pass ? "pass" : "missing",
+      reason: pass ? reasonPass : reasonMissing,
+    });
+    if (pass) score += 1;
+  }
+
+  maturityCheck(
+    "motivation_specific",
+    "Motivasi tokoh spesifik",
+    /motivasi|ingin|butuh|takut|melindungi|membuktikan|menebus|menjaga|mencari/,
+    "Motivasi atau luka tokoh terbaca.",
+    "Motivasi atau luka tokoh utama masih generik.",
+  );
+  maturityCheck(
+    "opposing_force",
+    "Tekanan lawan jelas",
+    /melawan|menekan|menghalangi|mertua|utang|rahasia|antagonis|ancaman|konflik/,
+    "Tekanan luar atau lawan cerita jelas.",
+    "Tekanan luar belum cukup jelas.",
+  );
+  maturityCheck(
+    "stakes_consequence",
+    "Konsekuensi terasa",
+    /kehilangan|hancur|utang|terbongkar|gagal|anak|keluarga|karier|nyawa|rumah/,
+    "Konsekuensi kegagalan terasa konkret.",
+    "Konsekuensi kegagalan belum konkret.",
+  );
+  maturityCheck(
+    "serial_momentum",
+    "Momentum serial",
+    /bab|serial|pelan|terungkap|misteri|cliff|lanjut|pembaca|demi bab/,
+    "Janji serial punya dorongan lanjut baca.",
+    "Janji pembaca belum cukup serial.",
+  );
+  maturityCheck(
+    "style_specific",
+    "Gaya dan format spesifik",
+    /hp|kbm|sinematik|realistis|witty|hangat|tegang|emosional|bab pendek/,
+    "Gaya atau format sudah memberi arah generasi.",
+    "Gaya cerita masih terlalu umum.",
+  );
+
   score = Math.min(100, Math.max(0, score));
   const readinessLevel = levelFromScore(score);
 
   const coreKeys = [
-    "selected_concept",
-    "premise",
-    "main_conflict",
-    "reader_promise",
-    "protagonist",
-    "facts",
-  ];
+      "selected_concept",
+      "premise",
+      "main_conflict",
+      "reader_promise",
+      "protagonist",
+      "facts",
+      "genre_tone",
+      "secret_guard",
+    ];
   const coreComplete = coreKeys.every((key) => {
-    const check = checks.find((c) => c.key === key);
-    return check?.status === "pass" || check?.status === "partial";
-  });
+      const check = checks.find((c) => c.key === key);
+      if (!check) return false;
+      if (key === "secret_guard" || key === "genre_tone") {
+        return check.status === "pass";
+      }
+      return check.status === "pass" || check.status === "partial";
+    });
 
-  const canLock = score >= 75 && coreComplete && conceptSelected;
+  const foundationUnlocked = !foundation?.is_locked;
+  const canRefine =
+    score >= REFINE_READINESS_MIN_SCORE &&
+    score < LOCK_READINESS_MIN_SCORE &&
+    coreComplete &&
+    conceptSelected &&
+    secretGuardOk &&
+    foundationUnlocked;
 
-  const missing = checks
+  const canLock =
+    score >= LOCK_READINESS_MIN_SCORE &&
+    coreComplete &&
+    conceptSelected &&
+    secretGuardOk &&
+    foundationUnlocked;
+
+  const allChecks = [...checks, ...maturityChecks];
+  const missing = allChecks
     .filter((c) => c.status === "missing")
     .map((c) => c.label);
 
@@ -410,7 +518,8 @@ function computeFoundationReadiness(
     readinessScore: score,
     readinessLevel,
     canLock,
-    checks,
+    canRefine,
+    checks: allChecks,
     missing,
   };
 }
@@ -441,10 +550,10 @@ export async function getFoundationReadinessForOwner(
     speechRules,
     relationshipHeavy,
     {
-      // Credit `accepted` proposals too (same as the lock readiness) so the
-      // displayed readiness does NOT drop after the user accepts proposals and
-      // `canLock` honestly predicts whether the lock will succeed.
-      activeStatuses: new Set(["proposed", "accepted"]),
+      // Only accepted proposals count toward lock readiness. Proposed import
+      // seeds remain visible in the review panel, but they should not make the
+      // UI say "ready to lock" before the writer accepts them.
+      activeStatuses: new Set(["accepted"]),
       acceptedCountsAsReady: true,
       persist: true,
     },
@@ -487,7 +596,7 @@ export async function getFoundationLockReadinessForOwner(
     speechRules,
     relationshipHeavy,
     {
-      activeStatuses: new Set(["proposed", "accepted"]),
+      activeStatuses: new Set(["accepted"]),
       acceptedCountsAsReady: true,
       persist: false,
     },

@@ -18,6 +18,7 @@ import type {
   PublishChecklistItemId,
   PublishPackageGeneratorVersion,
   PublishPackageStatus,
+  CharacterKnowledgeStatus,
   CharacterRole,
   CharacterSource,
   CharacterStatus,
@@ -26,10 +27,13 @@ import type {
   CreditLedgerDirection,
   CreditTopupOrderStatus,
   CreditTopupProductSlug,
+  CreatorMode,
   PaymentProvider,
   PaymentWebhookProcessingStatus,
   GenerationStatus,
   GenerationType,
+  ImportJobPhase,
+  ImportJobStatus,
   DefaultLanguage,
   DetectedSignalStatus,
   DetectedSignalType,
@@ -51,6 +55,8 @@ import type {
   ReaderTarget,
   RevealRiskLevel,
   RetentionMarkerType,
+  TimelineEventSource,
+  ProseEmbeddingSource,
   SpeechRuleSource,
   SpeechRuleStatus,
   StoryConceptSource,
@@ -105,6 +111,8 @@ export interface ProjectSettings extends Timestamps {
   defaultFormat: MobileFormatPreference;
   /** Placeholder for Sprint 4 length planner. */
   targetLengthBand: TargetLengthPlan | null;
+  /** Sprint 16 creator mode; simple remains the default writer experience. */
+  creatorMode: CreatorMode;
 }
 
 // --- Story foundation ---
@@ -154,6 +162,18 @@ export interface Character extends Timestamps {
   sortOrder: number;
 }
 
+export interface CharacterState extends Timestamps {
+  id: ID;
+  projectId: ID;
+  characterId: ID;
+  chapterNumber: number;
+  emotionalState: string | null;
+  physicalState: string | null;
+  currentGoal: string | null;
+  locationId: ID | null;
+  metadata: JsonObject;
+}
+
 // --- Facts (confirmed canon only — AI output must go through ai_proposals) ---
 
 export interface Fact extends Timestamps {
@@ -168,6 +188,18 @@ export interface Fact extends Timestamps {
   isLocked: boolean;
   source: FactSource;
   acceptedFromProposalId: ID | null;
+}
+
+export interface CharacterKnowledge extends Timestamps {
+  id: ID;
+  projectId: ID;
+  characterId: ID;
+  factId: ID;
+  knowledgeStatus: CharacterKnowledgeStatus;
+  confidence: number | null;
+  learnedAtChapter: number | null;
+  learnedFrom: string | null;
+  metadata: JsonObject;
 }
 
 // --- Relationship speech rules (internal: relationship_speech_rules; UI: Panggilan & Gaya Bicara) ---
@@ -233,6 +265,11 @@ export interface GenerationAttempt extends Timestamps {
   idempotencyKey: string;
   provider: string | null;
   model: string | null;
+  logicalModel: string | null;
+  routingPolicyVersion: string | null;
+  fallbackUsed: boolean;
+  retryCount: number;
+  providerLatencyMs: number | null;
   promptHash: string | null;
   contextPacketLogId: ID | null;
   inputTokens: number | null;
@@ -244,6 +281,43 @@ export interface GenerationAttempt extends Timestamps {
   outputEntityType: string | null;
   outputEntityId: ID | null;
   metadata: JsonObject;
+}
+
+export type GenerationProviderEventRole = "primary" | "fallback";
+
+export type GenerationProviderEventOutcome =
+  | "succeeded"
+  | "provider_error"
+  | "timeout"
+  | "rate_limited"
+  | "empty_output"
+  | "invalid_output"
+  | "unsafe_output"
+  | "credential_unavailable"
+  | "configuration_error";
+
+/**
+ * Admin-only diagnostics for one attempted provider call or skipped target.
+ * Never carries prompts, outputs, reasoning, raw response bodies, or secrets.
+ */
+export interface GenerationProviderEvent {
+  id: ID;
+  generationAttemptId: ID;
+  sequenceNumber: number;
+  routeRole: GenerationProviderEventRole;
+  provider: string;
+  logicalModel: string;
+  providerModelId: string;
+  retryNumber: number;
+  outcome: GenerationProviderEventOutcome;
+  errorCategory: string | null;
+  errorCodeSafe: string | null;
+  providerHttpStatus: number | null;
+  latencyMs: number | null;
+  inputTokens: number | null;
+  outputTokens: number | null;
+  estimatedCostUsd: number | null;
+  createdAt: ISODateTime;
 }
 
 /**
@@ -379,6 +453,50 @@ export interface StoryConcept extends Timestamps {
   payload: JsonObject;
 }
 
+// --- Sprint 18: draft import/RAG prep (memory is read-only, proposals are review-first) ---
+
+export interface ImportJob extends Timestamps {
+  id: ID;
+  projectId: ID;
+  ownerId: ID;
+  draftImportId: ID | null;
+  status: ImportJobStatus;
+  currentPhase: ImportJobPhase;
+  progressPercent: number;
+  errorCode: string | null;
+  errorMessageSafe: string | null;
+  phaseState: JsonObject;
+  metadata: JsonObject;
+  startedAt: ISODateTime | null;
+  finishedAt: ISODateTime | null;
+}
+
+export interface ProseEmbedding extends Timestamps {
+  id: ID;
+  projectId: ID;
+  ownerId: ID;
+  draftImportId: ID | null;
+  importJobId: ID | null;
+  source: ProseEmbeddingSource;
+  sourceRef: string;
+  chunkIndex: number;
+  chunkText: string;
+  chunkHash: string;
+  wordCount: number;
+  embeddingProvider: string | null;
+  embeddingModel: string | null;
+  metadata: JsonObject;
+}
+
+export interface RetrievalMemorySnippet {
+  sourceRef: string;
+  text: string;
+  similarity: number | null;
+  readOnly: true;
+  usage: "context_only";
+  metadata: JsonObject;
+}
+
 // --- Sprint 4: outline planning (NOT prose — beat_contracts/prose_versions deferred Sprint 5+) ---
 
 /** Retention marker on a chapter outline row (maps to UI badges). */
@@ -422,8 +540,47 @@ export interface ChapterOutline extends Timestamps {
   endingHook: string | null;
   miniVictory: string | null;
   povCharacterId: ID | null;
+  /** Sprint 17 — mini-arc grouping (presentational; nullable for legacy plans). */
+  miniArcId: ID | null;
   status: ChapterOutlineStatus;
   markers: ChapterOutlineMarker[];
+  metadata: JsonObject;
+}
+
+/**
+ * Sprint 17 — Season → MiniArc → Chapter grouping.
+ * Planner artifact only; covers an inclusive chapter range within one outline plan.
+ */
+export interface MiniArc extends Timestamps {
+  id: ID;
+  projectId: ID;
+  outlinePlanId: ID;
+  arcNumber: number;
+  title: string;
+  premise: string;
+  startChapter: number;
+  endChapter: number;
+  payoff: string | null;
+  metadata: JsonObject;
+}
+
+/**
+ * Sprint 17 — continuity timeline event.
+ * Past/current chapter facts derived at chapter close; never carries future truth
+ * and never mutates `facts`.
+ */
+export interface TimelineEvent extends Timestamps {
+  id: ID;
+  projectId: ID;
+  chapterOutlineId: ID | null;
+  chapterSummaryId: ID | null;
+  chapterNumber: number;
+  relativeOrder: number;
+  event: string;
+  involvedCharacterIds: ID[];
+  locationId: ID | null;
+  consequences: string[];
+  source: TimelineEventSource;
   metadata: JsonObject;
 }
 
@@ -582,6 +739,23 @@ export interface ForbiddenRevealEntry {
   forbiddenConcepts: string[];
 }
 
+export interface PovKnowledgeFactSummary {
+  factId: ID;
+  text: string;
+  confidence: number | null;
+  learnedAtChapter: number | null;
+  learnedFrom?: string | null;
+}
+
+export interface PovKnowledgeSnapshot {
+  characterId: ID | null;
+  knownFacts: PovKnowledgeFactSummary[];
+  suspectedFacts: PovKnowledgeFactSummary[];
+  partialFacts: PovKnowledgeFactSummary[];
+  falseBeliefs: PovKnowledgeFactSummary[];
+  unknownFactCount: number;
+}
+
 /**
  * Full writer Context Packet — slice-only, backend-built.
  * Must NOT include full outline dump, future chapters, or planningTruth raw.
@@ -712,6 +886,12 @@ export interface WriterContextPacket {
     previousChapterSummaries: string[];
     openLoopsActive: OpenLoopSafeSummary[];
     unresolvedThreadLabels: string[];
+    /** Sprint 17 — past/current timeline events only (never future). */
+    recentTimeline: string[];
+    /** Sprint 18: read-only RAG snippets, never canon/source of truth. */
+    retrievalMemory: RetrievalMemorySnippet[];
+    /** Sprint 16: POV-only knowledge; unsafe future reveal facts are omitted. */
+    povKnowledge: PovKnowledgeSnapshot;
   };
   revealGate: {
     allowedBreadcrumbs: string[];
@@ -750,6 +930,7 @@ export interface WriterContextPacketPreview {
   mustInclude: string[];
   mustNotInclude: string[];
   storyCheckLabels: string[];
+  povKnowledgeSummary: string | null;
   packetLogId: ID;
 }
 
